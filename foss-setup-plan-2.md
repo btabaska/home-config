@@ -80,6 +80,7 @@ Home Assistant, Chromecast, AirPlay, Matter, and Sonos all rely on mDNS/multicas
 ### Security & privacy extras
 - **Enable IDS/IPS** (Threat Management) on the Dream Wall — it has the CPU for it. It can cap throughput at multi-gig line rates, but for typical use it's worth the protection.
 - **Network-wide DNS filtering:** run **Pi-hole** or **AdGuard Home** (HA add-on or a container) and point your VLANs' DHCP DNS at it — blocks ads/trackers at the network level, a real privacy win and a nice complement to IoT isolation.
+- **Encrypt the DNS that leaves your house.** Filtering alone still forwards plaintext queries your ISP can read. Either point Pi-hole/AdGuard at **Unbound** as a local **recursive resolver with DNSSEC** (no upstream sees your queries at all), or at minimum enable **DoT/DoH** to Quad9/Cloudflare. Then **stop clients bypassing it:** a firewall rule that redirects (NAT) outbound port 53 to your resolver and **blocks known DoH endpoints** keeps every device on the filtered, encrypted path. Run a **second resolver** (e.g. AdGuard on the NAS) as the DHCP secondary so one box dying doesn't take DNS down.
 - Once Hue is fully local in HA, you can block the Hue bridge from the internet. (Nest needs Google's cloud; Midea can be made fully local with an ESPHome dongle — see Smart Home.)
 - Use WPA3 where devices support it; map one SSID each to Trusted, IoT, Guest, and Work.
 
@@ -99,19 +100,28 @@ For each: the pick, the runners-up, and what's new. Bold = recommended.
 - **Immich** — now a mature, stable project. Self-hosted, iOS/Android apps with automatic background backup, face/object recognition, "Free Up Space" to offload phone storage after backup, non-destructive editing, and (3.0 line, currently preview) automation workflows and real-time transcoding. Standout iCloud Photos replacement, ready for primary use (still: keep backups, see Section 6).
 - *Runner-up:* **PhotoPrism** (more "archive/browse"); **Synology Photos** (turnkey, less polished, ecosystem lock-in).
 - *Host on:* the NAS. Point its library at your existing storage; use the VectorChord Postgres image it ships with.
+- *Your mirrorless camera — yes, this works well.* Immich stores and displays RAW formats (ARW/CR3/NEF/RAF/DNG) and reads the EXIF, so camera shots land on the right date/place alongside your phone photos and get faces/objects indexed like everything else. The one difference from the phone: there's **no auto-backup for a camera** — the mobile app only backs up the phone's own roll. So you import from the SD card. Easiest paths: the **immich-go** CLI (`upload from-folder`, with `--manage-raw-jpeg` to stack RAW+JPEG pairs into one asset) pointed at the card after you copy it off, or **pbak** — a photographer's wrapper around immich-go that does the whole **SD -> SSD -> Immich** flow with EXIF date-sorting, SHA-256 dedup, integrity checks, and optional Lightroom-album sync. For a true plug-and-forget habit, copy the card into a watched staging folder on the NAS and run immich-go (or `immich upload --watch`) on a schedule so new shots ingest themselves.
 
 ### Music — library + streaming (Apple Music / iTunes library)
 - **Navidrome** — self-hosted music server (Subsonic API). Stream your own collection without a subscription. Mobile clients: **Symfonium** (Android, excellent), **play:Sub** / **Amperfy** (iOS); desktop: **Feishin** or **Supersonic**.
+- *Getting music in:* rips of your own CDs drop straight into the library; for **automated acquisition** (the "music half" of the download stack) see Media acquisition below — **Lidarr** is the music *arr, and it feeds this same Navidrome library.
 - Separate from getting music onto the iPod (next).
 
 ### iPod Classic
 **Decision: keep Apple firmware + libgpod tools.** Sync from Linux with **Rhythmbox** (simplest, built-in iPod support), with **gtkpod** (power-user, aging) or **Clementine** as alternatives. This keeps the device stock — car/USB-controller compatibility intact — and you manage the library the familiar way. Set a static library workflow and it's reliable.
+- *The plug-in experience (what you asked):* yes. Plug the iPod into the CachyOS rig and **Rhythmbox auto-detects it like iTunes did** — click sync (or drag tracks) and it writes to the device, car/USB controls intact. **Podcasts ride along on the same iPod:** the cleanest set-and-forget path is to have gPodder (next) download episodes into a folder that's part of Rhythmbox's library, so a single plug-in-and-sync pushes both new music *and* new podcast episodes onto the device in one operation. (gPodder can also sync straight to an iPod over libgpod, but funneling everything through Rhythmbox keeps a single tool writing Apple's database, which is more reliable.)
 - *Gotcha:* libgpod-based sync writes Apple's iPod database; occasionally a sync needs a re-init if the DB gets confused. Keep your music master library on the NAS (Navidrome's library) so the iPod is always a reproducible copy.
 - *If you ever want to drop the database hassle entirely:* **Rockbox** turns the iPod into a plain drag-and-drop USB drive (FLAC/Opus, custom EQ) via a modern bootloader (installed using the freemyipod project's tooling) — but it loses Apple's car/USB-control integration, so it's only worth it if that compatibility stops mattering.
 
 ### Podcasts (Apple Podcasts)
 - **gPodder** — maintained desktop podcatcher (RSS / YouTube / SoundCloud), batch-download, auto-cleanup (development is ongoing, though the last stable release was Dec 2024). With a Rockbox'd iPod: gPodder downloads into a folder, you copy/sync that folder to the device.
 - *Optional sync server* (if you also listen on a phone and want play-position synced): self-host **oPodSync**, **goPodder**, or **Sintoniza**. Skip if the iPod is your only podcast device.
+
+### YouTube & web video — download / archive
+Keep the creators you care about locally (and offline-able), instead of relying on the algorithm.
+- **Pinchflat (recommended)** — "Sonarr for YouTube": **one self-contained Docker container** (no Redis/Elasticsearch sidecars) where you add channels/playlists as *sources* and it periodically pulls new uploads, names them to a template, and writes NFO/poster metadata for **Plex/Jellyfin/Kodi**. Supports **SponsorBlock**, and can expose a channel as a **podcast RSS feed** — which means a downloaded channel can flow into gPodder and onto the iPod just like a podcast. Built on **yt-dlp**, low resource use, set-and-forget. Host on the NAS or Mac mini and point its output at a Plex library (a dedicated "YouTube" library, or mixed into TV).
+- *Heavier archive with search:* **Tube Archivist** — a full web UI to browse/search your archive (including transcripts and comments) with an in-app player, but it needs three containers (app + Redis + Elasticsearch). Pick it only if in-app browsing/search matters more than a lean stack.
+- *Ad-hoc grabs:* **MeTube** — a tiny web UI over yt-dlp for one-off downloads (paste a URL, get a file; also handles many non-YouTube sites). Or just run **yt-dlp** straight from the CachyOS terminal — everything above is yt-dlp underneath.
 
 ### News / RSS (Apple News, algorithmic feeds)
 - **Miniflux (recommended)** — minimalist, single static Go binary (tiny footprint, typically low tens of MB RAM), PostgreSQL backend (Postgres is required — no SQLite/MySQL), deliberately distraction-free, strips tracking pixels, full-text fetch, and speaks the Fever + Google Reader APIs so native apps (NetNewsWire, Reeder, NewsFlash, Readrops) sync to it. The spartan UI is a feature for "going analogue"; lowest-maintenance once running.
@@ -146,16 +156,29 @@ Why this is the answer to "never visible to my ISP" *and* the network crashes: t
 
 **The pipeline (fully automated: request -> auto-appears in Plex):**
 1. **Jellyseerr/Seerr** (request portal) — runs at home on the Mac mini; household members request a title from their phone or Apple TV. (Use **Seerr**, the 2026 unified successor of Overseerr + Jellyseerr — image `ghcr.io/seerr-team/seerr`. Overseerr's development had stalled since ~2023 and its repo was finally archived (read-only) on Feb 15, 2026 with an in-app migration notice pointing to Seerr. Jellyseerr is the fork most seedbox app stores still ship and is fine too — it's literally the codebase that became Seerr. All support Plex.)
-2. **Sonarr / Radarr** (on the seedbox) — receive the request, search via **Prowlarr** indexers, hand off to **qBittorrent** (on the seedbox).
+2. **Sonarr / Radarr / Lidarr** (on the seedbox) — receive the request, search via **Prowlarr** indexers, hand off to **qBittorrent** (on the seedbox). *(Sonarr = TV, Radarr = movies, **Lidarr = music** — same model, same seedbox.)*
 3. **qBittorrent** downloads at full seedbox speed, then Sonarr/Radarr rename/organize; **Bazarr** grabs subtitles.
 4. **Sync agent** (Syncthing or rclone, on the seedbox) pushes the finished, named files into the NAS library folders.
 5. **Plex** (home) imports them; Seerr sees they're available and notifies the requester.
 
 **How the home and seedbox talk:** put the seedbox on your **Tailscale** tailnet, so Seerr (home) reaches Sonarr/Radarr (seedbox) and the sync runs privately, with nothing exposed to the internet. Use SFTP/Syncthing (encrypted) for the file transfer — never plain FTP.
 
+**Yes, it includes music — with one twist.** **Lidarr** slots into the exact same pipeline for albums, and **Navidrome** then serves whatever it grabs (alongside your CD rips). The twist: torrent trackers are thin for music compared to TV/movies, so the community-standard addition is **Soulseek** via **slskd** (a self-hosted Soulseek daemon) glued to Lidarr by **Soularr** — Soularr reads Lidarr's "wanted" list, finds the albums on Soulseek, downloads them, and tells Lidarr to import, fully hands-off (it even keeps a deny-list so failed imports don't pile up). Because Soulseek is also P2P, **run slskd + Soularr on the seedbox**, not at home — the same logic that keeps every swarm off your network. Net result: requested albums land in Navidrome's library (and become the reproducible master that syncs to the iPod) the same way movies land in Plex. *(Podcasts and YouTube channels are handled separately — gPodder and Pinchflat via RSS — not the \*arr stack.)*
+
 **Provider pick (managed, ~$15-30/mo, set-and-forget):** prioritize **unlimited upload bandwidth** (not an upload cap) if you use private trackers and need to seed for ratio, a **privacy-friendly jurisdiction** (Netherlands is common) with minimal logging, and a one-click app catalog that includes qBittorrent + the *arr suite + rclone/Syncthing. Strong options: **Whatbox** (excellent privacy reputation, generous storage, SSH access), **Seedboxes.cc** or **DediSeedbox** (unlimited bandwidth, good for seeding), **Bytesized** (slickest UI, easy Plex/Resilio). Avoid upload-capped tiers (e.g., Ultra.cc's entry plans) if you seed private trackers, since seeding stops once you hit the cap.
 
 **Decommission the old setup:** remove qBittorrent/Gluetun from the NAS, undo the dual-LAN policy routing, and drop the 5 Mbps throttle. The second NAS LAN port is freed up (use it for link aggregation/failover, or leave it). If you ever torrent at home again, the fix for the crashes is simply capping qBittorrent's global max connections (~200) and per-torrent peers — but with the seedbox you won't need to.
+
+### Media companion layer (the polish around Plex + the *arrs)
+The acquisition stack above gets files onto the NAS; this layer makes the library *good*, *observable*, and *self-tidying*. Most run as one small container each.
+- **Tautulli (recommended)** — Plex's missing analytics: play history, who's watching/transcoding right now, per-user stats, "recently added" and watch notifications, and transcode-abuse spotting. The de-facto Plex companion. *Host: Mac mini.*
+- **Recyclarr** — syncs **TRaSH Guides** custom formats / quality profiles / scoring into Sonarr/Radarr on a cron, so the *arrs grab *good* releases instead of mislabeled or bloated ones. A tiny CLI, perfectly set-and-forget. *Host: the seedbox (next to the *arrs).*
+- **Unpackerr** — auto-extracts RAR'd releases that Sonarr/Radarr otherwise silently fail to import. Near-mandatory on a torrent/Usenet *arr stack. *Host: the seedbox.*
+- **Kometa** (formerly Plex Meta Manager) — builds collections, resolution/HDR overlay badges, posters, and curated playlists, turning a folder dump into a "produced"-looking Plex. *Host: Mac mini.*
+- **Tdarr** *(or **FileFlows**)* — pre-transcodes the library to a direct-play-friendly codec set so the NAS's J4125 Quick Sync isn't asked to live-transcode multiple 4K/HDR streams it can't sustain. Run the heavy transcodes on the **CachyOS rig** (NVENC) on-demand and let the NAS just serve. *Server on Mac mini; node on the rig.*
+- **Maintainerr** — rule-based library pruning (e.g. "unwatched 90 days + not in a collection -> delete with a grace period"), cleaning across Plex + the *arrs + Seerr. The "anti-Seerr" that keeps Tier-2 storage from growing unbounded — directly serves the tiering goal in Section 6. *Host: Mac mini.*
+- *Niche / by taste:* **Komga** or **Kavita** (comics/manga; Kavita also does ebooks) if that's a library you want; **beets** + **MusicBrainz Picard** for clean music tags once Lidarr is feeding Navidrome. (**YouTube archiving is already covered by Pinchflat above.**)
+- *Note — book automation:* **Readarr was retired (archived) in June 2025**, so there's no maintained "monitor an author, auto-grab new releases" *arr. CWA still covers organizing/serving ebooks; if you want *acquisition* automation later, **Bindery** or **LazyLibrarian** are the current community picks.
 
 ### Files, Contacts, Calendar (iCloud Drive / Contacts / Calendar)
 The gap people forget when leaving Apple. Three approaches:
@@ -164,6 +187,16 @@ The gap people forget when leaving Apple. Three approaches:
 - **Lean on Proton (least effort).** You already pay for it — **Proton Drive**, **Proton Calendar**, **Proton Pass** cover much of this with zero hosting.
 
 **Recommendation:** for minimal moving parts, use Proton for calendar/contacts/drive and Syncthing for the folders you want truly local. Stand up Nextcloud only if you want the single unified hub.
+
+### Documents — the paperless filing cabinet (the iCloud thing everyone forgets)
+- **Paperless-ngx** — scan or drop in bills, statements, manuals, warranties, and tax docs; it **OCRs** every page, auto-tags and classifies, and makes the whole pile **full-text searchable**. This is the document half of leaving Apple that nothing else here covers (Immich = photos, Obsidian = notes). Feed it from a watched "consume" folder (drag a PDF in, or point a scanner/phone-scan app at it). One Docker container + a small Postgres + Redis. *Host on the NAS or Mac mini; its data is **Tier 1** — irreplaceable, so it rides the cloud backup in Section 6.*
+
+### Passwords (Bitwarden — keep what you have)
+**Decision: stay on Bitwarden.** It's open-source, audited (Cure53), zero-knowledge, has great iOS/browser autofill, stores TOTP, and — unlike Proton Pass — can be **self-hosted** later if you want. No reason to switch to Proton Pass (its edges — encrypted metadata, hide-my-email aliases — are minor and migration is one-way friction for little gain). Bitwarden is where the **backup encryption keys, the HA backup key, and the SOPS/age key** all live (with a printed copy off-machine), per Sections 3/6/8.
+- *Optional self-host:* **Vaultwarden** (lightweight Bitwarden-compatible server, ~256 MB RAM) if you'd rather own the vault outright. Lateral move — only do it if self-hosting the vault is itself the goal; back it up as Tier 1.
+
+### Recipes (no Apple equivalent, but a household staple)
+- **Mealie** — self-hosted recipe manager: import a recipe from any URL, meal-plan, and generate shopping lists, with a clean mobile-friendly PWA. Lighter and more modern than the alternative **Tandoor** (which is more powerful at meal-planning but heavier). Nothing else in this build is a recipe app, so there's no collision. *Host on the Mac mini.*
 
 ### Browser & the rest you already have
 - **Browser (Safari -> ):** on CachyOS, **Firefox**, **LibreWolf** (hardened), or **Zen** (Firefox-based, polished). Set **Kagi** as default search.
@@ -191,8 +224,31 @@ Given your set-and-forget priority: HA Green = lowest friction; HAOS VM = no new
   - **Fully cloud-free option (recommended for privacy):** replace the OEM WiFi dongle with an **ESPHome-flashable dongle** (e.g., SLWF-01Pro, ~$13) — severs the unit from Midea's cloud and gives local ESPHome/MQTT control. Great fit since you're hands-on; with that done you can block those devices from the internet on the IoT VLAN.
   - Caveat: some Midea units built 2021+ use the Tuya platform — those use a LocalTuya integration, not the Midea ones. Check your model.
 
+### Cameras — bring your UniFi feeds into HA (and optionally Frigate)
+You already have UniFi Protect cameras and view them on the Dream Wall. Two upgrades, in order of effort:
+- **HA native UniFi Protect integration (do this — easy win).** Fully local, no subscription; it pulls your cameras' live streams **and** UniFi's own motion/smart-detection events into HA as entities (needs a Protect **API key** as of HA 2025.8, and RTSP enabled per camera: *Protect -> Devices -> Settings -> Share Livestream*). The payoff is **automation**: "person detected at the door after dark -> hall light on + phone notification," camera tiles on HA dashboards, and recordings stay on the UniFi NVR. Nothing leaves your network.
+- **Frigate (optional — only if you want better AI).** Frigate ingests the same RTSP streams and adds *local* object detection UniFi doesn't: **custom detection zones, package/animal/face detection**, and far better notification snapshots/clips. It needs compute — a **Coral TPU (~$60)** or the **Mac mini / NAS iGPU** — and YAML config. Worth it only if UniFi's built-in person/vehicle detection isn't enough for the automations you want; otherwise the native integration alone is plenty. *(If you ever want those cameras in Apple Home / HomeKit Secure Video, **Scrypted** is the bridge.)* Keep cameras on the locked-down **Cameras VLAN** (Section 1); HA on Trusted reaches them via the allow rule.
+
+### Local sensors — the Zigbee backbone (what makes it actually "smart")
+Hue/Nest/Midea are all WiFi/cloud-ish appliances. The cheap **local** sensors that drive real automations (motion, door/window contact, temperature/humidity, water-leak, buttons) speak **Zigbee** — so add a radio and a broker:
+- **Coordinator:** one USB Zigbee stick — **Sonoff Zigbee 3.0 Dongle Plus-E** (~$20) or the official **Home Assistant Connect ZBT-2**. Plug it into the HA host (use a short USB-2 extension to dodge USB-3 interference).
+- **Zigbee2MQTT (recommended) or ZHA.** ZHA is the zero-extra-service built-in path; **Zigbee2MQTT** supports more devices and exposes everything over MQTT (handy once you add ESPHome/Midea-dongle devices). Either runs as an HA add-on.
+- **Mosquitto** — the MQTT broker. Required for Zigbee2MQTT *and* for the ESPHome Midea dongle, so stand it up once as the shared message bus (HA add-on).
+- **Mesh tip:** every mains-powered Zigbee device (smart plug) is also a router — aim for 5-7 spread around the house, pair devices close to the coordinator then move them, and **avoid Aqara-branded hubs** if you want to mix brands. See the **Cheap local sensor shopping list** section for grounded picks + prices.
+- *(Z-Wave is the optional second radio if you adopt Z-Wave-only devices; Zigbee covers everything in the shopping list.)*
+
+### Presence detection — automations that follow you
+- **HA Companion app** (iOS/Android) gives free **device-tracker presence** (home/away) plus actionable notifications — install it on every phone. This drives the "arriving/leaving" automations.
+- For **room-level** presence (lights that follow you between rooms), add **mmWave** occupancy sensors or **Bermuda** (BLE trilateration using ESPHome Bluetooth-proxy nodes — often a few cheap ESP32s). This is the layer that makes the whole system feel intelligent rather than scheduled.
+
+### Keep your iPhones working — HomeKit / Matter bridge
+You're de-Appling the *backend*, but the household keeps iPhones. **HA's HomeKit Bridge** (built-in integration) exposes HA entities to **Apple Home**, so everyone keeps Siri and the Home app — shared access, familiar UI — while HA does the real work underneath. (`home-assistant-matter-hub` is the Matter-based alternative.) Expose a curated set of entities, not everything.
+
 ### Tie-ins worth doing
-- **Local voice (replaces Siri/Alexa):** HA's Assist pipeline + the Whisper/Piper add-ons gives local speech, and you can point its conversation agent at **Ollama on your rig** for a fully local LLM assistant (rig is on-demand, so best for non-urgent queries — or keep a small always-on model).
+- **Local voice (replaces Siri/Alexa):** HA's Assist pipeline + the Whisper/Piper add-ons gives local speech, and you can point its conversation agent at **Ollama on your rig** for a fully local LLM assistant.
+  - **The on-demand-rig problem + fix (LiteLLM fallback):** the rig sleeps, so a conversation agent pointed straight at it goes dead whenever it's suspended. Put **LiteLLM** (a tiny OpenAI-compatible gateway) in front instead: HA (and Open WebUI, scripts, etc.) all target one stable URL, and LiteLLM **routes to the rig's big model when it's awake and automatically falls back** — on timeout/5xx — to a **small always-on model** (a 1-3B model via Ollama/llama.cpp on the Mac mini, CPU-only is fine) or a cloud API. Net result: "turn off the lights" and quick questions are instant and always work; heavy reasoning uses the rig when it's up. (Optionally have HA send a Wake-on-LAN packet to spin the rig up for a genuinely heavy query.)
+- **Node-RED — visual automations:** install the HA **Node-RED add-on** once HA automations outgrow the built-in editor (complex occupancy/time/state-machine logic, presence flows). Optional but the standard escalation path; flows live in `/config` and are captured by the HA backup.
+- **HA backups — concrete method:** Settings -> System -> **Backups** -> schedule full backups (e.g. daily, keep 7) to the **NAS** via the **Samba/NFS backup location** (or the Google Drive Backup add-on), and **save the backup encryption key in Bitwarden** — you cannot restore without it. Also separately back up the Midea `.json` token files (above). See Section 8 for putting `/config` YAML under Git too.
 - **Energy dashboard:** with a smart plug or whole-home monitor, HA tracks per-device power — directly useful for the 24/7 power question in Section 5.
 - HA on Trusted reaches the Hue bridge and Midea units on IoT via the Trusted->IoT allow rule; no extra config beyond the mDNS settings in Section 1.
 
@@ -222,6 +278,27 @@ Replaces NVIDIA's discontinued GameStream and beats GeForce Now / Xbox Cloud for
 - **Remote -> Tailscale.** Add the host in Moonlight by its Tailscale IP (100.x.x.x) — auto-discovery doesn't work over Tailscale's Layer 3. **Critical tuning:** make sure Tailscale gets a *direct* connection, not a DERP relay — relays are throughput-limited (often only tens of Mbps, and as low as single digits under load) and ruin the stream. Run `tailscale status` and confirm "direct"; if relayed, forward **UDP 41641** on the Dream Wall to the host so hole-punching succeeds (Tailscale's newer self-hosted Peer Relays are another fallback if direct fails). Then you're limited only by encoder + bandwidth (tens to hundreds of Mbps).
 - **Wake-on-LAN ties it together:** with WoL + auto-login, you can wake the rig, stream a session, and let it sleep — the powerful box earns its keep on-demand instead of idling.
 - *Handhelds:* for Android handhelds, the **Apollo** (Sunshine fork) + **Artemis** (Moonlight fork) pair adds touchscreen/on-screen-keyboard niceties; otherwise stock Sunshine + Moonlight is more stable.
+
+#### The headless-display gotcha (and the fix you already have)
+Sunshine can only capture an **active** display at the client's resolution/refresh — with no monitor attached (or the monitor asleep), there's nothing to encode, which is the single most common headless-streaming failure. Three options, easiest first:
+- **Dummy HDMI plug (you own one) — simplest, most reliable.** Plug it in; the GPU sees a "monitor" and Sunshine captures it. Set the desktop to the plug at your target resolution. Zero software.
+- **Software virtual display on CachyOS (no dongle).** Your instinct is right that a Sunshine fork handles this on Linux. Stock **Apollo's** built-in virtual display is Windows-only, but two Linux solutions are CachyOS-tested: **`MrOz59/Apollo-Linux`** (an Apollo fork that adds **EVDI**-based virtual displays — `evdi-dkms`, auto-matches the client's resolution/HDR, works on NVIDIA), and **`frostplexx/sunshine_virt_display`** (a systemd daemon that creates an EDID-override virtual display on connect). Either gives a true headless, resolution-matching session — handy since the rig wakes on demand with no monitor on.
+- **Audio:** with no real display there's often no audio sink either — add a **PipeWire virtual sink** (or use the dummy plug's audio device) so Sunshine has something to capture.
+
+#### Save-game sync (Steam Cloud for everything)
+You back up game-*server* worlds (Section 6), but single-player PC saves on the rig aren't synced to your Steam Deck/laptop. **Ludusavi** (knows save locations for 19k+ Steam/GOG/Epic/Heroic titles) pointed at a **Syncthing** folder is the de-facto self-hosted save-sync — back up before a session, restore on the other device, no cloud.
+
+#### One GPU, three jobs — a contention policy
+The 3090 Ti hosts Sunshine streaming, heavy game servers, **and** Ollama inference. A model resident in VRAM steals from a game (and vice-versa), so set an explicit rule: run Ollama with **`keep_alive=0`** (unload the model the moment a request finishes) or simply **don't run inference during a stream/game session**. The LiteLLM fallback (Section 3) makes this painless — small queries hit the always-on Mac mini model, so the rig's GPU is free for the game.
+
+#### Make the streamed library usable — a launcher
+Sunshine streams whatever's running, but adding apps one-by-one is tedious. Add a **launcher** so the couch/stream experience covers more than Steam: **Heroic** (GOG/Epic/Amazon) or **Lutris** on CachyOS, surfaced through Sunshine (or Steam Big Picture). *Retro:* **RomM** is the rising "Plex for ROMs" — metadata scraping, a web UI with in-browser EmulatorJS play, and Playnite/RetroArch/Deck integration; run it on the Mac mini and stream/play from anywhere.
+
+### Local AI beyond chat (the rig's other on-demand job)
+Ollama + Open WebUI already give you local chat. Cheap extensions, all on the on-demand rig behind the same LiteLLM endpoint:
+- **Image generation — ComfyUI** (or Stable Diffusion / A1111): the near-default local image stack, a natural NVENC-rig workload.
+- **Coding assistant — Continue (VS Code/JetBrains) or Aider (CLI)** pointed at your local endpoint: the most common "second use" of a homelab LLM, free.
+- **Chat with your own docs — Open WebUI RAG:** Open WebUI ships document upload + RAG + an embeddings model; point it at your **Obsidian vault** / Paperless docs so "ask my notes" works locally.
 
 ---
 
@@ -257,13 +334,20 @@ RAID is not a backup — it survives a dead drive, not a deletion, ransomware hi
 
 ### Tier your data first (the key move)
 Don't back up 40TB to the cloud (~$278/month at B2's current ~$6.95/TB). Split it:
-- **Tier 1 — irreplaceable (cloud + local).** Immich photos, documents, Obsidian vault, **HA config**, **game-server worlds/saves**, all your compose files/configs. Realistically 1-2TB. **This goes off-site to the cloud** (~$7-14/month at B2 — trivial insurance).
+- **Tier 1 — irreplaceable (cloud + local).** Immich photos, documents, Obsidian vault, **HA config**, **game-server worlds/saves**, the **CachyOS home directory** (dotfiles, app configs, local projects — see below), all your compose files/configs. Realistically 1-2TB. **This goes off-site to the cloud** (~$7-14/month at B2 — trivial insurance).
 - **Tier 2 — replaceable media (local redundancy only).** Ripped movies/shows/music you could re-acquire. NAS RAID + one cold copy; **don't pay to cloud-store it.** For off-site of this tier, a **rotated external HDD** at your office or a relative's house is the cheap option.
 
 ### Tools
 - **Synology native (turnkey, start here):** **Hyper Backup** (to B2 / Synology C2 / another Synology / external), **Snapshot Replication** (Btrfs point-in-time — great vs. accidental deletion/ransomware), **Active Backup for Business** (pull backups of your computers, including the Ubuntu box, onto the NAS).
 - **Ubuntu/CachyOS -> cloud:** **Restic** (single Go binary, native B2/S3, simple password encryption, biggest community) or **Kopia** (similar + built-in web UI/scheduler).
 - **SSH/local targets:** **BorgBackup + Borgmatic** (best compression, fastest restores, YAML scheduling, DB-dump hooks, healthcheck pings) with a cheap SSH storage box.
+
+### Backing up the CachyOS rig (your daily-driver home directory)
+The rig is on-demand, not a server — but `/home/you` still holds what a reinstall can't recreate: dotfiles and app configs (`~/.config`), shell/theme setup, SSH/GPG keys, browser profiles, local game saves (`~/.local/share`, Steam/Proton `compatdata`), and any documents/projects not already in Git or Proton. Back it up even though it sleeps a lot:
+- **What:** target `~` and exclude the firehoses — `~/.cache`, Steam's re-downloadable game files, build/`node_modules` dirs, VM images. A short exclude list turns "hundreds of GB" into the few GB that actually matter.
+- **How (set-and-forget):** a **Restic** (or Kopia) job from CachyOS straight to **Backblaze B2** — encrypted, deduplicated, on a `systemd` timer that fires while the rig is awake (run it from a Sunshine/login session or a wake hook so a sleeping box doesn't miss every window). This is the same Tier-1 tool already in the table; you're just adding the rig's home as a source.
+- **Also keep a local copy:** point a second Restic repo — or **Synology Active Backup for Business**, which has a Linux agent — at the **NAS**, so the rig backs up over LAN when it's up (fast restores), and the NAS then sweeps that off-site with the rest of Tier 1. Two copies, one off-site, no thinking required.
+- **Dotfiles bonus:** keep the actual dotfiles in the same **Git** repo as your compose files (or a `chezmoi` / bare-repo setup). Then a rig rebuild is `git clone` + restore `~` from Restic, and you're back to your exact environment in minutes — the same "rebuildable" property Section 7 gives the servers.
 
 ### Off-site targets (current pricing)
 | Target | ~Price | Protocol | Best for |
@@ -275,10 +359,23 @@ Don't back up 40TB to the cloud (~$278/month at B2's current ~$6.95/TB). Split i
 
 > Synology NAS units don't qualify for Backblaze's flat $99/year personal plan (that's for direct-attached drives on a PC/Mac). For the NAS use **B2** (per-TB) or **Synology C2**.
 
+### Immutable / ransomware-proof copy (3-2-1-1-0)
+RAID and even off-site copies don't help if stolen credentials can *delete or re-encrypt* every backup. Add one **immutable** copy so a compromised host can't wipe its own history:
+- **Backblaze B2 Object Lock** on the Restic/Kopia bucket — set a retention window so even your own keys can't delete objects until it expires.
+- **Borg `--append-only`** mode on the SSH target (Hetzner) — the backup client can add archives but not prune; pruning is done only from a separate, key-restricted admin session.
+- **Synology immutable snapshots** (DSM 7.2+) on the NAS shares — a locked, read-only point-in-time even an admin can't remove early.
+This is the "1" and the "0 errors" in **3-2-1-1-0**: three copies, two media, one off-site, **one immutable**, zero restore errors (verified).
+
+### Database dumps (so a "backup" isn't a corrupt file)
+File-copying a *live* database directory can capture a half-written, unrestorable DB. Dump first, then back up the dump:
+- **Postgres** (Immich's VectorChord, Miniflux, Paperless, Dependency-Track): a nightly `pg_dump`/`pg_dumpall` to a `backups/` folder that the file-level job then ships off. **Borgmatic** has built-in DB-dump hooks (+ Healthcheck pings) — use them.
+- **SQLite** (Uptime Kuma, etc.): use the SQLite `.backup` command (or stop-copy-start), not a raw file copy of a hot DB.
+
 ### Don't forget
 - **Test a restore** at least once. An untested backup is a hope.
-- **Store encryption keys/passphrases off the machine** (password manager + a printed copy).
+- **Store encryption keys/passphrases off the machine** (Bitwarden + a printed copy).
 - **Back up Docker volumes and the CouchDB volume** (if you use LiveSync), and HA's backup archive, not just visible files.
+- **Monitor that backups actually ran** — a dead-man's-switch (self-hosted **Healthchecks.io**, pinged by each job and alerting via ntfy when a ping *doesn't* arrive) catches the silent "the timer's been off for a month" failure that uptime checks never see.
 
 ---
 
@@ -301,6 +398,13 @@ Goal: rebuildable, self-updating-but-not-recklessly, quiet until something needs
 - **Uptime Kuma** — pings services, alerts on downtime. Point it at Immich, Jellyfin, CWA, HA, Miniflux.
 - **ntfy** — self-hosted push to your phone for backups, downtime, update alerts. The notification backbone.
 
+### Dashboard & service launcher (one screen for everything)
+Two needs, one tool: **your** observability, and a **friendly front door for your wife**. **Homepage** (the 2026 standard — YAML-configured, tiny footprint, version-controlled right next to your compose files) covers both.
+- **For you (observability):** Homepage has 100+ live **service widgets** — it pulls real status/stats from Plex, Immich, Sonarr/Radarr/Lidarr/Prowlarr/Bazarr, qBittorrent, Pi-hole/AdGuard, Home Assistant, Uptime Kuma, and **Beszel**, plus container health via Docker label auto-discovery. One page answers "is everything up, what's downloading, how full are the disks." It complements rather than replaces Beszel/Uptime Kuma — those do deep metrics and alerting; Homepage is the at-a-glance roll-up that links into each.
+- **For your wife (bookmarks / sharing):** Homepage's **bookmarks and service tiles** are just big labeled links with icons. Make a clean "Home" group — Plex, Immich, Calibre-Web, the request portal (Seerr) — with friendly names, tuck the nerdy widgets onto a separate tab, and give her **one memorable URL**. She clicks "Movies," it opens Plex. No app sprawl, no asking you for links.
+- **Getting it to her devices:** put the dashboard behind **Caddy** (HTTPS) and reach it over **Tailscale** (install the app once on her phone/laptop); a friendly local name like `home.yourdomain` makes it feel like one place. For true zero-install on her end, expose just the dashboard via a Tailscale Funnel / Cloudflare Tunnel with auth in front.
+- *If she ever needs her own login or you want per-person boards:* **Homarr** is the alternative — drag-and-drop UI with built-in user accounts/permissions. It's heavier (state in a DB, less Git-friendly), so only reach for it if multi-user access actually matters; otherwise Homepage's single shared page is the lower-maintenance pick.
+
 ### Remote access
 - **Tailscale** — mesh VPN, near-zero config, generous free tier. Install on the NAS, Ubuntu box, rig, laptop, and phone; reach Jellyfin/Immich/CWA/Obsidian/HA remotely with no port-forwarding and nothing exposed. Also your path for **remote Moonlight** and **inviting friends to game servers**.
 - *Full control:* self-host **Headscale** or use **Netbird**. Tailscale's hosted control plane is the pragmatic set-and-forget pick.
@@ -308,12 +412,113 @@ Goal: rebuildable, self-updating-but-not-recklessly, quiet until something needs
 ### Reverse proxy + HTTPS (for services you expose locally)
 - **Caddy** — automatic HTTPS with a tiny config. The set-and-forget choice.
 - *GUI alternative:* **Nginx Proxy Manager**.
+- *Heads-up:* once Coolify (next) is running on the Mac mini, **it owns ports 80/443** there and becomes the proxy/HTTPS layer for the apps you deploy. Keep this hand-written Caddy only for fronting **non-Coolify** services — and run it on a different host (e.g., the NAS) so the two don't fight over the same ports.
+
+### Self-hosting your own apps (vibecode -> live on the LAN)
+The goal: you build a little app (a script, a dashboard, a vibecoded web tool) and want it reachable by name on every device in the house with as little ceremony as possible. The set-and-forget answer is a tiny self-hosted PaaS — your own Heroku/Vercel — on the always-on Mac mini.
+- **Coolify (recommended)** — point it at a Git repo (your self-hosted **Forgejo** control repo from Section 8, or GitHub) and it auto-detects the stack (Node/Bun/Python/PHP/static) via **Nixpacks**, builds, deploys, assigns a hostname, and wires up TLS — **push to the repo and it redeploys** via webhook. It also takes a raw **Dockerfile** or **Docker Compose** if you'd rather, and ships 280+ one-click templates. Runs as a Docker stack on the Mac mini with a web dashboard. *Footprint:* idles ~600-800MB RAM plus its own Postgres/Redis — comfortable on the always-on box.
+- **LAN visibility (the one bit that makes it "just work"):** add a **single wildcard record** in **Pi-hole/AdGuard** — `address=/home.lan/<mac-mini-IP>` — so *every* `*.home.lan` name resolves to the Mac mini. Coolify's bundled proxy then routes each app by its hostname. After that, shipping a new app is just "pick a name in Coolify" and it's live at `http://myapp.home.lan` for the whole network — no per-app DNS edits, no port juggling.
+- **HTTPS:** plain HTTP on `name.home.lan` is the zero-effort LAN default. If you want green-padlock local names, switch Coolify's proxy to the **DNS-01 challenge** with a real domain (the `home.yourdomain` you already use for the dashboard) to get a trusted wildcard cert without exposing anything.
+- **Remote:** reach your apps off-LAN the same way as everything else — over **Tailscale** (Section's Remote access), no ports opened.
+- **Tie-ins:** drop each new app onto **Homepage** (it shows up on your dashboard and, if household-facing, your wife's bookmarks), and because it lives in Git it inherits the Section 8 "rebuild in an hour" property for free.
+- *Lighter alternative:* **Dokploy** — same git-push-to-deploy model with a cleaner, more minimal UI and slightly lower idle RAM; smaller community/template library. Pick it if Coolify's dense dashboard feels like too much.
+
+### Security hardening (do these once)
+- **MFA / 2FA everywhere — the highest-value, lowest-effort upgrade.** Turn on TOTP (your authenticator app) for every account that supports it, and a hardware key where it matters:
+  - **Crown jewels (hardware key / passkey):** Bitwarden, Proton, the **Synology DSM** admin account, your email, and the Tailscale/GitHub/Forgejo accounts that gate everything else. DSM: Control Panel -> User -> Advanced -> enforce 2-step verification; supports WebAuthn/passkeys.
+  - **App-level TOTP:** **Immich** (Account -> security), **Plex** (Account -> 2FA), **Seerr/Jellyseerr**, **Home Assistant** (Profile -> Multi-factor), the **seedbox** panel, **Forgejo**, **Paperless-ngx**, **Vaultwarden** (if used).
+  - **Reverse-proxy MFA for the rest:** apps without native 2FA can sit behind a forward-auth layer (below) that enforces it centrally.
+- **Exposed-service hardening (only what's actually reachable).** Your Tailscale-first design means the home stack isn't exposed — so this targets the **seedbox** and any **public game-server port-forwards** (Section 4): run **CrowdSec** (modern, shared-threat-intel fail2ban) or **fail2ban** on those, keep them patched, and SSH **keys-only**. For anything you *do* publish via Caddy, add a lightweight forward-auth gate — **Pocket-ID** or **tinyauth** (simple), or **Authelia/Authentik** (full SSO + enforced 2FA) — rather than exposing an app's bare login.
+- **Docker log rotation (silent disk-fill killer).** Docker's default `json-file` driver grows logs unbounded — a classic "set-and-forget box dies months later." Set global caps once in `/etc/docker/daemon.json` (`log-driver: json-file`, `log-opts: max-size=10m, max-file=3`) and restart the daemon.
+- **OS security patches.** You deliberately avoid blind *container* auto-updates, but the *OS* should still get security fixes: enable **`unattended-upgrades`** (Ubuntu) for security-only patches; on CachyOS, update on your own cadence.
 
 ### Config-as-code (makes "rebuild in an hour" true)
-- Put **all compose files + configs in Git** — self-hosted **Gitea/Forgejo**, or a private GitHub repo. Disk dies or you migrate hosts -> `git clone` + `docker compose up` and you're back. This habit turns a homelab from fragile to disposable-and-rebuildable.
+- Put **all compose files + configs in Git** — self-hosted **Gitea/Forgejo**, or a private GitHub repo. Disk dies or you migrate hosts -> `git clone` + `docker compose up` and you're back. This habit turns a homelab from fragile to disposable-and-rebuildable. (Secrets are encrypted in-repo with **SOPS + age** — see Section 8.)
 
 ### Power resilience
 - **UPS** on the NAS + Ubuntu box + Dream Wall. DSM reads most consumer UPSes over USB and does a graceful shutdown on battery — important on fiber where brief outages can corrupt a DB mid-write. The Ubuntu box can listen to the NAS's UPS status over the network (NUT).
+
+---
+
+## 8. Inventory, SBOMs & rebuildable state (know what's running; restore it in an hour)
+
+By the end of this build you'll be running ~25 services across 4-5 boxes (NAS, Mac mini, rig, HA, Dream Wall) plus an off-site seedbox. Section 6 (Restic/Borg/Hyper Backup) saves your **data**; Section 7's config-as-code saves your **compose files**. This section closes the last two gaps:
+1. **A live inventory + SBOM** — one place that answers "what's installed, on which host, what version, and is any of it now vulnerable?" at a glance.
+2. **Complete state-in-Git** — `/etc`, dotfiles, cron/timers, app configs, and device exports, so a dead or wiped box is a `git clone` + restore away, not a weekend of remembering how you set it up.
+
+### Why "SBOM" is the right frame for a homelab
+An **SBOM (Software Bill of Materials)** is a machine-readable list of every component and version inside a piece of software. For a homelab the payoff isn't compliance paperwork — it's two things you actually want: a single queryable answer to *"what version of X am I running, and where?"*, and an automatic *"the moment a CVE is published for something you run, you're told."*
+
+The 2026 supply-chain reality makes this concrete. The **TeamPCP campaign (March 2026)** poisoned the Trivy scanner (`trivy-action` tags rewritten, malicious Docker images pushed), and that cascaded into the popular `litellm` PyPI package via stolen CI credentials — tracked as **CVE-2026-33634 (CVSS 9.4), added to CISA's Known Exploited Vulnerabilities catalog**. The lesson for a set-and-forget box: **pin versions, verify signatures/digests, and keep an inventory** so that when the next one lands you can answer "was I exposed, and where?" in seconds instead of days.
+
+### The centerpiece: a continuously-monitored SBOM dashboard (OWASP Dependency-Track)
+- **Dependency-Track v5 (codename "Hyades")** — the open-source platform (20,000+ orgs) that ingests **CycloneDX** SBOMs and **continuously re-analyzes your entire inventory** against multiple vulnerability sources (NVD, OSS Index, GitHub advisories) with **EPSS** prioritization — not just at scan time, but every time new intel lands. It tracks **OS packages, containers, firmware, and services** across every version of every "project," which maps perfectly onto "every host and every stack in my house."
+  - *Version note:* v5 is GA and is the most extensive redesign since inception (horizontal scaling, active/active HA, durable processing that resumes after a crash). v4 is **maintenance-only and reaches end-of-life December 2026**, and v5 doesn't upgrade in place — so start on **v5**. It ships as separate API-server + frontend containers (Docker Hub / GHCR) and needs **PostgreSQL**.
+  - *Model:* make each host and each stack a DT **project**; nightly SBOM uploads keep it live. Then "is anything I run vulnerable?" is one dashboard, and "show me everywhere `libfoo 1.2.3` is installed" is one search.
+  - *Host on:* the **Mac mini** (always-on; the Java API server wants ~1-2GB RAM — fine on Ubuntu).
+
+### Generating the SBOMs — Syft + Grype (and a deliberate note on Trivy)
+- **Syft (Anchore)** — the generator. Produces CycloneDX (and SPDX) SBOMs from **container images *and* whole filesystems/directories**, with the deepest cataloger coverage of any tool (it even pulls components out of compiled Go/Rust binaries and nested Java jars). **Grype (Anchore)** scans the results. The pattern is **Syft-then-scan**, with the SBOM as a signable, archivable artifact.
+- **Why standardize generation on Syft here, even though Dockhand already bundles image scanning:** Section 7's Dockhand gives you Grype/Trivy scanning of container images, and that's still useful for the container layer. But for the *whole-fleet* SBOM pipeline feeding Dependency-Track, use single-purpose **Syft** — it decouples generation from scanning (so the SBOM can be signed and consumed by DT independently), and given the March-2026 `trivy-action` compromise, fewer moving parts in the credential-bearing nightly job is the set-and-forget call. **Pin the tool versions and verify checksums/signatures regardless of which scanner you use** — that discipline is the actual takeaway from CVE-2026-33634.
+- **The nightly per-host job** (systemd timer):
+  - `syft dir:/ -o cyclonedx-json` for the host filesystem (catches pacman/apt/flatpak system packages *and* language packages) → one CycloneDX file.
+  - `syft <image> -o cyclonedx-json` for each running container image.
+  - Upload each to Dependency-Track via its REST API (`dtrack-cli` or `curl`) under that host's/stack's project.
+  - Also export the plain human manifests that make a bare-metal rebuild trivial and double as an offline inventory: `pacman -Qqe` (+ a separate AUR list) on CachyOS, `apt-mark showmanual` on Ubuntu, `flatpak list`, and your pinned compose image tags. Commit these to the control repo (below).
+
+### The control repo: state-in-Git, structured for restore
+A single **private** repo — self-hosted **Forgejo/Gitea**, or a private GitHub repo (Section 7) — that is the source of truth, structured so each host has an obvious restore path:
+
+```
+homelab/
+  hosts/
+    cachyos/    # pacman + AUR lists, /etc snapshot ref, restore.md
+    macmini/    # apt manual list, /etc ref, restore.md
+    ds920/      # DSM config export, package list, restore.md
+    ha/         # HA /config (YAML, automations, dashboards)
+  stacks/       # every docker-compose.yml + .env.example, per service
+  network/      # UniFi .unf exports
+  inventory.md  # auto-generated nightly: what / where / version / status
+  secrets/      # SOPS + age encrypted
+```
+
+### Backing up the configs, scripts, cron jobs & dotfiles (per host)
+- **`/etc` -> etckeeper.** Puts `/etc` in Git, **auto-commits on every apt/pacman operation**, and preserves the file **metadata** Git normally drops (the permissions that matter for `/etc/shadow`). Add a small **`systemd.path` unit watching `/etc`** so manual edits get committed in near-real-time too, and set **`PUSH_REMOTE`** to push to the control repo over SSH. **Warning: `/etc` contains real secrets (`/etc/shadow`, keys, tokens) — this remote MUST be private and ideally encrypted (see below).** Works on both CachyOS (pacman hooks) and Ubuntu (apt hooks).
+- **Dotfiles (`~`) -> chezmoi.** The tool floated in Section 6, with its real role here: track `~/.config`, shell/theme setup, editor config, etc., with **templating + built-in `age` encryption** for secrets and the `~/.zshrc.local` machine-specific override pattern. A rig rebuild becomes `chezmoi init --apply <repo>`. (Keep the actual files next to your compose files in the same control repo, per Section 6.)
+- **Cron + systemd timers.** etckeeper already captures `/etc/cron.d`, `/etc/cron.*`, and `/etc/systemd/system`. What it *misses* is **per-user crontabs** and **user units** — so the nightly job also exports `crontab -l` (per user), `systemctl list-timers`, and `~/.config/systemd/user/` into `hosts/<box>/`.
+- **Home Assistant.** Its own full backups go to the NAS (Section 3) — but also put `/config` (YAML, automations, dashboards, blueprints) under Git via the community **Git pull/push add-on** or a tiny commit job, so the *declarative* state lives alongside everything else. (And the **backup encryption key** goes in your password manager — you can't restore HA without it.)
+- **UniFi Dream Wall.** Auto-backup is on by default; pull the **`.unf`** export into `network/` on a schedule. (Section 1 already insists you back up before the one-way Zone-Based Firewall migration — this just keeps doing it.)
+- **DS920+ / DSM.** DSM is locked down — don't fight it with etckeeper. Use **Control Panel -> Update & Restore -> Configuration Backup** on a schedule (it captures settings, users, shared-folder config, and the Task Scheduler) into `hosts/ds920/`, plus Hyper Backup's own config export, plus the installed-package list. Document, don't automate the un-automatable.
+- **Docker volumes / databases.** Section 6 owns the **data** (Restic/Borg, with DB-aware dump hooks — including Dependency-Track's own Postgres). The control repo owns the **recipe**. Together: `git clone` + `docker compose up` + restore the volume = the service is back.
+
+### Secrets, the right way
+`/etc` and dotfiles inevitably contain secrets, so a private remote alone isn't enough. Two-layer rule:
+1. The control-repo remote is **private** (self-hosted Forgejo on the NAS/Mac mini, or private GitHub).
+2. Encrypt the sensitive bits **at rest** with **SOPS + age** (or git-crypt) so even a leaked repo is inert; chezmoi has native `age` encryption for the dotfile half.
+
+Keep the **age/SOPS key in your password manager + a printed copy** — the same discipline Section 6 demands for the Restic and HA keys. (A backup you can't decrypt after the fire is not a backup.)
+
+### The "at a glance" dashboard (tie it together)
+- **Dependency-Track** *is* the software-inventory dashboard: what's installed, what version, what's vulnerable, on which host — continuously updated.
+- **Homepage** (Section 7) gets a **custom-API widget** hitting DT's REST/metrics for a headline (projects tracked, total + critical vulnerabilities) plus tiles linking into DT, **Beszel**, and **Uptime Kuma**. One screen now covers **health** (Beszel/Uptime Kuma), **risk** (Dependency-Track), and the friendly **front door** for your wife.
+- **`inventory.md`**, auto-generated nightly from the plain manifests, makes the repo itself a readable "what / where / version / status" table — useful precisely when the dashboards are down because a box is down.
+- **Alerts via ntfy** (Section 7): Dependency-Track notifies on newly-discovered vulnerabilities; the nightly job pings ntfy on failure. **Diun** (Section 7) already covers "a new image is available."
+
+### Restore runbook (the thing that makes it real)
+Each `hosts/<box>/restore.md` is a short, *tested* checklist. Generic shape:
+1. Reinstall the OS (CachyOS / Ubuntu) -> install `git`, `restic`, `chezmoi`.
+2. `git clone` the control repo. Restore `/etc` files **selectively** from etckeeper history — **don't blanket-checkout an old tree into a live `/etc`** (it operates on the running system); restore the files you need, then re-run `etckeeper init` so metadata handling is refreshed.
+3. Reinstall packages from the manifest (`pacman -S --needed - < pkglist`; `xargs -a aptlist apt install`).
+4. `chezmoi init --apply` for dotfiles; reinstate cron/user timers.
+5. `docker compose up -d` per stack; restore volumes/DBs from Restic.
+6. Re-join Tailscale; confirm green in Homepage / Beszel / Dependency-Track.
+
+**Drill it quarterly in a throwaway VM** — Section 6's "test a restore," extended from a single file to a whole host. An untested runbook is fiction.
+
+### Where it all runs (power-aware, per Sections 0 & 5)
+- **Mac mini (always-on, ~12W):** Dependency-Track (API + frontend + Postgres), Forgejo (control-repo remote), and the nightly orchestration.
+- **Each host:** Syft/Grype + etckeeper + the manifest/cron exporters, fired by systemd timers. On the **on-demand rig**, gate the timer to "while awake" with the same wake-hook trick as the Restic job in Section 6, so a sleeping box doesn't just miss every window.
+- **NAS:** DSM Configuration Backup + holds the Restic repo and HA backup archives.
 
 ---
 
@@ -327,24 +532,59 @@ Do a phase before starting the next; each leaves you better off.
 3. **Lock in backups:** Synology Hyper Backup + Snapshot Replication, plus a Restic/Kopia job for your irreplaceable data -> B2. Test one restore.
 
 **Phase 2 — De-cloud the essentials**
-4. **Home Assistant** (HA Green or HAOS VM): add Hue (local), Midea (local via `midea_ac_lan` or an ESPHome dongle), Nest (SDM API). Move smart devices onto the IoT VLAN.
-5. **Seedbox pipeline:** sign up for a managed seedbox, install qBittorrent + Sonarr/Radarr/Prowlarr/Bazarr + a sync agent on it, run **Seerr/Jellyseerr** at home, put the seedbox on Tailscale, and point the sync at your NAS library. Then **decommission the NAS dual-LAN/Gluetun setup** and drop the 5 Mbps cap.
-6. **Immich** with phone auto-backup; start leaving iCloud Photos.
+4. **Home Assistant** (HA Green or HAOS VM): add Hue (local), Midea (local via `midea_ac_lan` or an ESPHome dongle), Nest (SDM API). Move smart devices onto the IoT VLAN. Then build the local backbone: **Zigbee coordinator + Zigbee2MQTT + Mosquitto** for cheap local sensors (see shopping list), the **HA Companion app** + presence, the **UniFi Protect integration** for your cameras, the **HomeKit Bridge** so iPhones keep Siri/Home, scheduled **HA backups to the NAS** (key in Bitwarden), and **Node-RED** if automations get complex. Point local voice at **LiteLLM** (small always-on model on the Mac mini, falling back to the rig's Ollama).
+5. **Seedbox pipeline:** sign up for a managed seedbox, install qBittorrent + Sonarr/Radarr/**Lidarr**/Prowlarr/Bazarr + **Recyclarr** (TRaSH profiles) + **Unpackerr** + a sync agent on it, run **Seerr/Jellyseerr** at home, put the seedbox on Tailscale, and point the sync at your NAS library. Then **decommission the NAS dual-LAN/Gluetun setup** and drop the 5 Mbps cap.
+   - **Music, specifically:** yes, automated acquisition includes it — **Lidarr** drops into this same seedbox pipeline. The one twist: torrent trackers are weak for music, so the standard add is **slskd (Soulseek) + Soularr** for hands-off album fetching — **run both on the seedbox** too, since Soulseek is also P2P. Results land in your NAS library and serve through **Navidrome**.
+6. **Immich** with phone auto-backup; import your mirrorless camera's SD card via **immich-go** / **pbak**. Start leaving iCloud Photos.
 
 **Phase 3 — The analogue media stack**
 7. **Calibre + Calibre-Web-Automated + KOReader (Kobo) + Syncthing** for reading.
-8. **iPod via Rhythmbox/libgpod** + **gPodder** for music/podcasts.
+8. **iPod via Rhythmbox/libgpod** + **gPodder** for music/podcasts (one plug-in syncs both); add **Pinchflat** if you want YouTube channels archived into Plex / as podcast feeds.
 9. **Miniflux** (+ optional Wallabag) for RSS, wired into KOReader's news plugin.
 10. **Turn on Obsidian Sync** (paid, official — nothing to host).
+11. **Paperless-ngx** for documents (OCR filing cabinet) and **Mealie** for recipes — the two "forgotten iCloud" household apps. Keep **Bitwarden** as the password manager (Vaultwarden if you later want to self-host the vault).
 
 **Phase 4 — Glue & polish**
-11. Stand up the management layer: **Dockhand** (or Dockge) + **Beszel** + **Uptime Kuma** + **ntfy** + **Caddy**, and add **Pi-hole / AdGuard** for network DNS filtering.
-12. Push all compose files + configs to **Git** so the whole thing is rebuildable.
+12. Stand up the management layer: **Homepage** (dashboard/observability + the household front door for your wife) + **Dockhand** (or Dockge) + **Beszel** + **Uptime Kuma** + **ntfy** + **Caddy**, and add **Pi-hole / AdGuard** for network DNS filtering (then **Unbound/DoT** for encrypted upstream + a second resolver).
+13. **Stand up Coolify** on the Mac mini + add the `*.home.lan` wildcard DNS record (`address=/home.lan/<mac-mini-IP>`) in Pi-hole/AdGuard, so any app you build deploys with one git push and is reachable by name (`http://myapp.home.lan`) across the network.
+14. **Media companion layer:** **Tautulli** (Plex stats), **Kometa** (collections/overlays), **Maintainerr** (auto-pruning), and **Tdarr** (pre-transcode, node on the rig). Add **Frigate** if you want better camera AI than UniFi's built-in detection.
+15. **Harden it:** turn on **MFA/2FA** everywhere (hardware key on Bitwarden/Proton/DSM), set **Docker log rotation**, add **immutable backups** (B2 Object Lock + Borg append-only) and a **Healthchecks.io** dead-man's-switch, and put **CrowdSec/forward-auth** on the seedbox + any public ports.
+16. Push all compose files + configs to **Git** so the whole thing is rebuildable.
+17. **Stand up the inventory/SBOM layer (Section 8):** self-host the control repo (**Forgejo**), turn on **etckeeper** + **chezmoi** + the nightly **Syft** manifest/SBOM job on each host, stand up **Dependency-Track v5** on the Mac mini, encrypt secrets with **SOPS + age**, and write + drill the per-host **restore runbooks**. Now you can see what's installed everywhere, get told the moment any of it goes vulnerable, and rebuild a wiped box in an hour.
 
 **Phase 5 — Play**
-13. **Game servers:** LinuxGSM or Pelican — light games always-on on the Mac mini, heavy games on-demand on the rig, friends in via Tailscale.
-14. **Sunshine** on the rig + **Moonlight** clients; confirm Tailscale shows "direct" for remote streaming.
-15. **Tune the rig:** Wake-on-LAN, auto-suspend, GPU idle/undervolt — so streaming and heavy servers are on-demand and cheap.
+18. **Game servers:** LinuxGSM or Pelican — light games always-on on the Mac mini, heavy games on-demand on the rig, friends in via Tailscale.
+19. **Sunshine** on the rig + **Moonlight** clients; set up the **headless display** (dummy HDMI plug or the Apollo-Linux/`sunshine_virt_display` virtual display) and confirm Tailscale shows "direct" for remote streaming. Add a **launcher** (Heroic/Lutris, + RomM for retro) and **Ludusavi + Syncthing** save-sync.
+20. **Tune the rig:** Wake-on-LAN, auto-suspend, GPU idle/undervolt, and set the **GPU contention policy** (Ollama `keep_alive=0`) so streaming, servers, and AI share the one card. Optionally add **ComfyUI / Continue / Open WebUI RAG** behind LiteLLM.
+
+---
+
+## Cheap local sensor shopping list
+
+Grounded picks for the Zigbee backbone in Section 3 — all pair cleanly with **Zigbee2MQTT/ZHA**, need **no vendor hub**, and run fully local. Street prices as of mid-2026 (USD); links go to the manufacturers. Buy the **Sonoff SNZB-P** line for the best price/reliability; **Aqara** is the premium alternative; **Third Reality** is good for plugs and the siren leak sensor.
+
+### Start here — the coordinator (buy one)
+| Item | Why | ~Price | Link |
+|---|---|---|---|
+| **Sonoff Zigbee 3.0 USB Dongle Plus-E** | Most-recommended 2026 coordinator (CC2652P); ZHA + Z2M. Use a short USB-2 extension. | ~$20 | [itead.cc](https://itead.cc/product/sonoff-zigbee-3-0-usb-dongle-plus/) |
+| **Home Assistant Connect ZBT-2** | Official HA coordinator; zero-fuss if you want first-party. | ~$25 | [home-assistant.io](https://www.home-assistant.io/connectzbt1/) |
+
+### Sensors (mix and match)
+| Sensor | Type | ~Price | Battery | Link |
+|---|---|---|---|---|
+| **Sonoff SNZB-03P** | Motion (PIR, light sensor, ~5s re-trigger) | ~$11-13 | CR2477 | [sonoff.tech](https://sonoff.tech/product/gateway-and-sensors/snzb-03p/) |
+| **Aqara Motion Sensor P1** | Motion, premium (adjustable sensitivity) | ~$20-25 | CR2450 | [aqara.com](https://www.aqara.com/en/product/motion-sensor-p1/) |
+| **Sonoff SNZB-04P** | Door/window contact (tamper) | ~$13-15 | CR2477 | [sonoff.tech](https://sonoff.tech/product/gateway-and-sensors/snzb-04p/) |
+| **Aqara Door & Window Sensor** | Contact, premium | ~$10-15 | CR1632 | [aqara.com](https://www.aqara.com/en/product/door-and-window-sensor/) |
+| **Sonoff SNZB-02D** | Temp/humidity with LCD | ~$10-13 | CR2477 | [sonoff.tech](https://sonoff.tech/product/gateway-and-sensors/snzb-02d/) |
+| **Third Reality 3RTHS24BZ** | Temp/humidity with e-ink screen | ~$15-18 | AAA | [3reality.com](https://3reality.com/product/temperature-and-humidity-sensor-lite/) |
+| **Sonoff SNZB-05P** | Water-leak (detects 0.5mm film) | ~$10-16 | CR2477 | [sonoff.tech](https://sonoff.tech/product/gateway-and-sensors/snzb-05p/) |
+| **Third Reality Water Leak Sensor** | Water-leak with **120dB siren** (alerts even if HA is down) | ~$15-20 | AAA | [3reality.com](https://3reality.com/product/water-leak-sensor/) |
+| **Aqara Wireless Mini Switch** | Button (single/double/long press scenes) | ~$18 | CR2032 | [aqara.com](https://www.aqara.com/en/product/wireless-mini-switch/) |
+| **Sonoff SNZB-06P** *(stretch)* | mmWave presence (occupancy, not just motion) | ~$25 | USB-C | [sonoff.tech](https://sonoff.tech/product/gateway-and-sensors/snzb-06p/) |
+| **Third Reality Zigbee Smart Plug** | Smart plug **+ energy reporting + Zigbee router** | ~$13 | mains | [3reality.com](https://3reality.com/product/smart-plug/) |
+
+> **Mesh tip:** every mains-powered device (smart plug) is also a Zigbee **router** — spread **5-7** around the house for a stable mesh. Pair devices *near* the coordinator first, then move them. **Avoid Aqara-branded hubs** if you mix brands (they often restrict pairing to Aqara). A solid starter kit: 1 coordinator + 2 smart plugs (routers) + 2 motion + 3 contact + 2 leak + 1 temp/humidity ≈ **$150-180**.
 
 ---
 
@@ -353,6 +593,7 @@ Do a phase before starting the next; each leaves you better off.
 | Apple/iOS task | FOSS replacement | Runs on |
 |---|---|---|
 | iCloud Photos | **Immich** | NAS |
+| Camera (RAW) photo import | **immich-go** / **pbak** | desktop -> NAS |
 | Apple Music (own files) | **Navidrome** (+ Symfonium/Amperfy) | Ubuntu/NAS |
 | iPod sync | **Rhythmbox / libgpod** (Apple firmware) | device |
 | Apple Podcasts | **gPodder** (+ optional sync server) | desktop |
@@ -361,18 +602,42 @@ Do a phase before starting the next; each leaves you better off.
 | Apple Notes | **Obsidian + Obsidian Sync** (paid, official) | desktop |
 | iWork / MS Office | **LibreOffice** (or OnlyOffice/Collabora) | CachyOS |
 | Plex / TV | **Plex** (keeping; Jellyfin = FOSS fallback) | NAS |
+| Plex stats & monitoring | **Tautulli** | Mac mini |
+| Library polish (collections/overlays) | **Kometa** | Mac mini |
+| Quality profiles / extraction | **Recyclarr** + **Unpackerr** | seedbox |
+| Library pruning | **Maintainerr** | Mac mini |
+| Pre-transcode automation | **Tdarr** (node on rig) / FileFlows | Mac mini + rig |
+| YouTube / web video archive | **Pinchflat** (Tube Archivist / MeTube alt) | NAS / Ubuntu |
 | Private media acquisition | **Managed seedbox** (qBit + *arr) + **Seerr** | off-site + Mac mini |
+| Automated music acquisition | **Lidarr** + **slskd** + **Soularr** | off-site (seedbox) |
+| Documents (scan/OCR/search) | **Paperless-ngx** | NAS / Mac mini |
+| Recipes & meal planning | **Mealie** | Mac mini |
+| Passwords | **Bitwarden** (Vaultwarden if self-hosting) | cloud / optional self-host |
 | iCloud Drive/Contacts/Calendar | **Proton** or **Nextcloud** or **Syncthing + Baikal** | cloud/NAS |
 | Safari | **Firefox / LibreWolf / Zen** + Kagi | CachyOS |
 | Siri / smart home (Hue, Nest, Midea) | **Home Assistant** + local voice (Whisper/Piper + Ollama) | HA Green / VM |
-| GeForce Now / game streaming | **Sunshine + Moonlight** | rig (host) + clients |
+| Local sensors | **Zigbee2MQTT + Mosquitto** (+ USB coordinator) | HA |
+| Cameras / NVR AI | **UniFi Protect -> HA** (+ optional **Frigate**) | Dream Wall / HA |
+| Apple Home compatibility | **HA HomeKit Bridge** | HA |
+| Local AI gateway / fallback | **LiteLLM** (+ small always-on model) | Mac mini + rig |
+| Image gen / coding AI | **ComfyUI** / **Continue** / **Aider** | CachyOS rig |
+| GeForce Now / game streaming | **Sunshine + Moonlight** (+ virtual display) | rig (host) + clients |
+| Game launcher / retro | **Heroic / Lutris** + **RomM** | rig / Mac mini |
+| Save-game sync | **Ludusavi + Syncthing** | rig + clients |
 | Hosting game servers | **Pelican** / LinuxGSM | Mac mini / rig |
 | Remote access | **Tailscale** | all |
 | Network segmentation | **UniFi VLANs + Zone-Based Firewall** | Dream Wall |
-| Ad/tracker DNS | **Pi-hole / AdGuard Home** | Ubuntu / HA |
+| Ad/tracker DNS | **Pi-hole / AdGuard Home** (+ Unbound/DoT) | Ubuntu / HA |
+| Auth / MFA for exposed apps | **CrowdSec** + forward-auth (Pocket-ID/Authelia) | seedbox / Ubuntu |
+| Backup monitoring | **Healthchecks.io** (dead-man's-switch) | Mac mini |
 | Container mgmt | **Dockhand** / Dockge / Komodo | Ubuntu |
+| Self-hosted app deployment (PaaS) | **Coolify** (Dokploy alt) | Mac mini (Ubuntu) |
+| Dashboard / service launcher | **Homepage** (Homarr if multi-user) | Ubuntu |
 | Monitoring | **Beszel** + Uptime Kuma + ntfy | Ubuntu |
 | Backup | **Restic/Kopia** + Borg + Synology native | NAS + hosts |
+| SBOM / vuln inventory dashboard | **OWASP Dependency-Track v5** (+ **Syft**/Grype) | Mac mini |
+| Config/dotfile/state-in-Git | **etckeeper** (/etc) + **chezmoi** (~) + **Forgejo** control repo | all hosts |
+| Secrets at rest | **SOPS + age** (chezmoi age for dotfiles) | control repo |
 | Local LLM | **Ollama** + Open WebUI | CachyOS rig (on-demand) |
 
 Already in your stack and worth keeping: **Kagi** (search), **ProtonMail/VPN/Drive/Calendar/Pass**, and **Plex** (lifetime pass — staying put; Jellyfin is the FOSS fallback only if Plex ever paywalls something you depend on).
