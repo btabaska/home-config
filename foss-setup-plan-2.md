@@ -135,7 +135,7 @@ Keep the creators you care about locally (and offline-able), instead of relying 
 
 ### Reading / eReader (Kindle + iBooks)
 - **Calibre** (desktop) — library master and conversion engine.
-- **Calibre-Web-Automated (CWA)** — the actively-developed fork. Auto-ingest folder, an EPUB-fixer that cleans files so Send-to-Kindle stops rejecting them, metadata/cover enforcement written into the files, OPDS server, native Kobo sync, and **built-in zero-config KOReader progress sync**. One Docker container on the NAS.
+- **Calibre-Web-Automated (CWA)** — the actively-developed fork. Auto-ingest folder, an EPUB-fixer that cleans files so Send-to-Kindle stops rejecting them, metadata/cover enforcement written into the files, OPDS server, native Kobo sync, and **built-in zero-config KOReader progress sync**. One Docker container on the NAS. **Security note (load-bearing until a patched image ships):** the pinned `v4.0.6`/`latest` Docker Hub builds are affected by CVE-2026-7713 (Kobo auth-token bypass, fixed upstream in 4.0.7 but not yet published as a stable image). Keep CWA LAN/VPN-only behind auth, and **disable Kobo sync** unless you actively use it — do not treat these mitigations as optional boilerplate.
 - **KOReader** — open reader for the device. Runs on Kobo, jailbroken Kindle, PocketBook, Boox, reMarkable, Android. Stores progress in accessible files; OPDS + Calibre wireless plugin.
 - **Syncthing** — peer-to-peer sync of books and progress files. No cloud.
 

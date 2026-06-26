@@ -11,7 +11,14 @@
 **/work/
 **/cache/
 **/lib/
-**/config/
+# Runtime config dirs — ignore live data, but ship starter/example files.
+**/config/*
+!**/config/*.example
+!**/config/services.yaml
+!**/config/widgets.yaml
+!**/config/settings.yaml
+!**/config/bookmarks.yaml
+!**/config/docker.yaml
 **/beszel_data/
 **/beszel_agent_data/
 **/beszel_socket/

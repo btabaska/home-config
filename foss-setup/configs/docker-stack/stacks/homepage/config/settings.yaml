@@ -1,0 +1,9 @@
+# Homepage global settings — edit title/favicon after first boot.
+# Docs: https://gethomepage.dev/configs/settings/
+
+title: Home
+favicon: https://gethomepage.dev/img/favicon.ico
+theme: dark
+color: slate
+headerStyle: clean
+hideVersion: true

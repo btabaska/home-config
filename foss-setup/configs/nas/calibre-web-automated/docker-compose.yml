@@ -7,10 +7,14 @@
 # PINNED to v4.0.6 (latest tagged release as of writing). To upgrade, bump the tag,
 # read the release notes, then `docker compose pull && docker compose up -d`.
 #
-# SECURITY: A Kobo auth-bypass issue (CVE-2026-7713) was reported against the Kobo
-# sync token route. Mitigations: keep CWA on the latest patch release, do NOT expose
-# CWA directly to the internet (put it behind your reverse proxy + auth, or VPN only),
-# and leave Kobo sync disabled unless you use it. Re-check the releases page before deploy.
+# SECURITY (load-bearing until a patched image ships): CVE-2026-7713 is a Kobo
+# auth-token IDOR/bypass in cps/kobo_auth.py affecting CWA up to and including
+# v4.0.6 (fixed upstream in 4.0.7, commit 9f50bb2). As of writing, v4.0.6 AND
+# :latest are still the vulnerable builds — v4.0.7 is not published on Docker Hub.
+# Until a patched stable tag lands: do NOT expose CWA to the internet (LAN/VPN only,
+# behind reverse-proxy auth); disable Kobo sync if you are not actively using it;
+# re-check https://hub.docker.com/r/crocodilestick/calibre-web-automated/tags before
+# every deploy and bump the pin the moment v4.0.7+ appears.
 
 name: calibre-web-automated
 

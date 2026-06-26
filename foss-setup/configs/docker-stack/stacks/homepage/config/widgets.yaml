@@ -1,0 +1,20 @@
+# Global widgets shown above service groups.
+# Docs: https://gethomepage.dev/configs/info-widgets/
+
+- resources:
+    cpu: true
+    memory: true
+    cputemp: true
+    uptime: true
+    units: metric
+
+- search:
+    provider: duckduckgo
+    target: _blank
+
+- datetime:
+    text_size: xl
+    format:
+      timeStyle: short
+      dateStyle: short
+      hourCycle: h23

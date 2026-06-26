@@ -1,0 +1,7 @@
+# Auto-discover containers on this host via the Docker socket.
+# NAS-hosted stacks (Immich, Plex, CWA, etc.) are not visible here — add manual
+# service: entries in services.yaml for those, or rely on the Home group links.
+# Docs: https://gethomepage.dev/configs/docker/
+
+local:
+  socket: /var/run/docker.sock

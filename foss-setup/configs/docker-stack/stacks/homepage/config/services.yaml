@@ -1,0 +1,118 @@
+# Homepage service tiles — replace tabaska.us with your domain; fill API keys in .env.
+# Widget keys use {{HOMEPAGE_VAR_*}} placeholders (see .env.example).
+# Docs: https://gethomepage.dev/configs/services/
+
+- Home:
+    - Plex:
+        icon: plex.png
+        href: https://plex.tabaska.us
+        description: Movies & TV
+        widget:
+          type: plex
+          url: http://192.168.10.10:32400
+          key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
+    - Immich:
+        icon: immich.png
+        href: https://immich.tabaska.us
+        description: Photos
+        widget:
+          type: immich
+          url: http://192.168.10.10:2283
+          key: "{{HOMEPAGE_VAR_IMMICH_KEY}}"
+    - Calibre-Web:
+        icon: calibre-web.png
+        href: https://books.tabaska.us
+        description: Ebooks (LAN/VPN only)
+        ping: books.tabaska.us
+    - Seerr:
+        icon: overseerr.png
+        href: https://seerr.tabaska.us
+        description: Request movies & shows
+        widget:
+          type: overseerr
+          url: http://seerr:5055
+          key: "{{HOMEPAGE_VAR_SEERR_KEY}}"
+
+- Observability:
+    - Beszel:
+        icon: beszel.png
+        href: https://status.tabaska.us
+        description: Host & container monitoring
+        ping: status.tabaska.us
+    - Uptime Kuma:
+        icon: uptime-kuma.png
+        href: https://uptime.tabaska.us
+        description: Uptime checks
+        widget:
+          type: uptimekuma
+          url: https://uptime.tabaska.us
+          slug: "{{HOMEPAGE_VAR_UPTIMEKUMA_SLUG}}"
+    - Dependency-Track:
+        icon: dependency-track.png
+        href: https://deptrack.tabaska.us
+        description: SBOM & vulnerability dashboard
+        widget:
+          type: customapi
+          url: https://deptrack.tabaska.us/api/v1/metrics/portfolio/current
+          method: GET
+          headers:
+            X-Api-Key: "{{HOMEPAGE_VAR_DEPTRACK_KEY}}"
+          refreshInterval: 600000
+          mappings:
+            - field: projects
+              label: Projects
+              format: number
+            - field: vulnerabilities
+              label: Vulns (total)
+              format: number
+            - field: critical
+              label: Critical
+              format: number
+    - AdGuard Home:
+        icon: adguard-home.png
+        href: https://dns.tabaska.us
+        description: DNS filtering
+        widget:
+          type: adguard
+          url: http://adguard:80
+          username: "{{HOMEPAGE_VAR_ADGUARD_USER}}"
+          password: "{{HOMEPAGE_VAR_ADGUARD_PASS}}"
+    - Home Assistant:
+        icon: home-assistant.png
+        href: https://ha.tabaska.us
+        description: Smart home
+        widget:
+          type: homeassistant
+          url: http://192.168.10.13:8123
+          key: "{{HOMEPAGE_VAR_HA_TOKEN}}"
+
+- Media stack:
+    - Sonarr:
+        icon: sonarr.png
+        href: https://sonarr.tabaska.us
+        widget:
+          type: sonarr
+          url: http://sonarr:8989
+          key: "{{HOMEPAGE_VAR_SONARR_KEY}}"
+    - Radarr:
+        icon: radarr.png
+        href: https://radarr.tabaska.us
+        widget:
+          type: radarr
+          url: http://radarr:7878
+          key: "{{HOMEPAGE_VAR_RADARR_KEY}}"
+    - Lidarr:
+        icon: lidarr.png
+        href: https://lidarr.tabaska.us
+        widget:
+          type: lidarr
+          url: http://lidarr:8686
+          key: "{{HOMEPAGE_VAR_LIDARR_KEY}}"
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: https://qbit.tabaska.us
+        widget:
+          type: qbittorrent
+          url: http://qbittorrent:8080
+          username: "{{HOMEPAGE_VAR_QBITTORRENT_USER}}"
+          password: "{{HOMEPAGE_VAR_QBITTORRENT_PASS}}"
