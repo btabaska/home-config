@@ -26,12 +26,12 @@
 #   ./cachyos-desktop-baseline.sh                       # Firefox + LibreOffice (default)
 #   BROWSERS="firefox zen" ./cachyos-desktop-baseline.sh
 #   BROWSERS="firefox librewolf zen" ./cachyos-desktop-baseline.sh
-#   LIBREOFFICE_PKG=libreoffice-fresh ./cachyos-desktop-baseline.sh   # feature branch instead
+#   LIBREOFFICE_PKG=libreoffice-still ./cachyos-desktop-baseline.sh   # prior branch instead
 #   LIBREOFFICE_PKG=none ./cachyos-desktop-baseline.sh                # skip office
 set -euo pipefail
 
 BROWSERS="${BROWSERS:-firefox}"               # space-separated: firefox librewolf zen
-LIBREOFFICE_PKG="${LIBREOFFICE_PKG:-libreoffice-still}"  # 25.8 maintenance branch; 'none' to skip
+LIBREOFFICE_PKG="${LIBREOFFICE_PKG:-libreoffice-fresh}"  # 26.2 current branch (recommended); libreoffice-still=prior branch; 'none' to skip
 
 log()  { printf '\033[1;32m[desktop]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[desktop][!]\033[0m %s\n' "$*" >&2; }
@@ -91,8 +91,8 @@ install_office() {
     log "Skipping LibreOffice (LIBREOFFICE_PKG=none)."
     return 0
   fi
-  # libreoffice-still = 25.8 maintenance branch (stable, conservative).
-  # libreoffice-fresh = newer feature branch. Both in the official 'extra' repo.
+  # libreoffice-fresh = 26.2 current branch (recommended; default here).
+  # libreoffice-still = prior maintenance branch (more conservative). Both in 'extra'.
   # Language packs auto-detect locale; add e.g. libreoffice-still-<lang> if needed.
   log "Installing ${LIBREOFFICE_PKG} (LibreOffice desktop)."
   pac_install "${LIBREOFFICE_PKG}"

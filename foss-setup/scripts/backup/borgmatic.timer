@@ -1,0 +1,12 @@
+# Fires borgmatic nightly at 03:10 (offset from the restic timer so they don't
+# contend for upstream bandwidth). Persistent=true catches missed runs.
+[Unit]
+Description=Run borgmatic backup daily
+
+[Timer]
+OnCalendar=*-*-* 03:10:00
+RandomizedDelaySec=20m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

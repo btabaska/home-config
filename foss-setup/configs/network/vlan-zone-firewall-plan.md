@@ -72,8 +72,11 @@ Key intents:
   on IoT): enable the **Gateway mDNS Proxy on BOTH the source and destination VLANs**
   (enabling one side only is the #1 mistake), and add a narrowly-scoped firewall policy
   for the control ports. See `mdns-multicast-checklist.md`.
-- Keep **IGMP snooping enabled** on switches — it does not move multicast across VLANs
-  (that's the mDNS proxy's job) but stops multicast flooding every port within a VLAN.
+- Turn **IGMP snooping OFF** — UniFi's implementation is aggressive and drops the
+  discovery packets Apple TVs / HomePods / Matter devices rely on (the #1 cause of
+  "casting broke after segmentation"). It does not move multicast across VLANs anyway
+  (that's the mDNS proxy's job); it only limits in-VLAN flooding, which is negligible at
+  home scale. See `mdns-multicast-checklist.md`.
 
 ## Authoritative docs
 

@@ -1,0 +1,57 @@
+# Frigate — local, real-time object-detection NVR for IP cameras
+# Phase 2 (optional). Docs: https://docs.frigate.video/
+#
+# WHY / DETECTOR CHOICE — Frigate runs AI detection locally (no cloud). Pick ONE:
+#   - Google Coral TPU (~$60 USB/M.2): cheapest, lowest power, best perf/$ — the
+#     recommended detector. Frigate finds it as a "edgetpu" detector.
+#   - Mac mini / NAS iGPU (OpenVINO): no extra hardware; uses the Intel Quick Sync
+#     GPU for detection. A bit heavier on CPU/GPU than a Coral.
+#   Configure the chosen detector in config.yml (see config.yml.example).
+#
+# CAMERAS — ingest UniFi Protect RTSP(S) substreams: a LOW-res substream for
+#   continuous detect (cheap on CPU) + the FULL-res stream for recording. Enable
+#   RTSP per-camera in the UniFi Protect app and copy the rtsps:// URLs into
+#   config.yml. See https://docs.frigate.video/configuration/camera_specific
+#
+# shm_size must be large enough for decoded frames (raise it for many/high-res
+# cams). config + recordings are bind-mounted; the cache is a tmpfs in RAM.
+
+services:
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:0.17.1
+    container_name: frigate
+    restart: unless-stopped
+    # Privileged simplifies device passthrough (Coral/iGPU). Tighten with explicit
+    # device_cgroup_rules if you prefer least-privilege.
+    privileged: true
+    shm_size: "256mb" # raise for more/higher-res cameras (see docs: shm requirements)
+    devices:
+      # --- Detector / hardware accel: UNCOMMENT the one(s) you use --------------
+      # Google Coral USB TPU:
+      # - /dev/bus/usb:/dev/bus/usb
+      # Google Coral M.2/PCIe TPU:
+      # - /dev/apex_0:/dev/apex_0
+      # Intel Quick Sync iGPU (Mac mini / NAS) for OpenVINO detect + ffmpeg decode:
+      # - /dev/dri/renderD128:/dev/dri/renderD128
+      []
+    environment:
+      - TZ=${TZ:-America/New_York}
+      # Used by the auth UI (>=0.14). A long random secret; see .env.example.
+      - FRIGATE_RTSP_PASSWORD=${FRIGATE_RTSP_PASSWORD}
+    ports:
+      - "8971:8971" # authenticated Web UI (use this one day-to-day)
+      - "5000:5000" # internal/unauthenticated API (bind to localhost in prod if exposed)
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./config:/config
+      - ${FRIGATE_MEDIA:-./media}:/media/frigate # recordings + snapshots (point at NAS/large disk)
+      - type: tmpfs # 1GB cache in RAM keeps SD/SSD wear down
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true

@@ -1,0 +1,30 @@
+# Kometa — Plex metadata, collections, overlays & playlists (formerly PMM)
+# Phase 4. Docs: https://kometa.wiki/
+#
+# Kometa is a batch job, not a web service — it has NO port and joins NO network.
+# Two ways to run it:
+#
+#   1. SCHEDULED (default below): the container stays up and Kometa runs itself
+#      daily at KOMETA_TIME. This is the set-and-forget mode.
+#
+#   2. ONE-SHOT: run immediately, then exit (handy for testing a config change):
+#         docker compose run --rm kometa --run
+#      Or override the command in this file:  command: ["--run"]
+#
+# Copy config/config.yml.example -> config/config.yml and fill in Plex + TMDb.
+
+services:
+  kometa:
+    image: kometateam/kometa:v2.3.1
+    container_name: kometa
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      # Daily scheduled run time (24h HH:MM). Comma-separate for multiple runs.
+      - KOMETA_TIME=${KOMETA_TIME:-05:00}
+      # Set KOMETA_RUN=True to force an immediate run on container start.
+      - KOMETA_RUN=${KOMETA_RUN:-False}
+    volumes:
+      - ./config:/config

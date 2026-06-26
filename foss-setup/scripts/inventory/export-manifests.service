@@ -1,0 +1,27 @@
+# export-manifests.service — snapshot package/cron/timer/image manifests (oneshot).
+# Triggered by export-manifests.timer. Install to /etc/systemd/system/.
+#
+#   sudo cp export-manifests.service export-manifests.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now export-manifests.timer
+#
+# Override REPO_ROOT/STACKS_DIR/NTFY_URL via a drop-in or Environment= as needed.
+
+[Unit]
+Description=Export host package/cron/timer/image manifests into the control repo
+Documentation=https://gethomepage.dev/
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# Point at wherever the foss-setup repo is checked out on this host.
+Environment=REPO_ROOT=/opt/foss-setup
+Environment=STACKS_DIR=/opt/stacks
+# Optional: ntfy topic pinged on failure.
+# Environment=NTFY_URL=https://ntfy.tabaska.us/inventory
+ExecStart=/opt/scripts/inventory/export-manifests.sh
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

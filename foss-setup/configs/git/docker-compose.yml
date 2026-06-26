@@ -34,7 +34,7 @@ services:
       - FORGEJO__database__USER=forgejo
       - FORGEJO__database__PASSWD=${FORGEJO_DB_PASSWORD}
       - FORGEJO__server__DOMAIN=${FORGEJO_DOMAIN:-git.local}
-      - FORGEJO__server__ROOT_URL=${FORGEJO_ROOT_URL:-http://localhost:3000/}
+      - FORGEJO__server__ROOT_URL=${FORGEJO_ROOT_URL:-http://localhost:3030/}
       - FORGEJO__server__SSH_DOMAIN=${FORGEJO_DOMAIN:-git.local}
       # Git-over-SSH is published on host port 2222 (see ports:); advertise it so
       # clone URLs are correct.
@@ -49,7 +49,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     ports:
-      - "3000:3000"                              # web UI (front with Caddy in prod)
+      - "3030:3000"                              # web UI on host :3030 (avoids AdGuard's :3000 setup wizard); front with Caddy in prod
       - "${FORGEJO_SSH_PORT:-2222}:22"           # git clone over SSH
     networks:
       - edge
@@ -81,7 +81,7 @@ services:
       start_period: 30s
 
 # `edge` is the shared external network created for Caddy (docker network create edge).
-# Drop it (and the 3000 port) if you only ever reach Forgejo over Tailscale/LAN.
+# Drop it (and the 3030 host port) if you only ever reach Forgejo over Tailscale/LAN.
 networks:
   edge:
     external: true

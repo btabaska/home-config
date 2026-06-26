@@ -26,7 +26,7 @@ set -euo pipefail
 # ----------------------------------------------------------------------------
 # Configuration — edit these to taste.
 # ----------------------------------------------------------------------------
-HAOS_VERSION="${HAOS_VERSION:-17.3}"          # HAOS release; check the releases page for the latest
+HAOS_VERSION="${HAOS_VERSION:-18.0}"          # HAOS release; check the releases page for the latest
 VM_NAME="${VM_NAME:-haos}"                      # libvirt domain name
 VM_RAM_MB="${VM_RAM_MB:-4096}"                  # RAM in MB (4 GB is a good baseline)
 VM_VCPUS="${VM_VCPUS:-2}"                        # vCPU count

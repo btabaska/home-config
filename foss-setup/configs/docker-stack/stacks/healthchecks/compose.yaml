@@ -1,0 +1,75 @@
+# Healthchecks — dead-man's-switch monitoring for cron/backup jobs
+# Phase 4. Docs: https://healthchecks.io/docs/self_hosted_docker/
+#
+# HOW IT'S USED: create one "check" per scheduled job (restic, borgmatic,
+# seedbox-sync, sbom-nightly…). Each job pings its unique URL on success; if a
+# ping doesn't arrive on schedule, Healthchecks fires an alert. Route those
+# alerts to ntfy (Settings → Integrations → add an ntfy/webhook integration).
+#   - borgmatic has a NATIVE healthchecks hook (just set the ping URL in its config).
+#   - restic-backup.sh / cron jobs: append `&& curl -fsS <PING_URL>` on success,
+#     and use the /start and /fail endpoints to capture duration + failures.
+#
+# Port note: published on host 8001 to avoid clashing with Paperless on 8000.
+
+services:
+  healthchecks:
+    image: healthchecks/healthchecks:v3.10
+    container_name: healthchecks
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8001:8000" # direct LAN access; also fronted by Caddy at health.<domain>
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - SECRET_KEY=${HC_SECRET_KEY}
+      - DEBUG=False
+      # Public base URL (used to build ping URLs). Set to your Caddy domain.
+      - SITE_ROOT=${HC_SITE_ROOT:-http://localhost:8001}
+      - SITE_NAME=Healthchecks
+      - DEFAULT_FROM_EMAIL=${HC_DEFAULT_FROM_EMAIL:-healthchecks@example.com}
+      - ALLOWED_HOSTS=${HC_ALLOWED_HOSTS:-*}
+      - DB=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=healthchecks
+      - DB_USER=healthchecks
+      - DB_PASSWORD=${HC_DB_PASSWORD}
+      # Create the first superuser on boot (remove after first login if you like).
+      - SUPERUSER_EMAIL=${HC_SUPERUSER_EMAIL:-admin@example.com}
+      - SUPERUSER_PASSWORD=${HC_SUPERUSER_PASSWORD}
+    networks:
+      - edge
+      - healthchecks
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8000/api/v3/status/ || exit 1"]
+      start_period: 30s
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  db:
+    image: postgres:17-alpine
+    container_name: healthchecks_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=healthchecks
+      - POSTGRES_PASSWORD=${HC_DB_PASSWORD}
+      - POSTGRES_DB=healthchecks
+    volumes:
+      - ./db:/var/lib/postgresql/data
+    networks:
+      - healthchecks
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U healthchecks"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  edge:
+    external: true
+  healthchecks:
+    driver: bridge

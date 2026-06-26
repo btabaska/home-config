@@ -1,0 +1,37 @@
+# Mealie — self-hosted recipe manager + meal planner + shopping list
+# Phase 3. Docs: https://docs.mealie.io/
+#
+# Single self-contained container (SQLite by default, stored in ./data). For this
+# one-box homelab SQLite is plenty; back up the ./data dir with the other Tier-1
+# bind mounts. To scale out you can point it at PostgreSQL — see the docs.
+
+services:
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:v3.4.0
+    container_name: mealie
+    restart: unless-stopped
+    ports:
+      - "9000:9000" # direct LAN access; also fronted by Caddy at recipes.<domain>
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      # Public URL Mealie is served at (used for share links / API). Set to your Caddy domain.
+      - BASE_URL=${MEALIE_BASE_URL:-http://localhost:9000}
+      # Long random secret signing sessions/tokens.
+      - MEALIE_SECRET=${MEALIE_SECRET}
+      - ALLOW_SIGNUP=false
+    volumes:
+      - ./data:/app/data
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9000/api/app/about || exit 1"]
+      start_period: 30s
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+networks:
+  edge:
+    external: true

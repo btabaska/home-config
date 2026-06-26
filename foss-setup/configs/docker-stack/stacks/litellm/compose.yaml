@@ -1,0 +1,42 @@
+# LiteLLM — OpenAI-compatible AI gateway with automatic fallback
+# Phase 2. Docs: https://docs.litellm.ai/docs/proxy/reliability
+#
+# WHY THIS EXISTS — one stable endpoint, two brains:
+#   The CachyOS gaming rig has the big GPU and runs a large Ollama model
+#   (e.g. qwen2.5:14b) — but it SLEEPS to save power. The always-on Mac mini
+#   runs a small Ollama model (llama3.2:3b) 24/7. LiteLLM publishes a SINGLE
+#   OpenAI-compatible URL (http://<mac-mini>:4000) that:
+#     - routes requests to the rig's big model when it's awake, and
+#     - FALLS BACK to the Mac mini's small model when the rig is asleep
+#       (the request to the sleeping rig times out, router retries the fallback).
+#   Point all clients (Open WebUI, scripts, IDE) at this one URL and never care
+#   which machine is up. Wake-on-LAN the rig separately for heavy jobs.
+#
+# Config lives in ./config.yaml (mounted read-only) and is passed via --config.
+
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.88.2
+    container_name: litellm
+    restart: unless-stopped
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    ports:
+      - "4000:4000" # direct LAN access; also fronted by Caddy at llm.<domain>
+    environment:
+      - TZ=${TZ:-America/New_York}
+      # Master key clients must send as the OpenAI API key (Bearer). Must start with "sk-".
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:4000/health/liveliness || exit 1"]
+      start_period: 20s
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  edge:
+    external: true

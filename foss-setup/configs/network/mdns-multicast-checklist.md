@@ -34,10 +34,15 @@ speaker, HomeKit hub, or Sonos on **IoT**.
 
 ## IGMP snooping
 
-- [ ] **Keep IGMP snooping ENABLED** on switches (Settings → Networks → the VLAN, or
-      switch settings). It does NOT move multicast across VLANs (that's the mDNS proxy) —
-      it prevents multicast from flooding every port *within* a VLAN, which matters once
-      you have many TVs / speakers / cast devices chattering.
+- [ ] **Turn IGMP Snooping OFF** (Settings → Networks → the VLAN, or switch settings).
+      UniFi's IGMP-snooping implementation is **aggressive and drops the discovery
+      packets that Apple TVs / HomePods / Matter devices depend on** — the single most
+      common cause of "casting/HomeKit stopped working after segmentation." IGMP snooping
+      does NOT move multicast across VLANs (that's the mDNS proxy's job); it only limits
+      multicast flooding *within* a VLAN. On a home-scale network that flooding is
+      negligible, so disabling it is the right tradeoff for reliable discovery.
+- [ ] Only re-enable it on a specific VLAN if you have **many** chattering multicast
+      devices *and* you've confirmed discovery still works with it on.
 
 ## Multicast filtering (WiFi)
 

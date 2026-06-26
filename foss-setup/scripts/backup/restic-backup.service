@@ -1,0 +1,22 @@
+# restic backup → Backblaze B2 — Phase 1. Paired with restic-backup.timer.
+# Install (per host):
+#   sudo install -m 755 scripts/backup/restic-backup.sh /opt/scripts/restic-backup.sh
+#   sudo install -m 644 scripts/backup/restic-backup.service /etc/systemd/system/restic-backup.service
+#   sudo install -m 644 scripts/backup/restic-backup.timer   /etc/systemd/system/restic-backup.timer
+#   sudo systemctl daemon-reload && sudo systemctl enable --now restic-backup.timer
+# The env file holds B2 creds + RESTIC_REPOSITORY + the password file path (chmod 600).
+[Unit]
+Description=restic backup to Backblaze B2
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/restic/b2.env
+ExecStart=/opt/scripts/restic-backup.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+[Install]
+WantedBy=multi-user.target

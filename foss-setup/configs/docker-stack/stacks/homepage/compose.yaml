@@ -1,0 +1,35 @@
+# Homepage — the household front door + dashboard/observability layer
+# Phase 4. Docs: https://gethomepage.dev/
+#
+# This is the single pane of glass: friendly app tiles for the family (Plex,
+# Immich, Calibre-Web, Seerr) AND the operator's observability view (Beszel,
+# Uptime Kuma, Dependency-Track + the *arr stack). It auto-discovers containers
+# via the Docker socket and pulls live status from each service's API.
+#
+# Homepage listens on 3000 INSIDE the container. We publish host port 3010 to
+# avoid clashing with Forgejo (3000) and Uptime-Kuma (3001) on this box.
+# HOMEPAGE_ALLOWED_HOSTS must list every host:port you browse it from, plus the
+# Caddy subdomain — see https://gethomepage.dev/installation/#homepage_allowed_hosts
+
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:v1.13.2
+    container_name: homepage
+    restart: unless-stopped
+    ports:
+      - "3010:3000" # direct LAN access; also fronted by Caddy at home.<domain>
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-America/New_York}
+      # Comma-separated allow-list of host headers Homepage will serve.
+      - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_ALLOWED_HOSTS:-localhost:3010}
+    volumes:
+      - ./config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro # container auto-discovery (read-only)
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true

@@ -1,0 +1,19 @@
+# sbom-nightly.timer — run sbom-nightly.service nightly at 03:30 local time.
+# Install alongside sbom-nightly.service in /etc/systemd/system/.
+#
+#   sudo systemctl enable --now sbom-nightly.timer
+#   systemctl list-timers sbom-nightly.timer
+
+[Unit]
+Description=Nightly SBOM generation + upload to Dependency-Track
+Documentation=https://docs.dependencytrack.org/
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+# Catch up if the box was asleep/off at the scheduled time.
+Persistent=true
+# Spread load so multiple hosts don't all hammer D-Track at once.
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target

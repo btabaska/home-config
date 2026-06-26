@@ -1,0 +1,22 @@
+# etc-watch.path — watch /etc and trigger an etckeeper commit on change.
+# Install to /etc/systemd/system/etc-watch.path (etckeeper-setup.sh does this).
+#
+# NOTE: this path unit activates its companion etckeeper-commit.service, which is
+# written by etckeeper-setup.sh (it runs `etckeeper commit "auto: /etc change"`).
+# Install BOTH; the .path is useless without the .service.
+#
+#   sudo systemctl enable --now etc-watch.path
+#   systemctl status etc-watch.path
+
+[Unit]
+Description=Watch /etc for changes and commit them with etckeeper
+Documentation=https://etckeeper.branchable.com/
+
+[Path]
+# Fires whenever a file under /etc is written/created/deleted.
+PathChanged=/etc
+# Companion unit installed by etckeeper-setup.sh.
+Unit=etckeeper-commit.service
+
+[Install]
+WantedBy=multi-user.target

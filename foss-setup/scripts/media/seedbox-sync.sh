@@ -47,10 +47,15 @@ RCLONE_REMOTE="${RCLONE_REMOTE:-seedbox}"
 # These are the *named/organized* library folders the *arr apps write to — NOT the torrents dir.
 REMOTE_MOVIES="${REMOTE_MOVIES:-data/media/movies}"
 REMOTE_TV="${REMOTE_TV:-data/media/tv}"
+# Music (Lidarr + slskd/Soularr — see configs/seedbox/lidarr-slskd-soularr.md). Set
+# SYNC_MUSIC=1 to also pull the music library down to the NAS for Navidrome.
+REMOTE_MUSIC="${REMOTE_MUSIC:-data/media/music}"
 
-# Destination paths on the NAS (your Plex library roots).
+# Destination paths on the NAS (your Plex/Navidrome library roots).
 LOCAL_MOVIES="${LOCAL_MOVIES:-/volume1/media/movies}"
 LOCAL_TV="${LOCAL_TV:-/volume1/media/tv}"
+LOCAL_MUSIC="${LOCAL_MUSIC:-/volume1/music}"
+SYNC_MUSIC="${SYNC_MUSIC:-1}"    # 1 = also pull music (Lidarr); 0 = movies/tv only
 
 # rclone tuning. SFTP needs connections >= transfers+checkers+1 (see rclone SFTP docs).
 TRANSFERS="${TRANSFERS:-4}"
@@ -101,6 +106,7 @@ main() {
   log "Starting (remote=${RCLONE_REMOTE})."
   pull "${REMOTE_MOVIES}" "${LOCAL_MOVIES}" "movies"
   pull "${REMOTE_TV}"     "${LOCAL_TV}"     "tv"
+  [[ "${SYNC_MUSIC}" == "1" ]] && pull "${REMOTE_MUSIC}" "${LOCAL_MUSIC}" "music"
   log "All transfers complete."
   # Plex import: the NAS Plex usually auto-detects new files (inotify). If yours doesn't,
   # trigger a partial scan here, e.g.:

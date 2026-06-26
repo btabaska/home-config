@@ -1,0 +1,34 @@
+# Unbound — recursive, validating, DNSSEC-aware resolver (the upstream for AdGuard)
+# Phase 4. Docs: https://docs.pi-hole.net/guides/dns/unbound/
+#
+# DNS TOPOLOGY:
+#   client → AdGuard Home / Pi-hole (filtering)  →  Unbound (recursive + DNSSEC)
+#   Instead of forwarding to Google/Cloudflare, AdGuard points its UPSTREAM at
+#   this Unbound on 127.0.0.1#5335. Unbound then talks straight to the DNS root
+#   and authoritative servers, validating DNSSEC itself — no third-party resolver
+#   sees your queries. In AdGuard: Settings → DNS → Upstream servers: 127.0.0.1:5335
+#
+# REDUNDANCY: run a SECOND resolver (an AdGuard Home instance on the NAS) and hand
+#   it out as the secondary DNS in DHCP, so DNS keeps working if the Mac mini is
+#   down. Point that second AdGuard at its own Unbound (or this one over Tailscale).
+#
+# Binds host port 5335 (TCP+UDP) so the local AdGuard can reach it at 127.0.0.1#5335.
+# Config is bind-mounted from ./unbound. This is a backend resolver, NOT a web
+# service, so it does NOT join the edge network — it only needs the host port.
+
+services:
+  unbound:
+    image: mvance/unbound:1.22.0
+    container_name: unbound
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5335:5335/tcp" # localhost-only: AdGuard upstream = 127.0.0.1#5335
+      - "127.0.0.1:5335:5335/udp"
+    volumes:
+      - ./unbound:/opt/unbound/etc/unbound
+    healthcheck:
+      test: ["CMD-SHELL", "drill -p 5335 cloudflare.com @127.0.0.1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

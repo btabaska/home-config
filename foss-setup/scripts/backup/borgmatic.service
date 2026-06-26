@@ -1,0 +1,24 @@
+# borgmatic (Borg) backup → Hetzner Storage Box (append-only) — Phase 1.
+# Paired with borgmatic.timer. Most distro borgmatic packages ship their own
+# units; this is a repo copy so the schedule is config-as-code too.
+# Install:
+#   sudo install -m 644 scripts/backup/borgmatic.service /etc/systemd/system/borgmatic.service
+#   sudo install -m 644 scripts/backup/borgmatic.timer   /etc/systemd/system/borgmatic.timer
+#   sudo systemctl daemon-reload && sudo systemctl enable --now borgmatic.timer
+# The passphrase is read from /etc/borgmatic/passphrase (chmod 600) per the config.
+[Unit]
+Description=borgmatic backup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/borgmatic --verbosity -1 --syslog-verbosity 1
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+# Don't let a slow off-site run pile up under the timer.
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

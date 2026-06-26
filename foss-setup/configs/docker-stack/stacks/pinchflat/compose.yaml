@@ -1,0 +1,33 @@
+# Pinchflat — "Sonarr for YouTube": automated, self-hosted YouTube archiving
+# Phase 3. Docs: https://github.com/kieraneglin/pinchflat
+#
+# Single self-contained container built on yt-dlp. Subscribe to channels/playlists
+# and it downloads new uploads on a schedule, applies SponsorBlock, writes clean
+# metadata + thumbnails, and can expose a channel as a PODCAST RSS feed that
+# gPodder/AntennaPod can subscribe to. Point the downloads volume at a Plex
+# library path (a "YouTube" library) so Plex indexes the saved videos like a show.
+#
+# CalVer image tags (vYYYY.M.D). Bump deliberately after reading release notes.
+
+services:
+  pinchflat:
+    image: ghcr.io/kieraneglin/pinchflat:v2026.3.1
+    container_name: pinchflat
+    restart: unless-stopped
+    ports:
+      - "8945:8945" # direct LAN access; also fronted by Caddy at pinchflat.<domain>
+    environment:
+      - TZ=${TZ:-America/New_York}
+      # Optional: serve under a sub-path behind a reverse proxy (e.g. /pinchflat).
+      # Leave unset when served at a domain root via Caddy.
+      # - BASE_PATH=${PINCHFLAT_BASE_PATH}
+    volumes:
+      - ./config:/config
+      # Map to the Plex "YouTube" library path so Plex picks up downloads.
+      - ${PINCHFLAT_DOWNLOADS:-./downloads}:/downloads
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true

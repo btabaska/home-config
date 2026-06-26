@@ -7,20 +7,39 @@ This `stacks/` directory mirrors that layout 1:1 — copy it to `/opt/stacks` on
 
 ```
 stacks/
-  seerr/         # Phase 2 — media request portal (Overseerr/Jellyseerr successor)
-  miniflux/      # Phase 3 — RSS reader + PostgreSQL
-  navidrome/     # Phase 3 — music streaming
-  caddy/         # Phase 4 — reverse proxy + automatic HTTPS
-  adguard/       # Phase 4 — network DNS filtering (PRIMARY)
-  dockge/        # Phase 4 — container management (SIMPLE DEFAULT)
-  beszel/        # Phase 4 — monitoring hub + agent
-  uptime-kuma/   # Phase 4 — uptime monitoring / status page
-  ntfy/          # Phase 4 — push notifications (the notification backbone)
-  diun/          # Phase 4 — image-update notifications (notify-only)
+  seerr/             # Phase 2 — media request portal (Overseerr/Jellyseerr successor)
+  litellm/           # Phase 2 — AI gateway + always-on fallback (voice survives rig sleep)
+  miniflux/          # Phase 3 — RSS reader + PostgreSQL
+  navidrome/         # Phase 3 — music streaming
+  paperless-ngx/     # Phase 3 — document OCR + full-text archive
+  mealie/            # Phase 3 — recipes / meal planning
+  pinchflat/         # Phase 3 — "Sonarr for YouTube" (yt-dlp → Plex / podcast RSS)
+  caddy/             # Phase 4 — reverse proxy + automatic HTTPS
+  adguard/           # Phase 4 — network DNS filtering (PRIMARY)
+  unbound/           # Phase 4 — recursive DNSSEC resolver (AdGuard upstream)
+  homepage/          # Phase 4 — dashboard + household front door
+  dockge/            # Phase 4 — container management (SIMPLE DEFAULT)
+  beszel/            # Phase 4 — monitoring hub + agent
+  uptime-kuma/       # Phase 4 — uptime monitoring / status page
+  ntfy/              # Phase 4 — push notifications (the notification backbone)
+  diun/              # Phase 4 — image-update notifications (notify-only)
+  healthchecks/      # Phase 4 — backup dead-man's-switch
+  dependency-track/  # Phase 4 — OWASP Dependency-Track v5 (SBOM / vuln dashboard)
+  tautulli/          # Phase 4 — Plex analytics
+  kometa/            # Phase 4 — Plex collections / overlays
+  maintainerr/       # Phase 4 — rule-based library pruning
+  tdarr/             # Phase 4 — pre-transcode (node on the rig)
+  frigate/           # Phase 2 (optional) — local camera AI
 alternatives/
-  pihole/        # swap-in for AdGuard Home
-  dockhand/      # swap-in for Dockge (power option)
+  pihole/            # swap-in for AdGuard Home
+  dockhand/          # swap-in for Dockge (power option)
 ```
+
+> Note: Paperless-ngx, Mealie, LiteLLM, Frigate, Healthchecks, Dependency-Track and
+> the media-companion stacks (Tautulli/Kometa/Maintainerr/Tdarr) run on the Mac mini
+> via this same `/opt/stacks` model. Port assignments are chosen to avoid clashes
+> (e.g. Forgejo on host `3030` so it doesn't collide with AdGuard's `3000` first-run
+> wizard; Homepage on host `3010`; Healthchecks on `8001` vs Paperless `8000`).
 
 ## Pinned versions (2026)
 
@@ -40,6 +59,19 @@ you bump tags deliberately after reading release notes.
 | Uptime Kuma  | `louislam/uptime-kuma:2.1.1`        |
 | ntfy         | `binwiederhier/ntfy:v2.19.2`        |
 | Diun         | `crazymax/diun:4.33.0`              |
+| LiteLLM      | `ghcr.io/berriai/litellm:v1.88.2`   |
+| Paperless-ngx| `ghcr.io/paperless-ngx/paperless-ngx:2.20.11` |
+| Mealie       | `ghcr.io/mealie-recipes/mealie:v3.4.0` |
+| Pinchflat    | `ghcr.io/kieraneglin/pinchflat:v2026.3.1` |
+| Unbound      | `mvance/unbound:1.22.0`             |
+| Homepage     | `ghcr.io/gethomepage/homepage:v1.13.2` |
+| Healthchecks | `healthchecks/healthchecks:v3.10`   |
+| Dependency-Track | `dependencytrack/apiserver:5.6.0` + `frontend:5.6.0` |
+| Tautulli     | `ghcr.io/tautulli/tautulli:v2.17.2` |
+| Kometa       | `kometateam/kometa:v2.3.1`          |
+| Maintainerr  | `ghcr.io/jorenn92/maintainerr:v3.15.2` |
+| Tdarr        | `ghcr.io/haveagitgat/tdarr:2.78.01` (+node) |
+| Frigate      | `ghcr.io/blakeblackshear/frigate:0.17.1` |
 | _alt:_ Pi-hole  | `pihole/pihole:2026.06.0`        |
 | _alt:_ Dockhand | `fnsys/dockhand:v1.0.35`         |
 

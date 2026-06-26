@@ -1,0 +1,77 @@
+# Tdarr — distributed audio/video transcoding automation (server + local node)
+# Phase 4. Docs: https://docs.tdarr.io/
+#
+# This deploys the Tdarr SERVER + WebUI plus ONE internal CPU node on the Mac mini.
+#   - 8265: Web UI (browse here)
+#   - 8266: server <-> node communication
+# Set MEDIA_FOLDER to the library Tdarr watches and TRANSCODE_CACHE to fast local
+# scratch (don't put the cache on the NAS — transcodes hammer it).
+#
+# ── SECOND NODE (CachyOS rig, NVENC) ────────────────────────────────────────
+# The Mac mini has no usable GPU, so heavy/bulk transcodes should offload to a
+# second node on the CachyOS gaming rig using its NVIDIA GPU (NVENC). Only run it
+# when the rig is awake — start it manually / on a Wake-on-LAN schedule, not
+# restart: unless-stopped. Deploy this as its own stack ON THE RIG:
+#
+#   services:
+#     tdarr-node-nvenc:
+#       image: ghcr.io/haveagitgat/tdarr_node:2.78.01   # keep in lockstep with the server tag
+#       container_name: tdarr-node-nvenc
+#       restart: "no"            # only up while the rig is awake
+#       network_mode: host
+#       environment:
+#         - TZ=America/New_York
+#         - PUID=1000
+#         - PGID=1000
+#         - nodeName=cachyos-nvenc
+#         - serverIP=<mac-mini-tailscale-ip>   # reach the server over Tailscale
+#         - serverPort=8266
+#         - inContainer=true
+#         - ffmpegVersion=7
+#         - nodeType=mapped
+#         - NVIDIA_DRIVER_CAPABILITIES=all
+#         - NVIDIA_VISIBLE_DEVICES=all
+#       deploy:
+#         resources:
+#           reservations:
+#             devices:
+#               - capabilities: [gpu]
+#       volumes:
+#         - ./configs:/app/configs
+#         - ./logs:/app/logs
+#         - <same media path>:/media
+#         - <fast local scratch>:/temp
+# ────────────────────────────────────────────────────────────────────────────
+
+services:
+  tdarr:
+    image: ghcr.io/haveagitgat/tdarr:2.78.01
+    container_name: tdarr
+    restart: unless-stopped
+    ports:
+      - "8265:8265" # Web UI; also fronted by Caddy at tdarr.<domain>
+      - "8266:8266" # server <-> node communication
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - UMASK_SET=002
+      - serverIP=0.0.0.0
+      - serverPort=8266
+      - webUIPort=8265
+      - internalNode=true # run a built-in CPU node alongside the server
+      - inContainer=true
+      - ffmpegVersion=7
+      - nodeName=macmini-internal
+    volumes:
+      - ./server:/app/server
+      - ./configs:/app/configs
+      - ./logs:/app/logs
+      - ${MEDIA_FOLDER:?set MEDIA_FOLDER to your media library path}:/media
+      - ${TRANSCODE_CACHE:-./transcode_cache}:/temp # fast LOCAL scratch
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true

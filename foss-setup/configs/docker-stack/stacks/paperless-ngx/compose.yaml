@@ -1,0 +1,126 @@
+# Paperless-ngx — document management / OCR archive (scan once, find forever)
+# Phase 3. Docs: https://docs.paperless-ngx.com/setup/#docker
+#
+# Tier-1 data — this is irreplaceable scanned-document state. Add these to the
+# backup jobs (restic/borgmatic):
+#   - the bind-mounted ./data, ./media, ./consume dirs (the documents + index)
+#   - a NIGHTLY pg_dump of the postgres "broker" DB, e.g.:
+#       docker compose exec -T broker pg_dump -U paperless paperless | gzip > paperless-$(date +%F).sql.gz
+#   (file-copying a live Postgres data dir is NOT a safe backup — dump it.)
+#
+# Five services:
+#   - webserver : the app + web UI + OCR pipeline (depends on the other four)
+#   - broker    : PostgreSQL (named "broker" to match the upstream compose)
+#   - redis     : task queue / cache
+#   - gotenberg : converts office docs (docx/xlsx/odt…) to PDF for OCR
+#   - tika      : extracts text/metadata from those office docs
+#
+# Postgres pinned to 17-alpine: it uses the classic PGDATA path
+# (/var/lib/postgresql/data). Postgres 18 changed the data path — adjust the
+# volume mount if you ever move to pg18. See: https://hub.docker.com/_/postgres
+
+services:
+  webserver:
+    image: ghcr.io/paperless-ngx/paperless-ngx:2.20.11
+    container_name: paperless
+    restart: unless-stopped
+    depends_on:
+      broker:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      gotenberg:
+        condition: service_started
+      tika:
+        condition: service_started
+    ports:
+      - "8000:8000" # direct LAN access; also fronted by Caddy at paperless.<domain>
+    environment:
+      - USERMAP_UID=${PUID:-1000}
+      - USERMAP_GID=${PGID:-1000}
+      - PAPERLESS_TIME_ZONE=${TZ:-America/New_York}
+      - PAPERLESS_REDIS=redis://redis:6379
+      - PAPERLESS_DBHOST=broker
+      - PAPERLESS_DBNAME=paperless
+      - PAPERLESS_DBUSER=paperless
+      - PAPERLESS_DBPASS=${PAPERLESS_DBPASS}
+      - PAPERLESS_TIKA_ENABLED=1
+      - PAPERLESS_TIKA_ENDPOINT=http://tika:9998
+      - PAPERLESS_TIKA_GOTENBERG_ENDPOINT=http://gotenberg:3000
+      - PAPERLESS_SECRET_KEY=${PAPERLESS_SECRET_KEY}
+      - PAPERLESS_OCR_LANGUAGE=${PAPERLESS_OCR_LANGUAGE:-eng}
+      - PAPERLESS_URL=${PAPERLESS_URL:-http://localhost:8000}
+      # First-run admin account (created only if it doesn't exist yet).
+      - PAPERLESS_ADMIN_USER=${PAPERLESS_ADMIN_USER:-admin}
+      - PAPERLESS_ADMIN_PASSWORD=${PAPERLESS_ADMIN_PASSWORD}
+    volumes:
+      - ./data:/usr/src/paperless/data
+      - ./media:/usr/src/paperless/media
+      - ./consume:/usr/src/paperless/consume # drop files here to auto-import
+    networks:
+      - edge
+      - paperless
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8000 || exit 1"]
+      start_period: 60s
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  broker:
+    image: postgres:17-alpine
+    container_name: paperless_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=paperless
+      - POSTGRES_USER=paperless
+      - POSTGRES_PASSWORD=${PAPERLESS_DBPASS}
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    networks:
+      - paperless
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paperless"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: paperless_redis
+    restart: unless-stopped
+    volumes:
+      - ./redis:/data
+    networks:
+      - paperless
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  gotenberg:
+    image: gotenberg/gotenberg:8.21
+    container_name: paperless_gotenberg
+    restart: unless-stopped
+    # Paperless only needs the conversion API; disable the rest per upstream compose.
+    command:
+      - "gotenberg"
+      - "--chromium-disable-javascript=true"
+      - "--chromium-allow-list=file:///tmp/.*"
+    networks:
+      - paperless
+
+  tika:
+    image: apache/tika:3.2.1.0-full
+    container_name: paperless_tika
+    restart: unless-stopped
+    networks:
+      - paperless
+
+networks:
+  edge:
+    external: true
+  paperless:
+    driver: bridge

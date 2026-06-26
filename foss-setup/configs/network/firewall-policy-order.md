@@ -38,6 +38,7 @@ UI path by version (Ubiquiti help center):
 | 12 | Work → Internet | Work | External | any | Allow | auto |
 | 13 | Guest → Internet | Hotspot | External | any | Allow | auto |
 | 14 | **Block Cameras → Internet** | Cameras | External | any | Block | — |
+| 14b | **Block IoT → Gateway admin** (router console) | IoT | Gateway | TCP 22/80/443 (HTTP/HTTPS/SSH) | Block | — |
 | 15 | **Block IoT → Trusted** | IoT | Trusted | any | Block | — |
 | 16 | **Block IoT → Internal/Cameras/Work** | IoT | Internal, Cameras, Work | any | Block | — |
 | 17 | **Block Cameras → all internal** | Cameras | Trusted, IoT, Work, Internal | any | Block | — |
@@ -45,6 +46,10 @@ UI path by version (Ubiquiti help center):
 | 19 | **Block Guest → all internal** | Hotspot | any internal zone | any | Block | — |
 
 Notes:
+- Rule **14b** stops a compromised IoT device from reaching the router's admin console.
+  Keep it **above** the broad IoT allows and below the scoped `IoT → Gateway` DNS/DHCP/NTP
+  allow (#6) — different ports, so they don't conflict; it's defense-in-depth over the
+  implicit default-deny.
 - Rules 15–19 are the isolation backbone. Because UniFi is **stateful**, blocking
   `IoT → Trusted` does NOT break `Trusted → IoT` sessions (return traffic auto-allowed).
 - If you use the **Guest/Hotspot network type**, much of #19 is enforced automatically —

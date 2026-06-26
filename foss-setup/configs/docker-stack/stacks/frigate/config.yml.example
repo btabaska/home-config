@@ -1,0 +1,100 @@
+# Frigate config — copy to ./config/config.yml and edit. One example camera.
+# Docs: https://docs.frigate.video/configuration/
+#       Cameras:  https://docs.frigate.video/configuration/cameras
+#       Detectors: https://docs.frigate.video/configuration/object_detectors
+#
+# Replace CAM_IP / UniFi RTSP(S) URLs and pick a detector below. Substreams keep
+# detection cheap; the full-res stream is only used for recordings.
+
+mqtt:
+  # Frigate works without MQTT, but enabling it lets Home Assistant/ntfy react to
+  # events. Point at your broker (e.g. the ntfy/HA host) or set enabled: false.
+  enabled: false
+  # host: 10.0.0.10
+  # port: 1883
+  # user: frigate
+  # password: "{FRIGATE_MQTT_PASSWORD}"  # set via env var
+
+# --- Detector: pick ONE (uncomment) and pass the matching device in compose ----
+detectors:
+  # Google Coral USB or M.2/PCIe TPU (recommended, ~$60):
+  coral:
+    type: edgetpu
+    device: usb # or pci for the M.2/PCIe Coral
+  # Intel Quick Sync iGPU (Mac mini / NAS) via OpenVINO — comment out 'coral'
+  # above and use this instead:
+  # ov:
+  #   type: openvino
+  #   device: GPU
+
+# Default detection/record/snapshot behavior applied to all cameras.
+detect:
+  enabled: true
+  fps: 5 # detection FPS on the substream; 5 is plenty and easy on the CPU
+
+record:
+  enabled: true
+  retain:
+    days: 7
+    mode: motion
+  alerts:
+    retain:
+      days: 30
+  detections:
+    retain:
+      days: 30
+
+snapshots:
+  enabled: true
+  retain:
+    default: 14
+
+# Hardware-accelerated decode (uncomment to match your detector hardware):
+# ffmpeg:
+#   hwaccel_args: preset-vaapi      # Intel Quick Sync (Mac mini / NAS)
+
+# Only track the objects you care about (lighter + fewer false alerts).
+objects:
+  track:
+    - person
+    - car
+    - dog
+    - package
+
+cameras:
+  front_door:
+    ffmpeg:
+      inputs:
+        # LOW-res UniFi substream → cheap continuous detection.
+        - path: rtsps://CAM_IP:7441/SUBSTREAM_KEY?enableSrtp
+          roles:
+            - detect
+        # FULL-res UniFi stream → high-quality recordings only.
+        - path: rtsps://CAM_IP:7441/MAINSTREAM_KEY?enableSrtp
+          roles:
+            - record
+    detect:
+      width: 640
+      height: 360
+    # Only run detection inside meaningful areas (driveway/porch), not the sky.
+    zones:
+      driveway:
+        coordinates: 0,360,640,360,640,180,0,180
+        objects:
+          - car
+          - person
+      porch:
+        coordinates: 0,360,300,360,300,140,0,140
+        objects:
+          - person
+          - package
+          - dog
+    # Per-camera object filters: ignore tiny/huge boxes (false positives).
+    objects:
+      filters:
+        person:
+          min_score: 0.6
+          threshold: 0.75
+        package:
+          min_score: 0.55
+          threshold: 0.70
