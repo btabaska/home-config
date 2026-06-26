@@ -11,25 +11,30 @@ The FOSS world genuinely moved in the last year. The shifts relevant to you: Imm
 Before any app choice, settle this. It's the difference between a ~$160/year power bill and a ~$700+/year one, and it's *also* what makes the whole thing "set and forget."
 
 **Always-on tier (the quiet workhorses):**
-- **DS920+ NAS** — storage, plus the home for most lightweight always-on services. Its Celeron J4125 has Intel Quick Sync, so it can even handle Jellyfin transcoding for a stream or two.
-- **Mac mini 2015 -> Ubuntu Server** — your Docker host for anything you don't want on the NAS's locked-down DSM. True idle is ~6-10W; figure ~10-15W running the container stack and a couple of light game servers, which live here.
+- **DS920+ NAS** — storage, plus the home for most lightweight always-on services. Its Celeron J4125 has Intel Quick Sync, so it can even handle Jellyfin transcoding for a stream or two. **It ships with 4GB; the heavy-offload plan below needs a RAM upgrade to ~20GB first — a Crucial `CT16G4SFD8266` 16GB stick (~$40-110 depending on seller — verify it's brand-new and dual-rank/2Rx8; decided, future purchase, see capacity note). Until then keep the NAS to Immich + Plex + CWA.**
+- **Mac mini (Late 2014, Macmini7,1) -> Ubuntu Server** — your Docker host for anything you don't want on the NAS's locked-down DSM. True idle is ~6-10W; figure ~10-15W running the container stack. It's a **dual-core i5-4278U with 8GB of RAM soldered to the board — non-upgradeable, ever** — so treat it as a fixed *light* host: the web/management stack only (see capacity note).
 
 **On-demand tier (powerful but expensive to idle):**
-- **CachyOS rig (3090 Ti / 12700K)** — your *local-LLM, game-streaming, and heavy-game-server box*, not a 24/7 server. Wake it for Gemma/Qwen/DeepSeek inference, a Sunshine streaming session, or a beefy game server; let it sleep otherwise. Running it 24/7 just to host services would dwarf every other cost on this page.
+- **CachyOS rig (3090 Ti / 12700K, 64 GB RAM)** — your *local-LLM, game-streaming, and heavy-game-server box*, not a 24/7 server. Wake it for Gemma/Qwen/DeepSeek inference, a Sunshine streaming session, or a beefy game server; let it sleep otherwise. Running it 24/7 just to host services would dwarf every other cost on this page.
 
 ### What runs where
 
 | Service | Host | Why |
 |---|---|---|
 | File storage, Immich, Plex, Calibre-Web-Automated, backups | DS920+ | Always on, low power, Quick Sync transcode |
-| Docker stack: Jellyseerr/Seerr (request portal), Miniflux, Navidrome, reverse proxy, monitoring, Pi-hole | Mac mini (Ubuntu) | Flexible Docker host, ~12W, no DSM constraints |
-| qBittorrent + Sonarr/Radarr/Prowlarr/Bazarr + sync agent | Managed seedbox (off-site) | Keeps all P2P off your home network; ISP never sees a swarm (see Media acquisition) |
-| Home Assistant | HA Green or HAOS VM on Ubuntu | Isolated, always-on, low power (see Smart Home) |
-| Light game servers (Minecraft, Valheim, Terraria, Factorio) | Mac mini (Ubuntu) | Always-on so friends can hop on anytime |
+| **Heavy/always-on offload: Paperless-ngx, Dependency-Track, Frigate, Tdarr (server)** | DS920+ | Co-located with the data/media they touch; keeps RAM-hungry Java + live video detection off the small Mac mini (see capacity note below) |
+| Docker stack: Seerr (request portal), Miniflux, Navidrome, Pinchflat, Wallabag, Mealie, Tautulli/Kometa/Maintainerr, Homepage, Caddy, AdGuard+Unbound, monitoring (Beszel/Uptime-Kuma/ntfy), LiteLLM (small model), Forgejo | Mac mini (Ubuntu) | Flexible Docker host, ~12W, no DSM constraints — the *light* always-on services |
+| qBittorrent + Sonarr/Radarr/Prowlarr/Bazarr + sync agent | Managed seedbox — **Bytesized "Stream +3"** (3000 GB, off-site) | Keeps all P2P off your home network; ISP never sees a swarm (see Media acquisition) |
+| Home Assistant | **HA Green (purchased)** | Isolated, always-on, low power (see Smart Home) |
+| One light game server (e.g. a single Minecraft or Terraria) | Mac mini (Ubuntu) | Always-on for friends — but the 8GB box only has room for *one small* server alongside the stack; all other/heavier servers run on the rig on-demand (see capacity note) |
 | Local LLM (Ollama), Open WebUI, Sunshine streaming, heavy game servers, gaming | CachyOS rig | On-demand only; Wake-on-LAN + auto-suspend |
 | Routing, firewall, VLANs, WiFi | Dream Wall | Already always-on |
 
 > If you'd rather consolidate, the Mac mini's services could also live on the NAS via Container Manager. But keeping a separate Docker host means a NAS firmware update or a runaway photo-index job never takes your containers down with it. Worth the extra ~$20/year.
+
+> **Capacity note — both always-on boxes are RAM-constrained; size for it (and the NAS needs a RAM upgrade first).** The Mac mini is a **Late-2014 Macmini7,1 (dual-core i5-4278U) with 8GB of RAM soldered to the board — it cannot be upgraded, ever.** Treat it as a fixed *light* host: the Docker web/management stack fits ~8GB with little to spare, so **no heavy game servers, no real local LLM model (a tiny ≤1B at most), and no HA VM live here** — those belong on the on-demand rig or an HA Green. The heavy hitters from Sections 2/8 — two Java apps (**Dependency-Track**'s apiserver wants ~4GB+ — official 2-4.5GB min — plus Paperless's **Tika**), **Frigate**'s live object detection, **Tdarr**, and the database pile (5× Postgres + Wallabag's MariaDB + two Redis) — would thrash or OOM an 8GB box, **so they move to the NAS** next to the data they touch: Frigate on the NAS Quick Sync iGPU (or keep it on the Mac mini *if* you add a ~$60 Coral), Tdarr server only with transcodes on the rig node, and Dependency-Track where there's RAM headroom.
+>
+> **But that headroom doesn't exist yet — it requires a NAS RAM upgrade.** The DS920+ ships with **4GB**, and at 4GB it already swaps under just Immich (with ML) + Plex; it cannot also take the offloads. Intel officially caps the J4125 at 8GB, but the DS920+ is the well-documented exception that runs **20GB** with a single 16GB dual-rank SO-DIMM in practice (it works, but it's beyond Intel's spec and Synology's support). **Decided (future purchase):** Crucial **`CT16G4SFD8266`** — 16GB DDR4-2666 PC4-21300, dual-rank 2Rx8, CL19, **~$40-110 depending on seller** (verify it's brand-new and dual-rank 2Rx8; the exact stick locked in, buying it later). It yields 4GB + 16GB = **20GB that DSM recognizes and uses** (unofficial → voids Synology support, but proven reliable). **Until that stick is installed, limp by:** run only **Immich (ML concurrency capped + indexing scheduled off-peak) + Plex + Calibre-Web-Automated** on the NAS, and **defer Paperless / Dependency-Track / Frigate / Tdarr** — stand them up on the rig on-demand, or hold them — rather than landing the offloads on a 4GB NAS. **Measure** with Section 5's Emporia + HA Energy and `free -m`/DSM resource monitor. The point isn't a fixed assignment — it's *don't put both Java apps + live video + six DBs on the small Mac mini, and don't land them on the NAS until it's at 20GB.*
 
 ---
 
@@ -52,20 +57,20 @@ UniFi's Zone-Based Firewall ships with six built-in zones — **Internal, Extern
 | Network (VLAN) | Firewall zone | What's on it |
 |---|---|---|
 | Default (mgmt) | Internal | UniFi gear only — gateway, switches, APs. Don't put clients here. |
-| Trusted | Trusted | PCs, NAS, Mac mini, phones, consoles, **Sunshine host + Moonlight clients** |
-| IoT | Untrusted | Hue bridge, Nest, Midea AC/dehumidifier, smart TVs / streaming sticks |
-| Cameras (optional) | Untrusted | Any IP cameras — most locked down, no internet |
-| Work | own / Trusted | Nava work laptop — internet only, no access to other VLANs |
+| Trusted | Trusted | PCs, NAS, Mac mini, phones, consoles, **Home Assistant (HA Green)**, **Sunshine host + Moonlight clients** |
+| IoT | IoT (untrusted) | Hue bridge, Nest, Midea AC/dehumidifier, smart TVs / streaming sticks |
+| Cameras (optional) | Cameras (untrusted) | Any IP cameras — most locked down, no internet |
+| Work | Work | Nava work laptop — internet only, no access to other VLANs (its own isolated zone) |
 | Guest | Hotspot | Visitors — isolated, client isolation on |
 
-Home Assistant lives on **Trusted**, not IoT — and never dual-home it across two NICs (that's a security hole). It reaches IoT devices because Trusted -> IoT is allowed.
+Home Assistant lives on **Trusted**, not IoT. **Prefer keeping HA single-homed** and putting any Matter devices on HA's own VLAN; dual-homing HA across two NICs does work, but it widens HA's exposure (a foothold there now straddles both segments), so single-homed is the cleaner default. It reaches IoT devices because Trusted -> IoT is allowed.
 
 ### Firewall rules that actually isolate (UniFi Network 9.x = Zone-Based Firewall)
 **Back up your config first — migrating to the Zone-Based Firewall is a one-way door**, and it can sever VPNs, mDNS, and inter-VLAN flows if you rush it.
 
 The model: **allow Trusted -> Untrusted (return traffic is automatic — these firewalls are stateful, so you do not need an "allow established/related" rule); block Untrusted -> Trusted; add narrow pinholes for the few flows that must cross.** Concretely for the IoT VLAN:
-- Allow IoT -> internet, and allow IoT -> gateway for DNS (53) and DHCP (67/68). **Never blanket-block the gateway** or devices can't get an IP or resolve names.
-- Block IoT -> RFC1918 (10/8, 172.16/12, 192.168/16) so it can't reach any of your other subnets.
+- Allow IoT -> internet, and allow IoT -> gateway for DNS 53, DHCP 67, NTP 123. **Never blanket-block the gateway** or devices can't get an IP, resolve names, or sync time.
+- Block IoT -> RFC1918 (10/8, 172.16/12, 192.168/16) so it can't reach any of your other subnets. (This is the legacy-rule equivalent of the zone-based "block IoT -> all internal zones" rule the config files use — same outcome, expressed in the old per-subnet paradigm.)
 - Block IoT -> gateway admin (HTTP/HTTPS/SSH) so a compromised device can't touch your router console.
 - **Order matters:** specific allows must sit above the broad block, and UniFi custom policies outrank built-ins — use Reorder. Rules are **directional** (blocking A->B still allows B->A unless you also block that).
 - **Work VLAN:** internet-only; block -> all other VLANs.
@@ -114,7 +119,7 @@ For each: the pick, the runners-up, and what's new. Bold = recommended.
 - *If you ever want to drop the database hassle entirely:* **Rockbox** turns the iPod into a plain drag-and-drop USB drive (FLAC/Opus, custom EQ) via a modern bootloader (installed using the freemyipod project's tooling) — but it loses Apple's car/USB-control integration, so it's only worth it if that compatibility stops mattering.
 
 ### Podcasts (Apple Podcasts)
-- **gPodder** — maintained desktop podcatcher (RSS / YouTube / SoundCloud), batch-download, auto-cleanup (development is ongoing, though the last stable release was Dec 2024). With a Rockbox'd iPod: gPodder downloads into a folder, you copy/sync that folder to the device.
+- **gPodder** — maintained desktop podcatcher (RSS / YouTube / SoundCloud), batch-download, auto-cleanup (development is ongoing, though the last stable release was Dec 2024). On the chosen Apple-firmware + Rhythmbox path (see iPod Classic above): point gPodder at a download folder that's part of Rhythmbox's library, so a single plug-in-and-sync writes new podcast episodes to the iPod alongside your music.
 - *Optional sync server* (if you also listen on a phone and want play-position synced): self-host **oPodSync**, **goPodder**, or **Sintoniza**. Skip if the iPod is your only podcast device.
 
 ### YouTube & web video — download / archive
@@ -134,14 +139,14 @@ Keep the creators you care about locally (and offline-able), instead of relying 
 - **KOReader** — open reader for the device. Runs on Kobo, jailbroken Kindle, PocketBook, Boox, reMarkable, Android. Stores progress in accessible files; OPDS + Calibre wireless plugin.
 - **Syncthing** — peer-to-peer sync of books and progress files. No cloud.
 
-Device notes: **Kobo** = smoothest (native CWA sync + optional KOReader). **Kindle** = jailbreak + KOReader (worth it — Amazon removed "Download & transfer via USB" in Feb 2025, and ended Kindle Store support for pre-2013 devices on May 20, 2026; those devices can't buy/download new books and are effectively bricked only if reset or deregistered). **Buying new?** Kobo / PocketBook / Boox are friendliest.
+Device notes: **Kobo** = smoothest (native CWA sync + optional KOReader). **Kindle** = jailbreak + KOReader (worth it — Amazon removed "Download & transfer via USB" in Feb 2025, and, per Amazon, ended Kindle Store access for devices released in 2012 or earlier on May 20, 2026; those devices can't buy/borrow/download new books and become unrecoverable only if reset or deregistered). **Buying new?** Kobo / PocketBook / Boox are friendliest.
 
 ### Notes (Apple Notes — already on Obsidian)
 **Decision: paid Obsidian Sync.** Official, end-to-end encrypted, zero setup, nothing to self-host or maintain — the right call given the set-and-forget priority. Your notes remain plain local Markdown, so you still own the data and it's still captured by Section 6's backup. (If you ever want to drop the subscription, self-hosted LiveSync + CouchDB or plain Syncthing are free alternatives — but there's no reason to complicate this now.)
 
 ### Office (Pages/Numbers/Keynote, MS Office)
 - **LibreOffice (26.2)** — mature desktop-first FOSS suite (year.month versioning; 26.2 is the current line as of mid-2026, after 25.8 reached end-of-life in June 2026). For solo, offline, local work on CachyOS, the obvious baseline.
-- *Better MS fidelity:* **OnlyOffice Desktop** (OOXML-native). (Open-core; the old 20-concurrent-connection community limit on the server edition was removed in Docs 9.4, May 2026; had a 2026 falling-out with Nextcloud after Nextcloud/IONOS/Proton forked it into "Euro-Office.")
+- *Better MS fidelity:* **OnlyOffice Desktop** (OOXML-native). (Open-core; the old 20-concurrent-connection community limit on the server edition was removed in Docs 9.4, May 2026; had a 2026 falling-out with Nextcloud after Nextcloud/IONOS forked it into "Euro-Office.")
 - *Browser-based collaboration:* **Collabora Online** (LibreOffice-based, lighter to self-host) with Nextcloud.
 
 **Recommendation:** LibreOffice desktop. Don't self-host an office server unless you want in-browser collaboration.
@@ -165,7 +170,9 @@ Why this is the answer to "never visible to my ISP" *and* the network crashes: t
 
 **Yes, it includes music — with one twist.** **Lidarr** slots into the exact same pipeline for albums, and **Navidrome** then serves whatever it grabs (alongside your CD rips). The twist: torrent trackers are thin for music compared to TV/movies, so the community-standard addition is **Soulseek** via **slskd** (a self-hosted Soulseek daemon) glued to Lidarr by **Soularr** — Soularr reads Lidarr's "wanted" list, finds the albums on Soulseek, downloads them, and tells Lidarr to import, fully hands-off (it even keeps a deny-list so failed imports don't pile up). Because Soulseek is also P2P, **run slskd + Soularr on the seedbox**, not at home — the same logic that keeps every swarm off your network. Net result: requested albums land in Navidrome's library (and become the reproducible master that syncs to the iPod) the same way movies land in Plex. *(Podcasts and YouTube channels are handled separately — gPodder and Pinchflat via RSS — not the \*arr stack.)*
 
-**Provider pick (managed, ~$15-30/mo, set-and-forget):** prioritize **unlimited upload bandwidth** (not an upload cap) if you use private trackers and need to seed for ratio, a **privacy-friendly jurisdiction** (Netherlands is common) with minimal logging, and a one-click app catalog that includes qBittorrent + the *arr suite + rclone/Syncthing. Strong options: **Whatbox** (excellent privacy reputation, generous storage, SSH access), **Seedboxes.cc** or **DediSeedbox** (unlimited bandwidth, good for seeding), **Bytesized** (slickest UI, easy Plex/Resilio). Avoid upload-capped tiers (e.g., Ultra.cc's entry plans) if you seed private trackers, since seeding stops once you hit the cap.
+**Provider — decided: [Bytesized "Stream +3"](https://bytesized-hosting.com)** (their *New Appbox* tier) — **3000 GB HDD storage, a 6-10 TB/month upload cap (verify the exact Stream +3 SKU at checkout), €16/mo (~$18)**, on a 10 Gbit network in Europe (LUX/FR/NL) with the slickest one-click panel (qBittorrent + the full *arr suite + Seerr/Bazarr/Tautulli + rclone/Syncthing, 67+ apps). It won on ease-of-setup and the breadth of the one-click catalog. *(Runners-up were Seedboxes.cc and DediSeedbox for genuinely uncapped upload, and Whatbox for SSH freedom/reputation — see `configs/seedbox/provider-comparison.md`.)*
+- **The upload cap, addressed:** earlier drafts said "prioritize *unlimited* upload," and Stream +3 is *capped* — at **6-10 TB/month depending on the exact SKU (verify at checkout)**, still a generous ceiling, well above what normal private-tracker seeding burns, so it's a non-issue for typical use. If you ever seed *very* hard for ratio and approach the cap in a month, qBittorrent's per-torrent share-ratio / seeding-time limits keep you under it; only a ratio-grinder would need to move up a tier or to an uncapped provider. The cap is **upload only** — downloads are unmetered.
+- **The 3000 GB storage, addressed:** the seedbox is a *working + seeding buffer*, not your library — finished files sync to the NAS (below) and Plex serves from there. To stay inside 3 TB, the sync agent **copies** completed media home (never the seeding source), and you let qBittorrent age torrents out (ratio/seed-time rules + auto-delete on completion of seeding goals) so the box self-prunes. 3 TB is plenty of active-seeding headroom for a household; if you hoard a huge seeding set for ratio you can add Bytesized's 6¢/10 GB add-on storage rather than jumping plans.
 
 **Decommission the old setup:** remove qBittorrent/Gluetun from the NAS, undo the dual-LAN policy routing, and drop the 5 Mbps throttle. The second NAS LAN port is freed up (use it for link aggregation/failover, or leave it). If you ever torrent at home again, the fix for the crashes is simply capping qBittorrent's global max connections (~200) and per-torrent peers — but with the seedbox you won't need to.
 
@@ -173,9 +180,9 @@ Why this is the answer to "never visible to my ISP" *and* the network crashes: t
 The acquisition stack above gets files onto the NAS; this layer makes the library *good*, *observable*, and *self-tidying*. Most run as one small container each.
 - **Tautulli (recommended)** — Plex's missing analytics: play history, who's watching/transcoding right now, per-user stats, "recently added" and watch notifications, and transcode-abuse spotting. The de-facto Plex companion. *Host: Mac mini.*
 - **Recyclarr** — syncs **TRaSH Guides** custom formats / quality profiles / scoring into Sonarr/Radarr on a cron, so the *arrs grab *good* releases instead of mislabeled or bloated ones. A tiny CLI, perfectly set-and-forget. *Host: the seedbox (next to the *arrs).*
-- **Unpackerr** — auto-extracts RAR'd releases that Sonarr/Radarr otherwise silently fail to import. Near-mandatory on a torrent/Usenet *arr stack. *Host: the seedbox.*
+- **Unpackerr** — auto-extracts RAR'd releases that Sonarr/Radarr otherwise silently fail to import. Optional on a private-tracker stack (RAR'd releases are uncommon there), more useful with Usenet or public trackers. *Host: the seedbox.*
 - **Kometa** (formerly Plex Meta Manager) — builds collections, resolution/HDR overlay badges, posters, and curated playlists, turning a folder dump into a "produced"-looking Plex. *Host: Mac mini.*
-- **Tdarr** *(or **FileFlows**)* — pre-transcodes the library to a direct-play-friendly codec set so the NAS's J4125 Quick Sync isn't asked to live-transcode multiple 4K/HDR streams it can't sustain. Run the heavy transcodes on the **CachyOS rig** (NVENC) on-demand and let the NAS just serve. *Server on Mac mini; node on the rig.*
+- **Tdarr** *(or **FileFlows**)* — pre-transcodes the library to a direct-play-friendly codec set so the NAS's J4125 Quick Sync isn't asked to live-transcode multiple 4K/HDR streams it can't sustain. Run the heavy transcodes on the **CachyOS rig** (NVENC) on-demand and let the NAS just serve. *Server on the **NAS** (light, and next to the media library it scans); the heavy transcode **node** runs on the rig.*
 - **Maintainerr** — rule-based library pruning (e.g. "unwatched 90 days + not in a collection -> delete with a grace period"), cleaning across Plex + the *arrs + Seerr. The "anti-Seerr" that keeps Tier-2 storage from growing unbounded — directly serves the tiering goal in Section 6. *Host: Mac mini.*
 - *Niche / by taste:* **Komga** or **Kavita** (comics/manga; Kavita also does ebooks) if that's a library you want; **beets** + **MusicBrainz Picard** for clean music tags once Lidarr is feeding Navidrome. (**YouTube archiving is already covered by Pinchflat above.**)
 - *Note — book automation:* **Readarr was retired (archived) in June 2025**, so there's no maintained "monitor an author, auto-grab new releases" *arr. CWA still covers organizing/serving ebooks; if you want *acquisition* automation later, **Bindery** or **LazyLibrarian** are the current community picks.
@@ -189,7 +196,7 @@ The gap people forget when leaving Apple. Three approaches:
 **Recommendation:** for minimal moving parts, use Proton for calendar/contacts/drive and Syncthing for the folders you want truly local. Stand up Nextcloud only if you want the single unified hub.
 
 ### Documents — the paperless filing cabinet (the iCloud thing everyone forgets)
-- **Paperless-ngx** — scan or drop in bills, statements, manuals, warranties, and tax docs; it **OCRs** every page, auto-tags and classifies, and makes the whole pile **full-text searchable**. This is the document half of leaving Apple that nothing else here covers (Immich = photos, Obsidian = notes). Feed it from a watched "consume" folder (drag a PDF in, or point a scanner/phone-scan app at it). One Docker container + a small Postgres + Redis. *Host on the NAS or Mac mini; its data is **Tier 1** — irreplaceable, so it rides the cloud backup in Section 6.*
+- **Paperless-ngx** — scan or drop in bills, statements, manuals, warranties, and tax docs; it **OCRs** every page, auto-tags and classifies, and makes the whole pile **full-text searchable**. This is the document half of leaving Apple that nothing else here covers (Immich = photos, Obsidian = notes). Feed it from a watched "consume" folder (drag a PDF in, or point a scanner/phone-scan app at it). Five containers: webserver + Postgres + Redis + **Gotenberg** (Chromium) + **Tika** (Java). *Host on the **NAS** — its data is **Tier 1** (irreplaceable, rides the Section 6 cloud backup) and lives on the NAS anyway, and this keeps the Tika/Gotenberg weight off the small Mac mini (see Section 0's capacity note).*
 
 ### Passwords (Bitwarden — keep what you have)
 **Decision: stay on Bitwarden.** It's open-source, audited (Cure53), zero-knowledge, has great iOS/browser autofill, stores TOTP, and — unlike Proton Pass — can be **self-hosted** later if you want. No reason to switch to Proton Pass (its edges — encrypted metadata, hide-my-email aliases — are minor and migration is one-way friction for little gain). Bitwarden is where the **backup encryption keys, the HA backup key, and the SOPS/age key** all live (with a printed copy off-machine), per Sections 3/6/8.
@@ -209,13 +216,9 @@ The gap people forget when leaving Apple. Three approaches:
 Home Assistant (HA) is the hub, and a privacy win in itself: it pulls cloud-tethered devices into local control where possible, so your lights and climate keep working even when Google's or Midea's servers don't.
 
 ### How to run it (set-and-forget)
-Two good options:
-1. **HA Green (~$199) — zero-fuss.** Dedicated, plug-and-play, ~1.7-3W, isolated, auto-updates, full add-on ("Apps") support. (Launched at ~$99; the price rose through 2026 on component costs.) Best if you want it to sit in the rack and never think about it.
-2. **HA OS in a VM on the Ubuntu box — consolidate.** Run HAOS as a KVM/libvirt VM (or via Proxmox). No new hardware, still full Supervisor + add-ons.
+**Decision: HA Green — purchased.** The dedicated appliance was the right call for the set-and-forget priority: plug-and-play, ~2-3W, isolated, auto-updates, full add-on ("Apps") support — it sits in the rack and you never think about it. (For the record, the alternative was **HAOS in a KVM/libvirt VM on the Ubuntu box** — no new hardware, same full Supervisor + add-ons — but the Green wins on isolation and zero-fuss, and it keeps an always-on smart-home hub off the small 8GB Mac mini.)
 
-Avoid HA in plain Docker (you lose the add-on store + Supervisor) unless you specifically want that, and **never run HA on an SD card** — constant DB writes kill them. Back up to the NAS and **save the backup encryption key in your password manager** (you can't restore without it).
-
-Given your set-and-forget priority: HA Green = lowest friction; HAOS VM = no new hardware.
+Whichever you run, **never run HA on an SD card** (constant DB writes kill them — the Green uses eMMC, so you're fine) and avoid HA in plain Docker (you lose the add-on store + Supervisor). Back up to the NAS and **save the backup encryption key in your password manager** (you can't restore without it).
 
 ### Your devices
 - **Hue -> native, local.** HA's Hue integration talks to your Hue Bridge over the LAN — no cloud, rock solid, instant. Keep the bridge.
@@ -227,7 +230,7 @@ Given your set-and-forget priority: HA Green = lowest friction; HAOS VM = no new
 ### Cameras — bring your UniFi feeds into HA (and optionally Frigate)
 You already have UniFi Protect cameras and view them on the Dream Wall. Two upgrades, in order of effort:
 - **HA native UniFi Protect integration (do this — easy win).** Fully local, no subscription; it pulls your cameras' live streams **and** UniFi's own motion/smart-detection events into HA as entities (needs a Protect **API key** as of HA 2025.8, and RTSP enabled per camera: *Protect -> Devices -> Settings -> Share Livestream*). The payoff is **automation**: "person detected at the door after dark -> hall light on + phone notification," camera tiles on HA dashboards, and recordings stay on the UniFi NVR. Nothing leaves your network.
-- **Frigate (optional — only if you want better AI).** Frigate ingests the same RTSP streams and adds *local* object detection UniFi doesn't: **custom detection zones, package/animal/face detection**, and far better notification snapshots/clips. It needs compute — a **Coral TPU (~$60)** or the **Mac mini / NAS iGPU** — and YAML config. Worth it only if UniFi's built-in person/vehicle detection isn't enough for the automations you want; otherwise the native integration alone is plenty. *(If you ever want those cameras in Apple Home / HomeKit Secure Video, **Scrypted** is the bridge.)* Keep cameras on the locked-down **Cameras VLAN** (Section 1); HA on Trusted reaches them via the allow rule.
+- **Frigate (optional — only if you want better AI).** Frigate ingests the same RTSP streams and adds *local* object detection UniFi doesn't: **custom detection zones, package/animal/face detection**, and far better notification snapshots/clips. It needs compute — a **Coral TPU (~$60)** or an **Intel Quick Sync iGPU (OpenVINO)** — and YAML config. *Host on the **NAS**, using its Quick Sync iGPU for detection (no extra hardware) and writing clips straight to NAS storage; alternatively keep it on the Mac mini **with a Coral** so detection runs on the TPU instead of pegging that box's CPU (see Section 0's capacity note — don't run iGPU-less detection on the Mac mini).* Worth it only if UniFi's built-in person/vehicle detection isn't enough for the automations you want; otherwise the native integration alone is plenty. *(If you ever want those cameras in Apple Home / HomeKit Secure Video, **Scrypted** is the bridge.)* Keep cameras on the locked-down **Cameras VLAN** (Section 1); HA on Trusted reaches them via the allow rule.
 
 ### Local sensors — the Zigbee backbone (what makes it actually "smart")
 Hue/Nest/Midea are all WiFi/cloud-ish appliances. The cheap **local** sensors that drive real automations (motion, door/window contact, temperature/humidity, water-leak, buttons) speak **Zigbee** — so add a radio and a broker:
@@ -246,7 +249,7 @@ You're de-Appling the *backend*, but the household keeps iPhones. **HA's HomeKit
 
 ### Tie-ins worth doing
 - **Local voice (replaces Siri/Alexa):** HA's Assist pipeline + the Whisper/Piper add-ons gives local speech, and you can point its conversation agent at **Ollama on your rig** for a fully local LLM assistant.
-  - **The on-demand-rig problem + fix (LiteLLM fallback):** the rig sleeps, so a conversation agent pointed straight at it goes dead whenever it's suspended. Put **LiteLLM** (a tiny OpenAI-compatible gateway) in front instead: HA (and Open WebUI, scripts, etc.) all target one stable URL, and LiteLLM **routes to the rig's big model when it's awake and automatically falls back** — on timeout/5xx — to a **small always-on model** (a 1-3B model via Ollama/llama.cpp on the Mac mini, CPU-only is fine) or a cloud API. Net result: "turn off the lights" and quick questions are instant and always work; heavy reasoning uses the rig when it's up. (Optionally have HA send a Wake-on-LAN packet to spin the rig up for a genuinely heavy query.)
+  - **The on-demand-rig problem + fix (LiteLLM fallback):** the rig sleeps, so a conversation agent pointed straight at it goes dead whenever it's suspended. Put **LiteLLM** (a tiny OpenAI-compatible gateway) in front instead: HA (and Open WebUI, scripts, etc.) all target one stable URL, and LiteLLM **routes to the rig's big model when it's awake and automatically falls back** — on timeout/5xx — to a **small always-on model** (a ≤1B model via Ollama/llama.cpp on the Mac mini, CPU-only is fine) or a cloud API. Net result: "turn off the lights" and quick questions are instant and always work; heavy reasoning uses the rig when it's up. (Optionally have HA send a Wake-on-LAN packet to spin the rig up for a genuinely heavy query.)
 - **Node-RED — visual automations:** install the HA **Node-RED add-on** once HA automations outgrow the built-in editor (complex occupancy/time/state-machine logic, presence flows). Optional but the standard escalation path; flows live in `/config` and are captured by the HA backup.
 - **HA backups — concrete method:** Settings -> System -> **Backups** -> schedule full backups (e.g. daily, keep 7) to the **NAS** via the **Samba/NFS backup location** (or the Google Drive Backup add-on), and **save the backup encryption key in Bitwarden** — you cannot restore without it. Also separately back up the Midea `.json` token files (above). See Section 8 for putting `/config` YAML under Git too.
 - **Energy dashboard:** with a smart plug or whole-home monitor, HA tracks per-device power — directly useful for the 24/7 power question in Section 5.
@@ -264,7 +267,7 @@ Pick by how much you want to manage:
 - **Pelican Panel** — the modern, container-native game-server panel (community fork by former Pterodactyl contributors). Panel + "Wings" agent; game definitions ("eggs") are JSON, shared via Git and imported through the admin UI; huge game list. Best if you want to be the friend-group's "spin up any game" host with a clean web UI.
 - **Pterodactyl** — the established panel Pelican forks from; still excellent, slightly heavier setup. **Crafty Controller** — simpler, Minecraft-focused.
 
-**Where to run them:** light co-op (Minecraft, Valheim, Terraria, Factorio, Project Zomboid, Core Keeper) runs fine on the **Mac mini** — keep those always-on so friends can hop on anytime. Heavier servers (Palworld, ARK, modded packs) want the **CachyOS rig** — run on-demand, bring it up for game night (Wake-on-LAN).
+**Where to run them:** the 8GB Mac mini is already carrying the always-on web stack, so it hosts **at most one light always-on server** — e.g. a single **Minecraft (Paper)** or **Terraria** world — so friends can hop on anytime without OOM-ing the box. **Everything else runs on-demand on the CachyOS rig:** the other co-op titles (Valheim, Factorio, Project Zomboid, Core Keeper) *and* the heavier servers (Palworld, ARK, modded packs) — bring the rig up for game night (Wake-on-LAN) and let it sleep otherwise. (This matches Section 0's capacity note — don't stack multiple game servers on the small Mac mini.)
 
 **Exposing them safely (the important part):**
 - **Friends-only co-op -> Tailscale.** Invite friends to your tailnet (or share just the server node). No ports open to the internet, encrypted, works great for co-op. The set-and-forget, secure default.
@@ -311,11 +314,11 @@ Ollama + Open WebUI already give you local chat. Cheap extensions, all on the on
 | Device | Typical draw | ~Annual cost @ $0.20/kWh |
 |---|---|---|
 | DS920+ + 4 large drives | ~35-45W (less if drives hibernate) | **~$60-80** |
-| Mac mini 2015 (Ubuntu) | ~10-15W under load (idle ~6-10W) | **~$18-26** |
-| HA Green (if used) | ~2-3W | ~$4-5 |
+| Mac mini (Late 2014, i5-4278U, 8GB) (Ubuntu) | ~10-15W under load (idle ~6-10W) | **~$18-26** |
+| HA Green (purchased) | ~2-3W | ~$4-5 |
 | Dream Wall router | ~30-40W | **~$55-70** |
 | Fiber ONT/modem | ~5-10W | ~$10-15 |
-| **Always-on subtotal** | **~80-115W** | **~$145-200/year** |
+| **Always-on subtotal** | **~82-113W** | **~$150-200/year** |
 | CachyOS rig — *idling* | ~90-120W (3090 Ti idles ~20-30W alone, but on Linux can get stuck at ~100W+) | ~$160-210 *if left on* |
 | CachyOS rig — *under LLM / streaming / heavy-server load* | 400-600W+ | ~$700-1,000+ *if sustained 24/7* |
 
@@ -331,6 +334,8 @@ Ollama + Open WebUI already give you local chat. Cheap extensions, all on the on
 ## 6. Backup, beyond the NAS
 
 RAID is not a backup — it survives a dead drive, not a deletion, ransomware hit, fire, or theft. Target: **3-2-1 — three copies, two media types, one off-site.**
+
+> **NAS storage layout that implements this tiering:** the drive/pool/shared-folder/network-drive schema that puts Tier 1 and Tier 2 onto the right shares (with matching snapshot/backup policies) lives in [nas-storage-schema.md](nas-storage-schema.md). It converts the DS920+'s three independent Basic volumes into one redundant SHR-1 Btrfs pool — read it before the rebuild (it's destructive).
 
 ### Tier your data first (the key move)
 Don't back up 40TB to the cloud (~$278/month at B2's current ~$6.95/TB). Split it:
@@ -350,10 +355,12 @@ The rig is on-demand, not a server — but `/home/you` still holds what a reinst
 - **Dotfiles bonus:** keep the actual dotfiles in the same **Git** repo as your compose files (or a `chezmoi` / bare-repo setup). Then a rig rebuild is `git clone` + restore `~` from Restic, and you're back to your exact environment in minutes — the same "rebuildable" property Section 7 gives the servers.
 
 ### Off-site targets (current pricing)
+**Decision: Backblaze B2 is the off-site cloud copy** — bucket(s) created at [secure.backblaze.com/b2_buckets.htm](https://secure.backblaze.com/b2_buckets.htm). It's the hot Tier-1 target for both the NAS (Hyper Backup over the S3 API) and the Linux hosts (native Restic/Kopia), with **Object Lock** enabled for the immutable copy below. Hetzner/rsync.net stay listed only as the optional *second* off-site target for bulky Tier 2 if you ever want one.
+
 | Target | ~Price | Protocol | Best for |
 |---|---|---|---|
-| **Backblaze B2** | ~$6.95/TB/month, free-ish egress (free up to 3x stored/mo) | S3 API | Hot cloud copy of Tier 1; native Restic/Kopia |
-| **Hetzner Storage Box** | ~$4/TB (tiered) | SSH/SFTP/Borg | Cheapest Borg/rsync target (EU) |
+| **Backblaze B2 — chosen** | ~$6.95/TB/month, free-ish egress (free up to 3x stored/mo) | S3 API | Hot cloud copy of Tier 1; native Restic/Kopia |
+| **Hetzner Storage Box** | ~$2-3.20/TB (tiered) | SSH/SFTP/Borg | Cheapest Borg/rsync target (EU) |
 | **rsync.net** | pricier, Borg/restic plans | SSH/SFTP/Borg | Reliable SSH target, US options |
 | **Rotated external HDD** | one-time drive cost | physical | Off-site copy of bulky Tier 2 |
 
@@ -362,7 +369,7 @@ The rig is on-demand, not a server — but `/home/you` still holds what a reinst
 ### Immutable / ransomware-proof copy (3-2-1-1-0)
 RAID and even off-site copies don't help if stolen credentials can *delete or re-encrypt* every backup. Add one **immutable** copy so a compromised host can't wipe its own history:
 - **Backblaze B2 Object Lock** on the Restic/Kopia bucket — set a retention window so even your own keys can't delete objects until it expires.
-- **Borg `--append-only`** mode on the SSH target (Hetzner) — the backup client can add archives but not prune; pruning is done only from a separate, key-restricted admin session.
+- **Local retention runs normally; the immutable tier is B2.** Borg/restic do their usual **GFS pruning on the client** so the local and SSH repos don't grow unbounded — that's fine, because the **ransomware-proof copy is the Backblaze B2 bucket with Object Lock** (above): even stolen client keys can't delete or re-encrypt those objects until the retention window expires. *(Optional future hardening: also expose the SSH/Borg target as **server-side append-only** via an SSH forced command, so the off-site SSH copy is add-only too — but with B2 Object Lock already providing the immutable tier this is belt-and-suspenders, not required.)*
 - **Synology immutable snapshots** (DSM 7.2+) on the NAS shares — a locked, read-only point-in-time even an admin can't remove early.
 This is the "1" and the "0 errors" in **3-2-1-1-0**: three copies, two media, one off-site, **one immutable**, zero restore errors (verified).
 
@@ -409,16 +416,47 @@ Two needs, one tool: **your** observability, and a **friendly front door for you
 - **Tailscale** — mesh VPN, near-zero config, generous free tier. Install on the NAS, Ubuntu box, rig, laptop, and phone; reach Jellyfin/Immich/CWA/Obsidian/HA remotely with no port-forwarding and nothing exposed. Also your path for **remote Moonlight** and **inviting friends to game servers**.
 - *Full control:* self-host **Headscale** or use **Netbird**. Tailscale's hosted control plane is the pragmatic set-and-forget pick.
 
+### SSH & maintenance access
+With ~25 services across 4-5 boxes plus a seedbox, you'll be SSHing between machines constantly — so make it frictionless and secure once, not ad-hoc forever. You already install Tailscale everywhere (above), so lean on it for the access layer instead of hand-distributing keys.
+- **Tailscale SSH as the primary path.** Run `tailscale up --ssh` on every node and you get **key-less, ACL-gated SSH over the tailnet** — no `authorized_keys` to copy around, no port 22 exposed anywhere, and it works identically in-home and remote. Auth is the tailnet identity (with optional **re-check** to force periodic re-auth), so a lost laptop is revoked centrally by de-authing the node, not by rotating keys on five hosts.
+  - **Lock it down with ACLs + tags.** Tag your admin devices (laptop, phone) `tag:admin` and your hosts `tag:server`, then an ACL `ssh` rule lets only `tag:admin` SSH `tag:server` (as a chosen Unix user). This is far tighter than open SSH, and you can enable **session recording** to a recorder node if you want an audit trail of maintenance sessions.
+- **Classic SSH key + `~/.ssh/config` as the break-glass fallback.** Tailscale SSH depends on the control plane being reachable; keep a normal path for when it isn't. One **ed25519** keypair, distributed to each host's `authorized_keys`, plus a `~/.ssh/config` with friendly aliases over MagicDNS names / Tailscale IPs:
+
+```sshconfig
+Host nas mini rig ha seedbox
+  User admin
+  AddKeysToAgent yes
+  IdentityFile ~/.ssh/id_ed25519
+  ForwardAgent no
+Host nas
+  HostName nas.tailnet-name.ts.net
+Host mini
+  HostName mini.tailnet-name.ts.net
+Host rig
+  HostName rig.tailnet-name.ts.net
+```
+
+So maintenance is just `ssh nas` / `ssh mini` / `ssh rig`. Keep `ForwardAgent no` by default (only enable per-command when you actually need to hop). The keypair and this config are tracked by **chezmoi** (Section 8), so a rebuilt box gets your whole SSH setup back with `chezmoi init --apply` — and the keys ride the Section 6 Tier-1 backup.
+- **Per-host quirks (the things that bite):**
+  - **Synology DSM** — SSH is **off by default**. Enable it (Control Panel -> Terminal & SNMP -> *Enable SSH service*), then make it key-based and put it behind the **DSM 2FA** you already enforce (Section 7 hardening). Don't SSH as the default `admin`/`root` — use a dedicated admin user. DSM resets `sshd_config` on updates, so treat deep SSH customization as non-persistent (document it in `hosts/ds920/restore.md`).
+  - **HAOS (Home Assistant)** — there's no normal user shell. Use the official **SSH & Web Terminal add-on** (key auth, drop your public key in its config) for day-to-day, or the **`root@<ha-ip>:22222`** debug port for low-level access. This is the same box whose `/config` already lives in Git (Section 8).
+  - **On-demand rig** — it's asleep most of the time, so **wake then SSH**: send a Wake-on-LAN packet (`wol`/`etherwake <mac>`) and `ssh rig` once it's up. This reuses the exact WoL setup from Sections 4-5; pair it with the "fire jobs only while awake" timer trick (Section 6) so the rig's own backup/SBOM jobs and your manual SSH share one wake path rather than fighting auto-suspend.
+  - **Seedbox** — already keys-only and hardened (see Security hardening below). Just add it to the same `~/.ssh/config` and your tailnet so it's reachable like any other node, with nothing extra exposed.
+- **Fleet maintenance — run one command across every box.** At 4-5 hosts, "SSH in and update each one" gets old fast. Stand up a tiny **Ansible** setup (agentless — it just uses the SSH/Tailscale path above) with an inventory of your hosts and a few small playbooks: apply security patches, reboot in a controlled order, and audit for package/version drift against the manifests from Section 8. Run it from the Mac mini or your laptop. This is the **manual** fleet lever; it complements (doesn't replace) the automatic **`unattended-upgrades`** security patching in *Security hardening* below — unattended-upgrades keeps each box current on its own, Ansible is for the times you want to push a deliberate change everywhere at once. The playbooks live in the Section 8 control repo, so they're version-controlled and rebuildable like everything else. (For the occasional one-off, a plain `for h in nas mini rig; do ssh $h '<cmd>'; done` is fine — reach for Ansible once you're repeating yourself.) **Section 9 builds this out fully** — inventory, roles, the `ansible-pull` set-and-forget convergence loop, SOPS-integrated secrets, and turning the Section 8 restore runbooks into one executable playbook.
+
 ### Reverse proxy + HTTPS (for services you expose locally)
 - **Caddy** — automatic HTTPS with a tiny config. The set-and-forget choice.
 - *GUI alternative:* **Nginx Proxy Manager**.
-- *Heads-up:* once Coolify (next) is running on the Mac mini, **it owns ports 80/443** there and becomes the proxy/HTTPS layer for the apps you deploy. Keep this hand-written Caddy only for fronting **non-Coolify** services — and run it on a different host (e.g., the NAS) so the two don't fight over the same ports.
+- **Decision — Caddy owns 80/443 on the Mac mini.** Caddy is the single reverse proxy for the whole hand-managed stack: it reaches each service by container name over a shared `edge` Docker network (`reverse_proxy seerr:5055`), so it *must* be co-located with those containers. That rules out a second proxy also binding 80/443 on the same box. **Coolify (next) ships its own bundled proxy that wants 80/443 too** — so do *not* let Coolify's proxy take those ports here. Two ways to keep the peace, in order of simplicity:
+  - **(A, recommended) Skip Coolify's proxy; let Caddy front everything.** Ship each vibecoded app as a small Compose stack in `/opt/stacks` (managed by Dockge) and add a one-line Caddy vhost (or a `*.app.{$DOMAIN}` wildcard). It's the same pattern every other service already uses — no second proxy, no port fight, and you skip Coolify's ~600-800 MB + its Postgres/Redis on an already-busy box.
+  - **(B) Keep Coolify's git-push workflow, behind Caddy.** Run Coolify but move its bundled proxy to alternate ports (e.g. 8000/8443) and have Caddy wildcard-proxy `*.app.{$DOMAIN}` → Coolify's proxy. One host, no conflict, but two proxies to reason about.
+  - Either way: **don't run two proxies both bound to 80/443 on one host**, and don't split Caddy onto the NAS — its container-name routing only works where the containers live (the Mac mini).
 
 ### Self-hosting your own apps (vibecode -> live on the LAN)
 The goal: you build a little app (a script, a dashboard, a vibecoded web tool) and want it reachable by name on every device in the house with as little ceremony as possible. The set-and-forget answer is a tiny self-hosted PaaS — your own Heroku/Vercel — on the always-on Mac mini.
-- **Coolify (recommended)** — point it at a Git repo (your self-hosted **Forgejo** control repo from Section 8, or GitHub) and it auto-detects the stack (Node/Bun/Python/PHP/static) via **Nixpacks**, builds, deploys, assigns a hostname, and wires up TLS — **push to the repo and it redeploys** via webhook. It also takes a raw **Dockerfile** or **Docker Compose** if you'd rather, and ships 280+ one-click templates. Runs as a Docker stack on the Mac mini with a web dashboard. *Footprint:* idles ~600-800MB RAM plus its own Postgres/Redis — comfortable on the always-on box.
-- **LAN visibility (the one bit that makes it "just work"):** add a **single wildcard record** in **Pi-hole/AdGuard** — `address=/home.lan/<mac-mini-IP>` — so *every* `*.home.lan` name resolves to the Mac mini. Coolify's bundled proxy then routes each app by its hostname. After that, shipping a new app is just "pick a name in Coolify" and it's live at `http://myapp.home.lan` for the whole network — no per-app DNS edits, no port juggling.
-- **HTTPS:** plain HTTP on `name.home.lan` is the zero-effort LAN default. If you want green-padlock local names, switch Coolify's proxy to the **DNS-01 challenge** with a real domain (the `home.yourdomain` you already use for the dashboard) to get a trusted wildcard cert without exposing anything.
+- **Coolify** — point it at a Git repo (your self-hosted **Forgejo** control repo from Section 8, or GitHub) and it auto-detects the stack (Node/Bun/Python/PHP/static) via **Nixpacks**, builds, deploys, assigns a hostname, and wires up TLS — **push to the repo and it redeploys** via webhook. It also takes a raw **Dockerfile** or **Docker Compose** if you'd rather, and ships 280+ one-click templates. *Footprint:* idles ~600-800MB RAM plus its own Postgres/Redis. **Port note:** Coolify's bundled proxy wants 80/443, which Caddy already owns on the Mac mini — so run Coolify under the "behind Caddy on alternate ports" pattern from *Reverse proxy + HTTPS* above (option B), not with its proxy on the default ports. Given the Mac mini is already carrying the full always-on stack (see Section 0's host table and the capacity note in Section 5), **option (A) — skip Coolify and ship vibecoded apps as plain Compose stacks behind Caddy — is the lighter, lower-friction default**; reach for Coolify only if you specifically want the git-push-to-deploy loop.
+- **LAN visibility (the one bit that makes it "just work"):** add a **single wildcard record** in **Pi-hole/AdGuard** — `address=/home.lan/<mac-mini-IP>` — so *every* `*.home.lan` name resolves to the Mac mini. **Caddy** (the single proxy) then routes each app by its hostname. After that, shipping a new app is just "add a one-line Caddy vhost (or use the wildcard) and pick a name" and it's live at `http://myapp.home.lan` for the whole network — no per-app DNS edits, no port juggling. (Under option B above, Caddy hands `*.app.home.lan` to Coolify's alternate-port proxy, which does the per-app routing.)
+- **HTTPS:** plain HTTP on `name.home.lan` is the zero-effort LAN default. If you want green-padlock local names, give **Caddy** the **DNS-01 challenge** with a real domain (the `home.yourdomain` you already use for the dashboard — see the `cloudflare_tls` snippet in the Caddyfile) to get a trusted wildcard cert without exposing anything.
 - **Remote:** reach your apps off-LAN the same way as everything else — over **Tailscale** (Section's Remote access), no ports opened.
 - **Tie-ins:** drop each new app onto **Homepage** (it shows up on your dashboard and, if household-facing, your wife's bookmarks), and because it lives in Git it inherits the Section 8 "rebuild in an hour" property for free.
 - *Lighter alternative:* **Dokploy** — same git-push-to-deploy model with a cleaner, more minimal UI and slightly lower idle RAM; smaller community/template library. Pick it if Coolify's dense dashboard feels like too much.
@@ -455,7 +493,7 @@ The 2026 supply-chain reality makes this concrete. The **TeamPCP campaign (March
 - **Dependency-Track v5 (codename "Hyades")** — the open-source platform (20,000+ orgs) that ingests **CycloneDX** SBOMs and **continuously re-analyzes your entire inventory** against multiple vulnerability sources (NVD, OSS Index, GitHub advisories) with **EPSS** prioritization — not just at scan time, but every time new intel lands. It tracks **OS packages, containers, firmware, and services** across every version of every "project," which maps perfectly onto "every host and every stack in my house."
   - *Version note:* v5 is GA and is the most extensive redesign since inception (horizontal scaling, active/active HA, durable processing that resumes after a crash). v4 is **maintenance-only and reaches end-of-life December 2026**, and v5 doesn't upgrade in place — so start on **v5**. It ships as separate API-server + frontend containers (Docker Hub / GHCR) and needs **PostgreSQL**.
   - *Model:* make each host and each stack a DT **project**; nightly SBOM uploads keep it live. Then "is anything I run vulnerable?" is one dashboard, and "show me everywhere `libfoo 1.2.3` is installed" is one search.
-  - *Host on:* the **Mac mini** (always-on; the Java API server wants ~1-2GB RAM — fine on Ubuntu).
+  - *Host on:* the **NAS** (always-on, with RAM headroom — the Java API server wants **~4GB+** on its own (official minimum 2-4.5GB, recommended 8-16GB), which is exactly the weight Section 0's capacity note keeps off the small Mac mini). **This requires the DS920+ RAM upgrade first** (4GB → 20GB via the Crucial `CT16G4SFD8266`, ~$40-110, decided/future purchase — see Section 0's capacity note); on the stock 4GB NAS, run Dependency-Track on the rig on-demand instead, since it won't fit alongside Immich/Plex. (The nightly Syft job still PUTs SBOMs to it over the LAN/Tailscale regardless of host.)
 
 ### Generating the SBOMs — Syft + Grype (and a deliberate note on Trivy)
 - **Syft (Anchore)** — the generator. Produces CycloneDX (and SPDX) SBOMs from **container images *and* whole filesystems/directories**, with the deepest cataloger coverage of any tool (it even pulls components out of compiled Go/Rust binaries and nested Java jars). **Grype (Anchore)** scans the results. The pattern is **Syft-then-scan**, with the SBOM as a signable, archivable artifact.
@@ -478,6 +516,7 @@ homelab/
     ha/         # HA /config (YAML, automations, dashboards)
   stacks/       # every docker-compose.yml + .env.example, per service
   network/      # UniFi .unf exports
+  ansible/      # inventory + fleet-maintenance playbooks (patch, reboot, audit) — see Section 7 SSH & maintenance access
   inventory.md  # auto-generated nightly: what / where / version / status
   secrets/      # SOPS + age encrypted
 ```
@@ -516,9 +555,135 @@ Each `hosts/<box>/restore.md` is a short, *tested* checklist. Generic shape:
 **Drill it quarterly in a throwaway VM** — Section 6's "test a restore," extended from a single file to a whole host. An untested runbook is fiction.
 
 ### Where it all runs (power-aware, per Sections 0 & 5)
-- **Mac mini (always-on, ~12W):** Dependency-Track (API + frontend + Postgres), Forgejo (control-repo remote), and the nightly orchestration.
+- **Mac mini (always-on, ~12W):** Forgejo (control-repo remote) and the nightly orchestration. (The light always-on web stack also lives here — see Section 0.)
 - **Each host:** Syft/Grype + etckeeper + the manifest/cron exporters, fired by systemd timers. On the **on-demand rig**, gate the timer to "while awake" with the same wake-hook trick as the Restic job in Section 6, so a sleeping box doesn't just miss every window.
-- **NAS:** DSM Configuration Backup + holds the Restic repo and HA backup archives.
+- **NAS:** DSM Configuration Backup + holds the Restic repo and HA backup archives; also hosts **Dependency-Track** (API + frontend + Postgres) and the other offloaded heavy services (Paperless, Frigate, Tdarr server) per Section 0's capacity note.
+
+---
+
+## 9. Fleet automation with Ansible (make the runbooks executable)
+
+Sections 7 and 8 get you *rebuildable* — config-as-code, manifests, chezmoi, etckeeper, and a per-host `restore.md`. But almost all of that is **descriptive** (it records state) or **hand-run** (you follow the runbook). Ansible is the layer that turns it **executable and self-converging**: one idempotent definition of every host you fully own, applied the same way to all of them, on a schedule, with drift you can see before you fix. It's what makes "set it and forget it" and "replicable across my devices" literally true instead of aspirational.
+
+The discipline that matters: an Ansible run is **idempotent** — run it once or a hundred times, the result is the same, and a `--check --diff` dry run *shows* you exactly what would change before anything does. That's the same "no blind auto-updates" philosophy as Section 7, applied to host config.
+
+### Where Ansible fits (and where it deliberately doesn't)
+This is the most important decision — Ansible overlaps several tools already in the plan, so give each a clean lane:
+
+| Layer | Owner | Ansible's role |
+|---|---|---|
+| **OS / host state** (packages, Docker engine, `daemon.json`, `edge` network, unattended-upgrades, NUT client, sysctl, SSH hardening, systemd timers) | **Ansible** | Sets and enforces it, fleet-wide |
+| **`/etc` change audit** | **etckeeper** (Section 8) | Ansible *sets* canonical `/etc` files; etckeeper *records* that they changed (incl. metadata) |
+| **User dotfiles (`~`)** | **chezmoi** (Section 8) | Ansible *installs and invokes* chezmoi (`chezmoi init --apply`); it does not duplicate per-user `~` templating |
+| **Container runtime/lifecycle** | **Komodo / Dockge** (Section 7) | See the split below — Ansible does host prep + first bring-up; the chosen tool owns the day-to-day loop |
+| **Secrets at rest** | **SOPS + age** (Section 8) | Ansible *consumes* them via `community.sops` — no second secret system |
+
+The honest line on what Ansible should **not** manage:
+- **DS920+ / DSM** — DSM owns its own config DB and **resets `sshd_config` and system files on updates** (Section 7 already flags this). Ansible-managing the NAS OS fights the appliance and loses. Keep **DSM Configuration Backup + Hyper Backup** (Section 8) as its restore path; at most point a nightly **Syft** run at it.
+- **HAOS (Home Assistant)** — no general-purpose shell/Python to drive, so Ansible can't converge it. Keep HA's **own backups + the Git `/config` add-on** (Sections 3/8).
+- **Dream Wall / UniFi** — no Ansible control surface worth trusting, and the Zone-Based Firewall migration (Section 1) is one-way GUI work. Keep the **`.unf` export** (Section 8). (You *can* poke the controller API with the `uri` module for the odd toggle, but don't automate the un-automatable.)
+- **Managed seedbox** — usually jailed/no root, so manage only the **user-space** you control (compose stacks, *arr/Recyclarr configs), not its OS.
+
+**So Ansible's real fleet is the boxes you own at the OS level: the CachyOS rig + the Mac mini (+ the seedbox's user-space).** That's exactly where the per-host runbooks were most tedious — and where a playbook pays off most. The NAS, HA, and UniFi keep their native backup/restore. Set this expectation up front and you avoid the classic mistake of trying to Ansible-manage an appliance.
+
+### The container split (resolve the overlap with Section 7)
+You picked a container manager in Section 7 (**Komodo** for fleet-style Git-driven deploys, or **Dockge** for the simple single-host case). Don't have two tools racing to `docker compose up`:
+- **If you run Komodo** (Git-driven, multi-server): let **Komodo own the compose deploy loop**. Ansible only lays the foundation beneath it — Docker engine, `daemon.json` log rotation, the `edge` network, and the SOPS-templated `.env` files Komodo then uses.
+- **If you stay on Dockge** (manual UI, single host): Ansible can also **push the compose stacks** (`community.docker.docker_compose_v2`) and template `.env` from SOPS, since Dockge won't.
+Either way Ansible owns the host *underneath* the containers; only one tool owns the containers themselves.
+
+### The control node and where it all lives
+Ansible lives **inside the same Forgejo control repo** from Section 8 — so a `git clone` of `homelab/` gives you both the state *and* the engine that applies it. Run it from the **always-on Mac mini** (and your laptop as the human-driven control node). Layout slots into the existing repo:
+
+```
+homelab/
+  ansible/
+    ansible.cfg
+    requirements.yml        # pinned collections (community.docker, community.general,
+                            #   community.sops, ansible.posix) + roles
+    inventory.ini           # the fleet, by ssh-config alias (net-14)
+    group_vars/
+      all.yml               # fleet-wide defaults
+      on_demand.yml         # rig: wake-gating, "while awake" behavior
+    site.yml                # the whole fleet (both the push and ansible-pull entrypoint)
+    playbooks/
+      patch.yml             # rolling OS security updates
+      reboot.yml            # controlled, ordered reboots
+      audit.yml             # package/version drift vs. the Section 8 manifests
+    roles/
+      base/ docker/ tailscale/ backup/ sbom/ state/
+  ...                       # (hosts/, stacks/, network/, secrets/ from Section 8)
+```
+
+**Inventory is the "replicable across my devices" backbone** — group by OS family *and* power tier so a role applies to the right machines automatically:
+
+```ini
+# inventory.ini — ssh-config aliases (net-14), grouped by OS family + power tier
+[debian]
+macmini  ansible_host=mini
+seedbox  ansible_host=seedbox
+
+[arch]
+cachyos  ansible_host=rig
+
+[fleet:children]      # site.yml targets `hosts: fleet`
+debian
+arch
+
+[always_on]           # converge on a clock
+macmini
+seedbox
+
+[on_demand]           # the rig — wake-gated (group_vars/on_demand.yml)
+cachyos
+
+[docker_hosts]        # gets the docker role; seedbox excluded (managed/jailed)
+macmini
+```
+
+It reuses the **`~/.ssh/config` aliases** from Section 7 (each `ansible_host` is an alias whose `HostName`, user, and key resolve over **Tailscale MagicDNS + key-less Tailscale SSH**) — no new access layer, nothing exposed, and a de-authed laptop loses Ansible access centrally. The `fleet` group is what `site.yml` converges; `docker_hosts` is what gates the `docker` role.
+
+### Push vs. pull — the actual set-and-forget decision
+Use **both**, for different jobs:
+- **`ansible-pull` on a systemd timer per host = the set-and-forget default.** Each box periodically clones the control repo and **converges itself**. No central scheduler to babysit, it keeps working even if the Mac mini is down, and it's the natural way to correct drift. On the **on-demand rig**, gate the timer to "while awake" with the **exact wake-hook trick from Sections 6/7** so a sleeping box doesn't just miss every window — the rig's Restic job, SBOM job, and Ansible convergence all share one wake path.
+- **Push (`ansible-playbook` from the Mac mini/laptop) = orchestration that needs ordering.** Rolling OS patches with `serial: 1`, reboot, and a health gate before the next host; coordinated multi-host stack redeploys. Things `ansible-pull` (which only knows about its own host) can't sequence.
+
+The safe-by-default move that mirrors Section 7's "no blind updates": run pull in **`--check` (report-only) mode for *config* changes** — it pings **ntfy** when it detects drift but waits for your deliberate push to apply — while letting it **auto-apply only OS security patches** (the same scope as `unattended-upgrades`). You get self-healing where it's safe and a heads-up where it isn't.
+
+### Secrets — reuse SOPS + age, don't add ansible-vault
+The `community.sops` collection (2.4.0) reads your existing SOPS+age files directly via `age_keyfile`, so the **age key already in Bitwarden + printed** (Section 8) is the *only* secret store. No `ansible-vault` to manage in parallel:
+
+```yaml
+# group_vars/all.yml
+sops_age_keyfile: /home/admin/.config/sops/age/keys.txt
+
+# in a role, template a stack's .env from a SOPS-encrypted file:
+- name: Render Seerr .env from SOPS
+  ansible.builtin.copy:
+    dest: /opt/stacks/seerr/.env
+    content: "{{ lookup('community.sops.sops', 'secrets/seerr.env.sops', age_keyfile=sops_age_keyfile) }}"
+    mode: '0600'
+```
+
+(For `ansible-pull`, the age key lives on each host already — it's the same key chezmoi/SOPS need there per Section 8.)
+
+### The roles to build (each maps to something already in the plan)
+Small, single-purpose roles so the fleet is just a stack of them. Every one replaces a chunk of hand-run `restore.md`:
+- **`base`** — admin user + the ed25519 key (Section 7), timezone/locale, `unattended-upgrades` for security-only patches (Section 7), sysctl (incl. the conntrack tuning if you ever fall back to home torrenting, Section 2), and **package convergence from the manifests** (`community.general.pacman` / `ansible.builtin.apt` fed by the `pacman -Qqe` / `apt-mark showmanual` lists Section 8 already exports). The manifest stops being a *record* and becomes the *enforcer*.
+- **`docker`** — engine + compose plugin, the **`daemon.json` log-rotation caps** (Section 7's silent-disk-fill fix), and `docker network create edge` (the Phase 2 prep step, now idempotent and never forgotten).
+- **`tailscale`** — install + `tailscale up --ssh` with the `tag:server` ACL tags (Section 7).
+- **`backup`** — Restic install + the systemd timer, with rig wake-gating (Section 6).
+- **`sbom`** — Syft/Grype install + the nightly timer + DT upload (Section 8), **pinned to a version and checksum-verified** — that's the literal lesson of CVE-2026-33634 (Section 8), now codified instead of remembered.
+- **`monitoring`** *(planned — not yet in `site.yml`)* — would install the Beszel agent and friends (Section 7); for now Beszel agents are deployed by hand.
+- **`state`** — installs and bootstraps **etckeeper and chezmoi themselves** (`chezmoi init --apply <repo>`), so even your state-tracking tools are reproducibly present on a fresh box.
+
+### This is what finally makes `restore.md` real
+Section 8's restore runbook is a checklist a human follows — which means it rots silently until the day you need it. With Ansible, **`hosts/<box>/restore.md` becomes (or just wraps) `site.yml`**: reinstall the OS, install `git`/`ansible`, `git clone` the control repo, `ansible-pull` (or `ansible-playbook site.yml --limit <box>`), restore data from Restic — done. The **quarterly throwaway-VM drill** (Section 8) now runs the *actual* playbook against a fresh VM, so the runbook **can't drift from reality** — if it breaks, the drill fails and tells you, instead of you discovering it mid-disaster.
+
+Keep it honest with cheap CI in Forgejo Actions: run **`ansible-lint`** and **`ansible-playbook --check --diff`** on every push to the control repo, so a bad change is caught before it ever reaches a host. (Molecule for per-role testing exists if you want it, but it's heavier than this two-box fleet needs — `--check` in CI is the right-sized discipline here.)
+
+### Bottom line
+Ansible doesn't replace anything in Sections 7-8 — it **operationalizes** them. chezmoi still owns `~`, etckeeper still audits `/etc`, Dockhand/Dockge still run containers, SOPS+age still holds secrets, and the NAS/HA/UniFi keep their native backups. Ansible is the idempotent engine that installs and wires all of it the same way on the rig and the Mac mini, on a timer, with drift you can preview — turning "I have a runbook" into "the fleet maintains itself, and a wiped box rejoins it in one command."
 
 ---
 
@@ -528,12 +693,15 @@ Do a phase before starting the next; each leaves you better off.
 
 **Phase 1 — Foundation (network, access, safety net)**
 1. **Back up your UniFi config**, then build the segmentation: Default(mgmt) / Trusted / IoT / Guest / Work, the firewall rules, mDNS reflector on + IGMP snooping off. (One-way door on the new firewall — back up first. **Start here.**)
-2. **Install Tailscale** on the NAS, Mac mini, rig, laptop, and phone.
-3. **Lock in backups:** Synology Hyper Backup + Snapshot Replication, plus a Restic/Kopia job for your irreplaceable data -> B2. Test one restore.
+2. **Install Tailscale** on the NAS, Mac mini, rig, laptop, and phone. Turn on **Tailscale SSH** (`tailscale up --ssh`) with `tag:admin`->`tag:server` ACLs, and drop in your `~/.ssh/config` aliases + ed25519 key as the break-glass fallback (enable SSH on DSM, the HA SSH add-on) — so admin access to every box exists from day one. (See Section 7's *SSH & maintenance access*.)
+3. **Lock in backups:** Synology Hyper Backup + Snapshot Replication, plus a Restic/Kopia job for your irreplaceable data -> B2. Test one restore. **If you're also re-pooling the NAS into SHR-1, follow [nas-storage-schema.md](nas-storage-schema.md)** — its migration runbook depends on this safety net (Tailscale + B2 + a verified Tier 1 offload) being in place first, and the re-pool is destructive.
 
 **Phase 2 — De-cloud the essentials**
-4. **Home Assistant** (HA Green or HAOS VM): add Hue (local), Midea (local via `midea_ac_lan` or an ESPHome dongle), Nest (SDM API). Move smart devices onto the IoT VLAN. Then build the local backbone: **Zigbee coordinator + Zigbee2MQTT + Mosquitto** for cheap local sensors (see shopping list), the **HA Companion app** + presence, the **UniFi Protect integration** for your cameras, the **HomeKit Bridge** so iPhones keep Siri/Home, scheduled **HA backups to the NAS** (key in Bitwarden), and **Node-RED** if automations get complex. Point local voice at **LiteLLM** (small always-on model on the Mac mini, falling back to the rig's Ollama).
-5. **Seedbox pipeline:** sign up for a managed seedbox, install qBittorrent + Sonarr/Radarr/**Lidarr**/Prowlarr/Bazarr + **Recyclarr** (TRaSH profiles) + **Unpackerr** + a sync agent on it, run **Seerr/Jellyseerr** at home, put the seedbox on Tailscale, and point the sync at your NAS library. Then **decommission the NAS dual-LAN/Gluetun setup** and drop the 5 Mbps cap.
+
+> **Prep the Mac mini Docker host first.** Before the first stack here (LiteLLM, Seerr) comes up, install Docker and **create the shared proxy network once: `docker network create edge`**. Every web stack joins `edge` as an `external` network — `docker compose up` fails if it doesn't exist yet — and Caddy (Phase 4) later reaches each service by container name across it. (See `foss-setup/configs/docker-stack/README.md` → *One-time host prep*.)
+
+4. **Home Assistant** (HA Green — purchased): add Hue (local), Midea (local via `midea_ac_lan` or an ESPHome dongle), Nest (SDM API). Move smart devices onto the IoT VLAN. Then build the local backbone: **Zigbee coordinator + Zigbee2MQTT + Mosquitto** for cheap local sensors (see shopping list), the **HA Companion app** + presence, the **UniFi Protect integration** for your cameras, the **HomeKit Bridge** so iPhones keep Siri/Home, scheduled **HA backups to the NAS** (key in Bitwarden), and **Node-RED** if automations get complex. Point local voice at **LiteLLM** (small always-on model on the Mac mini, falling back to the rig's Ollama).
+5. **Seedbox pipeline:** sign up for the **Bytesized "Stream +3"** seedbox (3000 GB, 6-10 TB/mo upload cap, €16), install qBittorrent + Sonarr/Radarr/**Lidarr**/Prowlarr/Bazarr + **Recyclarr** (TRaSH profiles) + **Unpackerr** + a sync agent on it, run **Seerr/Jellyseerr** at home, put the seedbox on Tailscale, and point the sync at your NAS library (set qBittorrent ratio/seed-time limits so the 3 TB box self-prunes and stays under the upload cap). Then **decommission the NAS dual-LAN/Gluetun setup** and drop the 5 Mbps cap.
    - **Music, specifically:** yes, automated acquisition includes it — **Lidarr** drops into this same seedbox pipeline. The one twist: torrent trackers are weak for music, so the standard add is **slskd (Soulseek) + Soularr** for hands-off album fetching — **run both on the seedbox** too, since Soulseek is also P2P. Results land in your NAS library and serve through **Navidrome**.
 6. **Immich** with phone auto-backup; import your mirrorless camera's SD card via **immich-go** / **pbak**. Start leaving iCloud Photos.
 
@@ -546,14 +714,14 @@ Do a phase before starting the next; each leaves you better off.
 
 **Phase 4 — Glue & polish**
 12. Stand up the management layer: **Homepage** (dashboard/observability + the household front door for your wife) + **Dockhand** (or Dockge) + **Beszel** + **Uptime Kuma** + **ntfy** + **Caddy**, and add **Pi-hole / AdGuard** for network DNS filtering (then **Unbound/DoT** for encrypted upstream + a second resolver).
-13. **Stand up Coolify** on the Mac mini + add the `*.home.lan` wildcard DNS record (`address=/home.lan/<mac-mini-IP>`) in Pi-hole/AdGuard, so any app you build deploys with one git push and is reachable by name (`http://myapp.home.lan`) across the network.
-14. **Media companion layer:** **Tautulli** (Plex stats), **Kometa** (collections/overlays), **Maintainerr** (auto-pruning), and **Tdarr** (pre-transcode, node on the rig). Add **Frigate** if you want better camera AI than UniFi's built-in detection.
-15. **Harden it:** turn on **MFA/2FA** everywhere (hardware key on Bitwarden/Proton/DSM), set **Docker log rotation**, add **immutable backups** (B2 Object Lock + Borg append-only) and a **Healthchecks.io** dead-man's-switch, and put **CrowdSec/forward-auth** on the seedbox + any public ports.
+13. **Wire LAN app hosting:** add the `*.home.lan` wildcard DNS record (`address=/home.lan/<mac-mini-IP>`) in Pi-hole/AdGuard so any name resolves to the Mac mini, and let **Caddy** route by hostname. Ship vibecoded apps as small Compose stacks behind Caddy (option A). *Only if you want git-push-to-deploy:* stand up **Coolify** with its proxy on alternate ports behind Caddy (option B) — never let it grab 80/443, which Caddy owns. See Section 7's *Reverse proxy + HTTPS*.
+14. **Media companion layer:** **Tautulli** (Plex stats), **Kometa** (collections/overlays), **Maintainerr** (auto-pruning) on the Mac mini, and **Tdarr** (server on the **NAS**, transcode node on the rig). Add **Frigate** (on the **NAS** iGPU, or Mac mini + Coral) if you want better camera AI than UniFi's built-in detection. (Paperless/Tdarr/Frigate/Dependency-Track ride the NAS per Section 0's capacity note.)
+15. **Harden it:** turn on **MFA/2FA** everywhere (hardware key on Bitwarden/Proton/DSM), set **Docker log rotation**, add **immutable backups** (B2 Object Lock for the off-site immutable copy; optional server-side append-only Borg as future hardening) and a **Healthchecks.io** dead-man's-switch, and put **CrowdSec/forward-auth** on the seedbox + any public ports.
 16. Push all compose files + configs to **Git** so the whole thing is rebuildable.
-17. **Stand up the inventory/SBOM layer (Section 8):** self-host the control repo (**Forgejo**), turn on **etckeeper** + **chezmoi** + the nightly **Syft** manifest/SBOM job on each host, stand up **Dependency-Track v5** on the Mac mini, encrypt secrets with **SOPS + age**, and write + drill the per-host **restore runbooks**. Now you can see what's installed everywhere, get told the moment any of it goes vulnerable, and rebuild a wiped box in an hour.
+17. **Stand up the inventory/SBOM layer (Section 8):** self-host the control repo (**Forgejo**), turn on **etckeeper** + **chezmoi** (which carries your `~/.ssh/config` + key) + the nightly **Syft** manifest/SBOM job on each host, commit the **`ansible/`** fleet-maintenance playbooks (patch/reboot/audit) to the control repo, stand up **Dependency-Track v5** on the **NAS** (RAM headroom; see Section 0), encrypt secrets with **SOPS + age**, and write + drill the per-host **restore runbooks**. Now you can see what's installed everywhere, get told the moment any of it goes vulnerable, run maintenance across the fleet in one command, and rebuild a wiped box in an hour.
 
 **Phase 5 — Play**
-18. **Game servers:** LinuxGSM or Pelican — light games always-on on the Mac mini, heavy games on-demand on the rig, friends in via Tailscale.
+18. **Game servers:** LinuxGSM or Pelican — light games always-on on the Mac mini, heavy games on-demand on the rig, friends in via Tailscale. See [game-servers-guide.md](game-servers-guide.md) for per-title feasibility and host assignment.
 19. **Sunshine** on the rig + **Moonlight** clients; set up the **headless display** (dummy HDMI plug or the Apollo-Linux/`sunshine_virt_display` virtual display) and confirm Tailscale shows "direct" for remote streaming. Add a **launcher** (Heroic/Lutris, + RomM for retro) and **Ludusavi + Syncthing** save-sync.
 20. **Tune the rig:** Wake-on-LAN, auto-suspend, GPU idle/undervolt, and set the **GPU contention policy** (Ollama `keep_alive=0`) so streaming, servers, and AI share the one card. Optionally add **ComfyUI / Continue / Open WebUI RAG** behind LiteLLM.
 
@@ -606,18 +774,18 @@ Grounded picks for the Zigbee backbone in Section 3 — all pair cleanly with **
 | Library polish (collections/overlays) | **Kometa** | Mac mini |
 | Quality profiles / extraction | **Recyclarr** + **Unpackerr** | seedbox |
 | Library pruning | **Maintainerr** | Mac mini |
-| Pre-transcode automation | **Tdarr** (node on rig) / FileFlows | Mac mini + rig |
+| Pre-transcode automation | **Tdarr** (node on rig) / FileFlows | NAS + rig |
 | YouTube / web video archive | **Pinchflat** (Tube Archivist / MeTube alt) | NAS / Ubuntu |
 | Private media acquisition | **Managed seedbox** (qBit + *arr) + **Seerr** | off-site + Mac mini |
 | Automated music acquisition | **Lidarr** + **slskd** + **Soularr** | off-site (seedbox) |
-| Documents (scan/OCR/search) | **Paperless-ngx** | NAS / Mac mini |
+| Documents (scan/OCR/search) | **Paperless-ngx** | NAS |
 | Recipes & meal planning | **Mealie** | Mac mini |
 | Passwords | **Bitwarden** (Vaultwarden if self-hosting) | cloud / optional self-host |
 | iCloud Drive/Contacts/Calendar | **Proton** or **Nextcloud** or **Syncthing + Baikal** | cloud/NAS |
 | Safari | **Firefox / LibreWolf / Zen** + Kagi | CachyOS |
-| Siri / smart home (Hue, Nest, Midea) | **Home Assistant** + local voice (Whisper/Piper + Ollama) | HA Green / VM |
+| Siri / smart home (Hue, Nest, Midea) | **Home Assistant** + local voice (Whisper/Piper + Ollama) | HA Green (purchased) |
 | Local sensors | **Zigbee2MQTT + Mosquitto** (+ USB coordinator) | HA |
-| Cameras / NVR AI | **UniFi Protect -> HA** (+ optional **Frigate**) | Dream Wall / HA |
+| Cameras / NVR AI | **UniFi Protect -> HA** (+ optional **Frigate**) | Dream Wall / HA (Frigate on NAS iGPU or Mac mini+Coral) |
 | Apple Home compatibility | **HA HomeKit Bridge** | HA |
 | Local AI gateway / fallback | **LiteLLM** (+ small always-on model) | Mac mini + rig |
 | Image gen / coding AI | **ComfyUI** / **Continue** / **Aider** | CachyOS rig |
@@ -626,17 +794,19 @@ Grounded picks for the Zigbee backbone in Section 3 — all pair cleanly with **
 | Save-game sync | **Ludusavi + Syncthing** | rig + clients |
 | Hosting game servers | **Pelican** / LinuxGSM | Mac mini / rig |
 | Remote access | **Tailscale** | all |
+| SSH / fleet maintenance | **Tailscale SSH** + **~/.ssh/config** + **Ansible** | all hosts |
 | Network segmentation | **UniFi VLANs + Zone-Based Firewall** | Dream Wall |
 | Ad/tracker DNS | **Pi-hole / AdGuard Home** (+ Unbound/DoT) | Ubuntu / HA |
 | Auth / MFA for exposed apps | **CrowdSec** + forward-auth (Pocket-ID/Authelia) | seedbox / Ubuntu |
 | Backup monitoring | **Healthchecks.io** (dead-man's-switch) | Mac mini |
 | Container mgmt | **Dockhand** / Dockge / Komodo | Ubuntu |
-| Self-hosted app deployment (PaaS) | **Coolify** (Dokploy alt) | Mac mini (Ubuntu) |
+| Self-hosted app deployment | **Caddy-fronted Compose stacks** (optional **Coolify**/Dokploy behind Caddy) | Mac mini (Ubuntu) |
 | Dashboard / service launcher | **Homepage** (Homarr if multi-user) | Ubuntu |
 | Monitoring | **Beszel** + Uptime Kuma + ntfy | Ubuntu |
 | Backup | **Restic/Kopia** + Borg + Synology native | NAS + hosts |
-| SBOM / vuln inventory dashboard | **OWASP Dependency-Track v5** (+ **Syft**/Grype) | Mac mini |
+| SBOM / vuln inventory dashboard | **OWASP Dependency-Track v5** (+ **Syft**/Grype) | NAS |
 | Config/dotfile/state-in-Git | **etckeeper** (/etc) + **chezmoi** (~) + **Forgejo** control repo | all hosts |
+| Fleet provisioning / convergence | **Ansible** (`ansible-pull` + roles, SOPS-integrated) | control repo -> rig + Mac mini (+ seedbox user-space) |
 | Secrets at rest | **SOPS + age** (chezmoi age for dotfiles) | control repo |
 | Local LLM | **Ollama** + Open WebUI | CachyOS rig (on-demand) |
 

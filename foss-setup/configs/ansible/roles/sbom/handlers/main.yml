@@ -1,0 +1,5 @@
+---
+# roles/sbom handlers (glue-08)
+- name: reload systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true

@@ -25,7 +25,8 @@ foss-setup/
 │   │   ├── stacks/<svc>/compose.yaml + .env.example
 │   │   └── .gitignore            # ignores **/.env, data dirs
 │   ├── nas/                      # Synology container configs (Immich, CWA, ...)
-│   ├── network/                  # UniFi VLAN/firewall plans (docs + exports)
+│   ├── network/                  # UniFi plans + SSH access (Tailscale SSH ACL, ssh config)
+│   ├── ansible/                  # fleet maintenance: inventory + patch/reboot/audit playbooks
 │   ├── homeassistant/            # HA configuration.yaml.example, automations
 │   └── git/                      # Forgejo (this folder)
 ├── scripts/                      # imperative setup: idempotent bootstrap scripts

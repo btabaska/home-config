@@ -5,6 +5,11 @@
 # the admin UI moves to port 80 inside the container (proxied by Caddy at dns.<domain>).
 # Then point your UniFi DHCP DNS at this host's LAN IP.
 #
+# UPSTREAM = Unbound (recursive + DNSSEC), reached over the shared `edge` network:
+#   Settings → DNS → Upstream servers:  unbound:5335
+#   (NOT 127.0.0.1:5335 — inside this container that's AdGuard's own loopback, not
+#   the host, so Unbound would be unreachable. See ../unbound/compose.yaml.)
+#
 # Why AdGuard over Pi-hole here: single container (no separate FTL/web split),
 # built-in DoT/DoH/DoQ upstream + client encryption, per-client rules, and a
 # cleaner first-run wizard. Pi-hole remains a fine alternative — see ../README.md.

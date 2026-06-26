@@ -8,7 +8,7 @@
 
 services:
   miniflux:
-    image: miniflux/miniflux:2.3.0
+    image: miniflux/miniflux:2.3.1
     container_name: miniflux
     restart: unless-stopped
     depends_on:

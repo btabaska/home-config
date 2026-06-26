@@ -8,15 +8,20 @@
 # TLS strategy (pick one in Caddyfile):
 #  - Wildcard certs via DNS-01 (recommended for internal-only services that
 #    aren't reachable for HTTP-01). This needs the Cloudflare DNS module, which
-#    is NOT in the official image — uncomment the `build:` block below to build
-#    a custom image with it (see ./Dockerfile), and comment out the `image:` line.
+#    is NOT in the stock image. The shipped Caddyfile uses `import cloudflare_tls`
+#    → `dns cloudflare`, so we build a custom image with that module by default
+#    (see ./Dockerfile). The stock image would fail to parse the Caddyfile and the
+#    whole reverse proxy would never start.
 #  - `tls internal` (Caddy's own CA) for purely-local access — no public DNS needed,
-#    but clients must trust Caddy's root CA.
+#    but clients must trust Caddy's root CA. If you switch the Caddyfile to that and
+#    drop the cloudflare directives, you can use the stock image instead (below).
 
 services:
   caddy:
-    image: caddy:2.11.4-alpine
-    # build: .            # <- uncomment (and comment `image:` above) to build with the Cloudflare DNS module
+    # Custom build with the Cloudflare DNS module (required by the shipped Caddyfile).
+    build: .
+    # image: caddy:2.11.4-alpine   # <- stock image alternative: only works if the
+                                    #    Caddyfile drops the cloudflare_tls/dns cloudflare directives
     container_name: caddy
     restart: unless-stopped
     cap_add:
@@ -29,6 +34,7 @@ services:
       - DOMAIN=${DOMAIN:-example.com}
       - ACME_EMAIL=${ACME_EMAIL}
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
+      - NAS_IP=${NAS_IP:-} # optional: only for upstreams you offload to the NAS
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data # certs & keys — treat as non-ephemeral (avoids LE rate limits)

@@ -1,0 +1,96 @@
+---
+# roles/docker — Docker engine + the bits the compose stacks assume (glue-08).
+# Lays the foundation BENEATH the containers; the container manager you picked
+# in glue-07 (Dockge/Komodo) still owns the day-to-day compose lifecycle.
+
+# M-an3: standardize on ONE engine source — the OFFICIAL docker-ce apt repo, the
+# SAME one scripts/setup/install-docker-ubuntu.sh uses (that script even removes
+# the distro `docker.io`/`docker-compose-v2` as conflicting packages). We do NOT
+# install `docker.io` here, so a pull-converged box and a hand-installed box run
+# the identical engine. We also install python3-docker, the SDK the docker_network
+# task below needs (without it community.docker.docker_network fails).
+- name: Install Docker engine (Debian/Ubuntu) — official docker-ce repo
+  when: ansible_os_family == 'Debian'
+  block:
+    - name: Ensure apt prerequisites for the Docker repo
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+        state: present
+        update_cache: true
+
+    - name: Create the apt keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Fetch the Docker GPG key
+      ansible.builtin.get_url:
+        url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Add the official Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ 'amd64' if ansible_architecture == 'x86_64'
+          else ('arm64' if ansible_architecture == 'aarch64' else ansible_architecture) }}
+          signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/{{ ansible_distribution | lower }}
+          {{ ansible_distribution_release }} stable
+        filename: docker
+        state: present
+
+    - name: Install docker-ce + compose plugin + the Python SDK
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+          - python3-docker      # required by community.docker.docker_network (M-an3)
+        state: present
+        update_cache: true
+
+- name: Install Docker (Arch/CachyOS)
+  when: ansible_os_family == 'Archlinux'
+  community.general.pacman:
+    name:
+      - docker
+      - docker-compose
+      - python-docker      # SDK for community.docker.docker_network (M-an3)
+    state: present
+
+- name: Add the admin user to the docker group
+  ansible.builtin.user:
+    name: "{{ admin_user }}"
+    groups: docker
+    append: true
+
+# --- the silent-disk-fill fix from sec-04: cap json-file logs globally
+- name: Cap container log size (sec-04)
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    mode: "0644"
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": { "max-size": "{{ docker_log_max_size }}", "max-file": "{{ docker_log_max_file }}" }
+      }
+  notify: restart docker
+
+- name: Ensure Docker is running
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+# --- the one-time host-prep step (Phase-2 prep / docker-stack README), now
+#     idempotent and never forgotten on a rebuild
+- name: Create the shared 'edge' network
+  community.docker.docker_network:
+    name: "{{ docker_edge_network }}"
+    state: present

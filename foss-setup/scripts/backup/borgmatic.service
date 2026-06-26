@@ -1,11 +1,16 @@
-# borgmatic (Borg) backup → Hetzner Storage Box (append-only) — Phase 1.
+# borgmatic (Borg) backup → Hetzner Storage Box — Phase 1.
 # Paired with borgmatic.timer. Most distro borgmatic packages ship their own
 # units; this is a repo copy so the schedule is config-as-code too.
 # Install:
 #   sudo install -m 644 scripts/backup/borgmatic.service /etc/systemd/system/borgmatic.service
 #   sudo install -m 644 scripts/backup/borgmatic.timer   /etc/systemd/system/borgmatic.timer
 #   sudo systemctl daemon-reload && sudo systemctl enable --now borgmatic.timer
-# The passphrase is read from /etc/borgmatic/passphrase (chmod 600) per the config.
+#
+# Passphrase: the config reads `encryption_passphrase: ${BORG_PASSPHRASE}`, so the
+# unit MUST inject that variable or unattended (timer-driven) runs fail with an
+# empty passphrase. Create the env file (mirrors restic-backup.service's b2.env):
+#   echo 'BORG_PASSPHRASE=your-borg-passphrase' | sudo tee /etc/borgmatic/passphrase.env
+#   sudo chmod 600 /etc/borgmatic/passphrase.env
 [Unit]
 Description=borgmatic backup
 After=network-online.target
@@ -13,6 +18,8 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
+# Supplies BORG_PASSPHRASE for the config's encryption_passphrase: ${BORG_PASSPHRASE}.
+EnvironmentFile=/etc/borgmatic/passphrase.env
 ExecStart=/usr/bin/borgmatic --verbosity -1 --syslog-verbosity 1
 Nice=10
 IOSchedulingClass=best-effort

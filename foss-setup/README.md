@@ -33,7 +33,8 @@ foss-setup/
 ├── README.md                  # you are here
 ├── docs/                      # the generated HTML guide (built by the orchestrator)
 ├── configs/                   # DECLARATIVE desired state — compose files + app config
-│   ├── network/               # UniFi VLAN + zone-based firewall + mDNS plans
+│   ├── network/               # UniFi VLAN/firewall/mDNS plans + SSH access (Tailscale SSH ACL, ssh config)
+│   ├── ansible/               # fleet maintenance: inventory + patch/reboot/audit playbooks
 │   ├── docker-stack/          # the Mac mini stack; mirrors /opt/stacks 1:1 (Dockge)
 │   │   ├── stacks/<svc>/       # seerr, miniflux, navidrome, caddy, adguard, dockge,
 │   │   │                       #   beszel, uptime-kuma, ntfy, diun
@@ -41,6 +42,7 @@ foss-setup/
 │   ├── nas/                   # Synology containers: immich, calibre-web-automated + backup
 │   ├── homeassistant/         # HA config, automations, Midea/Nest setup, backups
 │   ├── seedbox/               # *arr wiring, rclone, provider comparison, decommission
+│   ├── inventory/             # SBOM/inventory layer (Phase 4): inventory.md, Dependency-Track Homepage widget, etckeeper + restore-runbook template
 │   └── git/                   # Forgejo (self-hosted forge) + repo-structure + secrets
 ├── scripts/                   # IMPERATIVE, idempotent (set -euo pipefail) setup
 │   ├── network/               # tailscale install / verify-direct / connectivity
@@ -49,6 +51,7 @@ foss-setup/
 │   ├── backup/                # restic, borgmatic, restore-test
 │   ├── media/                 # seedbox sync, iPod tools, tailscale verify
 │   ├── reading/               # KOReader/CWA/Wallabag wiring, syncthing
+│   ├── inventory/             # SBOM generation/export: Syft+Grype, manifest exports, the SBOM systemd timer/units
 │   └── gaming/                # WoL, GPU power tune, Sunshine, LinuxGSM
 ```
 
@@ -77,10 +80,14 @@ Do a phase before starting the next — each one leaves you strictly better off.
 
 - **Phase 1 — Foundation (network, access, safety net).** UniFi segmentation +
   zone-based firewall (`configs/network/`), Tailscale everywhere
-  (`scripts/network/`), backups + a tested restore (`scripts/backup/`), and
-  **UPS power resilience** (`scripts/setup/nut-client-ubuntu.sh`). The
-  **dotfiles + browser/office desktop baseline** can also be done here (or
-  anytime) — they're independent of the servers.
+  (`scripts/network/`) — including **key-less Tailscale SSH + a `~/.ssh/config`
+  fallback** for easy, secure maintenance access to every box
+  (`scripts/network/tailscale-ssh-enable.sh`,
+  `configs/network/ssh-maintenance-access.md`) — backups + a tested restore
+  (`scripts/backup/`), and **UPS power resilience**
+  (`scripts/setup/nut-client-ubuntu.sh`). The **dotfiles + browser/office desktop
+  baseline** can also be done here (or anytime) — they're independent of the
+  servers.
 - **Phase 2 — De-cloud the essentials.** Home Assistant
   (`configs/homeassistant/`), the off-site seedbox pipeline (`configs/seedbox/`,
   `scripts/media/`), Immich (`configs/nas/immich/`).
@@ -89,9 +96,10 @@ Do a phase before starting the next — each one leaves you strictly better off.
   Rhythmbox/libgpod (`scripts/media/`), Miniflux + Navidrome
   (`configs/docker-stack/stacks/`).
 - **Phase 4 — Glue & polish.** The management layer — Dockge/Dockhand, Beszel,
-  Uptime Kuma, ntfy, Caddy, AdGuard (`configs/docker-stack/`) — and
-  **config-as-code in Git** via Forgejo (`configs/git/`). This is where the whole
-  repo becomes rebuildable.
+  Uptime Kuma, ntfy, Caddy, AdGuard (`configs/docker-stack/`) — **config-as-code
+  in Git** via Forgejo (`configs/git/`), and **fleet maintenance with Ansible**
+  (`configs/ansible/`) to patch/reboot/audit every box in one command. This is
+  where the whole repo becomes rebuildable.
 - **Phase 5 — Play.** Game servers (LinuxGSM/Pelican) and Sunshine + Moonlight
   streaming, with Wake-on-LAN + GPU tuning on the rig (`scripts/gaming/`).
 
@@ -128,7 +136,7 @@ git clone <your-forgejo-or-github-url> foss-setup && cd foss-setup
 
 # 2. Run the relevant idempotent baseline from scripts/setup/, e.g.:
 sudo ./scripts/setup/install-docker-ubuntu.sh           # Ubuntu Docker host
-sudo NAS_IP=192.168.1.7 ./scripts/setup/nut-client-ubuntu.sh   # UPS monitoring
+sudo NAS_IP=192.168.10.10 ./scripts/setup/nut-client-ubuntu.sh   # UPS monitoring
 ./scripts/setup/cachyos-desktop-baseline.sh             # CachyOS browser+office
 
 # 3. Bring up a stack: copy the env template, fill secrets, then up

@@ -59,8 +59,9 @@ case "${BACKEND}" in
     restic cat config >/dev/null || die "cannot read repo config — check creds/endpoint"
 
     log "Restoring latest snapshot to ${RESTORE_DIR} ..."
-    # 'latest' resolves to the most recent snapshot for this host.
-    restic restore latest --target "${RESTORE_DIR}"
+    # 'latest' alone is the newest snapshot across ALL hosts; scope it to THIS host so
+    # the comment holds. Non-destructive: restores into the mktemp RESTORE_DIR only.
+    restic restore latest --host "$(hostname -s)" --target "${RESTORE_DIR}"
     verify_nonempty "${RESTORE_DIR}"
     log "restic restore test PASSED."
     ;;

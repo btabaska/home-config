@@ -47,12 +47,15 @@ command -v immich-go >/dev/null 2>&1 || die "immich-go not installed — see imm
 [[ -d "${CARD_PATH}" ]]    || die "CARD_PATH is not a directory: ${CARD_PATH}"
 
 # --- Build args -----------------------------------------------------------------
-# --manage-raw-jpeg=StackCoverJPG : keep both files but stack them, JPEG as cover.
+# --manage-raw-jpeg=StackCoverRaw : keep both files but stack them with the RAW as the
+#   cover/primary. Chosen for a mirrorless/RAW-editing workflow (immich-go's own docs
+#   recommend StackCoverRaw "for photographers who edit RAW"). Switch to StackCoverJPG
+#   if you'd rather the more universally-viewable JPEG be the cover asset.
 ARGS=(
   upload from-folder
   --server "${IMMICH_SERVER}"
   --api-key "${IMMICH_API_KEY}"
-  --manage-raw-jpeg StackCoverJPG
+  --manage-raw-jpeg StackCoverRaw
   --manage-burst Stack
   --recursive
 )
@@ -63,8 +66,17 @@ log "Importing ${CARD_PATH} -> ${IMMICH_SERVER}"
 immich-go "${ARGS[@]}" "${CARD_PATH}"
 log "Done. Re-running is safe; already-uploaded assets are skipped by checksum."
 
-# --- Optional: WATCH a staging folder (continuous ingest) -----------------------
-# Instead of a one-shot import you can have immich-go watch a staging dir and
-# upload new files as they land (e.g. a card-copy script drops files there):
-#   immich-go upload from-folder --server "$IMMICH_SERVER" --api-key "$IMMICH_API_KEY" \
-#     --manage-raw-jpeg StackCoverJPG --watch /mnt/ssd/ingest/staging
+# --- Optional: continuous ingest from a staging folder --------------------------
+# NOTE: immich-go has NO --watch flag; it is one-shot only (re-running is cheap and
+# idempotent). There are two supported ways to get continuous ingest:
+#
+# 1) Re-run THIS script on a schedule (recommended — keeps the same stacking config).
+#    cron example (every 15 min):
+#      */15 * * * *  IMMICH_SERVER=https://photos.example.com IMMICH_API_KEY=xxxx \
+#                    CARD_PATH=/mnt/ssd/ingest/staging /opt/scripts/media/immich-go-import.sh
+#    or a systemd timer that runs this script (see *.timer examples in scripts/backup/).
+#
+# 2) Use the OFFICIAL Immich CLI (a DIFFERENT tool from immich-go) which DOES watch:
+#      immich upload --watch /mnt/ssd/ingest/staging
+#    Docs: https://docs.immich.app/features/command-line-interface
+#    (The official CLI does not do immich-go's RAW/JPEG stacking, so prefer option 1.)

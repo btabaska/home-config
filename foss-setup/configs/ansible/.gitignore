@@ -1,0 +1,11 @@
+# Generated drift reports from audit.yml — throwaway, don't version.
+audit/
+*.retry
+
+# ansible-pull's local checkout on each host (glue-08).
+.ansible-pull/
+
+# Never commit decrypted secrets or private keys (glue-06 keeps these in SOPS).
+*.decrypted
+files/id_ed25519
+files/id_ed25519.key

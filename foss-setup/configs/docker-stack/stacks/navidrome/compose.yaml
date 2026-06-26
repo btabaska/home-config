@@ -6,7 +6,7 @@
 
 services:
   navidrome:
-    image: deluan/navidrome:0.61.2
+    image: deluan/navidrome:0.62.0  # includes security fixes (auth/IDOR); bump deliberately
     container_name: navidrome
     user: "${PUID:-1000}:${PGID:-1000}" # must own ./data
     restart: unless-stopped

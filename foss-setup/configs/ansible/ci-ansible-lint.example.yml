@@ -1,0 +1,36 @@
+# ci-ansible-lint.example.yml — lint + dry-run gate for the control repo (glue-08).
+#
+# Place this in the control repo at .forgejo/workflows/ansible-lint.yml (Forgejo
+# Actions) or .github/workflows/ansible-lint.yml (GitHub). It runs on every push
+# so a broken playbook is caught BEFORE ansible-pull can ship it to a host.
+name: ansible-lint
+on:
+  push:
+    paths:
+      - "configs/ansible/**"
+  pull_request:
+    paths:
+      - "configs/ansible/**"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ansible + tooling
+        run: pipx install ansible-core ansible-lint
+
+      - name: Install pinned collections
+        run: ansible-galaxy install -r configs/ansible/requirements.yml
+
+      - name: ansible-lint
+        working-directory: configs/ansible
+        run: ansible-lint
+
+      # Syntax + dry-run against a localhost stand-in. --check changes nothing;
+      # it only proves the play parses and the modules resolve. Host-touching
+      # convergence is verified separately in the quarterly VM drill (sbom-05).
+      - name: syntax check
+        working-directory: configs/ansible
+        run: ansible-playbook site.yml --syntax-check -i 'localhost,' --connection local

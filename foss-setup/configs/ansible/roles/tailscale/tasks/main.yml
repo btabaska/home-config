@@ -1,0 +1,45 @@
+---
+# roles/tailscale — keep every node on the tailnet with key-less SSH (glue-08).
+# Mirrors net-07/net-11 (install) + net-13 (tailscale up --ssh, ACL tags). The
+# auth key is a secret, so it comes from SOPS (glue-06), never the clear repo.
+
+- name: Install Tailscale (Debian/Ubuntu)
+  when: ansible_os_family == 'Debian'
+  block:
+    - name: Add the Tailscale apt key
+      ansible.builtin.get_url:
+        url: https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg
+        dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+        mode: "0644"
+    - name: Add the Tailscale apt repo
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/ubuntu noble main"
+        filename: tailscale
+        state: present
+    - name: Install tailscale
+      ansible.builtin.apt:
+        name: tailscale
+        state: present
+        update_cache: true
+
+- name: Install Tailscale (Arch/CachyOS)
+  when: ansible_os_family == 'Archlinux'
+  community.general.pacman:
+    name: tailscale
+    state: present
+
+- name: Ensure tailscaled is enabled
+  ansible.builtin.service:
+    name: tailscaled
+    state: started
+    enabled: true
+
+- name: Bring the node up with Tailscale SSH (net-13)
+  ansible.builtin.command:
+    cmd: >-
+      tailscale up --ssh --accept-routes
+      --authkey {{ lookup('community.sops.sops', 'secrets/tailscale-authkey.sops', age_keyfile=sops_age_keyfile) }}
+  register: ts_up
+  changed_when: "'Success' in ts_up.stdout or ts_up.rc == 0"
+  # Already-up nodes return non-zero with a benign message; don't fail the run.
+  failed_when: false

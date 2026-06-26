@@ -6,12 +6,13 @@
 # the seedbox *arrs (Sonarr/Radarr) — reach those over Tailscale (*.ts.net).
 # Configure all integrations from the web UI after first boot.
 #
-# NOTE: the image moved to ghcr.io/maintainerr/maintainerr; the jorenn92 repo is
-# still synced for now. Bump the tag deliberately after reading release notes.
+# NOTE: the image moved to the canonical ghcr.io/maintainerr/maintainerr repo;
+# the old jorenn92 repo is deprecated. Bump the tag deliberately after reading
+# release notes.
 
 services:
   maintainerr:
-    image: ghcr.io/jorenn92/maintainerr:v3.15.2
+    image: ghcr.io/maintainerr/maintainerr:v3.15.3
     container_name: maintainerr
     user: "${PUID:-1000}:${PGID:-1000}" # must own ./data
     restart: unless-stopped

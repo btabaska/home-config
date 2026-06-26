@@ -75,3 +75,103 @@ dns.{$DOMAIN} {
 	import cloudflare_tls
 	reverse_proxy adguardhome:80
 }
+
+# ---------------------------------------------------------------------------
+# Media companion layer
+# ---------------------------------------------------------------------------
+
+# Plex analytics
+tautulli.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy tautulli:8181
+}
+
+# Library pruning (rule-based)
+maintainerr.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy maintainerr:6246
+}
+
+# Pre-transcode automation (server UI; the heavy node runs on the rig)
+tdarr.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy tdarr:8265
+}
+
+# "Sonarr for YouTube"
+pinchflat.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy pinchflat:8945
+}
+
+# ---------------------------------------------------------------------------
+# Household apps
+# ---------------------------------------------------------------------------
+
+# Dashboard + household front door
+home.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy homepage:3000
+}
+
+# Recipes / meal planning
+recipes.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy mealie:9000
+}
+
+# Documents — OCR archive
+paperless.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy paperless:8000
+}
+
+# Read-it-later (Pocket replacement)
+wallabag.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy wallabag:80
+}
+
+# ---------------------------------------------------------------------------
+# Platform / ops
+# ---------------------------------------------------------------------------
+
+# Self-hosted Git forge (control repo). Git-over-SSH stays on host port 2222.
+git.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy forgejo:3000
+}
+
+# Local AI gateway / fallback (OpenAI-compatible API)
+llm.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy litellm:4000
+}
+
+# Backup dead-man's-switch
+health.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy healthchecks:8000
+}
+
+# SBOM / vulnerability dashboard (the static SPA; set API_BASE_URL to https://deptrack.<domain>)
+deptrack.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy dtrack-frontend:8080
+}
+
+# Local camera AI (authenticated UI on 8971)
+frigate.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy frigate:8971
+}
+
+# ---------------------------------------------------------------------------
+# NOTE on host placement: the upstreams above use container names, which only
+# resolve for services that share this Caddy host's `edge` network (i.e. run on
+# the Mac mini). If you offload a heavy service to the NAS (see the plan's host
+# table — Frigate, Paperless, Dependency-Track, Tdarr are good candidates),
+# change that one block to the NAS instead, e.g.:
+#     reverse_proxy {$NAS_IP}:8000      # paperless on the NAS
+# and set NAS_IP in .env. Everything else stays container-name routed.
+# ---------------------------------------------------------------------------

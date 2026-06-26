@@ -1,0 +1,15 @@
+---
+# group_vars/on_demand.yml — the CachyOS rig (sleeps most of the time) (glue-08)
+#
+# The rig auto-suspends (game-09), so its ansible-pull.timer and the jobs the
+# roles install must only fire WHILE THE BOX IS AWAKE — the same wake-hook trick
+# the Restic (sec-06) and SBOM (sbom-02) jobs already use. Don't fight suspend
+# with a fixed wall-clock schedule that the box sleeps through every time.
+
+# The backup/sbom roles read this to gate their timers to a post-wake window
+# instead of an OnCalendar the sleeping box would always miss.
+wake_gated: true
+
+# ansible-pull on the rig runs opportunistically after wake rather than on a
+# strict clock (see ansible-pull.timer notes).
+ansible_pull_on_boot: true

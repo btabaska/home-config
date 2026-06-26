@@ -17,12 +17,13 @@ mqtt:
 
 # --- Detector: pick ONE (uncomment) and pass the matching device in compose ----
 detectors:
-  # Google Coral USB or M.2/PCIe TPU (recommended, ~$60):
+  # Google Coral USB or M.2/PCIe TPU (recommended, ~$60). On the 2014 Mac mini,
+  # use a Coral — its iGPU is not a practical OpenVINO detector:
   coral:
     type: edgetpu
     device: usb # or pci for the M.2/PCIe Coral
-  # Intel Quick Sync iGPU (Mac mini / NAS) via OpenVINO — comment out 'coral'
-  # above and use this instead:
+  # NAS iGPU (J4125 Quick Sync) via OpenVINO — comment out 'coral' above and use
+  # this instead (NAS only; not the Mac mini):
   # ov:
   #   type: openvino
   #   device: GPU

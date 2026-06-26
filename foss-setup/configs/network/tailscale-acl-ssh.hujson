@@ -1,0 +1,47 @@
+// tailscale-acl-ssh.hujson
+//
+// Minimal tailnet ACL policy that turns on Tailscale SSH safely:
+//   - admin devices (your laptop + phone) carry tag:admin
+//   - every host you maintain carries tag:server
+//   - ONLY tag:admin may SSH tag:server, as a chosen Unix user
+//
+// Paste/merge this into the Tailscale admin console:
+//   Access Controls -> edit policy file (HuJSON).
+// Adjust the owner email and the Unix login names to your own.
+//
+// Refs:
+//   - ACL syntax (incl. ssh rules): https://tailscale.com/kb/1337/acl-syntax
+//   - Tailscale SSH:                https://tailscale.com/kb/1193/tailscale-ssh
+{
+  // Who is allowed to own/assign each tag.
+  "tagOwners": {
+    "tag:admin":  ["autogroup:owner"],
+    "tag:server": ["autogroup:owner"],
+  },
+
+  // Normal tailnet connectivity. Tighten later if you want; SSH is gated below
+  // regardless of this.
+  "acls": [
+    { "action": "accept", "src": ["*"], "dst": ["*:*"] },
+  ],
+
+  // The SSH policy. Only tag:admin -> tag:server, logging in as the listed
+  // Unix users. "check" forces periodic re-authentication (re-auth window),
+  // which is what makes a lost admin device safe to revoke centrally.
+  "ssh": [
+    {
+      "action": "check",
+      "src":    ["tag:admin"],
+      "dst":    ["tag:server"],
+      "users":  ["admin", "root"],
+      // How long a verified session stays valid before re-auth is required.
+      "checkPeriod": "12h",
+    },
+  ],
+
+  // Apply the tags to devices in the admin console (Machines -> Edit ACL tags),
+  // or pass them at `tailscale up --advertise-tags=tag:server`. Example:
+  //   laptop / phone        -> tag:admin
+  //   macmini, nas, rig,    -> tag:server
+  //   seedbox
+}

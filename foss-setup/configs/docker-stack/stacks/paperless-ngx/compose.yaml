@@ -4,14 +4,17 @@
 # Tier-1 data — this is irreplaceable scanned-document state. Add these to the
 # backup jobs (restic/borgmatic):
 #   - the bind-mounted ./data, ./media, ./consume dirs (the documents + index)
-#   - a NIGHTLY pg_dump of the postgres "broker" DB, e.g.:
+#   - a NIGHTLY pg_dump of the PostgreSQL DB (the `broker` service below), e.g.:
 #       docker compose exec -T broker pg_dump -U paperless paperless | gzip > paperless-$(date +%F).sql.gz
 #   (file-copying a live Postgres data dir is NOT a safe backup — dump it.)
 #
 # Five services:
 #   - webserver : the app + web UI + OCR pipeline (depends on the other four)
-#   - broker    : PostgreSQL (named "broker" to match the upstream compose)
-#   - redis     : task queue / cache
+#   - broker    : PostgreSQL. NOTE: this is a LOCAL naming choice; upstream's compose
+#                 actually names PostgreSQL `db` and names Redis the `broker`. Here
+#                 the Postgres service is `broker` and Redis is `redis` — all
+#                 references below (PAPERLESS_DBHOST, depends_on, exec) match that.
+#   - redis     : task queue / cache (Redis; upstream calls this the "broker")
 #   - gotenberg : converts office docs (docx/xlsx/odt…) to PDF for OCR
 #   - tika      : extracts text/metadata from those office docs
 #

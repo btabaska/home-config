@@ -20,15 +20,36 @@ speaker, HomeKit hub, or Sonos on **IoT**.
       the VLAN → toggle mDNS / mDNS Proxy.)
 - [ ] Mode:
   - **Auto** = rebroadcast common services across all VLANs (simplest).
-  - **Custom** = pick exact services (AirPlay, Google Cast, HomeKit, Matter, printers)
-    and the VLAN scope — tighter, recommended once it works.
+  - **Custom** = pick exact services (AirPlay, Google Cast, HomeKit, printers)
+    and the VLAN scope — tighter, recommended once it works. **Do NOT add Matter
+    here** (see the Matter caveat below).
   - **Off** = no rebroadcast.
 - [ ] Add the matching **firewall policy** for the actual unicast control traffic
       (the proxy handles *discovery* only — control still needs an allow rule).
       See `firewall-policy-order.md` rule #4.
-- [ ] Custom service strings use the form `_service._protocol.local`
-      (e.g. `_airplay._tcp.local`). You can add new ones to the list.
+- [ ] Custom service strings use the form `_service._protocol.local`. Add the ones
+      your devices actually use, e.g.:
+  - `_airplay._tcp.local`, `_raop._tcp.local` — AirPlay / AirPlay audio
+  - `_googlecast._tcp.local` — Chromecast / Google Cast
+  - `_hap._tcp.local` — HomeKit (HA HomeKit Bridge)
+  - `_esphome._tcp.local` — **ESPHome devices** (e.g. the Midea SLWF-01 dongle) so HA
+        on Trusted discovers them on the IoT VLAN
+  - `_ipp._tcp.local`, `_ipps._tcp.local`, `_pdl-datastream._tcp.local` — printers
+  - **Matter is intentionally absent here — do NOT add `_matter._tcp.local` or
+        `_matterc._udp.local`.** See the Matter caveat below.
 - [ ] Do **not** enable mDNS proxy on mgmt / Work / Guest VLANs (no benefit, more noise).
+
+## ⚠️ Matter caveat — do NOT forward Matter via the mDNS proxy
+
+- [ ] **Never add Matter service strings (`_matter._tcp.local`,
+      `_matterc._udp.local`) to the mDNS proxy.** Official Matter guidance is that
+      mDNS *reflectors/forwarders* corrupt Matter/Thread commissioning and operational
+      discovery (they rewrite/realy records that Matter expects untouched), causing
+      intermittent commissioning failures and dropped devices.
+- [ ] **Keep Matter devices on the same VLAN as Home Assistant** (its controller).
+      If a Matter device and HA must be on different VLANs, use HA's native Matter
+      server / a Thread border router reachable on HA's VLAN — NOT the gateway mDNS
+      proxy. Plan the topology so Matter never has to cross a reflected boundary.
 - [ ] Mind the per-gateway limit on how many networks can have mDNS enabled (UDM/UDW-class
       gateways allow many; only enable where needed to keep forwarded traffic down).
 

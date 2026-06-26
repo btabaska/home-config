@@ -1,0 +1,35 @@
+---
+# site.yml — the desired state of the fleet (glue-08)
+#
+# This single play is the source of truth for what every box you OWN at the OS
+# level should look like. It is used two ways:
+#
+#   PUSH (orchestration, from the Mac mini/laptop):
+#     ansible-playbook site.yml --check --diff          # preview, change nothing
+#     ansible-playbook site.yml --limit macmini         # converge one host
+#
+#   PULL (set-and-forget, on each host via ansible-pull.timer):
+#     ansible-pull -U <control-repo-url> -d ~/.ansible-pull \
+#                  -i 'localhost,' --connection local configs/ansible/site.yml
+#
+# Idempotent: run it once or a hundred times, same result. Roles are small and
+# single-purpose; each replaces a chunk of the sbom-05 hand-run restore runbook.
+#
+# OUT OF SCOPE on purpose: the NAS (DSM), Home Assistant (HAOS), and the Dream
+# Wall are appliances — they keep their own native backups (sec-05 / sbom-03),
+# so they are not in the inventory and this play never touches them.
+
+- name: Converge the fleet
+  hosts: fleet
+  become: true
+  # PULL runs against localhost so serial is irrelevant; for PUSH, never
+  # reconfigure the whole fleet in lockstep.
+  serial: "{{ '100%' if ansible_connection == 'local' else 1 }}"
+  roles:
+    - role: base        # admin user + ed25519 key, unattended-upgrades, sysctl, package convergence
+    - role: docker      # engine, daemon.json log caps (sec-04), shared 'edge' network
+      when: "'docker_hosts' in group_names"
+    - role: tailscale   # tailscale up --ssh with net-13 tags
+    - role: backup      # restic timer (rig-wake-gated on on_demand)
+    - role: sbom        # Syft/Grype + the sbom-02 nightly units
+    - role: state       # installs + bootstraps etckeeper and chezmoi themselves

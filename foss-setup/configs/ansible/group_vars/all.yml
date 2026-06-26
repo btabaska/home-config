@@ -1,0 +1,42 @@
+---
+# group_vars/all.yml — fleet-wide defaults for the convergence layer (glue-08)
+#
+# Non-secret knobs live here in the clear (committed to the control repo).
+# SECRETS DO NOT — they stay in SOPS+age (glue-06) and are pulled at runtime
+# with the community.sops lookup, e.g.:
+#
+#   restic_password: "{{ lookup('community.sops.sops', 'secrets/restic.sops.yaml',
+#                          age_keyfile=sops_age_keyfile) }}"
+#
+# so the only secret store is the age key already in Proton Pass + a printed copy.
+
+admin_user: admin
+
+# Where SOPS finds the age private key on the controller / each pull host.
+# This is the SAME key chezmoi/SOPS already need on the box (glue-06).
+sops_age_keyfile: "{{ ansible_env.HOME }}/.config/sops/age/keys.txt"
+
+# --- docker role (matches sec-04 log-rotation caps) ---
+docker_log_max_size: "10m"
+docker_log_max_file: "3"
+docker_edge_network: edge
+
+# --- backup role ---
+restic_timer_oncalendar: "02:30"        # local time; rig is wake-gated (see on_demand.yml)
+# M-an4: keep the restic backup SET in sync with what the restore runbook restores
+# (configs/inventory/restore-runbook-template.md restores /opt/stacks and the docker
+# volumes). The backup role appends these to /home, so backup and restore match.
+extra_backup_paths: "/opt/stacks /var/lib/docker/volumes"
+
+# --- sbom role (sbom-02) ---
+dtrack_url: "https://deptrack.tabaska.us"
+# PIN these to the current releases and verify their checksums on install
+# (the actual lesson of the March-2026 trivy-action / CVE-2026-33634 compromise).
+# Verified current GA releases (June 2026): github.com/anchore/{syft,grype}/releases.
+# Keep in lockstep with scripts/inventory/sbom-nightly.sh + sbom.env.example.
+syft_version: "1.45.1"
+grype_version: "0.114.0"
+
+# --- state role ---
+# chezmoi source repo (the dotfiles half of the control repo, glue-04).
+chezmoi_repo: "git@forgejo:home/dotfiles.git"

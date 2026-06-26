@@ -1,0 +1,17 @@
+---
+# requirements.yml — Ansible collections used by the convergence layer (glue-08)
+#
+#   ansible-galaxy install -r requirements.yml
+#
+# Pin versions for set-and-forget reproducibility (the CVE-2026-33634 lesson:
+# pin + verify what runs in your credential-bearing automation). Bump them
+# deliberately, read the changelog, let CI (--check) catch regressions.
+collections:
+  - name: community.general      # pacman, etc.
+    version: ">=10.0.0"
+  - name: ansible.posix          # mount, sysctl, profile_tasks callback
+    version: ">=2.0.0"
+  - name: community.docker       # docker engine bits + docker_compose_v2
+    version: ">=4.0.0"
+  - name: community.sops         # read SOPS+age secrets (glue-06) — no ansible-vault
+    version: ">=2.4.0"

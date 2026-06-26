@@ -1,0 +1,34 @@
+---
+# roles/state — make the state-tracking tools themselves reproducible (glue-08).
+# Installs + bootstraps etckeeper (sbom-03) and chezmoi (glue-04) so even the
+# tools that capture your state are present on a fresh box without hand-steps.
+
+- name: Install etckeeper + chezmoi (Debian/Ubuntu)
+  when: ansible_os_family == 'Debian'
+  ansible.builtin.apt:
+    name:
+      - etckeeper
+      - chezmoi
+    state: present
+    update_cache: true
+
+- name: Install etckeeper + chezmoi (Arch/CachyOS)
+  when: ansible_os_family == 'Archlinux'
+  community.general.pacman:
+    name:
+      - etckeeper
+      - chezmoi
+    state: present
+
+- name: Initialize etckeeper (sbom-03)
+  ansible.builtin.command:
+    cmd: etckeeper init
+    creates: /etc/.git
+
+- name: Apply dotfiles with chezmoi (glue-04)
+  become: false
+  ansible.builtin.command:
+    cmd: "chezmoi init --apply {{ chezmoi_repo }}"
+    creates: "{{ ansible_env.HOME }}/.local/share/chezmoi/.git"
+  # Needs the control-plane SSH key present; safe to skip until then.
+  failed_when: false

@@ -8,8 +8,22 @@
 # after the *arr imports them. It needs to see the SAME paths as the *arrs, so
 # mount the one download/data tree (see arr-suite-wiring.md §1) into the container.
 #
+# DEPLOYMENT (M-ma1): Unpackerr is NOT in Bytesized's one-click catalog. Deploy it
+# yourself via the plan's rootless Docker (no root needed) — or, equivalently, run
+# the golift Unpackerr *native binary* on the box. Native is sometimes simpler here
+# precisely because of the path issue below.
+#
+# CRITICAL — PATHS MUST MATCH (M-ma8): the seedbox *arrs are installed NATIVELY from
+# the one-click catalog, so they report real host paths like
+# /home/<user>/data/torrents/tv — NOT /data/torrents/tv. If Unpackerr's configured
+# UN_*_PATHS_* don't EXACTLY equal what each *arr reports, Unpackerr silently never
+# finds (or extracts) anything. The fix below is an IDENTITY mount: we mount the
+# data tree at the same path inside the container as on the host, and point the
+# paths at ${DATA_ROOT}. (Running the native binary instead makes paths identical
+# automatically — no mount juggling.)
+#
 # Copy to docker-compose.yml on the seedbox, fill the .env values, then:
-#   docker compose up -d
+#   docker compose up -d   # rootless Docker — no sudo needed on the managed box
 
 services:
   unpackerr:
@@ -23,26 +37,31 @@ services:
       - UN_INTERVAL=2m
       - UN_START_DELAY=1m
 
+      # NOTE: every UN_*_PATHS_* below uses ${DATA_ROOT} so it equals the EXACT
+      # host path the native *arr reports (e.g. /home/<user>/data/torrents/tv).
+      # Set DATA_ROOT in .env to the *arrs' data root (arr-suite-wiring.md §1).
+
       # --- Sonarr -------------------------------------------------------------
       - UN_SONARR_0_URL=${SONARR_URL:-http://localhost:8989}
       - UN_SONARR_0_API_KEY=${SONARR_API_KEY}
-      - UN_SONARR_0_PATHS_0=/data/torrents/tv
+      - UN_SONARR_0_PATHS_0=${DATA_ROOT:-/home/seed/data}/torrents/tv
       - UN_SONARR_0_PROTOCOLS=torrent
 
       # --- Radarr -------------------------------------------------------------
       - UN_RADARR_0_URL=${RADARR_URL:-http://localhost:7878}
       - UN_RADARR_0_API_KEY=${RADARR_API_KEY}
-      - UN_RADARR_0_PATHS_0=/data/torrents/movies
+      - UN_RADARR_0_PATHS_0=${DATA_ROOT:-/home/seed/data}/torrents/movies
       - UN_RADARR_0_PROTOCOLS=torrent
 
       # --- Lidarr (music; see lidarr-slskd-soularr.md) ------------------------
       - UN_LIDARR_0_URL=${LIDARR_URL:-http://localhost:8686}
       - UN_LIDARR_0_API_KEY=${LIDARR_API_KEY}
-      - UN_LIDARR_0_PATHS_0=/data/torrents/music
+      - UN_LIDARR_0_PATHS_0=${DATA_ROOT:-/home/seed/data}/torrents/music
       - UN_LIDARR_0_PROTOCOLS=torrent
     volumes:
-      # Mount the SAME single data tree the *arrs use so extracted paths match.
-      # Adjust the host path to your seedbox layout (e.g. /home/<user>/data).
-      - ${DATA_ROOT:-/home/seed/data}:/data
+      # IDENTITY mount (M-ma8): same path inside the container as on the host, so
+      # the paths Unpackerr is configured with above match what the native *arrs
+      # report 1:1. Set DATA_ROOT in .env to your seedbox layout (e.g. /home/<user>/data).
+      - ${DATA_ROOT:-/home/seed/data}:${DATA_ROOT:-/home/seed/data}
     networks:
       - default

@@ -28,6 +28,11 @@
 # Idempotent: re-running re-writes the managed config blocks and restarts the
 # monitor only if something changed. Run with sudo.
 #
+# NUT VERSION: the MONITOR line below uses the NUT 2.8 keyword `secondary`, which
+# targets Ubuntu 24.04+ (ships NUT 2.8.x). On Ubuntu 22.04 (NUT 2.7.4) the keyword
+# is `slave` instead — `secondary` will be rejected there. If you must run on 22.04,
+# change `secondary` to `slave` in configure_upsmon() (or upgrade the OS / NUT).
+#
 # Usage:
 #   sudo NAS_IP=192.168.1.7 ./nut-client-ubuntu.sh
 #   sudo NAS_IP=192.168.1.7 UPS_NAME=ups UPS_USER=monuser UPS_PASS=secret ./nut-client-ubuntu.sh
@@ -82,15 +87,18 @@ configure_upsmon() {
 
   local begin="# >>> nut-client-ubuntu.sh (managed) >>>"
   local end="# <<< nut-client-ubuntu.sh (managed) <<<"
-  # type=secondary: the NAS (primary) shuts down LAST; this box shuts down when
-  # upsmon sees the UPS go ONBATT + LOWBATT (or the NAS drops the connection).
+  # type=secondary (NUT 2.8 / Ubuntu 24.04+; use `slave` on Ubuntu 22.04 / NUT 2.7.4):
+  # the NAS (primary) shuts down LAST; this box shuts down when upsmon sees the UPS go
+  # ONBATT + LOWBATT (or the NAS drops the connection).
+  # POWERDOWNFLAG/killpower is intentionally omitted: it only matters for the PRIMARY
+  # that physically cuts UPS power at the end of a shutdown. A pure netclient just halts
+  # itself, so it doesn't need it.
   local block
   block="$(cat <<EOF
 ${begin}
 MONITOR ${UPS_NAME}@${NAS_IP} 1 ${UPS_USER} ${UPS_PASS} secondary
 MINSUPPLIES ${MINSUPPLIES}
 SHUTDOWNCMD "/sbin/shutdown -h +0"
-POWERDOWNFLAG /etc/killpower
 ${end}
 EOF
 )"

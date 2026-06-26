@@ -1,6 +1,8 @@
 # NVIDIA power-limit + persistence (3090 Ti tune) — Phase 5.
 # Re-applies the power limit / persistence / (optional) clock-offset on every
-# boot and resume so the idle/load draw stays capped. Install with:
+# boot so the idle/load draw stays capped. (A plain multi-user.target unit does
+# NOT run on resume from suspend; add a systemd-sleep hook if you need that.)
+# Install with:
 #   sudo install -m 755 scripts/gaming/gpu-power-tune.sh /opt/scripts/gaming/gpu-power-tune.sh
 #   sudo install -m 644 scripts/gaming/gpu-power-tune.service /etc/systemd/system/gpu-power-tune.service
 #   sudo systemctl daemon-reload && sudo systemctl enable --now gpu-power-tune.service

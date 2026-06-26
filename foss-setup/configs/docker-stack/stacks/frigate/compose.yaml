@@ -3,9 +3,11 @@
 #
 # WHY / DETECTOR CHOICE — Frigate runs AI detection locally (no cloud). Pick ONE:
 #   - Google Coral TPU (~$60 USB/M.2): cheapest, lowest power, best perf/$ — the
-#     recommended detector. Frigate finds it as a "edgetpu" detector.
-#   - Mac mini / NAS iGPU (OpenVINO): no extra hardware; uses the Intel Quick Sync
-#     GPU for detection. A bit heavier on CPU/GPU than a Coral.
+#     recommended detector. Frigate finds it as an "edgetpu" detector.
+#   - NAS iGPU (J4125, OpenVINO): no extra hardware; uses the NAS's Intel Quick Sync
+#     GPU for detection. A bit heavier on CPU/GPU than a Coral. NOTE: the 2014 Mac
+#     mini's iGPU (HD 5000) is NOT a practical OpenVINO detector — use a Coral on
+#     that host, not its iGPU.
 #   Configure the chosen detector in config.yml (see config.yml.example).
 #
 # CAMERAS — ingest UniFi Protect RTSP(S) substreams: a LOW-res substream for
@@ -18,7 +20,7 @@
 
 services:
   frigate:
-    image: ghcr.io/blakeblackshear/frigate:0.17.1
+    image: ghcr.io/blakeblackshear/frigate:0.17.1  # latest verified release (0.17.2 not published)
     container_name: frigate
     restart: unless-stopped
     # Privileged simplifies device passthrough (Coral/iGPU). Tighten with explicit

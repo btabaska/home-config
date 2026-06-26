@@ -33,7 +33,10 @@ VM_VCPUS="${VM_VCPUS:-2}"                        # vCPU count
 DISK_SIZE_GB="${DISK_SIZE_GB:-32}"              # virtual disk size to grow the image to
 NET_BRIDGE="${NET_BRIDGE:-br0}"                  # host bridge on the Trusted VLAN
 IMAGE_DIR="${IMAGE_DIR:-/var/lib/libvirt/images/${VM_NAME}}"
-OVMF_CODE="${OVMF_CODE:-/usr/share/OVMF/OVMF_CODE_4m.fd}"  # non-secureboot OVMF firmware
+# OVMF firmware path is used only for a fail-fast preflight check; virt-install itself
+# uses `--boot uefi` (below) and lets libvirt auto-resolve the right firmware. Canonical
+# Ubuntu filename is uppercase OVMF_CODE_4M.fd.
+OVMF_CODE="${OVMF_CODE:-/usr/share/OVMF/OVMF_CODE_4M.fd}"
 
 # Derived values.
 IMAGE_BASENAME="haos_ova-${HAOS_VERSION}.qcow2"
@@ -63,7 +66,8 @@ require_cmd wget         "Install wget: apt install wget"
 require_cmd xz           "Install xz: apt install xz-utils"
 require_cmd qemu-img     "Install qemu-utils: apt install qemu-utils"
 
-[[ -f "${OVMF_CODE}" ]] || warn "OVMF firmware not found at ${OVMF_CODE}. Install with: apt install ovmf (then set OVMF_CODE)."
+# Fail fast: virt-install's `--boot uefi` will error out anyway without OVMF present.
+[[ -f "${OVMF_CODE}" ]] || die "OVMF firmware not found at ${OVMF_CODE}. Install it: apt install ovmf (or set OVMF_CODE to your distro's OVMF_CODE_4M.fd path)."
 
 # Verify the target bridge exists so we fail early with a clear message.
 if ! ip link show "${NET_BRIDGE}" >/dev/null 2>&1; then
@@ -106,7 +110,10 @@ qemu-img resize "${IMAGE_PATH}" "${DISK_SIZE_GB}G" || warn "qemu-img resize repo
 
 # ----------------------------------------------------------------------------
 # Create + start the VM.
-#   - UEFI boot (non-secureboot OVMF), VirtIO disk + bridged VirtIO NIC.
+#   - UEFI boot: `--boot uefi` lets libvirt auto-resolve the firmware + create the
+#     per-VM NVRAM VARS copy (more robust than hand-wiring loader/pflash paths,
+#     which break on filename/casing drift like OVMF_CODE_4m.fd vs OVMF_CODE_4M.fd).
+#   - VirtIO disk + bridged VirtIO NIC.
 #   - --osinfo detect=on,require=off avoids failing on unknown os variants.
 #   - --noautoconsole returns control to the shell; use 'virsh console' to view boot.
 # ----------------------------------------------------------------------------
@@ -118,7 +125,7 @@ virt-install \
   --vcpus "${VM_VCPUS}" \
   --cpu host \
   --machine q35 \
-  --boot "uefi,loader=${OVMF_CODE},loader.readonly=yes,loader.type=pflash" \
+  --boot uefi \
   --disk "path=${IMAGE_PATH},format=qcow2,bus=virtio" \
   --network "bridge=${NET_BRIDGE},model=virtio" \
   --osinfo detect=on,require=off \

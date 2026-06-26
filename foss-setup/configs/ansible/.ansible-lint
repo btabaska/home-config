@@ -1,0 +1,13 @@
+# .ansible-lint — keep the convergence layer honest (glue-08).
+# Runs in CI (ci-ansible-lint.example.yml) on every push so a bad change is
+# caught before ansible-pull can carry it to a host.
+profile: production
+
+exclude_paths:
+  - audit/            # throwaway drift reports from playbooks/audit.yml
+  - .ansible-pull/    # ansible-pull's local checkout
+
+# These example scaffolds intentionally ship with placeholder vars (e.g. pinned
+# syft/grype versions in group_vars/all.yml). Fill them in for your fleet.
+warn_list:
+  - var-naming[no-role-prefix]

@@ -24,19 +24,22 @@
 | apt manual packages | `hosts/macmini/` | 142 pkgs | tracked |
 | AUR/foreign packages | `hosts/macmini/pkglist.aur.txt` | 0 pkgs | tracked |
 | Flatpak apps | `hosts/macmini/flatpak.txt` | 0 apps | tracked |
-| Compose images (pinned) | `/opt/stacks` | 13 images | pinned |
-| Running containers | docker | 13 up | active |
+| Compose images (pinned) | `/opt/stacks` | 12 images | pinned |
+| Running containers | docker | 12 up | active |
 | systemd timers | `hosts/macmini/systemd-timers.txt` | 4 active | scheduled |
 
 ## Pinned container images
+
+> Sample note: **Dependency-Track runs on the NAS**, not the Mac mini, so its
+> images are NOT in this macmini list (see the NAS row below). **Forgejo** is the
+> service that lives on the Mac mini.
 
 | image:tag | source |
 |-----------|--------|
 | `adguard/adguardhome:v0.107.77` | /opt/stacks |
 | `caddy:2.11.4-alpine` | /opt/stacks |
 | `crazymax/diun:4.33.0` | /opt/stacks |
-| `dependencytrack/apiserver:5.6.0` | /opt/stacks |
-| `dependencytrack/frontend:5.6.0` | /opt/stacks |
+| `codeberg.org/forgejo/forgejo:15.0.3` | /opt/stacks |
 | `ghcr.io/seerr-team/seerr:v3.2.0` | /opt/stacks |
 | `henrygd/beszel:0.18.7` | /opt/stacks |
 | `henrygd/beszel-agent:0.18.7` | /opt/stacks |
@@ -45,6 +48,10 @@
 | `miniflux/miniflux:2.3.0` | /opt/stacks |
 | `postgres:17-alpine` | /opt/stacks |
 | `binwiederhier/ntfy:v2.19.2` | /opt/stacks |
+
+> Dependency-Track (on the **NAS**, sample): `dependencytrack/apiserver:5.0.2`
+> and `dependencytrack/frontend:5.0.1` — the verified GA tags (v5 GA restarted
+> numbering at 5.0.0; the old `5.6.0` tags never existed).
 
 ---
 

@@ -1,0 +1,85 @@
+---
+# roles/base — OS baseline every managed host shares (glue-08).
+# Replaces the "reinstall OS, recreate the admin user, re-add the key, set up
+# security patching, replay the package manifest" steps of the sbom-05 runbook.
+
+- name: Ensure the admin user exists
+  ansible.builtin.user:
+    name: "{{ admin_user }}"
+    shell: /bin/bash
+    create_home: true
+
+- name: Install the break-glass ed25519 key (net-14)
+  ansible.posix.authorized_key:
+    user: "{{ admin_user }}"
+    key: "{{ lookup('file', 'files/id_ed25519.pub') }}"
+    state: present
+
+# --- security patching (matches sec-05). check_mode: false (H8) makes these the
+#     ONE thing a report-only `ansible-pull --check` actually applies: it ensures
+#     unattended-upgrades is installed + enabled, which then applies OS security
+#     patches in the background. We do NOT run a blind `apt upgrade` here — patches
+#     come from unattended-upgrades, not from this play. Scope is intentionally
+#     narrow: only these two low-risk, idempotent enablement tasks bypass --check.
+- name: Enable unattended-upgrades for security patches (Debian/Ubuntu)
+  when: ansible_os_family == 'Debian'
+  block:
+    - name: Install unattended-upgrades
+      ansible.builtin.apt:
+        name: unattended-upgrades
+        state: present
+        update_cache: true
+      check_mode: false
+    - name: Enable the periodic security updates
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        mode: "0644"
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+      check_mode: false
+
+# --- conntrack tuning (only matters if you ever fall back to home torrenting,
+#     Section 2 of the plan; harmless otherwise)
+- name: Raise nf_conntrack_max
+  ansible.posix.sysctl:
+    name: net.netfilter.nf_conntrack_max
+    value: "262144"
+    sysctl_set: true
+    state: present
+    reload: true
+  ignore_errors: true   # nf_conntrack module not loaded on a host that never NATs torrents
+
+# --- package convergence: the sbom-04 manifest stops being a record and becomes
+#     the enforcer (M-an1). scripts/inventory/export-manifests.sh writes per-host,
+#     per-OS filenames into hosts/<box>/ — pkglist.apt-manual.txt on Debian/Ubuntu
+#     and pkglist.pacman-explicit.txt on Arch/CachyOS — NOT a generic pkglist.txt.
+#     We pick the right one by ansible_os_family.
+- name: Resolve the per-OS package manifest path (sbom-04)
+  ansible.builtin.set_fact:
+    base_pkglist_path: "hosts/{{ inventory_hostname }}/{{ 'pkglist.apt-manual.txt' if ansible_os_family == 'Debian' else 'pkglist.pacman-explicit.txt' }}"
+
+# errors='warn' so a MISSING/MISNAMED manifest emits a visible warning + empty list
+# (rather than silently masking a real path bug via ignore_errors). A genuinely
+# absent manifest on a brand-new box just skips the converge below.
+- name: Load the explicit-package manifest if present
+  ansible.builtin.set_fact:
+    base_pkglist: "{{ lookup('file', base_pkglist_path, errors='warn').splitlines() | reject('match', '^#') | reject('equalto', '') | list }}"
+
+- name: Converge explicit packages (Debian/Ubuntu)
+  when:
+    - ansible_os_family == 'Debian'
+    - base_pkglist | length > 0
+  ansible.builtin.apt:
+    name: "{{ base_pkglist }}"
+    state: present
+  ignore_errors: true   # tolerate packages a fresh box lacks repos for yet (path errors warn above, not here)
+
+- name: Converge explicit packages (Arch/CachyOS)
+  when:
+    - ansible_os_family == 'Archlinux'
+    - base_pkglist | length > 0
+  community.general.pacman:
+    name: "{{ base_pkglist }}"
+    state: present
+  ignore_errors: true

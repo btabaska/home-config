@@ -42,7 +42,7 @@ sh -c "$(curl -fsLS https://get.chezmoi.io)" -- -b "$HOME/.local/bin"
 
 ```bash
 sudo mkdir -p /opt && cd /opt
-git clone <git@forgejo.tabaska.us:homelab/foss-setup.git> foss-setup
+git clone <git@forgejo:home/homelab.git> foss-setup
 ```
 
 This gives you the compose stacks, scripts, and this runbook back on the box.
@@ -53,7 +53,7 @@ Clone the host's **private** `/etc` etckeeper repo somewhere scratch and copy
 back **only** the files you actually need:
 
 ```bash
-git clone <git@forgejo.tabaska.us:homelab/etc-<hostname>.git> /tmp/etc-restore
+git clone <git@forgejo:home/etc-<hostname>.git> /tmp/etc-restore
 ```
 
 > ⚠️ **Do NOT** `git checkout` or rsync the whole tree into the live `/etc`.
@@ -88,7 +88,7 @@ awk 'NR>1{print $1}' hosts/<hostname>/flatpak.txt | xargs -r -n1 flatpak install
 ## 6. Restore dotfiles with chezmoi
 
 ```bash
-chezmoi init --apply <git@forgejo.tabaska.us:homelab/dotfiles.git>
+chezmoi init --apply <git@forgejo:home/dotfiles.git>
 ```
 
 (See `scripts/dotfiles/bootstrap-dotfiles.sh` for the wrapped, idempotent version.)

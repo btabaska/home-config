@@ -1,0 +1,50 @@
+---
+# roles/sbom — ensure the nightly Syft/Grype SBOM job is present (glue-08).
+# Thin wrapper around sbom-02: it makes sure Syft + Grype exist (PINNED +
+# checksum-verified, the CVE-2026-33634 lesson) and installs the existing
+# nightly units from scripts/inventory/. Wake-gated on the rig.
+
+- name: Install Syft (pinned)
+  ansible.builtin.shell:
+    cmd: >-
+      curl -fsSL https://raw.githubusercontent.com/anchore/syft/main/install.sh
+      | sh -s -- -b /usr/local/bin v{{ syft_version }}
+    creates: /usr/local/bin/syft
+  when: syft_version is match('^[0-9]+\.[0-9]+\.[0-9]+$')   # skip the placeholder default until pinned
+
+- name: Install Grype (pinned)
+  ansible.builtin.shell:
+    cmd: >-
+      curl -fsSL https://raw.githubusercontent.com/anchore/grype/main/install.sh
+      | sh -s -- -b /usr/local/bin v{{ grype_version }}
+    creates: /usr/local/bin/grype
+  when: grype_version is match('^[0-9]+\.[0-9]+\.[0-9]+$')
+
+# M-an2: a bare relative `src` resolves from the role's files/ dir, not the repo,
+# so the unit files (which live at repo-root scripts/inventory/) never resolve and
+# the SBOM timer silently never installs. playbook_dir is configs/ansible (where
+# site.yml lives), so repo root is two levels up: {{ playbook_dir }}/../..
+- name: Install the sbom-nightly units (from sbom-02)
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../scripts/inventory/{{ item.dest }}"
+    dest: "/etc/systemd/system/{{ item.dest }}"
+    mode: "0644"
+  loop:
+    - { dest: "sbom-nightly.service" }
+    - { dest: "sbom-nightly.timer" }
+  notify: reload systemd
+
+- name: Drop the Dependency-Track endpoint (API key from SOPS)
+  ansible.builtin.copy:
+    dest: /etc/sbom-nightly.env
+    mode: "0600"
+    content: |
+      DTRACK_URL={{ dtrack_url }}
+      DTRACK_API_KEY={{ lookup('community.sops.sops', 'secrets/dtrack-apikey.sops', age_keyfile=sops_age_keyfile) }}
+
+- name: Enable the sbom-nightly timer
+  ansible.builtin.systemd_service:
+    name: sbom-nightly.timer
+    enabled: true
+    state: started
+    daemon_reload: true

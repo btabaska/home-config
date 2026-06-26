@@ -8,7 +8,7 @@ Reference for the FOSS homelab migration. Implements the **3-2-1 rule**: at leas
 - **1 off-site** — Backblaze B2 (per-TB) for irreplaceable data; Hetzner Storage Box for SSH/Borg hosts
 
 > **Cost note:** A Synology NAS does **not** qualify for Backblaze's flat $99/yr
-> "Computer Backup" plan. The NAS uses **per-TB B2 Cloud Storage (~$6/TB-month)**
+> "Computer Backup" plan. The NAS uses **per-TB B2 Cloud Storage ($6.95/TB-month, effective May 1 2026)**
 > via Hyper Backup, or **Synology C2** as an alternative. The flat plan is desktop-only.
 
 ---

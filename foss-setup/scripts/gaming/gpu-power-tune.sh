@@ -108,7 +108,7 @@ cat <<'EOF'
 [gpu]   [Service]
 [gpu]   Type=oneshot
 [gpu]   Environment=GPU_POWER_LIMIT=300
-[gpu]   ExecStart=/Users/.../foss-setup/scripts/gaming/gpu-power-tune.sh
+[gpu]   ExecStart=/opt/scripts/gaming/gpu-power-tune.sh
 [gpu]   RemainAfterExit=yes
 [gpu]
 [gpu]   [Install]

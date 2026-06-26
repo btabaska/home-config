@@ -1,4 +1,10 @@
 # borgmatic config example — off-site backup to a Hetzner Storage Box over SSH (BorgBackup).
+# Immutability model: this repo runs NORMAL local GFS prune (no client-side append-only).
+# The ransomware-resistant immutable copy is provided by Backblaze B2 Object Lock on the
+# restic → B2 path (see restic-backup.* / backup-architecture.md). Optional future hardening:
+# enforce a server-side `borg serve --append-only` forced-command on the SSH target's
+# authorized_keys; client-side --append-only is NOT real immutability (a compromised client
+# can flip it) and breaks local prune, so we deliberately do not use it here.
 #
 # Install to: /etc/borgmatic/config.yaml   (or ~/.config/borgmatic/config.yaml)
 # Validate:   borgmatic config validate
@@ -14,10 +20,13 @@
 #   - BorgBackup/SSH is served on PORT 23 (not 22). Enable "SSH support" in the Hetzner console first.
 #   - Add your client's SSH PUBLIC key to the box (see restore-test.sh / Hetzner docs). Key-based, no password.
 #   - Pin the remote Borg version with remote_path to avoid compatibility surprises (borg-1.4 below).
+#     Keep your LOCAL borg on the 1.x line too so client and server stay repo-compatible.
 #
-# Init the repo ONCE before the first backup (append-only protects against ransomware deletes):
-#   borgmatic init --encryption repokey-blake2 --append-only
+# Init the repo ONCE before the first backup. `borgmatic init` is deprecated; use repo-create:
+#   borgmatic repo-create --encryption repokey-blake2
 #   (older borgmatic: `borgmatic init --encryption repokey-blake2`)
+# NOTE: no --append-only here on purpose — local prune runs normally; immutability is provided
+# by B2 Object Lock on the restic path (see the header note above).
 
 # ---------------------------------------------------------------------------------
 # What to back up (Tier 1 irreplaceable data — adjust to your host's real paths).
@@ -64,7 +73,9 @@ exclude_patterns:
   - '*/.local/share/Trash/*'
 
 # ---------------------------------------------------------------------------------
-# Retention (GFS). borgmatic runs `borg prune` after each backup.
+# Retention (GFS). borgmatic runs `borg prune` after each backup to free space.
+# This works because the repo is NOT append-only (see header note); immutability is
+# handled by B2 Object Lock on the restic path, not by blocking prune here.
 # ---------------------------------------------------------------------------------
 keep_daily: 7
 keep_weekly: 4

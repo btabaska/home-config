@@ -43,8 +43,8 @@ ENV_FILE="${ENV_FILE:-/etc/inventory/sbom.env}"
 
 # Pin the scanner versions you verified (see CVE-2026-33634 note above).
 # Set ENFORCE_TOOL_PINS=0 to skip the drift check (NOT recommended in prod).
-SYFT_VERSION="${SYFT_VERSION:-1.18.1}"
-GRYPE_VERSION="${GRYPE_VERSION:-0.86.1}"
+SYFT_VERSION="${SYFT_VERSION:-1.45.1}"
+GRYPE_VERSION="${GRYPE_VERSION:-0.114.0}"
 ENFORCE_TOOL_PINS="${ENFORCE_TOOL_PINS:-1}"
 
 # Set GRYPE_GATE=1 to run a local grype scan on each SBOM before upload.

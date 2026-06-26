@@ -25,8 +25,9 @@ where the third octet matches the VLAN ID for sanity (e.g. VLAN 20 → 192.168.2
 
 ## Zones (group VLANs by trust level)
 
-UniFi ships predefined zones (**Internal, External, Gateway, VPN, Hotspot**) that
-cannot be deleted; you can add custom zones. A minimal, sane mapping:
+UniFi ships **six** predefined zones (**Internal, External, Gateway, VPN, Hotspot,
+DMZ**) that cannot be deleted; you can add custom zones. (DMZ is unused in this
+build — we have no public-facing servers to isolate there.) A minimal, sane mapping:
 
 | Zone | Type | Networks assigned | Intent |
 |---|---|---|---|

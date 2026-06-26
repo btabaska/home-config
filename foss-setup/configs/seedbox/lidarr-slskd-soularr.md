@@ -56,27 +56,34 @@ moves work) and add music alongside movies/tv:
     └── music/         # Lidarr root folder + what the sync agent pulls to the NAS
 ```
 
-`seedbox-sync.sh` already pulls `data/media/{movies,tv}` to the NAS; add a music
-pair so it also pulls `data/media/music` → the NAS music library. For example,
-override its env in the crontab line:
-
-```bash
-REMOTE_MOVIES=data/media/music LOCAL_MOVIES=/volume1/media/music /…/seedbox-sync.sh
-```
-
-(or add a third `pull` pair to your copy of the script). The NAS music library is
-what **Navidrome** indexes and streams to Symfonium/Amperfy.
+`seedbox-sync.sh` **already syncs music natively** — it pulls
+`REMOTE_MUSIC=data/media/music` → `LOCAL_MUSIC=/volume1/music` whenever
+`SYNC_MUSIC=1` (the default). So finished albums flow to the NAS automatically with
+**no extra config and no env overrides**. If you ever want movies/TV only, set
+`SYNC_MUSIC=0` to disable music sync. (Do **not** override `REMOTE_MOVIES`/
+`LOCAL_MOVIES` to point at music — that would break the movie sync.) The NAS music
+library at `/volume1/music` is what **Navidrome** indexes and streams to
+Symfonium/Amperfy.
 
 ---
 
 ## 3. Deploy slskd + Soularr (on the seedbox)
+
+> **Deployment reality (read first).** Sonarr/Radarr/Prowlarr/Lidarr/Bazarr come
+> from Bytesized's one-click catalog (see `arr-suite-wiring.md`). **slskd, Soularr,
+> and Unpackerr are NOT in that catalog.** Our chosen plan (Bytesized "Stream +3",
+> a *no-root managed* AppBox) **does, however, include SSH + rootless Docker on
+> every plan**, so you deploy these three yourself with the compose template below —
+> `docker compose up -d` works **without root** under rootless Docker. (If you ever
+> move to a provider that offers *neither* a one-click for these tools *nor* Docker,
+> you'd need a root-capable/VPS seedbox tier instead.)
 
 Use the compose template `slskd-soularr-compose.example.yaml` in this folder:
 
 ```bash
 cp configs/seedbox/slskd-soularr-compose.example.yaml docker-compose.yml
 cp .env.example .env          # set Soulseek creds, slskd web creds, MUSIC_DOWNLOADS
-docker compose up -d
+docker compose up -d          # rootless Docker — no sudo needed on the managed box
 ```
 
 Key points (all enforced by the template):
@@ -121,9 +128,9 @@ Key points (all enforced by the template):
 3. **Lidarr imports** from the download dir into `data/media/music/<Artist>/<Album>`
    with proper naming/tags (hardlink because it's the same filesystem).
 4. **`seedbox-sync.sh`** (run on the NAS) copies `data/media/music` down to the NAS
-   music library (`/volume1/media/music`).
+   music library (`/volume1/music`) automatically (`SYNC_MUSIC=1` default).
 5. **Navidrome** scans the NAS library and the album is streamable at home.
 
 Cross-references: `slskd-soularr-compose.example.yaml` (the stack), `arr-suite-wiring.md`
 (the shared seedbox pipeline + paths), and `../../scripts/media/seedbox-sync.sh`
-(the NAS puller — add the music path pair).
+(the NAS puller — already syncs music natively via `SYNC_MUSIC=1`).

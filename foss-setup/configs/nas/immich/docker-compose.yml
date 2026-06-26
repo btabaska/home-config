@@ -57,8 +57,9 @@ services:
 
   redis:
     container_name: immich_redis
-    # Pinned by digest to match the v2.7.5 release compose.
-    image: docker.io/valkey/valkey:9@sha256:4963247afc4cd33c7d3b2d2816b9f7f8eeebab148d29056c2ca4d7cbc966f2d9
+    # Pinned by digest to match the v2.7.5 release compose (verified against the
+    # release docker-compose.yml).
+    image: docker.io/valkey/valkey:9@sha256:3b55fbaa0cd93cf0d9d961f405e4dfcc70efe325e2d84da207a0a8e6d8fde4f9
     healthcheck:
       test: redis-cli ping || exit 1
     restart: always

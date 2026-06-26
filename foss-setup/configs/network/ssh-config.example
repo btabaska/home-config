@@ -1,0 +1,43 @@
+# ssh-config.example  ->  install to ~/.ssh/config  (chmod 600)
+#
+# Break-glass SSH for when Tailscale SSH (net-13) can't be used (control plane
+# unreachable, a client without the tailnet, etc). One ed25519 key, friendly
+# aliases over MagicDNS names, agent forwarding OFF by default.
+#
+# Track this with chezmoi (glue-04) so a rebuilt box gets it back automatically.
+# Replace <tailnet-name> with your tailnet's MagicDNS suffix (e.g. tail1234.ts.net)
+# and each User with your actual login on that host. Use a DEDICATED admin user
+# (<admin-user>), NOT the default `admin`/`root` — see ssh-maintenance-access.md §3.
+
+Host *
+    AddKeysToAgent yes
+    IdentityFile ~/.ssh/id_ed25519
+    ForwardAgent no
+    ServerAliveInterval 30
+    ServerAliveCountMax 3
+
+Host nas
+    HostName nas.<tailnet-name>.ts.net
+    User <admin-user>
+
+Host mini
+    HostName macmini.<tailnet-name>.ts.net
+    User <admin-user>
+
+# On-demand box: wake it first with scripts/gaming/wake-rig.sh (game-08),
+# then `ssh rig`. RequestTTY keeps interactive sessions sane after a cold wake.
+Host rig
+    HostName cachyos.<tailnet-name>.ts.net
+    User <admin-user>
+
+# Home Assistant OS: reachable via the Advanced SSH & Web Terminal add-on
+# (default port 22). For the low-level debug shell use port 22222 instead.
+# HAOS has no normal user shell, so root is expected here (unlike the other hosts).
+Host ha
+    HostName homeassistant.<tailnet-name>.ts.net
+    User root
+
+# Seedbox: the username is assigned by your provider's control panel.
+Host seedbox
+    HostName seedbox.<tailnet-name>.ts.net
+    User <seedbox-user>

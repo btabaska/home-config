@@ -1,0 +1,54 @@
+# ansible-pull.service — self-converging fleet, the PULL half of glue-08.
+#
+# Each host clones the control repo and runs site.yml against ITSELF on a timer,
+# so a drifted or rebuilt box returns to its defined state with nobody driving
+# it. Install on every Ansible-managed host (Mac mini, seedbox, rig):
+#
+#   sudo cp ansible-pull.service ansible-pull.timer /etc/systemd/system/
+#   sudo systemctl enable --now ansible-pull.timer
+#
+# Edit CONTROL_REPO_URL below to your Forgejo control-repo SSH URL (glue-05/06).
+[Unit]
+Description=ansible-pull fleet convergence (glue-08)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=CONTROL_REPO_URL=git@forgejo:home/homelab.git
+
+# IMPORTANT — group membership (H7): we run against the REPO inventory and
+# --limit to THIS host, instead of the old `--inventory 'localhost,'`. With a
+# bare localhost inventory `group_names` is empty, so the `docker` role, the
+# on_demand wake-gating, and the per-host pkglist convergence all silently
+# no-op. Using inventory.ini means group_names (fleet/debian/arch/always_on/
+# on_demand/docker_hosts) resolves correctly even over `--connection local`
+# (the local connection only changes WHERE tasks run, not which inventory
+# entry — and thus which groups — apply to this host).
+#
+# REQUIREMENT: this host's short hostname (`hostname -s`) MUST equal its
+# inventory ALIAS in configs/ansible/inventory.ini — i.e. `macmini`, `seedbox`,
+# or `cachyos` (NOT the ssh-config ansible_host of mini/seedbox/rig). Set it
+# once with e.g. `sudo hostnamectl set-hostname macmini`. The `ansible_host`
+# ssh alias is irrelevant under --connection local, so this is safe.
+#
+# --check = report-only convergence: it shows drift and (via the role handlers)
+# pings ntfy. Under --check Ansible changes NOTHING by default; the ONE thing we
+# deliberately let through is enabling unattended-upgrades (base role tasks carry
+# `check_mode: false`), so OS security patching is actually set up even on a
+# report-only pull. Everything else stays preview-only. Same "no blind updates"
+# rule as Diun (docker-12) / sec-05. Drop --check once you trust a run to self-heal.
+ExecStart=/usr/bin/ansible-pull \
+    --url ${CONTROL_REPO_URL} \
+    --directory %h/.ansible-pull \
+    --inventory configs/ansible/inventory.ini \
+    --limit "$(hostname -s)" \
+    --connection local \
+    --diff --check \
+    configs/ansible/site.yml
+
+# Don't let a transient pull failure mark the box permanently failed.
+SuccessExitStatus=0
+
+[Install]
+WantedBy=multi-user.target

@@ -9,8 +9,13 @@
 #               and triggers Lidarr to import them. Runs on a cron-like interval.
 #
 # Both share ONE downloads dir so Soularr/Lidarr see the same files slskd writes.
+#
+# DEPLOYMENT (M-ma1): slskd + Soularr are NOT in Bytesized's one-click catalog.
+# Deploy them yourself via the plan's rootless Docker (no root needed). A provider
+# with neither a one-click nor Docker for these would require a root-capable/VPS tier.
+#
 # Copy to docker-compose.yml on the seedbox, fill the .env values, then:
-#   docker compose up -d
+#   docker compose up -d   # rootless Docker — no sudo needed on the managed box
 
 services:
   slskd:
@@ -37,7 +42,8 @@ services:
       - default
 
   soularr:
-    image: ghcr.io/mrusse/soularr:v1.2.2
+    # ghcr tags are unprefixed (1.2.2, NOT v1.2.2 — that tag does not exist).
+    image: ghcr.io/mrusse/soularr:1.2.2
     container_name: soularr
     restart: unless-stopped
     depends_on:

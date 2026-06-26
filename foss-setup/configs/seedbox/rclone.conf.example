@@ -11,9 +11,12 @@
 #   rclone copy:         https://rclone.org/commands/rclone_copy/
 #   rclone sync:         https://rclone.org/commands/rclone_sync/
 #
-# SECURITY: prefer key-based auth over a password. Generate a dedicated key on the NAS:
-#   ssh-keygen -t ed25519 -f ~/.ssh/seedbox_ed25519 -C "nas-rclone"
-#   ssh-copy-id -i ~/.ssh/seedbox_ed25519.pub -p <SEEDBOX_SSH_PORT> <SEEDBOX_USER>@<SEEDBOX_HOST>
+# SECURITY: prefer key-based auth over a password. Synology cron runs jobs as
+# ROOT, so generate the key in root's home and reference it by ABSOLUTE path
+# (a `~` in this file would expand to whoever runs rclone — inconsistent). Both the
+# private key AND known_hosts live under /root/.ssh so the cron run finds them:
+#   sudo ssh-keygen -t ed25519 -f /root/.ssh/seedbox_ed25519 -C "nas-rclone"
+#   sudo ssh-copy-id -i /root/.ssh/seedbox_ed25519.pub -p <SEEDBOX_SSH_PORT> <SEEDBOX_USER>@<SEEDBOX_HOST>
 # Then point key_file at the PRIVATE key below. Do NOT also set `pass`.
 #
 # HOST CHOICE: use the seedbox's Tailscale name/IP (100.x.y.z or <name>.<tailnet>.ts.net)
@@ -36,8 +39,9 @@ key_file = /root/.ssh/seedbox_ed25519
 # pass = <OUTPUT_OF_rclone_obscure>
 # ----------------------------------------------------------------------------------
 # Pin the host key after the first connect to defeat MITM (get it with: ssh-keyscan -p <port> <host>).
-# Format: "ssh-ed25519 AAAA..."  Comma-separate multiple keys.
-known_hosts_file = ~/.ssh/known_hosts
+# Format: "ssh-ed25519 AAAA..."  Comma-separate multiple keys. Absolute path under
+# root's home so the (root) cron run reads the same known_hosts as the key above.
+known_hosts_file = /root/.ssh/known_hosts
 # Disable legacy/weak algorithms; modern seedboxes support ed25519 fine.
 # shell_type lets rclone use server-side features when available.
 shell_type = unix

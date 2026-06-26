@@ -1,0 +1,40 @@
+---
+# reboot.yml — controlled, one-at-a-time reboots across the fleet (glue-07)
+#
+# Reboots only hosts that actually need it, never more than one at a time, and
+# waits for each to come back on the tailnet before moving on — so you don't
+# knock the whole homelab offline in parallel.
+#
+#   ansible-playbook -i inventory.ini playbooks/reboot.yml
+#   ansible-playbook -i inventory.ini playbooks/reboot.yml --limit macmini   # one box
+#
+# Wake the on-demand rig first (game-08) or skip it: --limit '!cachyos'
+
+- name: Reboot hosts that require it (serialized)
+  hosts: fleet
+  become: true
+  serial: 1                      # critical: one host at a time
+  tasks:
+    - name: Check for a pending reboot (Debian/Ubuntu)
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: deb_reboot
+      when: "'debian' in group_names"
+
+    - name: Decide whether this host reboots
+      ansible.builtin.set_fact:
+        do_reboot: >-
+          {{ (('debian' in group_names) and deb_reboot.stat.exists)
+             or (force_reboot | default(false) | bool) }}
+
+    - name: Reboot and wait for the node to return
+      ansible.builtin.reboot:
+        msg: "Ansible fleet maintenance reboot (glue-07)"
+        reboot_timeout: 600
+        post_reboot_delay: 15
+      when: do_reboot | bool
+
+    - name: Skipped (no reboot needed)
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: no reboot required (use -e force_reboot=true to force)"
+      when: not (do_reboot | bool)

@@ -35,11 +35,19 @@ alternatives/
   dockhand/          # swap-in for Dockge (power option)
 ```
 
-> Note: Paperless-ngx, Mealie, LiteLLM, Frigate, Healthchecks, Dependency-Track and
-> the media-companion stacks (Tautulli/Kometa/Maintainerr/Tdarr) run on the Mac mini
-> via this same `/opt/stacks` model. Port assignments are chosen to avoid clashes
-> (e.g. Forgejo on host `3030` so it doesn't collide with AdGuard's `3000` first-run
-> wizard; Homepage on host `3010`; Healthchecks on `8001` vs Paperless `8000`).
+> Note: most of these stacks run on the Mac mini via this same `/opt/stacks` model.
+> Port assignments are chosen to avoid clashes (e.g. Forgejo on host `3030` so it
+> doesn't collide with AdGuard's `3000` first-run wizard; Homepage on host `3010`;
+> Healthchecks on `8001` vs Paperless `8000`).
+>
+> **Offload the heavy hitters (see the plan's Section 0 capacity note).** The 2015
+> Mac mini caps at 16 GB RAM, so **Paperless-ngx, Dependency-Track, Frigate, and the
+> Tdarr server** are intended to run on the **NAS** (DSM Container Manager) instead —
+> co-located with the data/media they touch and where there's RAM headroom. The
+> compose files here are host-agnostic; drop those four into the NAS's Container
+> Manager rather than `/opt/stacks` on the Mac mini. When a service runs on the NAS,
+> point its **Caddy** vhost at `{$NAS_IP}:<host-port>` instead of the container name
+> (the `edge` network is per-host) — see the note at the bottom of the Caddyfile.
 
 ## Pinned versions (2026)
 

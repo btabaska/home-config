@@ -28,6 +28,11 @@ services:
       - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
     volumes:
       - ./config.yaml:/app/config.yaml:ro
+    # On native Linux Docker `host.docker.internal` is NOT defined by default, so the
+    # Mac-mini host Ollama fallback (api_base: http://host.docker.internal:11434)
+    # would never resolve. This maps it to the host gateway so the fallback works.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - edge
     healthcheck:

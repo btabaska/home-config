@@ -4,17 +4,23 @@
 # DNS TOPOLOGY:
 #   client → AdGuard Home / Pi-hole (filtering)  →  Unbound (recursive + DNSSEC)
 #   Instead of forwarding to Google/Cloudflare, AdGuard points its UPSTREAM at
-#   this Unbound on 127.0.0.1#5335. Unbound then talks straight to the DNS root
-#   and authoritative servers, validating DNSSEC itself — no third-party resolver
-#   sees your queries. In AdGuard: Settings → DNS → Upstream servers: 127.0.0.1:5335
+#   this Unbound. Unbound then talks straight to the DNS root and authoritative
+#   servers, validating DNSSEC itself — no third-party resolver sees your queries.
+#
+#   AdGuard runs in a container on the `edge` bridge, so it CANNOT reach Unbound at
+#   127.0.0.1 (inside AdGuard's container that's AdGuard's own loopback, not the
+#   host). The working pattern is the standard "AdGuard + Unbound in Docker": put
+#   Unbound on the SAME `edge` network and address it by container name.
+#   In AdGuard: Settings → DNS → Upstream servers:  unbound:5335
 #
 # REDUNDANCY: run a SECOND resolver (an AdGuard Home instance on the NAS) and hand
 #   it out as the secondary DNS in DHCP, so DNS keeps working if the Mac mini is
 #   down. Point that second AdGuard at its own Unbound (or this one over Tailscale).
 #
-# Binds host port 5335 (TCP+UDP) so the local AdGuard can reach it at 127.0.0.1#5335.
-# Config is bind-mounted from ./unbound. This is a backend resolver, NOT a web
-# service, so it does NOT join the edge network — it only needs the host port.
+# Config is bind-mounted from ./unbound. The 127.0.0.1:5335 host port is OPTIONAL —
+# it only exists for host-side testing (`drill -p 5335 example.com @127.0.0.1`) and
+# is NOT how AdGuard reaches Unbound (that's container-to-container over `edge`).
+# Drop the `ports:` block entirely if you don't want it on the host at all.
 
 services:
   unbound:
@@ -22,13 +28,19 @@ services:
     container_name: unbound
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5335:5335/tcp" # localhost-only: AdGuard upstream = 127.0.0.1#5335
+      - "127.0.0.1:5335:5335/tcp" # OPTIONAL host-side testing only (not AdGuard's path)
       - "127.0.0.1:5335:5335/udp"
     volumes:
       - ./unbound:/opt/unbound/etc/unbound
+    networks:
+      - edge # AdGuard reaches this resolver here as `unbound:5335`
     healthcheck:
       test: ["CMD-SHELL", "drill -p 5335 cloudflare.com @127.0.0.1 || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 15s
+
+networks:
+  edge:
+    external: true
