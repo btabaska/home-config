@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Going Analogue — FOSS Homelab Implementation Guide</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-elev: #161b22;
+    --bg-elev2: #1c2230;
+    --border: #2a313c;
+    --text: #e6edf3;
+    --text-dim: #9aa7b4;
+    --text-faint: #6e7b8a;
+    --accent: #4f9eff;
+    --accent2: #2dd4bf;
+    --sync: #f0883e;
+    --async: #56d364;
+    --done: #2dd4bf;
+    --warn: #f7c948;
+    --radius: 12px;
+    --shadow: 0 4px 18px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  code, pre, .mono { font-family: "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace; }
+
+  /* ---------- sticky header + progress ---------- */
+  header.sticky {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(13,17,23,.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px clamp(16px, 4vw, 48px) 12px;
+  }
+  .head-row { display:flex; align-items:center; gap:16px; flex-wrap:wrap; justify-content:space-between; }
+  .brand { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+  .brand h1 { font-size: clamp(1.05rem, 2.4vw, 1.4rem); margin:0; font-weight:700; letter-spacing:-.02em; }
+  .brand .sub { color: var(--text-faint); font-size:.8rem; }
+  .pct-big { font-size: clamp(1.5rem, 4vw, 2.1rem); font-weight:800; letter-spacing:-.03em;
+    background: linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .bar-wrap { margin-top:10px; }
+  .bar-track { height:14px; background: var(--bg-elev2); border-radius:999px; overflow:hidden; border:1px solid var(--border); position:relative; }
+  .bar-fill { height:100%; width:0%; border-radius:999px;
+    background: linear-gradient(90deg,var(--accent),var(--accent2));
+    transition: width .5s cubic-bezier(.2,.8,.2,1); box-shadow: 0 0 14px rgba(45,212,191,.4); }
+  .bar-meta { display:flex; justify-content:space-between; font-size:.74rem; color:var(--text-dim); margin-top:6px; flex-wrap:wrap; gap:8px; }
+
+  /* ---------- controls ---------- */
+  .controls { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+  .controls select, .controls button {
+    background: var(--bg-elev2); color: var(--text); border:1px solid var(--border);
+    border-radius:8px; padding:6px 11px; font-size:.8rem; cursor:pointer; font-family:inherit; }
+  .controls button:hover, .controls select:hover { border-color: var(--accent); }
+  .controls .seg { display:flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .controls .seg button { border:0; border-radius:0; border-right:1px solid var(--border); }
+  .controls .seg button:last-child { border-right:0; }
+  .controls .seg button.on { background: var(--accent); color:#04121f; font-weight:600; }
+  .controls .danger:hover { border-color:#f85149; color:#f85149; }
+
+  /* ---------- layout ---------- */
+  main { max-width: 1080px; margin: 0 auto; padding: 0 clamp(16px,4vw,48px) 120px; }
+  .intro { margin: 26px 0 8px; }
+  .intro h2 { font-size:1.05rem; margin:0 0 6px; }
+  .intro p { color: var(--text-dim); font-size:.9rem; margin:.4em 0; }
+  .legend { display:flex; gap:16px; flex-wrap:wrap; font-size:.78rem; color:var(--text-dim); margin-top:8px; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; }
+  .dot { width:10px; height:10px; border-radius:3px; display:inline-block; }
+
+  .hostgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:14px; }
+  .hostcard { background:var(--bg-elev); border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
+  .hostcard h4 { margin:0 0 4px; font-size:.85rem; }
+  .hostcard p { margin:0; font-size:.76rem; color:var(--text-dim); }
+  .hostcard .tag { font-size:.66rem; text-transform:uppercase; letter-spacing:.06em; color:var(--accent2); font-weight:700; }
+
+  /* ---------- phase ---------- */
+  .phase { margin-top: 38px; scroll-margin-top: 150px; }
+  .phase-head { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .phase-num { font-size:.72rem; font-weight:800; letter-spacing:.12em; color:#04121f;
+    background: linear-gradient(135deg,var(--accent),var(--accent2)); padding:4px 9px; border-radius:6px; }
+  .phase-head h3 { font-size:1.18rem; margin:0; letter-spacing:-.02em; }
+  .phase-head .ph-sub { color:var(--text-faint); font-size:.82rem; width:100%; margin-top:2px; }
+  .phase-mini { flex:1; min-width:140px; height:7px; background:var(--bg-elev2); border-radius:999px; overflow:hidden; border:1px solid var(--border); }
+  .phase-mini > i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width .4s; }
+  .phase-count { font-size:.74rem; color:var(--text-dim); white-space:nowrap; }
+
+  /* ---------- task ---------- */
+  .task { background:var(--bg-elev); border:1px solid var(--border); border-radius:var(--radius); margin-top:12px; overflow:hidden; transition:border-color .2s, opacity .2s; }
+  .task.done { border-color: rgba(45,212,191,.4); }
+  .task.done .t-title { color: var(--text-dim); text-decoration: line-through; text-decoration-color: var(--text-faint); }
+  .task.hide { display:none; }
+  .t-head { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; cursor:pointer; }
+  .t-check { appearance:none; width:22px; height:22px; min-width:22px; margin-top:1px; border:2px solid var(--text-faint); border-radius:6px; cursor:pointer; position:relative; transition:.15s; background:var(--bg); }
+  .t-check:hover { border-color:var(--accent2); }
+  .t-check:checked { background:var(--done); border-color:var(--done); }
+  .t-check:checked::after { content:"✓"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#04121f; font-weight:900; font-size:14px; }
+  .t-main { flex:1; min-width:0; }
+  .t-title { font-weight:650; font-size:.96rem; }
+  .t-id { font-size:.66rem; color:var(--text-faint); font-weight:600; }
+  .t-badges { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; align-items:center; }
+  .badge { font-size:.66rem; padding:2px 8px; border-radius:999px; font-weight:700; letter-spacing:.02em; border:1px solid transparent; white-space:nowrap; }
+  .b-host { background:rgba(79,158,255,.13); color:var(--accent); border-color:rgba(79,158,255,.3); }
+  .b-sync { background:rgba(240,136,62,.14); color:var(--sync); border-color:rgba(240,136,62,.32); }
+  .b-async { background:rgba(86,211,100,.13); color:var(--async); border-color:rgba(86,211,100,.3); }
+  .b-est { background:var(--bg-elev2); color:var(--text-dim); border-color:var(--border); }
+  .b-dep { background:transparent; color:var(--text-faint); border-color:var(--border); }
+  .chev { color:var(--text-faint); transition:transform .2s; margin-top:3px; font-size:.85rem; }
+  .task.open .chev { transform:rotate(90deg); }
+
+  .t-body { display:none; padding:0 16px 16px 50px; border-top:1px solid var(--border); }
+  .task.open .t-body { display:block; }
+  .t-body h5 { font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-faint); margin:16px 0 7px; font-weight:700; }
+  .t-body ol, .t-body ul { margin:0; padding-left:20px; }
+  .t-body li { font-size:.87rem; color:var(--text); margin:5px 0; }
+  .cmd { position:relative; background:#0a0e14; border:1px solid var(--border); border-radius:8px; padding:9px 40px 9px 12px; margin:6px 0; font-size:.8rem; color:#c9d4e0; overflow-x:auto; white-space:pre; }
+  .cmd .copy { position:absolute; top:6px; right:6px; background:var(--bg-elev2); border:1px solid var(--border); color:var(--text-dim); border-radius:6px; padding:3px 8px; font-size:.66rem; cursor:pointer; }
+  .cmd .copy:hover { color:var(--accent2); border-color:var(--accent2); }
+  .cmd .copy.ok { color:var(--done); border-color:var(--done); }
+  .filelist a, .doclist a { color:var(--accent); text-decoration:none; font-size:.83rem; }
+  .filelist a:hover, .doclist a:hover { text-decoration:underline; }
+  .filelist li { color:var(--text-dim); }
+  .filelist code { background:var(--bg-elev2); padding:1px 5px; border-radius:4px; font-size:.78rem; }
+  .verify { margin-top:14px; background:rgba(45,212,191,.07); border:1px solid rgba(45,212,191,.25); border-radius:8px; padding:10px 12px; font-size:.83rem; }
+  .verify b { color:var(--done); }
+  .doclist li { margin:4px 0; }
+
+  footer { text-align:center; color:var(--text-faint); font-size:.76rem; padding:30px 16px 60px; border-top:1px solid var(--border); margin-top:50px; }
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--bg-elev2); border:1px solid var(--accent2); color:var(--text); padding:10px 18px; border-radius:10px; font-size:.84rem; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:.3s; z-index:100; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  a.skip { color:var(--accent); }
+
+  /* ---------- tabs ---------- */
+  .tabbar { display:flex; gap:4px; margin:24px 0 2px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .tab { background:transparent; border:0; border-bottom:2px solid transparent; color:var(--text-dim);
+    padding:10px 16px; font-size:.92rem; font-weight:650; cursor:pointer; font-family:inherit;
+    border-radius:8px 8px 0 0; margin-bottom:-1px; }
+  .tab:hover { color:var(--text); background:var(--bg-elev); }
+  .tab.on { color:var(--accent2); border-bottom-color:var(--accent2); }
+  .tabpanel[hidden] { display:none; }
+
+  /* ---------- cost + hardware panels ---------- */
+  .panel-h { font-size:1.18rem; margin:26px 0 4px; letter-spacing:-.02em; }
+  .panel-sub { color:var(--text-dim); font-size:.88rem; margin:.3em 0 .9em; }
+  .cost-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; margin:14px 0 4px; }
+  .cost-card { background:var(--bg-elev); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+  .cost-card .big { font-size:1.5rem; font-weight:800; letter-spacing:-.02em;
+    background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .cost-card .lbl { font-size:.74rem; color:var(--text-faint); text-transform:uppercase; letter-spacing:.05em; margin-top:4px; }
+
+  .data-table { width:100%; border-collapse:collapse; margin:12px 0 6px; font-size:.85rem; }
+  .data-table th, .data-table td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+  .data-table th { color:var(--text-faint); font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; font-weight:700; }
+  .data-table tbody tr:hover td { background:var(--bg-elev); }
+  .data-table td.num, .data-table th.num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .data-table tfoot td { font-weight:700; border-top:2px solid var(--border); border-bottom:0; color:var(--text); }
+
+  .note { background:rgba(247,201,72,.07); border:1px solid rgba(247,201,72,.26); border-radius:8px;
+    padding:10px 12px; font-size:.83rem; color:var(--text-dim); margin:12px 0; }
+  .note b { color:var(--warn); }
+  .tagpill { display:inline-block; font-size:.64rem; padding:2px 8px; border-radius:999px; font-weight:700;
+    border:1px solid var(--border); color:var(--text-dim); background:var(--bg-elev2); white-space:nowrap; }
+
+  .hw-host { background:var(--bg-elev); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin:12px 0; }
+  .hw-host.offsite { border-color:rgba(240,136,62,.4); background:rgba(240,136,62,.045); }
+  .hw-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; justify-content:space-between; }
+  .hw-head h4 { margin:0; font-size:1rem; }
+  .hw-host .panel-sub { margin:.35em 0 .55em; }
+  .hw-section-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--accent2); font-weight:800; margin:28px 0 2px; }
+  .swlist { display:flex; flex-wrap:wrap; gap:6px; }
+  .swlist .sw { font-size:.75rem; background:var(--bg-elev2); border:1px solid var(--border); border-radius:6px; padding:3px 9px; color:var(--text); }
+  .hw-host.offsite .sw { border-color:rgba(240,136,62,.3); }
+</style>
+</head>
+<body>
+<header class="sticky">
+  <div class="head-row">
+    <div class="brand">
+      <h1>Going Analogue</h1>
+      <span class="sub">FOSS homelab implementation tracker</span>
+    </div>
+    <div style="text-align:right">
+      <div class="pct-big" id="pctBig">0%</div>
+      <div style="font-size:.7rem;color:var(--text-faint)" id="pctSub">0 / 0 tasks</div>
+    </div>
+  </div>
+  <div class="bar-wrap">
+    <div class="bar-track"><div class="bar-fill" id="barFill"></div></div>
+    <div class="bar-meta">
+      <span id="phaseSummary"></span>
+      <span id="timeLeft"></span>
+    </div>
+  </div>
+  <div class="controls">
+    <div class="seg" id="typeSeg">
+      <button data-type="all" class="on">All</button>
+      <button data-type="sync">Synchronous</button>
+      <button data-type="async">Async</button>
+    </div>
+    <select id="hostFilter"><option value="all">All hosts</option></select>
+    <select id="doneFilter">
+      <option value="all">Show all</option>
+      <option value="todo">Hide completed</option>
+      <option value="done">Only completed</option>
+    </select>
+    <button id="expandAll">Expand all</button>
+    <button id="collapseAll">Collapse all</button>
+    <button id="resetBtn" class="danger">Reset progress</button>
+  </div>
+</header>
+
+<main>
+  <nav class="tabbar" id="tabbar">
+    <button class="tab on" data-tab="rollout">Rollout Guide</button>
+    <button class="tab" data-tab="features">Features</button>
+    <button class="tab" data-tab="costs">Costs</button>
+    <button class="tab" data-tab="hardware">Hardware &amp; Software</button>
+  </nav>
+
+  <div class="tabpanel" id="tab-rollout">
+  <section class="intro">
+    <h2>How to use this guide</h2>
+    <p>This is a self-contained tracker for migrating off the Apple/iOS ecosystem onto your own hardware. Work top-to-bottom through the five phases — <b>each phase leaves you better off</b> and is safe to stop at. Check a task to mark it done; your progress is saved in this browser automatically (no account, no server). Click any task to expand its grounded steps, copy-paste commands, the config/script files the swarm generated for you, the upstream docs each step is based on, and a concrete "done when" check.</p>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--sync)"></i> <b>Synchronous</b> — blocking; do in order (a dependency or one-way door)</span>
+      <span><i class="dot" style="background:var(--async)"></i> <b>Async</b> — run unattended / in parallel / anytime</span>
+      <span><i class="dot" style="background:var(--accent)"></i> Host the task runs on</span>
+    </div>
+    <p style="margin-top:14px"><b>Critical path:</b> UniFi backup → VLANs + Zone-Based Firewall → Tailscale → backups + a tested restore → (Phase 4) Caddy/ntfy → Forgejo → push all configs to Git. Everything else hangs off this spine and much of it parallelizes. The single biggest mistake is treating the firewall migration as async — it's a one-way door, so back up first and do it deliberately.</p>
+
+    <div class="hostgrid">
+      <div class="hostcard"><div class="tag">Always-on · low power</div><h4>DS920+ NAS</h4><p>Storage, Immich, Plex, Calibre-Web-Automated, backups. Quick Sync transcode. ~35-45W.</p></div>
+      <div class="hostcard"><div class="tag">Always-on · ~12W</div><h4>Mac mini → Ubuntu</h4><p>Docker host: Seerr, Miniflux, Navidrome, Caddy, AdGuard, monitoring, light game servers, Forgejo.</p></div>
+      <div class="hostcard"><div class="tag">On-demand only</div><h4>CachyOS rig (3090 Ti)</h4><p>Local LLM, Sunshine streaming, heavy game servers. Wake-on-LAN + auto-suspend — never 24/7.</p></div>
+      <div class="hostcard"><div class="tag">Off-site · rented</div><h4>Managed seedbox</h4><p>Whole P2P + *arr download stack runs here; finished media syncs home. ISP never sees a swarm.</p></div>
+      <div class="hostcard"><div class="tag">Always-on · isolated</div><h4>Home Assistant</h4><p>HA Green or HAOS VM. Pulls Hue/Nest/Midea into local control. Lives on Trusted VLAN.</p></div>
+      <div class="hostcard"><div class="tag">Always-on core</div><h4>UniFi Dream Wall</h4><p>Router + firewall + switch + WiFi6 + controller. 4-5 VLANs, Zone-Based Firewall.</p></div>
+    </div>
+  </section>
+
+  <div id="phases"></div>
+  </div><!-- /tab-rollout -->
+
+  <!-- ============ COSTS TAB ============ -->
+  <div class="tabpanel" id="tab-costs" hidden>
+    <h2 class="panel-h">What this costs to run</h2>
+    <p class="panel-sub">Three buckets: ongoing <b>electricity</b>, one-time <b>hardware</b>, and recurring <b>subscriptions</b>. The single biggest variable is whether the CachyOS rig is on-demand (cheap) or left on 24/7 (expensive) — so keep it asleep.</p>
+
+    <div class="cost-cards">
+      <div class="cost-card"><div class="big">~$145–200<span style="font-size:.85rem">/yr</span></div><div class="lbl">Always-on electricity</div></div>
+      <div class="cost-card"><div class="big">~$40–80<span style="font-size:.85rem">/yr</span></div><div class="lbl">Rig, on-demand (few hrs/day)</div></div>
+      <div class="cost-card"><div class="big">~$30–65<span style="font-size:.85rem">/mo</span></div><div class="lbl">New recurring subscriptions</div></div>
+      <div class="cost-card"><div class="big">~$250–800</div><div class="lbl">One-time new hardware</div></div>
+    </div>
+
+    <h3 class="panel-h" style="font-size:1.02rem">Electricity</h3>
+    <p class="panel-sub">RG&amp;E all-in residential ≈ <b>$0.20/kWh</b> (2026). Rule of thumb: 1 W running 24/7 ≈ <b>$1.75/year</b>.</p>
+    <table class="data-table">
+      <thead><tr><th>Always-on device</th><th>Typical draw</th><th class="num">~Annual @ $0.20/kWh</th></tr></thead>
+      <tbody>
+        <tr><td>DS920+ + 4 drives</td><td>~35–45 W (less if drives hibernate)</td><td class="num">~$60–80</td></tr>
+        <tr><td>Mac mini 2015 (Ubuntu)</td><td>~10–15 W (idle ~6–10)</td><td class="num">~$18–26</td></tr>
+        <tr><td>HA Green (if used)</td><td>~2–3 W</td><td class="num">~$4–5</td></tr>
+        <tr><td>UniFi Dream Wall</td><td>~30–40 W</td><td class="num">~$55–70</td></tr>
+        <tr><td>Fiber ONT / modem</td><td>~5–10 W</td><td class="num">~$10–15</td></tr>
+      </tbody>
+      <tfoot><tr><td>Always-on subtotal</td><td>~80–115 W</td><td class="num">~$145–200</td></tr></tfoot>
+    </table>
+    <table class="data-table">
+      <thead><tr><th>CachyOS rig scenario</th><th>Draw</th><th class="num">~Annual</th></tr></thead>
+      <tbody>
+        <tr><td>On-demand, few hrs/day — <b>recommended</b></td><td>varies with use</td><td class="num">~$40–80</td></tr>
+        <tr><td>Left idling 24/7</td><td>~90–120 W (Linux can stick at ~100 W+)</td><td class="num">~$160–210</td></tr>
+        <tr><td>Sustained heavy load 24/7</td><td>400–600 W+</td><td class="num">~$700–1,000+</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>Takeaway:</b> always-on gear is cheap (~$150/yr). The rig is the whole story — keep it on Wake-on-LAN + auto-suspend and you pay only for the hours you actually use it.</div>
+
+    <h3 class="panel-h" style="font-size:1.02rem">One-time hardware</h3>
+    <table class="data-table">
+      <thead><tr><th>Item</th><th>Status</th><th class="num">~Cost</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td>CachyOS rig, DS920+ (+drives), Mac mini, Dream Wall</td><td><span class="tagpill">owned</span></td><td class="num">$0</td><td>Already in your stack</td></tr>
+        <tr><td>Hue, Nest, Midea AC + dehumidifier</td><td><span class="tagpill">owned</span></td><td class="num">$0</td><td>Already in your stack</td></tr>
+        <tr><td>HA Green</td><td><span class="tagpill">new · optional</span></td><td class="num">~$199</td><td>Or run HAOS in a VM for $0</td></tr>
+        <tr><td>Kobo eReader (Sage + Forma)</td><td><span class="tagpill">owned</span></td><td class="num">$0</td><td>Both run KOReader + native CWA Kobo sync — no purchase needed</td></tr>
+        <tr><td>UPS ×2–3 (NAS, Ubuntu, Dream Wall)</td><td><span class="tagpill">new</span></td><td class="num">~$150–450</td><td>Graceful shutdown; protects DB writes</td></tr>
+        <tr><td>Rotated external HDD (Tier 2 off-site)</td><td><span class="tagpill">new</span></td><td class="num">~$100–160</td><td>Cheap off-site for bulky media</td></tr>
+        <tr><td>ESPHome SLWF-01Pro dongle ×N</td><td><span class="tagpill">new · optional</span></td><td class="num">~$13 ea</td><td>Fully cloud-free Midea control</td></tr>
+        <tr><td>Whole-home / circuit power monitor</td><td><span class="tagpill">owned</span></td><td class="num">$0</td><td>Emporia Energy already on the breaker/circuits — real per-circuit draw</td></tr>
+        <tr><td>iPod Classic</td><td><span class="tagpill">owned</span></td><td class="num">$0</td><td>Stays on Apple firmware</td></tr>
+        <tr><td>Google Device Access (Nest SDM)</td><td><span class="tagpill">one-time fee</span></td><td class="num">$5</td><td>Non-refundable registration</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="panel-h" style="font-size:1.02rem">Recurring subscriptions</h3>
+    <table class="data-table">
+      <thead><tr><th>Service</th><th>Status</th><th class="num">~Cost</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Managed seedbox</td><td><span class="tagpill">new</span></td><td class="num">~$15–30/mo</td><td>Off-site P2P + *arr stack</td></tr>
+        <tr><td>Backblaze B2 (Tier 1, ~1–2 TB)</td><td><span class="tagpill">new</span></td><td class="num">~$7–14/mo</td><td>Off-site cloud backup ($6.95/TB)</td></tr>
+        <tr><td>Obsidian Sync</td><td><span class="tagpill">new</span></td><td class="num">~$4–8/mo</td><td>E2E notes sync, nothing to host</td></tr>
+        <tr><td>Hetzner Storage Box</td><td><span class="tagpill">new · optional</span></td><td class="num">~$4–11/mo</td><td>Cheap Borg off-site target</td></tr>
+        <tr><td>Domain name (tabaska.us)</td><td><span class="tagpill">owned</span></td><td class="num">$0 new (~$12–15/yr renewal)</td><td>Already owned — HTTPS via Caddy</td></tr>
+        <tr><td>Kagi</td><td><span class="tagpill">existing</span></td><td class="num">~$10/mo</td><td>Search (keeping)</td></tr>
+        <tr><td>Proton (Unlimited)</td><td><span class="tagpill">existing</span></td><td class="num">~$10–13/mo</td><td>Mail / VPN / Drive / Calendar / Pass</td></tr>
+        <tr><td>Plex Pass</td><td><span class="tagpill">owned · lifetime</span></td><td class="num">$0 ongoing</td><td>Grandfathered (new lifetime → $749.99 on Jul 1 2026)</td></tr>
+        <tr><td>Tailscale</td><td><span class="tagpill">free tier</span></td><td class="num">$0</td><td>Remote-access mesh</td></tr>
+      </tbody>
+      <tfoot><tr><td>New recurring (excl. existing Kagi/Proton)</td><td></td><td class="num">~$30–65/mo</td><td>≈ $360–780/yr</td></tr></tfoot>
+    </table>
+    <div class="note">Estimates, not quotes — plans and tiers vary. The biggest levers: seedbox tier, how much Tier-1 data you push to B2, and whether you add the optional Hetzner off-site copy.</div>
+  </div><!-- /tab-costs -->
+
+  <!-- ============ HARDWARE & SOFTWARE TAB ============ -->
+  <div class="tabpanel" id="tab-hardware" hidden>
+    <h2 class="panel-h">Hardware &amp; what runs on it</h2>
+    <p class="panel-sub">Every box in the build and the software it hosts — local hosts first, then everything that deliberately runs <b>off your network</b> (the off-site seedbox and cloud services).</p>
+
+    <div class="hw-section-label">Local hosts</div>
+
+    <div class="hw-host">
+      <div class="hw-head"><h4>DS920+ NAS</h4><span class="tagpill">always-on · ~35–45 W · owned</span></div>
+      <p class="panel-sub">Storage + low-power always-on services. Celeron J4125 Quick Sync for transcode.</p>
+      <div class="swlist">
+        <span class="sw">Immich (+ Postgres/VectorChord)</span>
+        <span class="sw">Plex Media Server</span>
+        <span class="sw">Calibre-Web-Automated</span>
+        <span class="sw">Hyper Backup</span>
+        <span class="sw">Snapshot Replication</span>
+        <span class="sw">Active Backup for Business</span>
+        <span class="sw">Container Manager</span>
+        <span class="sw">File shares (SMB)</span>
+        <span class="sw">Tailscale</span>
+        <span class="sw">Beszel agent</span>
+      </div>
+    </div>
+
+    <div class="hw-host">
+      <div class="hw-head"><h4>Mac mini 2015 → Ubuntu Server</h4><span class="tagpill">always-on · ~12 W · owned</span></div>
+      <p class="panel-sub">The flexible Docker host for everything that shouldn't live on the locked-down NAS.</p>
+      <div class="swlist">
+        <span class="sw">Docker Engine + Compose</span>
+        <span class="sw">Seerr</span>
+        <span class="sw">Miniflux (+ Postgres)</span>
+        <span class="sw">Navidrome</span>
+        <span class="sw">Wallabag (+ MariaDB + Redis)</span>
+        <span class="sw">Caddy (reverse proxy)</span>
+        <span class="sw">AdGuard Home</span>
+        <span class="sw">Dockge / Dockhand</span>
+        <span class="sw">Beszel hub</span>
+        <span class="sw">Uptime Kuma</span>
+        <span class="sw">ntfy</span>
+        <span class="sw">Diun</span>
+        <span class="sw">Forgejo</span>
+        <span class="sw">LinuxGSM light servers (Minecraft · Valheim · Terraria · Factorio · Project Zomboid · Core Keeper)</span>
+        <span class="sw">restic · BorgBackup + borgmatic</span>
+        <span class="sw">NUT client (UPS)</span>
+        <span class="sw">Tailscale</span>
+      </div>
+    </div>
+
+    <div class="hw-host">
+      <div class="hw-head"><h4>CachyOS rig — 3090 Ti / 12700K</h4><span class="tagpill">on-demand · WoL + auto-suspend · owned</span></div>
+      <p class="panel-sub">The powerful box. Woken on demand for inference, streaming, heavy servers, and gaming — never 24/7.</p>
+      <div class="swlist">
+        <span class="sw">Ollama + Open WebUI (local LLM)</span>
+        <span class="sw">Sunshine (stream host, NVENC)</span>
+        <span class="sw">Heavy game servers (Palworld · ARK · modded) — LinuxGSM / Pelican</span>
+        <span class="sw">Steam / gaming</span>
+        <span class="sw">LibreOffice (26.2)</span>
+        <span class="sw">Firefox / LibreWolf / Zen</span>
+        <span class="sw">Calibre (desktop)</span>
+        <span class="sw">Rhythmbox + libgpod (iPod sync)</span>
+        <span class="sw">gPodder</span>
+        <span class="sw">Obsidian</span>
+        <span class="sw">Syncthing</span>
+        <span class="sw">chezmoi (dotfiles)</span>
+        <span class="sw">restic</span>
+        <span class="sw">Tailscale</span>
+      </div>
+    </div>
+
+    <div class="hw-host">
+      <div class="hw-head"><h4>Home Assistant — HA Green or HAOS VM</h4><span class="tagpill">always-on · ~2–3 W · on Trusted VLAN</span></div>
+      <p class="panel-sub">The smart-home hub, pulling cloud-tethered devices into local control.</p>
+      <div class="swlist">
+        <span class="sw">Home Assistant OS + Supervisor</span>
+        <span class="sw">HACS</span>
+        <span class="sw">Hue integration (local)</span>
+        <span class="sw">Nest (SDM API)</span>
+        <span class="sw">midea_ac_lan</span>
+        <span class="sw">ESPHome (optional, Midea dongle)</span>
+        <span class="sw">Whisper (STT) + Piper (TTS)</span>
+        <span class="sw">Assist (local voice)</span>
+        <span class="sw">Emporia Vue (energy)</span>
+        <span class="sw">Energy dashboard</span>
+        <span class="sw">Beszel agent</span>
+      </div>
+    </div>
+
+    <div class="hw-host">
+      <div class="hw-head"><h4>UniFi Dream Wall</h4><span class="tagpill">always-on core · owned</span></div>
+      <p class="panel-sub">Router + firewall + switch + WiFi 6 + controller — the whole network spine.</p>
+      <div class="swlist">
+        <span class="sw">UniFi Network controller</span>
+        <span class="sw">Zone-Based Firewall</span>
+        <span class="sw">VLANs (Trusted · IoT · Cameras · Work · Guest)</span>
+        <span class="sw">WiFi 6</span>
+        <span class="sw">IDS/IPS (Threat Management)</span>
+        <span class="sw">mDNS proxy</span>
+      </div>
+    </div>
+
+    <div class="hw-host">
+      <div class="hw-head"><h4>Client devices</h4><span class="tagpill">phones · tablets · readers · TV boxes</span></div>
+      <p class="panel-sub">The endpoints that consume the services above.</p>
+      <div class="swlist">
+        <span class="sw">Kobo Sage / Forma — KOReader (+ CWA Kobo sync, Wallabag, RSS)</span>
+        <span class="sw">Kobo — Syncthing</span>
+        <span class="sw">iPod Classic — Apple firmware</span>
+        <span class="sw">Phone — Immich app</span>
+        <span class="sw">Phone — Home Assistant app</span>
+        <span class="sw">Phone — ntfy</span>
+        <span class="sw">Phone — Symfonium / Amperfy (Navidrome)</span>
+        <span class="sw">Apple TV / Steam Deck / laptops — Moonlight</span>
+        <span class="sw">All — Tailscale</span>
+      </div>
+    </div>
+
+    <div class="hw-section-label">Runs off your network (non-local)</div>
+    <p class="panel-sub">Deliberately not on your hardware — so your ISP never sees a swarm and your off-site copies survive a fire/theft.</p>
+
+    <div class="hw-host offsite">
+      <div class="hw-head"><h4>Managed seedbox</h4><span class="tagpill">off-site · rented · ~$15–30/mo</span></div>
+      <p class="panel-sub">The entire P2P + download stack lives here; only finished, named files sync home over Tailscale.</p>
+      <div class="swlist">
+        <span class="sw">qBittorrent</span>
+        <span class="sw">Sonarr</span>
+        <span class="sw">Radarr</span>
+        <span class="sw">Prowlarr</span>
+        <span class="sw">Bazarr</span>
+        <span class="sw">Recyclarr</span>
+        <span class="sw">rclone / Syncthing (sync → NAS)</span>
+        <span class="sw">Tailscale (userspace)</span>
+      </div>
+    </div>
+
+    <div class="hw-host offsite">
+      <div class="hw-head"><h4>Cloud / SaaS</h4><span class="tagpill">off-site services</span></div>
+      <p class="panel-sub">External services the build depends on or backs up to.</p>
+      <div class="swlist">
+        <span class="sw">Backblaze B2 (Tier 1 backup target)</span>
+        <span class="sw">Hetzner Storage Box (Borg target)</span>
+        <span class="sw">Synology C2 (alt backup)</span>
+        <span class="sw">Proton (Mail · VPN · Drive · Calendar · Pass)</span>
+        <span class="sw">Kagi (search)</span>
+        <span class="sw">Obsidian Sync (E2E relay)</span>
+        <span class="sw">Google SDM cloud (Nest dependency)</span>
+        <span class="sw">Tailscale control plane</span>
+        <span class="sw">Cloudflare DNS (optional, Caddy DNS-01)</span>
+        <span class="sw">Playit.gg (optional game tunnel)</span>
+      </div>
+    </div>
+  </div><!-- /tab-hardware -->
+
+  <!-- ============ FEATURES TAB ============ -->
+  <div class="tabpanel" id="tab-features" hidden>
+    <h2 class="panel-h">What you get</h2>
+    <p class="panel-sub">Every capability this build delivers — what it does, the software that provides it, and the box it runs on.</p>
+
+    <div class="hw-section-label">Media &amp; entertainment</div>
+    <table class="data-table">
+      <thead><tr><th>Feature</th><th>What it does</th><th>Software</th><th>Runs on</th></tr></thead>
+      <tbody>
+        <tr><td>Photo library &amp; backup</td><td>Automatic phone photo/video backup, face &amp; object recognition, search, albums, non-destructive editing, and "free up space" to offload your phone — your private iCloud Photos.</td><td>Immich</td><td>NAS</td></tr>
+        <tr><td>Movies &amp; TV streaming</td><td>Stream your media library to any device, in-home or remote, with hardware transcoding.</td><td>Plex (Jellyfin fallback)</td><td>NAS</td></tr>
+        <tr><td>Automated media acquisition</td><td>Request a title from your phone; it's found, downloaded off-site, named, subtitled, synced home, and appears in Plex — no manual steps, never visible to your ISP.</td><td>Seerr + qBittorrent + Sonarr/Radarr/Prowlarr/Bazarr</td><td>Off-site seedbox + Ubuntu</td></tr>
+        <tr><td>Music streaming (own library)</td><td>Stream your own music collection to phone/desktop with no subscription, via the Subsonic API.</td><td>Navidrome (+ Symfonium/Amperfy)</td><td>Ubuntu</td></tr>
+        <tr><td>iPod sync</td><td>Keep the iPod Classic loaded from Linux on stock Apple firmware (car/USB controls intact).</td><td>Rhythmbox + libgpod</td><td>CachyOS → device</td></tr>
+        <tr><td>Podcasts</td><td>Subscribe, auto-download, and auto-clean podcast episodes; copy them to the iPod.</td><td>gPodder</td><td>CachyOS</td></tr>
+      </tbody>
+    </table>
+
+    <div class="hw-section-label">Reading, news &amp; notes</div>
+    <table class="data-table">
+      <thead><tr><th>Feature</th><th>What it does</th><th>Software</th><th>Runs on</th></tr></thead>
+      <tbody>
+        <tr><td>eBook library &amp; e-reader</td><td>Manage and convert your ebook library, auto-ingest new files, push to the Kobo over WiFi/OPDS, and sync reading position across devices.</td><td>Calibre + Calibre-Web-Automated + KOReader + Syncthing</td><td>NAS + Kobo</td></tr>
+        <tr><td>News / RSS</td><td>Distraction-free feed reader that strips trackers and speaks Fever/Google Reader APIs to native apps; feeds also land on the Kobo.</td><td>Miniflux</td><td>Ubuntu</td></tr>
+        <tr><td>Read-it-later</td><td>Save long articles for offline reading on the Kobo or any device — your private Pocket.</td><td>Wallabag</td><td>Ubuntu</td></tr>
+        <tr><td>Notes</td><td>Plain-Markdown notes with end-to-end-encrypted sync across devices, nothing to self-host.</td><td>Obsidian + Obsidian Sync</td><td>Desktop / cloud</td></tr>
+      </tbody>
+    </table>
+
+    <div class="hw-section-label">Productivity &amp; web</div>
+    <table class="data-table">
+      <thead><tr><th>Feature</th><th>What it does</th><th>Software</th><th>Runs on</th></tr></thead>
+      <tbody>
+        <tr><td>Office documents</td><td>Create and edit documents, spreadsheets, and presentations offline with solid MS-format fidelity.</td><td>LibreOffice</td><td>CachyOS</td></tr>
+        <tr><td>Private browsing &amp; search</td><td>Hardened browser with your paid, ad-free, non-tracking search as the default.</td><td>Firefox / LibreWolf / Zen + Kagi</td><td>CachyOS</td></tr>
+        <tr><td>Files, contacts &amp; calendar</td><td>Cross-device files plus CardDAV/CalDAV contacts &amp; calendar, off the Apple ecosystem.</td><td>Proton (or Nextcloud / Syncthing + Baikal)</td><td>Cloud / NAS</td></tr>
+        <tr><td>Email, VPN &amp; passwords</td><td>Private encrypted mail, VPN egress, and a cross-device password manager.</td><td>Proton Mail / VPN / Pass</td><td>Cloud</td></tr>
+      </tbody>
+    </table>
+
+    <div class="hw-section-label">Smart home</div>
+    <table class="data-table">
+      <thead><tr><th>Feature</th><th>What it does</th><th>Software</th><th>Runs on</th></tr></thead>
+      <tbody>
+        <tr><td>Smart-home hub</td><td>Local control of Hue lights, the Nest thermostat, and Midea AC/dehumidifier — keeps working even when vendor clouds don't.</td><td>Home Assistant (+ Hue, Nest SDM, midea_ac_lan)</td><td>HA Green / VM</td></tr>
+        <tr><td>Local voice assistant</td><td>Offline speech control — a private Siri/Alexa — optionally backed by your own LLM.</td><td>HA Assist + Whisper + Piper (+ Ollama)</td><td>HA + rig</td></tr>
+        <tr><td>Energy monitoring</td><td>Real per-circuit / per-device power tracking surfaced in one dashboard.</td><td>HA Energy dashboard + Emporia Vue</td><td>HA</td></tr>
+      </tbody>
+    </table>
+
+    <div class="hw-section-label">Gaming &amp; AI</div>
+    <table class="data-table">
+      <thead><tr><th>Feature</th><th>What it does</th><th>Software</th><th>Runs on</th></tr></thead>
+      <tbody>
+        <tr><td>Game streaming</td><td>Stream the rig's games at up to 4K/120 HDR to a laptop, Steam Deck, Apple TV, or phone — in-home or remote — your own GeForce Now.</td><td>Sunshine + Moonlight</td><td>Rig (host) + clients</td></tr>
+        <tr><td>Game-server hosting</td><td>Host multiplayer servers for friends — light games always-on, heavy ones on-demand — exposed safely via Tailscale.</td><td>LinuxGSM / Pelican Panel</td><td>Mac mini / rig</td></tr>
+        <tr><td>Local LLM / AI</td><td>Private, offline large-language-model inference with a chat UI; also powers the local voice assistant.</td><td>Ollama + Open WebUI</td><td>CachyOS rig (on-demand)</td></tr>
+      </tbody>
+    </table>
+
+    <div class="hw-section-label">Network, privacy &amp; access</div>
+    <table class="data-table">
+      <thead><tr><th>Feature</th><th>What it does</th><th>Software</th><th>Runs on</th></tr></thead>
+      <tbody>
+        <tr><td>Network segmentation &amp; firewall</td><td>Isolates IoT, guest, and work devices from your trusted gear with a zone-based firewall.</td><td>UniFi VLANs + Zone-Based Firewall</td><td>Dream Wall</td></tr>
+        <tr><td>Ad &amp; tracker blocking</td><td>Network-wide DNS filtering that blocks ads and trackers on every device.</td><td>AdGuard Home / Pi-hole</td><td>Ubuntu</td></tr>
+        <tr><td>Remote access</td><td>Reach any service from anywhere with nothing exposed to the internet — also the path for remote streaming and inviting friends to game servers.</td><td>Tailscale</td><td>All hosts</td></tr>
+        <tr><td>Clean HTTPS URLs</td><td>Friendly https://service.tabaska.us addresses with automatic certificates for your self-hosted apps.</td><td>Caddy</td><td>Ubuntu</td></tr>
+      </tbody>
+    </table>
+
+    <div class="hw-section-label">Infrastructure &amp; reliability</div>
+    <table class="data-table">
+      <thead><tr><th>Feature</th><th>What it does</th><th>Software</th><th>Runs on</th></tr></thead>
+      <tbody>
+        <tr><td>Backups (3-2-1)</td><td>Encrypted, versioned, off-site backups of everything irreplaceable, with tested restores.</td><td>Restic / Kopia + BorgBackup + Synology Hyper Backup / Snapshot Replication</td><td>NAS + hosts</td></tr>
+        <tr><td>Container management</td><td>One web UI to deploy, edit, and roll back all your Docker stacks.</td><td>Dockge / Dockhand</td><td>Ubuntu</td></tr>
+        <tr><td>Monitoring &amp; uptime</td><td>At-a-glance CPU/RAM/disk/network across all boxes, plus service up/down checks.</td><td>Beszel + Uptime Kuma</td><td>Ubuntu</td></tr>
+        <tr><td>Push notifications</td><td>Backup, downtime, and update alerts pushed straight to your phone.</td><td>ntfy</td><td>Ubuntu</td></tr>
+        <tr><td>Update awareness</td><td>Notifies you when container images have updates — deliberate, never blind auto-updates.</td><td>Diun</td><td>Ubuntu</td></tr>
+        <tr><td>Config-as-code</td><td>All compose files and configs in Git so the whole homelab rebuilds in an hour.</td><td>Forgejo + Git</td><td>Ubuntu</td></tr>
+        <tr><td>Power resilience</td><td>Graceful shutdown on a power outage to protect databases mid-write.</td><td>UPS + NUT</td><td>NAS / Ubuntu / Dream Wall</td></tr>
+      </tbody>
+    </table>
+  </div><!-- /tab-features -->
+</main>
+
+<div class="toast" id="toast"></div>
+<footer>
+  Built by a swarm of research subagents from <code>foss-setup-plan-2.md</code>. All steps grounded in upstream docs (2026). Config files &amp; scripts live in <code>../configs/</code> and <code>../scripts/</code>. Progress stored locally via your browser.
+</footer>
+
+<script type="application/json" id="phaseMeta">
+{
+  "1": {"title":"Foundation — network, access, safety net","sub":"Segment the network, get private remote access, and lock in tested backups before trusting any host with primary data. This is the critical path."},
+  "2": {"title":"De-cloud the essentials","sub":"Home Assistant for the smart home, the off-site seedbox media pipeline, and Immich for photos. Start leaving iCloud."},
+  "3": {"title":"The analogue media stack","sub":"Reading (Calibre/CWA/KOReader/Syncthing), the iPod, podcasts, RSS + read-it-later, music, and Obsidian Sync. Parallel workstreams."},
+  "4": {"title":"Glue &amp; polish","sub":"Reverse proxy, network DNS filtering, container management, monitoring + notifications, and config-as-code in Git so the whole thing is rebuildable in an hour."},
+  "5": {"title":"Play","sub":"Game servers for friends, Sunshine/Moonlight game streaming, and tuning the rig so the powerful box earns its keep on-demand and cheap."}
+}
+</script>
+
+<script type="application/json" id="taskData">
+[
+{"id":"net-00","phase":1,"title":"Back up your UniFi config (the Zone-Based Firewall is a one-way door)","host":"Dream Wall","type":"sync","depends_on":[],"estimate":"10 min","steps":["Open the UniFi Network app on the Dream Wall (unifi.ui.com or local IP).","Go to Settings → System → Backups.","Click Download, choose Settings Only, and save the .unf file off-device (NAS + a second location).","Confirm UniFi Network is on 9.x. Enabling ZBF auto-migrates existing rules and cannot be reverted."],"commands":[],"files":[],"docs":[{"title":"UniFi Backup/Restore","url":"https://help.ui.com/hc/en-us/articles/360008976393"},{"title":"UniFi Network 9.0 / ZBF overview","url":"https://blog.ui.com/article/unifi-network-9-0-built-to-scale"}],"verify":"A Settings-Only .unf backup exists in two locations and UniFi Network reports version 9.x."},
+{"id":"net-01","phase":1,"title":"Create the VLAN networks","host":"Dream Wall","type":"sync","depends_on":["net-00"],"estimate":"30 min","steps":["Settings → Networks → New Virtual Network for each: Trusted (VLAN 10), IoT (VLAN 20), Cameras (VLAN 30, optional), Work (VLAN 40).","For Guest (VLAN 50), use the Guest/Hotspot network type for built-in client isolation.","Set host/gateway per the plan (e.g. 192.168.20.1/24 for IoT), keep DHCP Server on.","Leave Default (VLAN 1) as management — UniFi gear only, no clients.","Follow the subnet/VLAN-ID scheme in vlan-zone-firewall-plan.md."],"commands":[],"files":["configs/network/vlan-zone-firewall-plan.md"],"docs":[{"title":"Intro to VLANs in UniFi","url":"https://help.ui.com/hc/en-us/articles/219654087-Intro-to-Networking-Wired-VLANs"}],"verify":"Each network appears in Settings → Networks with its VLAN ID/subnet and is handing out DHCP leases."},
+{"id":"net-02","phase":1,"title":"Create matching Wi-Fi SSIDs and assign switch ports","host":"Dream Wall","type":"sync","depends_on":["net-01"],"estimate":"30 min","steps":["Settings → WiFi → create only the SSIDs that need wireless (e.g. Home-IoT → IoT, Guest → Guest). Extra SSIDs eat airtime.","Keep Trusted devices (PCs, NAS, phones, consoles, Sunshine host + Moonlight clients) on the Trusted SSID/ports.","For wired devices, set the switch port's Native VLAN / Port Profile to the correct network.","Do NOT create a separate gaming VLAN — Moonlight needs same-subnet mDNS."],"commands":[],"files":["configs/network/vlan-zone-firewall-plan.md"],"docs":[{"title":"WiFi network settings (bind VLAN)","url":"https://help.ui.com/hc/en-us/articles/221029967-WiFi-Network-Settings"}],"verify":"A test client on each SSID/port gets an IP in the correct subnet; gaming devices land on Trusted."},
+{"id":"net-03","phase":1,"title":"Enable the Zone-Based Firewall and review the migration","host":"Dream Wall","type":"sync","depends_on":["net-01"],"estimate":"20 min","steps":["Settings → Security → Zone-Based Firewall → enable/upgrade (needs Gateway v4.1+ and Network 9.0.108+).","Confirm the net-00 backup exists — this cannot be undone.","After migration, review the auto-generated policies and delete redundant ones."],"commands":[],"files":[],"docs":[{"title":"Zone-Based Firewalls in UniFi (official)","url":"https://help.ui.com/hc/en-us/articles/115003173168-Zone-Based-Firewalls-in-UniFi"}],"verify":"Settings shows the Policy Engine zone matrix; internet still works from a Trusted client."},
+{"id":"net-04","phase":1,"title":"Define zones and assign each VLAN","host":"Dream Wall","type":"sync","depends_on":["net-03"],"estimate":"20 min","steps":["In the ZBF Zones tab, create custom zones: Trusted, IoT, Cameras, Work (Guest uses Hotspot; mgmt uses Internal).","Assign exactly one zone per network per the mapping in vlan-zone-firewall-plan.md.","Leave predefined zones (Internal, External, Gateway, VPN, Hotspot) in place."],"commands":[],"files":["configs/network/vlan-zone-firewall-plan.md"],"docs":[{"title":"Zone-Based Firewalls in UniFi","url":"https://help.ui.com/hc/en-us/articles/115003173168-Zone-Based-Firewalls-in-UniFi"}],"verify":"Each VLAN shows its assigned zone in the Zones tab."},
+{"id":"net-05","phase":1,"title":"Create firewall policies in priority order","host":"Dream Wall","type":"sync","depends_on":["net-04"],"estimate":"45 min","steps":["First confirm each internal zone has → Gateway: Allow (DHCP/DNS/NTP) or clients lose DNS/IP.","Add specific allows ABOVE broad blocks: Trusted→IoT (control), Trusted→Cameras (view), internet allows.","Add isolation blocks: IoT→Trusted, Cameras→everything, Work→all internal, Guest→all internal.","Keep Auto Allow Return Traffic on (stateful); add a description to each policy.","Follow the exact ordered table in firewall-policy-order.md."],"commands":[],"files":["configs/network/firewall-policy-order.md"],"docs":[{"title":"ZBF policies & return traffic","url":"https://help.ui.com/hc/en-us/articles/115003173168-Zone-Based-Firewalls-in-UniFi"}],"verify":"Trusted reaches IoT; IoT cannot ping Trusted; Cameras have no internet; Work/Guest reach only the internet."},
+{"id":"net-06","phase":1,"title":"Configure mDNS proxy and IGMP snooping (keep casting + smart home working)","host":"Dream Wall","type":"sync","depends_on":["net-05"],"estimate":"20 min","steps":["Enable the Gateway mDNS Proxy on BOTH the source and destination VLANs that need cross-VLAN discovery (e.g. Trusted + IoT).","Turn IGMP Snooping OFF — UniFi's is aggressive and drops Apple TV / HomePod / Matter discovery packets.","No mDNS proxy needed for game streaming — Sunshine/Moonlight stay on the same Trusted subnet.","Use mdns-multicast-checklist.md."],"commands":[],"files":["configs/network/mdns-multicast-checklist.md"],"docs":[{"title":"UniFi Gateway mDNS Proxy (official)","url":"https://help.ui.com/hc/en-us/articles/12648701398807-UniFi-Gateway-Multicast-DNS-mDNS-Proxy"}],"verify":"A Trusted phone discovers AND controls an IoT cast/AirPlay device; Moonlight auto-discovers the Sunshine host on Trusted."},
+{"id":"net-07","phase":1,"title":"Install Tailscale on Ubuntu Server (Mac mini)","host":"Ubuntu","type":"sync","depends_on":[],"estimate":"15 min","steps":["Run the install+up script; it adds the upstream apt repo, installs, enables tailscaled, and brings the node up.","Authenticate via the printed URL (or set TS_AUTHKEY for unattended).","Note the node's 100.x Tailscale IP for later tests."],"commands":["TS_HOSTNAME=macmini ./scripts/network/tailscale-install-up.sh","tailscale status"],"files":["scripts/network/tailscale-install-up.sh"],"docs":[{"title":"Install Tailscale on Linux","url":"https://tailscale.com/docs/install/linux"}],"verify":"tailscale status lists the node as active and tailscale ip -4 returns a 100.x address."},
+{"id":"net-08","phase":1,"title":"Install Tailscale on the NAS and phone","host":"NAS","type":"async","depends_on":[],"estimate":"20 min","steps":["DS920+: DSM Package Center → search Tailscale → Install, open the app and log in to the tailnet.","For a newer build, manually install the matching x86_64 DSM7 .spk from the Tailscale package server.","Phone: install the Tailscale app and sign in to the same tailnet.","If using the Synology firewall, allow the Tailscale CGNAT range 100.64.0.0/10."],"commands":[],"files":[],"docs":[{"title":"Tailscale + Synology","url":"https://tailscale.com/docs/integrations/synology"},{"title":"Tailscale packages (manual SPK)","url":"https://pkgs.tailscale.com/stable/"}],"verify":"NAS and phone both appear as online machines in the Tailscale admin console."},
+{"id":"net-09","phase":1,"title":"Verify peers are direct (not DERP-relayed)","host":"Ubuntu","type":"sync","depends_on":["net-07","net-08"],"estimate":"15 min","steps":["Run the verify script; it runs netcheck + per-peer status, flagging relayed peers, symmetric NAT, or blocked UDP.","If stuck on DERP: enable UPnP/PCP on the Dream Wall or forward UDP/41641; allow outbound UDP/41641 + UDP/3478.","On Ubuntu with ufw: sudo ufw allow 41641/udp.","Re-run until peers show direct."],"commands":["./scripts/network/tailscale-verify-direct.sh nas","tailscale ping --until-direct nas"],"files":["scripts/network/tailscale-verify-direct.sh"],"docs":[{"title":"Tailscale connection types","url":"https://tailscale.com/docs/reference/connection-types"},{"title":"Tailscale firewall ports","url":"https://tailscale.com/kb/1082/firewall-ports/"}],"verify":"tailscale status shows direct for each peer and tailscale netcheck reports UDP: true."},
+{"id":"net-10","phase":1,"title":"Run an end-to-end connectivity health check","host":"all","type":"async","depends_on":["net-09"],"estimate":"10 min","steps":["Run the connectivity test to ping every peer over the tailnet and TCP-probe key service ports (NAS 5001, SSH 22, HA 8123).","Re-run anytime as a routine health check — it is read-only and idempotent."],"commands":["PORTS=\"22 5001 8123\" ./scripts/network/tailscale-connectivity-test.sh"],"files":["scripts/network/tailscale-connectivity-test.sh"],"docs":[{"title":"tailscale ping / status reference","url":"https://tailscale.com/docs/reference/connection-types"}],"verify":"Script exits 0 — all peers reachable and probed ports open."},
+{"id":"glue-01","phase":1,"title":"UPS power resilience: NUT netclient on Ubuntu listening to the NAS UPS","host":"Ubuntu + NAS","type":"sync","depends_on":[],"estimate":"30-45 min","steps":["On the Synology: Control Panel → Hardware & Power → UPS → Enable UPS support (USB UPS), set graceful-shutdown timer.","Enable 'network UPS server' and add the Ubuntu box's static IP to Permitted DiskStation Devices.","On the Ubuntu box: run nut-client-ubuntu.sh with NAS_IP set; it installs nut-client, sets MODE=netclient, writes the MONITOR block.","Verify with upsc ups@<NAS_IP> that ups.status / battery.charge are readable.","Confirm the Dream Wall is also plugged into the UPS battery."],"commands":["sudo NAS_IP=192.168.1.7 ./scripts/setup/nut-client-ubuntu.sh","upsc ups@192.168.1.7"],"files":["scripts/setup/nut-client-ubuntu.sh"],"docs":[{"title":"NUT user manual","url":"https://networkupstools.org/docs/user-manual.chunked/"},{"title":"Synology as NUT primary","url":"https://www.johnra.me/2024/05/16/synology-ups-as-nut-primary/"}],"verify":"upsc ups@<NAS_IP> returns live values; pulling mains power flips ups.status to OB and the Ubuntu box shuts down gracefully on low battery."},
+{"id":"nas-01","phase":1,"title":"Enable Btrfs Snapshot Replication on NAS shares","host":"NAS","type":"sync","depends_on":[],"estimate":"30 min","steps":["Confirm the storage volume is Btrfs (Storage Manager).","Package Center → install 'Snapshot Replication'.","Snapshots tab → select each Tier 1 share (photo, docs, Obsidian, HA config, docker).","Enable an hourly Snapshot Schedule for active shares.","Retention tab → enable GFS retention; enable Immutable Snapshots (7-14 day lock) on DSM 7.2+.","Make snapshots visible for self-service recovery via #snapshot."],"commands":["synosharesnap --help"],"files":["configs/nas/backup-architecture.md"],"docs":[{"title":"Synology Snapshot Replication help","url":"https://kb.synology.com/en-us/DSM/help/SnapshotReplication/snapshotreplication"},{"title":"Synology Data Protection White Paper","url":"https://global.download.synology.com/download/Document/Software/WhitePaper/Firmware/DSM/All/enu/Synology_Data_Protection_White_Paper.pdf"}],"verify":"A 'Scheduled' label appears next to each protected share; restore one file from #snapshot."},
+{"id":"nas-02","phase":1,"title":"Hyper Backup of NAS Tier 1 shares → Backblaze B2 (client-side encrypted)","host":"NAS","type":"sync","depends_on":["nas-01"],"estimate":"1 hr","steps":["In Backblaze: create a private bucket + an Application Key scoped to it. Record keyID, applicationKey, S3 endpoint.","Note: a Synology NAS does NOT qualify for the flat $99/yr Backblaze Personal Backup plan (that's Mac/Windows direct-attached only); this uses per-TB B2 (~$6.95/TB-mo). Synology C2 is an alternative.","Package Center → install Hyper Backup.","Hyper Backup → + → Data backup task → Cloud Service → S3 Storage; Custom Server URL = B2 S3 endpoint, Signature v4, keys as above, select bucket.","Select Tier 1 shares (photos, docs, Obsidian, HA config, docker/configs) + the Immich DB dump folder.","Enable client-side encryption (export + safely store the .pem key), enable compression, schedule daily 03:00, Smart Recycle rotation.","Run the first backup."],"commands":[],"files":["configs/nas/backup-architecture.md"],"docs":[{"title":"Integrate Synology Hyper Backup with B2","url":"https://www.backblaze.com/docs/cloud-storage-integrate-synology-hyper-backup-with-backblaze-b2"},{"title":"Synology C2 Backup (alternative)","url":"https://c2.synology.com/en-us/backup"}],"verify":"Task completes green; Backup Explorer lists versions; the .pem key is stored in the password manager + printed."},
+{"id":"nas-03","phase":1,"title":"Set up Tier 2 media backup to a rotated external HDD","host":"NAS","type":"async","depends_on":["nas-01"],"estimate":"30 min","steps":["Attach a USB external HDD (Btrfs/ext4) to the DS920+.","Create a Hyper Backup (or USB Copy) task for Tier 2 shares (Plex media, book library, music).","Schedule weekly; rotate two drives, keeping one offsite (drawer/desk elsewhere).","Label drives and log rotation dates."],"commands":[],"files":["configs/nas/backup-architecture.md"],"docs":[{"title":"Hyper Backup overview","url":"https://help.backblaze.com/hc/en-us/articles/360047171594-How-to-use-Synology-Hyper-Backup-with-Backblaze-B2"}],"verify":"External drive task completes; eject and confirm a test file restores from the rotated drive."},
+{"id":"nas-04","phase":1,"title":"Deploy restic → Backblaze B2 on the Ubuntu host","host":"Ubuntu","type":"sync","depends_on":["nas-02"],"estimate":"45 min","steps":["Create a B2 bucket + scoped application key for the Linux hosts (separate from the NAS key).","Install restic and copy scripts/backup/restic-backup.sh to /opt/scripts.","Copy restic-backup.env.example to /etc/restic/b2.env, fill creds + RESTIC_REPOSITORY, chmod 600.","Generate the repo password and save it in the password manager + print it.","First run initializes the repo, backs up, applies retention, runs a check.","Install a systemd timer or cron entry for daily 02:30."],"commands":["sudo apt install -y restic","sudo install -d -m 0700 /etc/restic","openssl rand -base64 48 | sudo tee /etc/restic/password >/dev/null && sudo chmod 600 /etc/restic/password","sudo ENV_FILE=/etc/restic/b2.env /opt/scripts/restic-backup.sh"],"files":["scripts/backup/restic-backup.sh","scripts/backup/restic-backup.env.example"],"docs":[{"title":"Use Restic with Backblaze B2","url":"https://www.backblaze.com/docs/cloud-storage-integrate-restic-with-backblaze-b2"},{"title":"restic forget/prune","url":"https://restic.readthedocs.io/en/stable/060_forget.html"}],"verify":"restic snapshots lists a snapshot tagged host:<name>; restic check reports no errors."},
+{"id":"nas-05","phase":1,"title":"Deploy restic → Backblaze B2 on the CachyOS host","host":"CachyOS","type":"sync","depends_on":["nas-04"],"estimate":"30 min","steps":["Install restic (pacman -S restic).","Reuse scripts/backup/restic-backup.sh; create /etc/restic/b2.env with RESTIC_REPOSITORY=b2:<bucket>:$(hostname -s).","Securely store the repo password.","Adjust BACKUP_PATHS for the CachyOS layout; first run; enable a systemd timer."],"commands":["sudo pacman -S --needed restic","sudo ENV_FILE=/etc/restic/b2.env /opt/scripts/restic-backup.sh"],"files":["scripts/backup/restic-backup.sh"],"docs":[{"title":"Restic + B2 Quickstart","url":"https://help.backblaze.com/hc/en-us/articles/4403944998811-Quickstart-Guide-for-Restic-and-Backblaze-B2-Cloud-Storage"}],"verify":"restic snapshots --host <cachyos> shows a snapshot; check passes."},
+{"id":"nas-06","phase":1,"title":"Deploy BorgBackup + borgmatic → Hetzner Storage Box (append-only off-site)","host":"Ubuntu","type":"sync","depends_on":["nas-04"],"estimate":"1 hr","steps":["Order a Hetzner Storage Box; enable SSH support (Borg/SSH on port 23).","Generate a dedicated key and add the public key to the Storage Box authorized_keys.","Install borg + borgmatic; copy scripts/backup/borgmatic-config.yaml to /etc/borgmatic/config.yaml and edit user/host/repo.","Store the passphrase in /etc/borgmatic/passphrase (chmod 600); save it in the password manager + print.","Init append-only repo, validate config, run the first backup, enable the systemd timer."],"commands":["ssh-keygen -t ed25519 -C borgmatic@host -f /root/.ssh/id_ed25519_borg","sudo apt install -y borgbackup borgmatic","borgmatic config validate","borgmatic init --encryption repokey-blake2 --append-only","borgmatic create --stats"],"files":["scripts/backup/borgmatic-config.yaml"],"docs":[{"title":"Hetzner Storage Box SSH/Borg access","url":"https://docs.hetzner.com/robot/storage-box/access/access-ssh-rsync-borg"},{"title":"borgmatic set-up guide","url":"https://torsion.org/borgmatic/docs/how-to/set-up-backups/"}],"verify":"borgmatic list shows an archive on the Storage Box; borgmatic check passes."},
+{"id":"nas-07","phase":1,"title":"Store all encryption keys and run a full restore test","host":"Ubuntu","type":"sync","depends_on":["nas-02","nas-04","nas-06"],"estimate":"45 min","steps":["Confirm restic password, Borg passphrase, and Hyper Backup .pem are all in the password manager AND printed offline.","Run restore-test.sh for restic (restores latest snapshot to a temp dir and verifies).","Run restore-test.sh for borgmatic (extracts latest archive to a temp dir and verifies).","In DSM Hyper Backup, restore a sample folder from B2 and confirm it opens.","Document the restore procedure and date in backup-architecture.md."],"commands":["ENV_FILE=/etc/restic/b2.env ./scripts/backup/restore-test.sh restic","./scripts/backup/restore-test.sh borgmatic /etc/borgmatic/config.yaml"],"files":["scripts/backup/restore-test.sh","configs/nas/backup-architecture.md"],"docs":[{"title":"restic restore","url":"https://restic.readthedocs.io/en/stable/050_restore.html"},{"title":"borgmatic extract","url":"https://torsion.org/borgmatic/docs/how-to/extract-a-backup/"}],"verify":"Both restore-test runs print PASSED with a nonzero file count; a Hyper Backup sample folder restores and opens."},
+{"id":"glue-02","phase":1,"title":"Desktop baseline on CachyOS: browser(s) + LibreOffice (anytime)","host":"CachyOS","type":"async","depends_on":[],"estimate":"20-40 min","steps":["Ensure an AUR helper exists (CachyOS ships paru).","Run cachyos-desktop-baseline.sh choosing browsers via BROWSERS and office via LIBREOFFICE_PKG.","Firefox installs from the official repo; LibreWolf/Zen from AUR -bin packages; for LibreOffice prefer libreoffice-fresh (26.2, current) — libreoffice-still tracks the prior branch (25.8, EOL since June 2026).","Launch the browser once to create a profile."],"commands":["BROWSERS=\"firefox zen\" ./scripts/setup/cachyos-desktop-baseline.sh"],"files":["scripts/setup/cachyos-desktop-baseline.sh"],"docs":[{"title":"LibreOffice on Arch","url":"https://wiki.archlinux.org/title/LibreOffice"},{"title":"zen-browser-bin (AUR)","url":"https://aur.archlinux.org/packages/zen-browser-bin"}],"verify":"Browser launches; pacman -Q libreoffice-fresh shows 26.2.x (or libreoffice-still for the prior branch)."},
+{"id":"glue-03","phase":1,"title":"Set Kagi as the default search engine (anytime)","host":"CachyOS","type":"sync","depends_on":["glue-02"],"estimate":"5 min","steps":["Install the 'Kagi Search' extension from addons.mozilla.org and accept its offer to set Kagi as default; OR","Manually: about:preferences#search → Search Shortcuts → Add → Name 'Kagi', URL https://kagi.com/search?q=%s.","Set the Default Search Engine dropdown to Kagi.","If using LibreWolf, add a cookie/site-data exception for kagi.com so sessions aren't wiped on close."],"commands":[],"files":[],"docs":[{"title":"Set Kagi as default (Firefox)","url":"https://help.kagi.com/kagi/getting-started/setting-default/firefox-desktop.html"}],"verify":"Typing a query in the address bar resolves at kagi.com."},
+{"id":"glue-04","phase":1,"title":"Version-controlled dotfiles with chezmoi (anytime)","host":"any","type":"async","depends_on":[],"estimate":"30-60 min first machine","steps":["On your primary machine: chezmoi init, then chezmoi add the dotfiles you care about.","Push the source repo (~/.local/share/chezmoi) to Forgejo or a private GitHub repo.","Set up secrets: generate an age key, store the private key in Proton Pass, chezmoi add --encrypt sensitive files.","On any other machine: run bootstrap-dotfiles.sh with DOTFILES_REPO set.","Use CHEZMOI_NO_APPLY=1 + chezmoi diff first if you want to review before touching $HOME."],"commands":["DOTFILES_REPO=git@codeberg.org:you/dotfiles.git ./scripts/dotfiles/bootstrap-dotfiles.sh"],"files":["scripts/dotfiles/bootstrap-dotfiles.sh","scripts/dotfiles/chezmoi-quickstart.md"],"docs":[{"title":"chezmoi","url":"https://www.chezmoi.io/"},{"title":"chezmoi quick start","url":"https://www.chezmoi.io/quick-start/"}],"verify":"chezmoi managed lists your files; a fresh machine reproduces $HOME with one command."},
+
+{"id":"docker-01","phase":2,"title":"Install Docker Engine + Compose plugin on Ubuntu (Mac mini)","host":"Ubuntu","type":"async","depends_on":[],"estimate":"10 min","steps":["Run the idempotent installer; it removes legacy packages, adds Docker's official apt repo + GPG key, installs docker-ce + CLI + containerd + buildx + the compose plugin.","Add your user to the docker group, then re-login.","If AdGuard/Pi-hole will bind port 53, disable systemd-resolved's stub listener as the script notes."],"commands":["sudo ./scripts/setup/install-docker-ubuntu.sh","newgrp docker","docker run --rm hello-world"],"files":["scripts/setup/install-docker-ubuntu.sh"],"docs":[{"title":"Install Docker Engine on Ubuntu","url":"https://docs.docker.com/engine/install/ubuntu/"},{"title":"Docker post-install","url":"https://docs.docker.com/engine/install/linux-postinstall/"}],"verify":"docker --version and docker compose version both print; docker run --rm hello-world succeeds."},
+{"id":"docker-02","phase":2,"title":"Create the shared edge network and /opt/stacks layout","host":"Ubuntu","type":"sync","depends_on":["docker-01"],"estimate":"10 min","steps":["Create the external edge bridge network that Caddy and all web services share.","Create /opt/stacks and copy this repo's stacks/ tree into it (Dockge convention: /opt/stacks/<name>/compose.yaml).","For each stack, copy .env.example to .env and fill secrets before bringing it up (see configs/docker-stack/README.md)."],"commands":["docker network create edge","sudo mkdir -p /opt/stacks && sudo cp -r configs/docker-stack/stacks/* /opt/stacks/","for d in /opt/stacks/*/; do [ -f \"$d/.env.example\" ] && cp -n \"$d/.env.example\" \"$d/.env\"; done"],"files":["configs/docker-stack/README.md","configs/docker-stack/.gitignore"],"docs":[{"title":"Dockge stacks-folder convention","url":"https://github.com/louislam/dockge"},{"title":"Docker networks","url":"https://docs.docker.com/engine/network/"}],"verify":"docker network ls | grep edge shows the network, and ls /opt/stacks lists every stack folder."},
+{"id":"ha-01","phase":2,"title":"Choose HA platform: HA Green (recommended) or HAOS VM","host":"HA","type":"sync","depends_on":[],"estimate":"15 min","steps":["Decide between HA Green appliance (~$199, zero-fuss, recommended) and HAOS in a KVM/libvirt VM on the Ubuntu box.","Rule: NEVER run HAOS from SD card; NEVER use plain Docker (loses Supervisor/add-ons).","Plan for HA to live on the Trusted VLAN (Trusted → IoT is allowed).","If Green: order the appliance. If VM: confirm the Ubuntu host has KVM/libvirt and a LAN bridge on the Trusted VLAN."],"commands":[],"files":[],"docs":[{"title":"Home Assistant Green","url":"https://www.home-assistant.io/green/"},{"title":"HA installation (Linux/KVM)","url":"https://www.home-assistant.io/installation/linux/"}],"verify":"A platform is chosen and its prerequisite is confirmed."},
+{"id":"ha-02","phase":2,"title":"Set up HA Green (recommended path)","host":"HA","type":"sync","depends_on":["ha-01"],"estimate":"15 min","steps":["Connect Ethernet to a Trusted-VLAN switch port and plug in power.","Wait for the slow heartbeat status LED.","Browse to http://homeassistant.local:8123 (or http://<IP>:8123).","Complete onboarding: create the owner account (store credentials in the password manager), set name/location/timezone.","Settings → System → Updates: update HA to the latest version."],"commands":[],"files":[],"docs":[{"title":"Getting started with HA Green","url":"https://support.nabucasa.com/hc/en-us/articles/24737667232413-Getting-started-with-Home-Assistant-Green"}],"verify":"HA dashboard loads at :8123, owner account works, version is current."},
+{"id":"ha-03","phase":2,"title":"Install HAOS in a KVM/libvirt VM (alternative path)","host":"Ubuntu","type":"sync","depends_on":["ha-01"],"estimate":"30-45 min","steps":["Install the virtualization stack on the Ubuntu host.","Create/confirm a bridge (e.g. br0) on the Trusted VLAN so the VM is a direct LAN peer (required for mDNS discovery).","Edit the variables at the top of install-haos-vm.sh (HAOS_VERSION, VM_RAM_MB, VM_VCPUS, DISK_SIZE_GB, NET_BRIDGE).","Run the helper as root; it downloads/decompresses the qcow2, grows the disk, creates a UEFI VirtIO VM, idempotently.","Watch boot via virsh console, then open HA at :8123 and complete onboarding."],"commands":["sudo apt update && sudo apt install -y qemu-kvm libvirt-daemon-system libvirt-clients virtinst bridge-utils ovmf wget xz-utils qemu-utils","sudo NET_BRIDGE=br0 HAOS_VERSION=18.0 VM_RAM_MB=4096 VM_VCPUS=2 DISK_SIZE_GB=32 bash scripts/setup/install-haos-vm.sh","sudo virsh console haos"],"files":["scripts/setup/install-haos-vm.sh"],"docs":[{"title":"HA install — KVM/virt-install","url":"https://www.home-assistant.io/installation/linux/"},{"title":"HAOS releases (qcow2)","url":"https://github.com/home-assistant/operating-system/releases"}],"verify":"virsh dominfo haos shows running; HA reachable at :8123 on the Trusted VLAN."},
+{"id":"ha-04","phase":2,"title":"Install HACS (community store)","host":"HA","type":"sync","depends_on":["ha-02"],"estimate":"15 min","steps":["Install the 'Advanced SSH & Web Terminal' or 'File editor' add-on.","Install HACS following the official download guide.","Restart HA, then add HACS via Settings → Devices & Services and authorize with GitHub.","HACS is the prerequisite for the midea_ac_lan integration."],"commands":[],"files":[],"docs":[{"title":"HACS download/install","url":"https://hacs.xyz/docs/use/download/download/"}],"verify":"HACS appears in the sidebar and can browse the integration store."},
+{"id":"ha-05","phase":2,"title":"Add Philips Hue (local LAN via Hue Bridge)","host":"HA","type":"sync","depends_on":["ha-02"],"estimate":"10 min","steps":["Keep the Hue Bridge — native local LAN control (no cloud at runtime).","Place the bridge on the IoT VLAN with a static DHCP lease.","Settings → Devices & Services → + Add Integration → Philips Hue (often auto-discovered).","Press the physical link button on the bridge when prompted.","Confirm lights/rooms import as entities."],"commands":[],"files":[],"docs":[{"title":"Philips Hue integration","url":"https://www.home-assistant.io/integrations/hue/"}],"verify":"Hue lights appear as light.* entities and toggle from HA."},
+{"id":"ha-06","phase":2,"title":"Set up Google Nest via SDM API (Device Access + Cloud Console + OAuth)","host":"HA","type":"sync","depends_on":["ha-02"],"estimate":"45-60 min","steps":["Prereqs: personal Gmail (NOT Workspace/Advanced Protection), Nest already in Google Home, HA reachable over HTTPS.","Google Cloud: create a project, enable Smart Device Management API and Cloud Pub/Sub API.","Configure the OAuth consent screen — set publishing status to PRODUCTION (else tokens expire after 7 days).","Create a Web application OAuth Client ID with redirect URI https://my.home-assistant.io/redirect/oauth; save ID + Secret.","Device Access Console: accept ToS, pay the one-time US$5, create a project, paste the OAuth Client ID, note the Project ID.","Create a Pub/Sub topic and grant sdm-publisher@googlegroups.com the Pub/Sub Publisher role; Enable events with that topic.","In HA: Application Credentials → add the Nest Client ID/Secret; then + Add Integration → Nest, enter the Project ID, complete OAuth.","Follow nest-sdm-oauth-checklist.md exactly."],"commands":[],"files":["configs/homeassistant/nest-sdm-oauth-checklist.md"],"docs":[{"title":"HA Google Nest integration","url":"https://www.home-assistant.io/integrations/nest/"},{"title":"Device Access — Get Started","url":"https://developers.google.com/nest/device-access/get-started"},{"title":"Device Access Console","url":"https://console.nest.google.com/device-access/"}],"verify":"Nest devices appear as climate.* entities and respond; no redirect_uri_mismatch; tokens survive past 7 days."},
+{"id":"ha-07","phase":2,"title":"Add Midea AC + dehumidifier via midea_ac_lan (local) — and BACK UP the .json","host":"HA","type":"sync","depends_on":["ha-04"],"estimate":"30 min","steps":["Put each Midea device on the IoT VLAN with a static DHCP lease.","In HACS, download the midea_ac_lan integration, then restart HA.","Settings → Devices & Services → + Add Integration → midea_ac_lan; let it auto-discover.","For V3 devices, enter the Midea account + password ONCE so it fetches the token/key from the cloud, then it runs locally.","CRITICAL: immediately copy /config/.storage/midea_ac_lan/<device_id>.json off-box (NAS + password manager). Midea is retiring token APIs — these are irreplaceable.","Never delete/unbind devices to 'start over'. For 2021+ Tuya-based units, use LocalTuya instead."],"commands":["cp -r /config/.storage/midea_ac_lan /share/<nas-mount>/ha-midea-backup"],"files":["configs/homeassistant/midea-local-setup.md"],"docs":[{"title":"midea_ac_lan (GitHub)","url":"https://github.com/wuwentao/midea_ac_lan"},{"title":"LocalTuya (Tuya fallback)","url":"https://github.com/xZetsubou/hass-localtuya"}],"verify":"AC = climate.* entity, dehumidifier = humidifier.* entity, both controllable locally; .json files confirmed copied off-box."},
+{"id":"ha-08","phase":2,"title":"(Optional) Replace Midea OEM dongle with ESPHome SLWF-01Pro (cloud-free)","host":"HA","type":"async","depends_on":["ha-07"],"estimate":"30 min/unit","steps":["Buy an SLWF-01Pro v2.1 (ESP8266).","Flash ESPHome: web flasher (hold FLH, plug USB-C) or build firmware from esphome-midea-slwf01.yaml via the ESPHome add-on.","Plug into the AC USB port; join the AC-wifi AP, browse to 192.168.4.1, select the IoT Wi-Fi.","Adopt the device in HA via the ESPHome integration (UART 9600 baud, 5V logic).","Gives fully cloud-free local AC control with no Midea tokens."],"commands":[],"files":["configs/homeassistant/esphome-midea-slwf01.yaml","configs/homeassistant/midea-local-setup.md"],"docs":[{"title":"ESPHome Midea component","url":"https://esphome.io/components/climate/midea/"},{"title":"SLWF-01Pro flashing","url":"https://smartlight.me/diy-smart-home/slwf01_flashing_en"}],"verify":"AC appears as an ESPHome climate.* entity with no Midea cloud dependency."},
+{"id":"ha-09","phase":2,"title":"Set up local voice (Assist + Whisper + Piper), optional Ollama agent","host":"HA","type":"sync","depends_on":["ha-02"],"estimate":"30-45 min","steps":["Add-on Store: install Whisper (STT) and Piper (TTS); start both; add each via the auto-discovered Wyoming integration.","Whisper: tiny.en/base.en on CPU. Piper: a voice e.g. en_US-lessac-medium.","Settings → Voice assistants → Add assistant: agent = Home Assistant (or Ollama), STT = Whisper, TTS = Piper.","Optional LLM: run Ollama on the rig, add the Ollama integration pointing at http://<rig-ip>:11434, set it as the conversation agent.","Enable 'prefer handling commands locally' so device commands stay fast."],"commands":["curl -fsSL https://ollama.com/install.sh | sh","ollama pull llama3.2:3b"],"files":["configs/homeassistant/configuration.yaml.example","configs/homeassistant/automations.yaml.example"],"docs":[{"title":"Set up a fully local voice assistant","url":"https://www.home-assistant.io/voice_control/voice_remote_local_assistant/"}],"verify":"A test phrase transcribes (Whisper), executes/answers, and speaks back (Piper)."},
+{"id":"ha-10","phase":2,"title":"Configure the Energy dashboard","host":"HA","type":"sync","depends_on":["ha-05","ha-07"],"estimate":"20 min","steps":["Settings → Dashboards → Energy.","Add grid consumption (and solar/battery if present) sensors.","Optionally add individual devices (e.g. Midea AC power) for per-device tracking.","Use template energy sensors in configuration.yaml if you need derived kWh totals."],"commands":[],"files":["configs/homeassistant/configuration.yaml.example"],"docs":[{"title":"Home Energy Management","url":"https://www.home-assistant.io/docs/energy/"}],"verify":"The Energy dashboard populates after a collection cycle."},
+{"id":"ha-11","phase":2,"title":"Configure HA backups to NAS and SAVE the encryption key","host":"HA","type":"sync","depends_on":["ha-02"],"estimate":"30 min","steps":["Update HA to 2026.4+ (stronger backup encryption).","Settings → System → Backups → Set up backups; full backups + schedule (e.g. daily, keep 7).","Download the backup emergency kit and SAVE the encryption key in the password manager, off-box. Nabu Casa cannot recover it.","Add an off-box location: Samba Backup add-on or network storage targeting a NAS share; verify a backup lands on the NAS.","Test-restore once on a spare HAOS instance using the kit's key.","Also separately back up /config/.storage/midea_ac_lan/*.json."],"commands":[],"files":["configs/homeassistant/backup-checklist.md"],"docs":[{"title":"Backups & restore","url":"https://www.home-assistant.io/common-tasks/general/#backups"},{"title":"Backup emergency kit (key)","url":"https://www.home-assistant.io/more-info/backup-emergency-kit/"}],"verify":"A backup file exists on the NAS AND the encryption key is in the password manager; a test restore succeeds."},
+{"id":"seed-01","phase":2,"title":"Pick & provision a managed seedbox (uncapped upload, NL, one-click *arr)","host":"Seedbox","type":"async","depends_on":[],"estimate":"1-2 hrs + provisioning","steps":["Review the provider comparison; prioritize UNLIMITED/uncapped upload bandwidth for private-tracker seeding.","Confirm the plan offers one-click qBittorrent + Sonarr/Radarr/Prowlarr/Bazarr + rclone/Syncthing, SSH access, and a privacy-friendly jurisdiction (NL common).","Avoid upload-capped tiers (e.g. Ultra.cc entry plans).","Sign up, enable SSH, and record the app URLs and credentials."],"commands":["ssh <SEEDBOX_USER>@<SEEDBOX_HOST> -p <SEEDBOX_SSH_PORT> 'uname -a; df -h ~'"],"files":["configs/seedbox/provider-comparison.md"],"docs":[{"title":"Best Seedbox for Plex (2026)","url":"https://bytesized-hosting.com/guides/best-seedbox-for-plex-in-2026-what-actually-matters"},{"title":"Seedbox guide (2026)","url":"https://www.seedboxexpert.com/seedbox-guide/"}],"verify":"SSH login succeeds; the control panel shows qBittorrent + full *arr suite + rclone/Syncthing as one-click apps."},
+{"id":"seed-02","phase":2,"title":"Install the download stack on the seedbox","host":"Seedbox","type":"sync","depends_on":["seed-01"],"estimate":"30-45 min","steps":["One-click install qBittorrent, Sonarr, Radarr, Prowlarr, Bazarr.","Create the single root tree so hardlinks work: data/torrents/{movies,tv} and data/media/{movies,tv} on the SAME filesystem.","Change every app's default password; note each URL/port and API key.","Do NOT enable a VPN on the box — the seedbox already provides a clean datacenter IP."],"commands":["mkdir -p ~/data/torrents/movies ~/data/torrents/tv ~/data/media/movies ~/data/media/tv"],"files":["configs/seedbox/arr-suite-wiring.md"],"docs":[{"title":"TRaSH — hardlinks & file organization","url":"https://trash-guides.info/Hardlinks/How-to-setup-for/"},{"title":"Sonarr wiki","url":"https://wiki.servarr.com/sonarr"}],"verify":"All five web UIs reachable; data/torrents and data/media confirmed on one filesystem."},
+{"id":"seed-03","phase":2,"title":"Put the seedbox on Tailscale (userspace networking)","host":"Seedbox","type":"sync","depends_on":["seed-01"],"estimate":"20-30 min","steps":["Download the static tailscale/tailscaled binaries into ~/tailscale.","Start tailscaled with --tun=userspace-networking and a custom --socket/--state; wire into a user systemd unit or the provider boot script.","Run tailscale up and authenticate; note the node's 100.x / MagicDNS name.","Run verify-tailscale-seedbox.sh to confirm tailnet login, home-peer reachability, and that the *arr ports are listening."],"commands":["~/tailscale/tailscaled --tun=userspace-networking --state=$HOME/tailscale/tailscaled.state --socket=$HOME/tailscale/tailscaled.sock --port=41641 &","~/tailscale/tailscale --socket=$HOME/tailscale/tailscaled.sock up","PEERS=\"mac-mini nas\" ./scripts/media/verify-tailscale-seedbox.sh"],"files":["scripts/media/verify-tailscale-seedbox.sh"],"docs":[{"title":"Tailscale userspace networking","url":"https://tailscale.com/kb/1112/userspace-networking/"},{"title":"Tailscale static binaries","url":"https://pkgs.tailscale.com/stable/#static"}],"verify":"The script reports the node up on the tailnet, home peers reachable, and *arr ports listening."},
+{"id":"seed-04","phase":2,"title":"Wire qBittorrent + Sonarr/Radarr + Prowlarr, apply TRaSH naming/quality","host":"Seedbox","type":"sync","depends_on":["seed-02"],"estimate":"1-2 hrs","steps":["qBittorrent: default save path data/torrents; add categories radarr→data/torrents/movies, sonarr→data/torrents/tv.","Sonarr/Radarr: add root folders data/media/tv and data/media/movies; add qBittorrent as download client on localhost; leave Remote Path Mappings empty.","Prowlarr: add indexers once, then Settings → Apps add Sonarr & Radarr with Full Sync.","Install Recyclarr; create from a TRaSH template, add a media_naming block, set base_url/api_key, run recyclarr sync.","Bazarr: connect to Sonarr/Radarr, set a language profile, enable subtitle providers."],"commands":["curl -X POST \"http://localhost:9696/api/v1/applications/sync\" -H \"X-Api-Key: <PROWLARR_API_KEY>\"","recyclarr sync"],"files":["configs/seedbox/arr-suite-wiring.md"],"docs":[{"title":"Recyclarr getting started","url":"https://recyclarr.dev/guide/getting-started/"},{"title":"TRaSH — Sonarr naming","url":"https://trash-guides.info/Sonarr/Sonarr-recommended-naming-scheme/"},{"title":"TRaSH — Radarr naming","url":"https://trash-guides.info/Radarr/Radarr-recommended-naming-scheme/"}],"verify":"Prowlarr shows indexers synced; a manual search grabs to qBittorrent and imports hardlinked + correctly named into data/media."},
+{"id":"docker-03","phase":2,"title":"Deploy Seerr media request portal (home, Mac mini)","host":"Ubuntu","type":"sync","depends_on":["docker-02"],"estimate":"20 min","steps":["Set TZ in .env; note init: true is mandatory since the Seerr image ships no init process.","If migrating, mount your old Jellyseerr/Overseerr config at /app/config — Seerr migrates data on first boot.","Bring it up, then finish setup at http://<host>:5055 (link Plex + the seedbox's Sonarr/Radarr over Tailscale)."],"commands":["cd /opt/stacks/seerr && cp -n .env.example .env","docker compose up -d","docker compose ps"],"files":["configs/docker-stack/stacks/seerr/compose.yaml","configs/docker-stack/stacks/seerr/.env.example"],"docs":[{"title":"Seerr Docker (recommended)","url":"https://docs.seerr.dev/getting-started/docker/"},{"title":"Seerr migration guide","url":"https://docs.seerr.dev/migration-guide/"}],"verify":"Health check passes and the Seerr web UI loads on :5055."},
+{"id":"seed-05","phase":2,"title":"Connect home Seerr to the seedbox Sonarr/Radarr over Tailscale","host":"Ubuntu","type":"sync","depends_on":["seed-03","seed-04","docker-03"],"estimate":"20-30 min","steps":["In Seerr → Settings → Services, add Radarr and Sonarr using the seedbox's Tailscale name/IP and ports 7878/8989.","Set each service's default root folder (data/media/movies, data/media/tv) and the TRaSH quality profile from seed-04.","Test the connection (rides the tailnet; nothing port-forwarded) and save."],"commands":["tailscale ping <SEEDBOX_TS_NAME>","curl -s http://<SEEDBOX_TS_NAME>:7878/api/v3/system/status -H 'X-Api-Key: <RADARR_API_KEY>'"],"files":["configs/seedbox/arr-suite-wiring.md"],"docs":[{"title":"Seerr Docker docs","url":"https://docs.seerr.dev/getting-started/docker/"}],"verify":"Seerr 'Test' passes for both services; a test request appears in Sonarr/Radarr on the seedbox."},
+{"id":"seed-06","phase":2,"title":"Set up the sync agent: seedbox → NAS (rclone/SFTP, or Syncthing)","host":"NAS","type":"sync","depends_on":["seed-03","seed-04"],"estimate":"30-45 min","steps":["On the NAS install rclone; create an SSH key, copy the public key to the seedbox SFTP user.","Copy rclone.conf.example to ~/.config/rclone/rclone.conf, fill placeholders (host = seedbox Tailscale name), chmod 600.","Dry-run then run seedbox-sync.sh (rclone copy — never mirror-deletes the seeding source); schedule via cron with the flock guard.","GUI alternative: Syncthing on seedbox (Send Only) + NAS (Receive Only) for the media folder."],"commands":["rclone lsd seedbox:","DRY_RUN=1 ./scripts/media/seedbox-sync.sh","RCLONE_REMOTE=seedbox ./scripts/media/seedbox-sync.sh"],"files":["configs/seedbox/rclone.conf.example","scripts/media/seedbox-sync.sh"],"docs":[{"title":"rclone SFTP backend","url":"https://rclone.org/sftp/"},{"title":"Syncthing folder types","url":"https://docs.syncthing.net/users/foldertypes.html"}],"verify":"A finished named title + its .srt land in the NAS library folders; re-running transfers nothing new and never deletes from the seedbox."},
+{"id":"seed-07","phase":2,"title":"Plex import + end-to-end pipeline verification","host":"NAS","type":"sync","depends_on":["seed-05","seed-06"],"estimate":"20-30 min","steps":["Confirm Plex libraries point at the NAS media folders the sync agent writes to.","Request one small known title in Seerr and watch it flow: seedbox grab → import/rename → Bazarr subs → sync to NAS → Plex scan.","Confirm Plex shows the title and Seerr flips it to 'Available' and notifies the requester."],"commands":["curl -s \"http://localhost:32400/library/sections/<ID>/refresh?X-Plex-Token=<TOKEN>\""],"files":["configs/seedbox/arr-suite-wiring.md"],"docs":[{"title":"Seerr docs","url":"https://docs.seerr.dev/getting-started/docker/"}],"verify":"A Seerr request results in a playable, correctly-named title with subtitles in Plex, and Seerr marks it Available — no manual steps."},
+{"id":"seed-08","phase":2,"title":"Decommission the old home torrent stack (qBittorrent/Gluetun + dual-LAN + 5Mbps cap)","host":"NAS","type":"sync","depends_on":["seed-07"],"estimate":"45-60 min","steps":["Only after the seedbox pipeline runs clean: back up the UniFi config again (ZBF is a one-way door).","Stop/remove the NAS qBittorrent + Gluetun containers (or uninstall the package) and delete VPN credentials.","Undo the dual-LAN policy routing (remove ip rules/routes and any boot task); reboot and confirm a single default route.","Drop the 5 Mbps throttle; remove old torrent port-forwards and VPN firewall rules.","Verify the NAS no longer opens any P2P/VPN sockets and conntrack pressure on the Dream Wall is gone."],"commands":["docker rm -f qbittorrent gluetun 2>/dev/null || true","ip rule show","sudo ss -tunp | grep -iE 'wireguard|openvpn|6881' || echo clean"],"files":["configs/seedbox/decommission-old-nas-torrent.md"],"docs":[{"title":"rclone SFTP backend","url":"https://rclone.org/sftp/"}],"verify":"NAS opens no torrent/VPN sockets; single default route restored; new titles arrive only via the seedbox sync."},
+{"id":"nas-08","phase":2,"title":"Deploy Immich on Synology Container Manager (pinned, Quick Sync + OpenVINO)","host":"NAS","type":"sync","depends_on":["nas-01","nas-02"],"estimate":"1 hr","steps":["SSH to the NAS and confirm the iGPU exists: ls -l /dev/dri (expect renderD128).","Create /volume1/docker/immich/{library,postgres,backups} and place docker-compose.yml + .env there.","Edit .env: set a strong DB_PASSWORD, UPLOAD_LOCATION, DB_DATA_LOCATION, TZ; keep the pinned IMMICH_VERSION.","In Container Manager, create a Project pointing at the compose folder; build/up.","Open http://<nas>:2283, create the admin account.","Admin → Settings → Video Transcoding → Hardware Acceleration = Quick Sync; save.","Add a DSM Task Scheduler nightly pg_dumpall job to /volume1/docker/immich/backups so Hyper Backup ships the DB dump."],"commands":["ls -l /dev/dri","docker exec -t immich_postgres pg_dumpall --clean --if-exists -U postgres | gzip > /volume1/docker/immich/backups/immich-$(date +%F).sql.gz"],"files":["configs/nas/immich/docker-compose.yml","configs/nas/immich/.env.example"],"docs":[{"title":"Immich Docker Compose install","url":"https://docs.immich.app/install/docker-compose"},{"title":"Immich hardware transcoding","url":"https://docs.immich.app/features/hardware-transcoding"},{"title":"Immich backup & restore","url":"https://docs.immich.app/administration/backup-and-restore"}],"verify":"All containers healthy; a photo uploads and a video transcodes via Quick Sync; the nightly DB dump appears in the next Hyper Backup run."},
+
+{"id":"docker-04","phase":3,"title":"Deploy Miniflux + PostgreSQL","host":"Ubuntu","type":"sync","depends_on":["docker-02"],"estimate":"20 min","steps":["Set MINIFLUX_DB_PASSWORD, admin creds, and BASE_URL in .env; RUN_MIGRATIONS=1 builds the schema on first boot.","Postgres is pinned to 17-alpine (/var/lib/postgresql/data); if you move to pg18, change the volume path.","After first login, remove the CREATE_ADMIN/ADMIN_* lines. Connect NetNewsWire/Reeder via the Google Reader/Fever API."],"commands":["cd /opt/stacks/miniflux && cp -n .env.example .env","docker compose up -d","docker compose logs -f miniflux"],"files":["configs/docker-stack/stacks/miniflux/compose.yaml","configs/docker-stack/stacks/miniflux/.env.example"],"docs":[{"title":"Miniflux Docker install","url":"https://miniflux.app/docs/docker.html"},{"title":"Miniflux configuration","url":"https://miniflux.app/docs/configuration.html"}],"verify":"DB healthy, miniflux health check passes, you can log in at :8082."},
+{"id":"docker-05","phase":3,"title":"Deploy Navidrome music streaming","host":"Ubuntu","type":"sync","depends_on":["docker-02"],"estimate":"20 min","steps":["Set PUID/PGID (owner of ./data) and MUSIC_FOLDER (your NAS music mount, read-only) in .env.","Bring it up; first scan indexes the library (ND_SCANSCHEDULE=1h thereafter).","Create the admin user in the web UI; connect Symfonium/Amperfy to :4533 over LAN/Tailscale."],"commands":["cd /opt/stacks/navidrome && cp -n .env.example .env","docker compose up -d","docker compose logs -f"],"files":["configs/docker-stack/stacks/navidrome/compose.yaml","configs/docker-stack/stacks/navidrome/.env.example"],"docs":[{"title":"Navidrome Docker install","url":"https://www.navidrome.org/docs/installation/docker/"}],"verify":"Web UI loads at :4533, the scan finishes, a track streams in a Subsonic client."},
+{"id":"nas-09","phase":3,"title":"Deploy Calibre-Web-Automated on Container Manager (pinned, hardened)","host":"NAS","type":"sync","depends_on":["nas-02"],"estimate":"30 min","steps":["Create /volume1/docker/calibre-web-automated/{config,ingest,library}; if migrating, drop an existing library (with metadata.db) into library.","Set PUID/PGID to match the owning Synology user (id <user>).","Place docker-compose.yml and create a Container Manager Project; up.","Browse http://<nas>:8083, complete first-run setup, point at /calibre-library.","Security: do NOT expose CWA to the internet; front it with the reverse proxy + auth or VPN; keep Kobo sync disabled unless used (CVE note in the compose header).","Confirm config + library paths are inside a Tier 1 share covered by Hyper Backup."],"commands":["id your_user"],"files":["configs/nas/calibre-web-automated/docker-compose.yml"],"docs":[{"title":"Calibre-Web-Automated","url":"https://github.com/crocodilestick/Calibre-Web-Automated"}],"verify":"CWA UI loads, library lists books, a file dropped into ingest auto-imports; not reachable from outside the LAN/VPN."},
+{"id":"read-01","phase":3,"title":"Install Calibre desktop (library master + conversion) on CachyOS","host":"CachyOS","type":"sync","depends_on":[],"estimate":"20 min","steps":["Install Calibre from the Arch extra repo.","Create/point the library at a known path (e.g. ~/Calibre Library) — the master for conversions and metadata.","Optionally start the Content Server (Connect/share → Start Content Server) for OPDS, and 'Start wireless device connection' for KOReader push.","If you enable auth, use HTTP Basic (KOReader doesn't support Digest); only on the trusted LAN/behind TLS."],"commands":["sudo pacman -S --needed calibre"],"files":[],"docs":[{"title":"calibre Content server manual","url":"https://manual.calibre-ebook.com/server.html"},{"title":"KOReader: Calibre wireless","url":"https://github.com/koreader/koreader/wiki/calibre"}],"verify":"Calibre opens the library; visiting http://<cachyos-ip>:8080/opds returns the OPDS feed."},
+{"id":"read-02","phase":3,"title":"Set up Syncthing as a systemd user service on CachyOS","host":"CachyOS","type":"sync","depends_on":["read-01"],"estimate":"20 min","steps":["Run the idempotent helper to install Syncthing, enable lingering, and enable/start the --user service.","Open the Web GUI at http://127.0.0.1:8384 and set a GUI username/password.","Add remote device IDs (NAS, Kobo, phone) and create a shared 'books' folder (and the KOReader .sdr sidecar folder).","Prefer CWA KOSync for live progress; treat Syncthing as the no-cloud file-level backstop."],"commands":["./scripts/reading/syncthing-setup-cachyos.sh","systemctl --user status syncthing.service"],"files":["scripts/reading/syncthing-setup-cachyos.sh"],"docs":[{"title":"ArchWiki: Syncthing","url":"https://wiki.archlinux.org/title/Syncthing"},{"title":"Syncthing autostart","url":"https://docs.syncthing.net/users/autostart.html"}],"verify":"systemctl --user is-active syncthing.service returns active; the shared folder shows 'Up to Date' on all peers."},
+{"id":"read-03","phase":3,"title":"Wire the Calibre library into CWA auto-ingest on the NAS","host":"NAS","type":"async","depends_on":["read-01","read-02","nas-09"],"estimate":"20 min","steps":["Confirm CWA is reachable at http://<nas-ip>:8083 and log in.","Route books into CWA's ingest folder (/cwa-book-ingest) via the Syncthing-shared folder or an SMB mount.","Drop a test EPUB and confirm CWA converts/imports it, runs the EPUB-fixer, and enforces metadata/covers.","Keep CWA patched and never expose it to the internet."],"commands":[],"files":["configs/nas/calibre-web-automated/docker-compose.yml"],"docs":[{"title":"Calibre-Web-Automated","url":"https://github.com/crocodilestick/Calibre-Web-Automated"}],"verify":"A file dropped in the ingest folder appears in the CWA library and OPDS feed within a minute or two."},
+{"id":"read-04","phase":3,"title":"Install KOReader on the Kobo","host":"device","type":"sync","depends_on":[],"estimate":"30 min","steps":["Complete the Kobo's initial WiFi/account onboarding first (a fresh Kobo won't mount cleanly until then).","Follow the official Kobo install (KFMon one-time installer, then drop the KOReader release on the device).","Reboot and launch KOReader from the KFMon/NickelMenu entry.","Stock Kobo reader and KOReader coexist — keep both."],"commands":[],"files":["scripts/reading/koreader-cwa-wallabag-wiring.md"],"docs":[{"title":"KOReader install on Kobo","url":"https://github.com/koreader/koreader/wiki/Installation-on-Kobo-devices"},{"title":"KOReader User Guide","url":"https://koreader.rocks/user_guide/"}],"verify":"KOReader launches on the Kobo and shows the file browser."},
+{"id":"read-05","phase":3,"title":"Connect KOReader to Calibre/CWA over WiFi (OPDS + wireless send)","host":"device","type":"sync","depends_on":["read-01","read-03","read-04"],"estimate":"20 min","steps":["Method A (push): in Calibre, Connect/share → Start wireless device connection; in KOReader, Tools → Calibre → Connect.","Method B (pull/OPDS): KOReader → Search → OPDS catalog → + ; URL http://<host>:<port>/opds (CWA: http://<nas-ip>:8083/opds/ with trailing slash).","Use Basic auth only if the server requires credentials."],"commands":[],"files":["scripts/reading/koreader-cwa-wallabag-wiring.md"],"docs":[{"title":"KOReader OPDS support","url":"https://github.com/koreader/koreader/wiki/OPDS-support"}],"verify":"KOReader lists the Calibre/CWA catalog and downloads a book successfully."},
+{"id":"read-06","phase":3,"title":"Enable CWA built-in KOReader progress sync (KOSync) on the Kobo","host":"device","type":"sync","depends_on":["read-03","read-04"],"estimate":"20 min","steps":["Open http://<nas-ip>:8083/kosync in a browser and download koplugin.zip.","Extract cwasync.koplugin into the device at .adds/koreader/plugins/cwasync.koplugin (over USB).","In KOReader disable the stock 'Progress sync' plugin and ensure 'CWA Progress Sync' is enabled.","Open a book (the CWA menu only shows with a book open); set Server URL to the CWA base URL WITHOUT /kosync (the plugin appends it), plus credentials."],"commands":[],"files":["scripts/reading/koreader-cwa-wallabag-wiring.md"],"docs":[{"title":"CWA KOReader synchronization","url":"https://deepwiki.com/crocodilestick/Calibre-Web-Automated/5.1-koreader-synchronization"}],"verify":"Read a few pages, then open the same book on another device and confirm the position matches."},
+{"id":"read-07","phase":3,"title":"Deploy self-hosted Wallabag (read-it-later) on the Docker stack","host":"Ubuntu","type":"async","depends_on":["docker-02"],"estimate":"30 min","steps":["Copy the wallabag stack into /opt/stacks/wallabag; ensure the external edge network exists.","cp .env.example .env and set strong DB passwords + a random WALLABAG_SECRET and your real DOMAIN_NAME.","Bring it up; first boot runs DB migrations. Pinned wallabag 2.6.14 + MariaDB 11.4 + Redis 7.","Log in with default wallabag/wallabag, change the password, then create an API client for the KOReader plugin."],"commands":["cd /opt/stacks/wallabag && cp .env.example .env","docker compose up -d","docker compose logs -f wallabag"],"files":["configs/docker-stack/wallabag/docker-compose.yml","configs/docker-stack/wallabag/.env.example"],"docs":[{"title":"wallabag/docker","url":"https://github.com/wallabag/docker"},{"title":"Wallabag installation","url":"https://doc.wallabag.org/admin/installation/installation/"}],"verify":"Wallabag UI loads, you can save an article; GET /api/info returns 200."},
+{"id":"read-08","phase":3,"title":"Wire the KOReader Wallabag plugin on the Kobo","host":"device","type":"sync","depends_on":["read-04","read-07"],"estimate":"20 min","steps":["In Wallabag create an API client and note Client ID + Client secret.","In KOReader open the Wallabag plugin → Configure server; tap OK once to write an empty config file.","Over USB edit .adds/koreader/settings/wallabag.lua and fill server_url, client_id, client_secret, username, password.","Run 'Synchronize articles with server' and enable 'Auto-upload article statuses when downloading'."],"commands":[],"files":["scripts/reading/koreader-cwa-wallabag-wiring.md"],"docs":[{"title":"KOReader Wallabag plugin","url":"https://github.com/koreader/koreader/wiki/Wallabag"}],"verify":"Saving an article in Wallabag and syncing in KOReader downloads it to the Kobo; finishing it marks it read on the server."},
+{"id":"read-09","phase":3,"title":"Add RSS/news to KOReader (Miniflux tie-in)","host":"device","type":"sync","depends_on":["read-04","docker-04"],"estimate":"20 min","steps":["For account-synced read state: install the community rssreader.koplugin and point it at your Miniflux instance (Fever/native API).","For simple offline fetch: use the built-in News downloader (Tools → News downloader) with RSS/Atom feed URLs.","Miniflux feeds the unread queue; Wallabag holds saved long-reads — both land on the Kobo via KOReader."],"commands":[],"files":["scripts/reading/koreader-cwa-wallabag-wiring.md"],"docs":[{"title":"KOReader RSS Reader plugin","url":"https://github.com/omer-faruq/rssreader.koplugin"}],"verify":"Feeds appear in KOReader and articles open for offline reading; read-state syncs back to Miniflux."},
+{"id":"read-10","phase":3,"title":"Install the iPod sync toolchain on CachyOS (Rhythmbox + libgpod)","host":"CachyOS","type":"sync","depends_on":[],"estimate":"15 min","steps":["Run the idempotent installer for rhythmbox + libgpod (and the ipod-* CLI tools).","Optionally add gtkpod (power-user GUI) and hfsprogs (only if the iPod is HFS+ formatted, i.e. last used on a Mac).","Do NOT install usbmuxd/ifuse — those are for iOS/iPod Touch, not the Classic."],"commands":["./scripts/media/install-ipod-tools-cachyos.sh","WITH_GTKPOD=1 ./scripts/media/install-ipod-tools-cachyos.sh"],"files":["scripts/media/install-ipod-tools-cachyos.sh"],"docs":[{"title":"ArchWiki: iPod","url":"https://wiki.archlinux.org/title/IPod"},{"title":"libgpod","url":"https://github.com/gtkpod/libgpod"}],"verify":"rhythmbox --version prints; pkg-config --modversion libgpod-1.0 returns a version."},
+{"id":"read-11","phase":3,"title":"Sync the iPod Classic from CachyOS via Rhythmbox/libgpod","host":"CachyOS","type":"sync","depends_on":["read-10"],"estimate":"45 min","steps":["Identify + mount the iPod (lsblk -f; FAT32=vfat easiest, HFS+=hfsplus needs hfsprogs + force,rw).","First-time only: if the DB is unreadable, initialize it; set FirewireGuid in iPod_Control/Device/SysInfo from the lsusb serial.","Generate SysInfoExtended so changes don't vanish on disconnect.","In Rhythmbox enable the iPod plugin, drag tracks/playlists from a local copy of the NAS/Navidrome master onto the device, then EJECT before unplugging.","Recovery: the NAS is the master — wipe/re-init and re-sync if the iTunesDB gets confused."],"commands":["lsblk -f","ipod-read-sysinfo-extended /dev/sdX2 /mnt/ipod","sudo umount /mnt/ipod"],"files":["scripts/media/ipod-sync-cachyos.md"],"docs":[{"title":"ArchWiki: iPod (FirewireGuid, SysInfoExtended)","url":"https://wiki.archlinux.org/title/IPod"}],"verify":"Added tracks survive an eject → unplug → replug cycle, play with correct metadata/art, and car/USB controls still navigate the library."},
+{"id":"read-12","phase":3,"title":"Install + configure gPodder for podcasts on CachyOS","host":"CachyOS","type":"sync","depends_on":[],"estimate":"20 min","steps":["Install gPodder from the Arch extra repo (or Flatpak).","Subscribe to RSS/YouTube/SoundCloud feeds and configure auto-download + auto-cleanup.","Optionally set GPODDER_DOWNLOAD_DIR (e.g. ~/Podcasts) via ~/.config/environment.d/gpodder.conf.","To get episodes onto the iPod: download into a folder and sync that folder via Rhythmbox."],"commands":["sudo pacman -S --needed gpodder"],"files":[],"docs":[{"title":"gPodder (Arch package)","url":"https://archlinux.org/packages/extra/any/gpodder/"}],"verify":"gPodder downloads a new episode to the configured folder; the file plays locally."},
+{"id":"read-13","phase":3,"title":"Enable official Obsidian Sync (E2E encrypted) on CachyOS","host":"CachyOS","type":"sync","depends_on":[],"estimate":"20 min","steps":["In Obsidian enable the core Sync plugin and sign in to your Obsidian account with the Sync subscription.","Settings → Sync → Remote vault → Create new vault; pick a region and set an Encryption password (creates the E2E vault).","Store the encryption password in your password manager — it is unrecoverable.","Connect to the vault, adjust Selective Sync, restart Obsidian, then Start Syncing.","Notes remain plain local Markdown (captured by Phase-1 backups)."],"commands":[],"files":[],"docs":[{"title":"Set up Obsidian Sync","url":"https://obsidian.md/help/sync/setup"},{"title":"Verify Obsidian Sync E2E","url":"https://obsidian.md/blog/verify-obsidian-sync-encryption/"}],"verify":"A note edited on CachyOS appears on a second device after syncing."},
+
+{"id":"docker-06","phase":4,"title":"Deploy Caddy reverse proxy with automatic HTTPS","host":"Ubuntu","type":"sync","depends_on":["docker-02","docker-03","docker-04","docker-05"],"estimate":"45 min","steps":["Set DOMAIN, ACME_EMAIL (and CLOUDFLARE_API_TOKEN if using DNS-01) in .env; edit caddy/Caddyfile subdomains to your domain.","For internal-only services use DNS-01 wildcard certs: build the custom image with the Cloudflare module. Otherwise use 'tls internal'.","Keep the caddy_data volume — it holds certs; deleting it triggers Let's Encrypt rate limits."],"commands":["cd /opt/stacks/caddy && cp -n .env.example .env","docker compose up -d","docker compose exec -w /etc/caddy caddy caddy validate"],"files":["configs/docker-stack/stacks/caddy/compose.yaml","configs/docker-stack/stacks/caddy/caddy/Caddyfile","configs/docker-stack/stacks/caddy/Dockerfile","configs/docker-stack/stacks/caddy/.env.example"],"docs":[{"title":"Caddy official Docker image","url":"https://hub.docker.com/_/caddy"},{"title":"Caddy automatic HTTPS","url":"https://caddyserver.com/docs/automatic-https"},{"title":"caddy-dns/cloudflare (DNS-01)","url":"https://github.com/caddy-dns/cloudflare"}],"verify":"caddy validate passes and each https://<service>.<domain> loads with a valid certificate."},
+{"id":"docker-07","phase":4,"title":"Deploy AdGuard Home network DNS filtering","host":"Ubuntu","type":"sync","depends_on":["docker-02"],"estimate":"30 min","steps":["Ensure host port 53 is free (disable systemd-resolved stub — see the install script notes), then bring AdGuard up.","Complete the first-run wizard at http://<host>:3000; the admin UI then serves on port 80 (proxied by Caddy at dns.<domain>).","Point UniFi DHCP DNS for each VLAN at this host's LAN IP. Pi-hole is the swap-in alternative in alternatives/pihole/."],"commands":["cd /opt/stacks/adguard && cp -n .env.example .env","docker compose up -d","dig @<host-ip> example.com"],"files":["configs/docker-stack/stacks/adguard/compose.yaml","configs/docker-stack/alternatives/pihole/compose.yaml"],"docs":[{"title":"AdGuard Home Docker wiki","url":"https://github.com/AdguardTeam/AdGuardHome/wiki/Docker"},{"title":"Pi-hole Docker (alternative)","url":"https://docs.pi-hole.net/docker/"}],"verify":"dig @<host-ip> example.com resolves and a known ad domain returns blocked in the query log."},
+{"id":"docker-08","phase":4,"title":"Deploy Dockge container manager","host":"Ubuntu","type":"sync","depends_on":["docker-02"],"estimate":"15 min","steps":["Set PUID/PGID in .env. Verify the stacks mount uses the SAME path on both sides (/opt/stacks:/opt/stacks) and matches DOCKGE_STACKS_DIR.","Bring it up and create the admin account at http://<host>:5001, then 'Scan Stacks Folder' to import existing stacks.","Manage all other stacks from Dockge thereafter. Dockhand (alternatives/dockhand/) is the power option."],"commands":["cd /opt/stacks/dockge && cp -n .env.example .env","docker compose up -d","docker compose ps"],"files":["configs/docker-stack/stacks/dockge/compose.yaml","configs/docker-stack/alternatives/dockhand/compose.yaml"],"docs":[{"title":"Dockge (louislam/dockge)","url":"https://github.com/louislam/dockge"},{"title":"Dockhand docs (alternative)","url":"https://dockhand.pro/manual/"}],"verify":"Dockge UI lists all /opt/stacks stacks after 'Scan Stacks Folder' and can start/stop them."},
+{"id":"docker-09","phase":4,"title":"Deploy ntfy push-notification backbone","host":"Ubuntu","type":"sync","depends_on":["docker-02"],"estimate":"25 min","steps":["Set NTFY_BASE_URL to the Caddy domain, PUID/PGID, and keep NTFY_AUTH_DEFAULT_ACCESS=deny-all; init: true is required.","Create an admin user and an access token for Diun/scripts via the CLI.","Subscribe to your topics in the ntfy phone app (install the PWA for iOS Web Push)."],"commands":["cd /opt/stacks/ntfy && cp -n .env.example .env","docker compose up -d","docker compose exec ntfy ntfy user add --role=admin admin","docker compose exec ntfy ntfy token add admin"],"files":["configs/docker-stack/stacks/ntfy/compose.yaml","configs/docker-stack/stacks/ntfy/.env.example"],"docs":[{"title":"ntfy installation","url":"https://docs.ntfy.sh/install/"},{"title":"ntfy configuration","url":"https://docs.ntfy.sh/config/"}],"verify":"curl -u admin:<pass> -d 'test' https://ntfy.<domain>/test delivers a push to the subscribed app."},
+{"id":"docker-10","phase":4,"title":"Deploy Beszel monitoring hub + agent","host":"Ubuntu","type":"sync","depends_on":["docker-02"],"estimate":"25 min","steps":["Bring up the hub, create the admin account at http://<host>:8090, set BESZEL_APP_URL to the Caddy domain.","Click 'Add System' to get TOKEN + KEY, paste them into .env, and restart so the local agent connects.","Deploy just the agent block on the NAS and rig with their own KEYs to monitor the whole fleet."],"commands":["cd /opt/stacks/beszel && cp -n .env.example .env","docker compose up -d beszel","docker compose up -d beszel-agent"],"files":["configs/docker-stack/stacks/beszel/compose.yaml","configs/docker-stack/stacks/beszel/.env.example"],"docs":[{"title":"Beszel hub installation","url":"https://beszel.dev/guide/hub-installation"},{"title":"Beszel agent installation","url":"https://beszel.dev/guide/agent-installation"}],"verify":"The Mac mini appears 'up' in the Beszel dashboard with live CPU/RAM/disk metrics."},
+{"id":"docker-11","phase":4,"title":"Deploy Uptime Kuma uptime monitoring","host":"Ubuntu","type":"sync","depends_on":["docker-02","docker-09"],"estimate":"30 min","steps":["Bring up the v2 image (the :latest tag is deprecated/v1); use a local volume, not NFS.","Create the admin account at http://<host>:3001 and add monitors for Immich, Plex, CWA, HA, Miniflux, Navidrome, Seerr.","Wire its notification channel to ntfy so downtime alerts reach your phone."],"commands":["cd /opt/stacks/uptime-kuma && cp -n .env.example .env","docker compose up -d","docker compose ps"],"files":["configs/docker-stack/stacks/uptime-kuma/compose.yaml","configs/docker-stack/stacks/uptime-kuma/.env.example"],"docs":[{"title":"Uptime Kuma","url":"https://github.com/louislam/uptime-kuma"}],"verify":"Monitors show green and a deliberately-stopped service triggers an ntfy downtime alert."},
+{"id":"docker-12","phase":4,"title":"Deploy Diun image-update notifier (notify-only)","host":"Ubuntu","type":"async","depends_on":["docker-09"],"estimate":"20 min","steps":["Set DIUN_NTFY_ENDPOINT/TOPIC/TOKEN in .env; WATCHBYDEFAULT scans every running container's pinned tag on the daily schedule.","Diun only notifies — it never pulls or restarts — the deliberate no-Watchtower update model.","Update tags manually after reading release notes (especially Immich majors)."],"commands":["cd /opt/stacks/diun && cp -n .env.example .env","docker compose up -d","docker compose logs -f"],"files":["configs/docker-stack/stacks/diun/compose.yaml","configs/docker-stack/stacks/diun/.env.example"],"docs":[{"title":"Diun documentation","url":"https://crazymax.dev/diun/"},{"title":"Diun ntfy notifier","url":"https://crazymax.dev/diun/notif/ntfy/"}],"verify":"diun logs show providers loaded and the first scheduled run posts a summary to the ntfy topic."},
+{"id":"glue-05","phase":4,"title":"Self-host Forgejo (config-as-code forge) on the Ubuntu box","host":"Ubuntu","type":"sync","depends_on":["docker-01"],"estimate":"30-45 min","steps":["Ensure Docker + the shared edge network exist.","In configs/git: cp .env.example .env, set FORGEJO_DB_PASSWORD, FORGEJO_UID/GID (id -u/-g), domain/URL.","docker compose up -d; open :3000 and create the single admin account on first run.","Confirm registration is disabled after account creation; set ROOT_URL to your Caddy/Tailscale hostname.","(Optional) configure a push-mirror to a private GitHub/Codeberg repo for an off-site copy."],"commands":["docker network create edge","cd configs/git && cp .env.example .env","docker compose up -d"],"files":["configs/git/docker-compose.yml","configs/git/.env.example"],"docs":[{"title":"Forgejo Docker install","url":"https://forgejo.org/docs/latest/admin/installation/docker/"},{"title":"Forgejo config cheat sheet","url":"https://forgejo.org/docs/latest/admin/config-cheat-sheet/"}],"verify":"curl -fsS http://localhost:3000/api/healthz returns ok; you can log in and create a repo."},
+{"id":"docker-13","phase":4,"title":"Commit the whole Docker stack to Git (rebuildable in an hour)","host":"Ubuntu","type":"sync","depends_on":["docker-06","docker-07","docker-08","docker-10","docker-11","docker-12","glue-05"],"estimate":"20 min","steps":["Confirm .gitignore excludes .env and bind-mounted state (data/db/conf) so only compose files, the Caddyfile, and .env.example are versioned.","Push /opt/stacks to Forgejo (or a private GitHub repo) so the box is git clone + docker compose up rebuildable.","Back up the excluded state dirs and named volumes (caddy_data) via the NAS/Restic jobs separately."],"commands":["cd /opt/stacks && git init && git add -A","git commit -m 'Mac mini docker stack: pinned compose files + Caddyfile'","git remote add origin <your-repo-url> && git push -u origin main"],"files":["configs/docker-stack/.gitignore","configs/docker-stack/README.md"],"docs":[{"title":"Compose file reference","url":"https://docs.docker.com/reference/compose-file/"}],"verify":"git status is clean, no .env or state dirs tracked, and a fresh clone + docker compose up reproduces a stack."},
+{"id":"glue-06","phase":4,"title":"Push ALL configs to Git + run the rebuild drill (capstone)","host":"all","type":"sync","depends_on":["docker-13"],"estimate":"1-2 hr","steps":["Add a repo-root .gitignore: ignore **/.env, *.key/*.pem, and runtime state dirs.","Commit all compose files, the Caddyfile, *.example templates, HA YAML (sanitized), and all scripts/.","Store the real .env contents + age key + HA backup key in Proton Pass (or SOPS+age for in-repo encrypted secrets).","Push to Forgejo; (optional) push-mirror to a private GitHub repo for off-site redundancy.","Run the rebuild drill once on a clean VM: clone → run setup scripts → fill .env → restore state from backup → docker compose up."],"commands":["git init && git add -A && git commit -m 'config-as-code: initial homelab state'","git remote add origin <forgejo-url> && git push -u origin main"],"files":["configs/git/repo-structure.md","README.md"],"docs":[{"title":"chezmoi setup (dotfiles half)","url":"https://www.chezmoi.io/user-guide/setup/"},{"title":"Forgejo docs","url":"https://forgejo.org/docs/latest/"}],"verify":"A clean VM rebuilds a service end-to-end from git clone + .env + docker compose up; no secret or state dir is tracked."},
+{"id":"nas-10","phase":4,"title":"Verify Plex stays running (lifetime pass — no migration)","host":"NAS","type":"sync","depends_on":[],"estimate":"15 min","steps":["Confirm the Plex Media Server package/container is running and signed in (lifetime Plex Pass active).","Confirm libraries scan and Quick Sync hardware transcoding works.","Confirm the Plex appdata/config folder is in a Tier 1 share covered by Hyper Backup; the media itself is Tier 2."],"commands":[],"files":["configs/nas/backup-architecture.md"],"docs":[{"title":"Plex on Synology","url":"https://support.plex.tv/articles/200288586-installation/"}],"verify":"Plex web UI loads, a client plays media with HW transcoding; the Plex config folder is in a backup job."},
+
+{"id":"game-01","phase":5,"title":"Install LinuxGSM light co-op servers on the Mac mini (always-on)","host":"Ubuntu","type":"async","depends_on":[],"estimate":"60-90 min","steps":["Pick the gameserver script name for each light co-op game (e.g. vhserver, mcserver, fctrserver, pzserver, corekeeperserver).","Create a dedicated user per server (adduser vhserver) and su into it.","Download LinuxGSM and the per-game installer, then run install/auto-install.","Edit the instance .cfg (server name, password, world, ports, max players).","Add monitor + @reboot cron entries so each server stays always-on. Keep all servers on the Trusted VLAN.","Follow scripts/gaming/linuxgsm-quickstart.md."],"commands":["sudo adduser vhserver","sudo su - vhserver","curl -Lo linuxgsm.sh https://linuxgsm.sh && chmod +x linuxgsm.sh && bash linuxgsm.sh vhserver","./vhserver auto-install","./vhserver start && ./vhserver details"],"files":["scripts/gaming/linuxgsm-quickstart.md"],"docs":[{"title":"LinuxGSM Getting Started","url":"https://docs.linuxgsm.com/getting-started"},{"title":"LinuxGSM supported servers","url":"https://linuxgsm.com/servers"}],"verify":"./vhserver details shows it running; a LAN client connects; after reboot @reboot starts it and monitor restarts it after a kill."},
+{"id":"game-02","phase":5,"title":"(Optional) Pelican Panel + Wings for managed/heavy servers","host":"CachyOS","type":"async","depends_on":["game-08"],"estimate":"60-90 min","steps":["Install Docker + Compose on the host that will run servers (rig for heavy on-demand; or Mac mini).","Deploy the Pelican Panel via the official docker-compose.yml (Panel + MariaDB), set APP_URL and a persistent volume.","Bring up the Panel, create the admin user, log into the web UI.","Add a Wings node (FQDN, daemon port 8080, SFTP 2022, disk/memory); copy the generated config.yml to /etc/pelican/config.yml.","Start Wings and confirm the node shows a green heart; import/author eggs (store in Git) and create the heavy server."],"commands":["sudo mkdir -p /opt/pelican && cd /opt/pelican","sudo curl -fsSL https://github.com/pelican-dev/panel/releases/latest/download/docker-compose.yml -o docker-compose.yml","sudo docker compose up -d"],"files":["scripts/gaming/linuxgsm-quickstart.md"],"docs":[{"title":"Pelican Panel (GitHub)","url":"https://github.com/pelican-dev/panel"},{"title":"Pelican docs","url":"https://pelican.dev/docs"}],"verify":"Panel UI loads and admin can log in; the Wings node shows the green heart; a test server boots from an egg."},
+{"id":"game-03","phase":5,"title":"Run heavy on-demand game servers on the CachyOS rig","host":"CachyOS","type":"async","depends_on":["game-08"],"estimate":"30-60 min per server","steps":["Decide management: LinuxGSM CLI (lightest) or Pelican Wings (panel) on the rig.","Install the heavy server (Palworld/ARK/modded) under its own user or via a Pelican egg.","Configure ports/mods/RAM appropriate for the 12700K/3090 Ti box.","Because the rig auto-suspends, gate server start on wake: start after WoL.","Expose to friends via Tailscale (game-04); keep the rig on the Trusted VLAN."],"commands":["sudo adduser palworldserver","curl -Lo linuxgsm.sh https://linuxgsm.sh && chmod +x linuxgsm.sh && bash linuxgsm.sh pwserver","./pwserver auto-install","./pwserver start && ./pwserver details"],"files":["scripts/gaming/linuxgsm-quickstart.md"],"docs":[{"title":"LinuxGSM supported servers","url":"https://linuxgsm.com/servers"}],"verify":"After waking the rig the heavy server starts; a friend joins over Tailscale; the rig suspends again when idle."},
+{"id":"game-04","phase":5,"title":"Expose game servers to friends safely via Tailscale (no open ports)","host":"Ubuntu","type":"sync","depends_on":["game-01"],"estimate":"20-30 min","steps":["Ensure Tailscale is installed/up on the server host(s) on the Trusted VLAN.","In the Tailscale admin console, Share the server node to each friend's Tailscale account; or invite them to your tailnet.","Friends accept, install Tailscale, and connect using the server's 100.x IP + game port.","For public/many-player games instead, port-forward only the specific game port(s) on the Dream Wall, or use a Playit.gg tunnel. Never on IoT."],"commands":["tailscale status","tailscale ip -4"],"files":["scripts/gaming/linuxgsm-quickstart.md"],"docs":[{"title":"Tailscale: Share machines","url":"https://tailscale.com/docs/features/sharing"},{"title":"Invite any user to your tailnet","url":"https://tailscale.com/blog/invite-any-user"}],"verify":"A friend connects to the server via its 100.x IP and game port with no public port-forward; tailscale status lists the shared peer."},
+{"id":"game-05","phase":5,"title":"Install & autostart Sunshine on the CachyOS rig (NVENC, 4K/120 HDR)","host":"CachyOS","type":"sync","depends_on":[],"estimate":"30-45 min","steps":["Add the LizardByte pacman repo and install sunshine (the prebuilt package needs no separate CUDA — NVENC rides on the NVIDIA driver; CUDA is only needed for the AUR/PKGBUILD build path or NVFBC capture).","Enable the user systemd service (note the renamed unit) and enable linger so it starts without an interactive login.","Open https://localhost:47990, accept the self-signed cert, set the web-UI username/password immediately.","Confirm the encoder is NVENC; set resolution/FPS/HDR; add apps (Steam Big Picture pre-added).","Allow Sunshine ports on the Trusted VLAN for in-home mDNS discovery."],"commands":["sudo pacman -S sunshine","systemctl --user enable --now app-dev.lizardbyte.app.Sunshine","sudo loginctl enable-linger \"$USER\""],"files":["scripts/gaming/sunshine-autostart-notes.md"],"docs":[{"title":"Sunshine Getting Started","url":"https://docs.lizardbyte.dev/projects/sunshine/latest/md_docs_2getting__started.html"},{"title":"LizardByte pacman-repo","url":"https://github.com/LizardByte/pacman-repo"}],"verify":"systemctl --user status app-dev.lizardbyte.app.Sunshine is active; the web UI loads and login works; encoder shows NVENC."},
+{"id":"game-06","phase":5,"title":"Set up Moonlight clients and pair in-home (same Trusted VLAN)","host":"clients","type":"sync","depends_on":["game-05"],"estimate":"20-30 min","steps":["Install Moonlight on each client: Steam Deck, Apple TV/iOS, laptops, phones, TV.","On Android handhelds use Artemis (Moonlight fork); pair with Apollo or Sunshine.","Put host + clients on the same Trusted VLAN so the rig auto-discovers via mDNS.","Open Moonlight → select the rig → note the PIN → on the Sunshine web UI PIN tab enter it + a label → Send.","Always pair in-home first (required for iOS/tvOS) before attempting remote play."],"commands":[],"files":["scripts/gaming/sunshine-autostart-notes.md"],"docs":[{"title":"Moonlight Setup Guide","url":"https://github.com/moonlight-stream/moonlight-docs/wiki/Setup-Guide"},{"title":"Apollo / Artemis (handhelds)","url":"https://github.com/ClassicOldSong/Apollo"}],"verify":"Each client auto-discovers the rig, pairs via PIN, and streams smoothly at the target resolution/FPS."},
+{"id":"game-07","phase":5,"title":"Remote streaming over Tailscale — ensure DIRECT (not DERP)","host":"clients","type":"sync","depends_on":["game-05","game-06"],"estimate":"20-40 min","steps":["Install Tailscale on the rig and each remote client on the same tailnet (or share the rig node).","In Moonlight, add the host manually by its Tailscale 100.x IP (mDNS won't cross networks).","CRITICAL: run tailscale status and confirm the rig peer shows 'direct', not 'relay'/'derp' (DERP caps ~5-10 Mbps).","If relayed, run tailscale ping <rig> to see if it upgrades, and tailscale netcheck to confirm UDP is allowed.","If still relayed, forward UDP 41641 on the Dream Wall (and enable UPnP/PCP), then re-check.","Re-test the stream once 'direct' is confirmed."],"commands":["tailscale status","tailscale ping <rig-tailscale-name-or-ip>","tailscale netcheck"],"files":[],"docs":[{"title":"Tailscale connection types","url":"https://tailscale.com/docs/reference/connection-types"},{"title":"Tailscale NAT traversal","url":"https://tailscale.com/blog/nat-traversal-improvements-pt-1"}],"verify":"tailscale status reports a DIRECT connection; the remote stream sustains high bitrate (not capped to ~5-10 Mbps)."},
+{"id":"game-08","phase":5,"title":"Wake-on-LAN: enable on the rig NIC and send from Mac mini/laptop","host":"CachyOS","type":"sync","depends_on":[],"estimate":"20-30 min","steps":["In the rig BIOS/UEFI, enable Wake on PCIe/LAN and disable deep ErP/EuP power-off that cuts NIC power at shutdown.","On CachyOS run enable-wol-cachyos.sh as root: it arms ethtool wol g, installs a wol@<nic>.service, and prints the NIC MAC.","Record the printed MAC as RIG_MAC.","Install a WoL sender on the Mac mini/laptop and run wake-rig.sh with RIG_MAC set.","Confirm WoL survives reboot (Wake-on: g) and that suspend → magic-packet wakes the rig."],"commands":["sudo ./scripts/gaming/enable-wol-cachyos.sh","ethtool <nic> | grep -i 'Wake-on'","sudo apt install wakeonlan","RIG_MAC=aa:bb:cc:dd:ee:ff ./scripts/gaming/wake-rig.sh"],"files":["scripts/gaming/enable-wol-cachyos.sh","scripts/gaming/wake-rig.sh"],"docs":[{"title":"Arch Wiki: Wake-on-LAN","url":"https://wiki.archlinux.org/title/Wake-on-LAN"},{"title":"Ubuntu WakeOnLan help","url":"https://help.ubuntu.com/community/WakeOnLan"}],"verify":"After a full reboot ethtool shows Wake-on: g; suspending the rig and running wake-rig.sh from the Mac mini boots it within ~30-60s."},
+{"id":"game-09","phase":5,"title":"Auto-suspend the rig after idle (on-demand power saving)","host":"CachyOS","type":"async","depends_on":["game-08"],"estimate":"20-30 min","steps":["Edit /etc/systemd/logind.conf: set IdleAction=suspend and IdleActionSec=30min (tune to taste).","Optionally use suspend-then-hibernate via /etc/systemd/sleep.conf for deeper savings (requires valid swap/resume).","Restart systemd-logind (or reboot) to apply.","Ensure no idle-inhibitor lock keeps it awake during active streams/servers.","Confirm the rig suspends when idle and that WoL reliably wakes it."],"commands":["sudo sed -i 's/^#\\?IdleAction=.*/IdleAction=suspend/' /etc/systemd/logind.conf","sudo sed -i 's/^#\\?IdleActionSec=.*/IdleActionSec=30min/' /etc/systemd/logind.conf","sudo systemctl restart systemd-logind","systemd-inhibit --list"],"files":[],"docs":[{"title":"logind.conf (IdleAction)","url":"https://man.archlinux.org/man/logind.conf.5"},{"title":"systemd-sleep.conf","url":"https://freedesktop.org/software/systemd/man/latest/systemd-sleep.conf.html"}],"verify":"After IdleActionSec with no active session/inhibitor the rig suspends; it does NOT suspend mid-stream; WoL wakes it on demand."},
+{"id":"game-10","phase":5,"title":"GPU power-limit + (optional) undervolt the 3090 Ti, persistent across reboot","host":"CachyOS","type":"async","depends_on":[],"estimate":"30-45 min","steps":["Run gpu-power-tune.sh as root: enables persistence mode, reads the card's Min..Max, applies a clamped power limit (default 300W).","Optionally enable clock locking (LOCK_CLOCKS=1) to cap boost into lower-voltage bins.","For a true indirect undervolt, lock the clock and apply a positive clock offset starting small (+100 MHz), testing under load.","Install the provided systemd unit so settings re-apply on every boot/resume.","Note: NVIDIA exposes no direct voltage control on Linux; undervolt is the lock+offset trick and is per-card/risky."],"commands":["sudo ./scripts/gaming/gpu-power-tune.sh","sudo GPU_POWER_LIMIT=300 ./scripts/gaming/gpu-power-tune.sh","nvidia-smi --query-gpu=name,persistence_mode,power.limit,power.draw,clocks.gr --format=csv","sudo systemctl enable --now gpu-power-tune.service"],"files":["scripts/gaming/gpu-power-tune.sh"],"docs":[{"title":"nvidia-smi reference","url":"https://docs.nvidia.com/deploy/nvidia-smi/index.html"},{"title":"nvuv — undervolt CLI + systemd","url":"https://github.com/doums/nvuv"}],"verify":"nvidia-smi shows persistence_mode=Enabled and the lower power.limit; after reboot the systemd unit re-applies it; load draw stays under the cap."}
+]
+</script>
+
+<script>
+(function(){
+  "use strict";
+  const STORE_KEY = "foss-analogue-progress-v1";
+  const OPEN_KEY  = "foss-analogue-open-v1";
+  const tasks = JSON.parse(document.getElementById("taskData").textContent);
+  const phaseMeta = JSON.parse(document.getElementById("phaseMeta").textContent);
+
+  let done = {};
+  try { done = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e){ done = {}; }
+  let openState = {};
+  try { openState = JSON.parse(localStorage.getItem(OPEN_KEY)) || {}; } catch(e){ openState = {}; }
+
+  const save = () => localStorage.setItem(STORE_KEY, JSON.stringify(done));
+  const saveOpen = () => localStorage.setItem(OPEN_KEY, JSON.stringify(openState));
+
+  const norm = p => p.replace(/^foss-setup\//,"");           // strip prefix some agents added
+  const fileHref = p => "../" + norm(p);
+  const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+  // filters
+  let fType = "all", fHost = "all", fDone = "all";
+
+  // populate host filter
+  const hosts = [...new Set(tasks.map(t=>t.host))].sort();
+  const hostSel = document.getElementById("hostFilter");
+  hosts.forEach(h=>{ const o=document.createElement("option"); o.value=h; o.textContent=h; hostSel.appendChild(o); });
+
+  const phasesEl = document.getElementById("phases");
+
+  function badge(cls, txt){ return `<span class="badge ${cls}">${esc(txt)}</span>`; }
+
+  function taskHTML(t){
+    const isDone = !!done[t.id];
+    const isOpen = !!openState[t.id];
+    const tcls = t.type === "sync" ? "b-sync" : "b-async";
+    const tlabel = t.type === "sync" ? "SYNC" : "ASYNC";
+    const dep = (t.depends_on && t.depends_on.length) ? badge("b-dep","after "+t.depends_on.join(", ")) : "";
+    const steps = (t.steps||[]).map(s=>`<li>${esc(s)}</li>`).join("");
+    const cmds = (t.commands||[]).map(c=>
+      `<div class="cmd"><button class="copy" data-cmd="${esc(c)}">copy</button>${esc(c)}</div>`).join("");
+    const files = (t.files||[]).map(f=>
+      `<li><a href="${esc(fileHref(f))}" target="_blank" rel="noopener"><code>${esc(norm(f))}</code></a></li>`).join("");
+    const docs = (t.docs||[]).map(d=>
+      `<li><a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title)}</a></li>`).join("");
+
+    return `<div class="task ${isDone?'done':''} ${isOpen?'open':''}" data-id="${t.id}" data-type="${t.type}" data-host="${esc(t.host)}">
+      <div class="t-head">
+        <input type="checkbox" class="t-check" ${isDone?'checked':''} aria-label="Mark ${esc(t.title)} done" />
+        <div class="t-main">
+          <div class="t-title">${esc(t.title)}</div>
+          <div class="t-badges">
+            <span class="t-id">${esc(t.id).toUpperCase()}</span>
+            ${badge("b-host", t.host)}
+            ${badge(tcls, tlabel)}
+            ${badge("b-est", t.estimate)}
+            ${dep}
+          </div>
+        </div>
+        <span class="chev">▶</span>
+      </div>
+      <div class="t-body">
+        ${steps?`<h5>Steps</h5><ol>${steps}</ol>`:""}
+        ${cmds?`<h5>Commands</h5>${cmds}`:""}
+        ${files?`<h5>Generated files</h5><ul class="filelist">${files}</ul>`:""}
+        ${docs?`<h5>Grounded in docs</h5><ul class="doclist">${docs}</ul>`:""}
+        ${t.verify?`<div class="verify"><b>Done when:</b> ${esc(t.verify)}</div>`:""}
+      </div>
+    </div>`;
+  }
+
+  function render(){
+    let html = "";
+    [1,2,3,4,5].forEach(ph=>{
+      const meta = phaseMeta[ph];
+      const list = tasks.filter(t=>t.phase===ph);
+      html += `<section class="phase" id="phase-${ph}" data-phase="${ph}">
+        <div class="phase-head">
+          <span class="phase-num">PHASE ${ph}</span>
+          <h3>${meta.title}</h3>
+          <div class="phase-mini"><i data-pm="${ph}"></i></div>
+          <span class="phase-count" data-pc="${ph}"></span>
+          <div class="ph-sub">${meta.sub}</div>
+        </div>
+        ${list.map(taskHTML).join("")}
+      </section>`;
+    });
+    phasesEl.innerHTML = html;
+    wire();
+    applyFilters();
+    updateProgress();
+  }
+
+  function wire(){
+    document.querySelectorAll(".task").forEach(card=>{
+      const id = card.dataset.id;
+      const chk = card.querySelector(".t-check");
+      const head = card.querySelector(".t-head");
+      chk.addEventListener("click", e=>{ e.stopPropagation(); });
+      chk.addEventListener("change", ()=>{
+        if(chk.checked) done[id]=true; else delete done[id];
+        card.classList.toggle("done", chk.checked);
+        save(); updateProgress(); applyFilters();
+      });
+      head.addEventListener("click", e=>{
+        if(e.target.classList.contains("copy")) return;
+        card.classList.toggle("open");
+        if(card.classList.contains("open")) openState[id]=true; else delete openState[id];
+        saveOpen();
+      });
+    });
+    document.querySelectorAll(".copy").forEach(btn=>{
+      btn.addEventListener("click", async e=>{
+        e.stopPropagation();
+        try { await navigator.clipboard.writeText(btn.dataset.cmd);
+          btn.textContent="copied"; btn.classList.add("ok");
+          setTimeout(()=>{btn.textContent="copy"; btn.classList.remove("ok");},1200);
+        } catch(err){ toast("Copy failed — select manually"); }
+      });
+    });
+  }
+
+  function applyFilters(){
+    document.querySelectorAll(".task").forEach(card=>{
+      const id = card.dataset.id;
+      const okType = fType==="all" || card.dataset.type===fType;
+      const okHost = fHost==="all" || card.dataset.host===fHost;
+      const isDone = !!done[id];
+      const okDone = fDone==="all" || (fDone==="todo" && !isDone) || (fDone==="done" && isDone);
+      card.classList.toggle("hide", !(okType&&okHost&&okDone));
+    });
+    // hide empty phase sections
+    document.querySelectorAll(".phase").forEach(sec=>{
+      const any = [...sec.querySelectorAll(".task")].some(c=>!c.classList.contains("hide"));
+      sec.style.display = any ? "" : "none";
+    });
+  }
+
+  function updateProgress(){
+    const total = tasks.length;
+    const completed = tasks.filter(t=>done[t.id]).length;
+    const pct = total? Math.round(completed/total*100):0;
+    document.getElementById("barFill").style.width = pct+"%";
+    document.getElementById("pctBig").textContent = pct+"%";
+    document.getElementById("pctSub").textContent = completed+" / "+total+" tasks";
+
+    // per-phase
+    let summ=[];
+    [1,2,3,4,5].forEach(ph=>{
+      const list = tasks.filter(t=>t.phase===ph);
+      const c = list.filter(t=>done[t.id]).length;
+      const p = list.length? Math.round(c/list.length*100):0;
+      const pm = document.querySelector(`[data-pm="${ph}"]`); if(pm) pm.style.width=p+"%";
+      const pc = document.querySelector(`[data-pc="${ph}"]`); if(pc) pc.textContent=c+"/"+list.length;
+      summ.push(`P${ph} ${p}%`);
+    });
+    document.getElementById("phaseSummary").textContent = summ.join("  ·  ");
+
+    // remaining time estimate (parse "x min"/"x hr" rough)
+    let mins=0;
+    tasks.filter(t=>!done[t.id]).forEach(t=>{
+      const m=/(\d+)\s*-?\s*(\d+)?\s*(min|hr)/i.exec(t.estimate||"");
+      if(m){ let lo=+m[1], hi=m[2]?+m[2]:lo; let avg=(lo+hi)/2; mins += m[3].toLowerCase()==="hr"? avg*60:avg; }
+    });
+    const hrs=Math.round(mins/60);
+    document.getElementById("timeLeft").textContent = completed===total? "Complete — nicely done." : ("~"+hrs+" hrs of work remaining");
+  }
+
+  function toast(msg){
+    const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show");
+    setTimeout(()=>t.classList.remove("show"),2200);
+  }
+
+  // controls
+  document.getElementById("typeSeg").addEventListener("click", e=>{
+    if(e.target.tagName!=="BUTTON") return;
+    document.querySelectorAll("#typeSeg button").forEach(b=>b.classList.remove("on"));
+    e.target.classList.add("on"); fType=e.target.dataset.type; applyFilters();
+  });
+  hostSel.addEventListener("change", ()=>{ fHost=hostSel.value; applyFilters(); });
+  document.getElementById("doneFilter").addEventListener("change", e=>{ fDone=e.target.value; applyFilters(); });
+  document.getElementById("expandAll").addEventListener("click", ()=>{
+    document.querySelectorAll(".task").forEach(c=>{ c.classList.add("open"); openState[c.dataset.id]=true; }); saveOpen();
+  });
+  document.getElementById("collapseAll").addEventListener("click", ()=>{
+    document.querySelectorAll(".task").forEach(c=>c.classList.remove("open")); openState={}; saveOpen();
+  });
+  document.getElementById("resetBtn").addEventListener("click", ()=>{
+    if(confirm("Reset all progress? This clears every checkmark on this device.")){
+      done={}; save();
+      document.querySelectorAll(".t-check").forEach(c=>c.checked=false);
+      document.querySelectorAll(".task").forEach(c=>c.classList.remove("done"));
+      updateProgress(); applyFilters(); toast("Progress reset");
+    }
+  });
+
+  // tabs
+  const TAB_KEY = "foss-analogue-tab-v1";
+  const headerExtras = [document.querySelector(".bar-wrap"), document.querySelector(".controls")];
+  function setTab(name){
+    if(!document.getElementById("tab-"+name)) name = "rollout";
+    document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on", b.dataset.tab===name));
+    document.querySelectorAll(".tabpanel").forEach(p=>{ p.hidden = (p.id !== "tab-"+name); });
+    const isRollout = name === "rollout";
+    headerExtras.forEach(el=>{ if(el) el.style.display = isRollout ? "" : "none"; });
+    try { localStorage.setItem(TAB_KEY, name); } catch(e){}
+  }
+  document.getElementById("tabbar").addEventListener("click", e=>{
+    if(e.target.classList.contains("tab")){ setTab(e.target.dataset.tab); window.scrollTo({top:0, behavior:"smooth"}); }
+  });
+
+  render();
+  let savedTab = "rollout";
+  try { savedTab = localStorage.getItem(TAB_KEY) || "rollout"; } catch(e){}
+  setTab(savedTab);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# AdGuard Home — network-wide DNS filtering (PRIMARY pick over Pi-hole)
+# Phase 4. Docs: https://github.com/AdguardTeam/AdGuardHome/wiki/Docker
+#
+# First run: complete setup at http://<host>:3000 (initial wizard). After setup
+# the admin UI moves to port 80 inside the container (proxied by Caddy at dns.<domain>).
+# Then point your UniFi DHCP DNS at this host's LAN IP.
+#
+# Why AdGuard over Pi-hole here: single container (no separate FTL/web split),
+# built-in DoT/DoH/DoQ upstream + client encryption, per-client rules, and a
+# cleaner first-run wizard. Pi-hole remains a fine alternative — see ../README.md.
+
+services:
+  adguardhome:
+    image: adguard/adguardhome:v0.107.77
+    container_name: adguardhome
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp" # DNS
+      - "53:53/udp" # DNS
+      - "3000:3000/tcp" # initial setup wizard (only needed once)
+      - "853:853/tcp" # DNS-over-TLS (optional)
+    volumes:
+      - ./work:/opt/adguardhome/work
+      - ./conf:/opt/adguardhome/conf
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true

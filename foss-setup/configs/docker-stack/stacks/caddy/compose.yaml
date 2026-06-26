@@ -1,0 +1,45 @@
+# Caddy — reverse proxy with automatic HTTPS
+# Phase 4. Docs: https://hub.docker.com/_/caddy  https://caddyserver.com/docs/
+#
+# Caddy and every web service share the external `edge` network, so Caddy can
+# reach each container by name (e.g. seerr:5055). Create it once on the host:
+#   docker network create edge
+#
+# TLS strategy (pick one in Caddyfile):
+#  - Wildcard certs via DNS-01 (recommended for internal-only services that
+#    aren't reachable for HTTP-01). This needs the Cloudflare DNS module, which
+#    is NOT in the official image — uncomment the `build:` block below to build
+#    a custom image with it (see ./Dockerfile), and comment out the `image:` line.
+#  - `tls internal` (Caddy's own CA) for purely-local access — no public DNS needed,
+#    but clients must trust Caddy's root CA.
+
+services:
+  caddy:
+    image: caddy:2.11.4-alpine
+    # build: .            # <- uncomment (and comment `image:` above) to build with the Cloudflare DNS module
+    container_name: caddy
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN # lets HTTP/3 (QUIC) raise UDP buffer sizes
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    environment:
+      - DOMAIN=${DOMAIN:-example.com}
+      - ACME_EMAIL=${ACME_EMAIL}
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # certs & keys — treat as non-ephemeral (avoids LE rate limits)
+      - caddy_config:/config
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,30 @@
+# Pi-hole — ALTERNATIVE to AdGuard Home (use one, not both, as the LAN resolver)
+# Docs: https://docs.pi-hole.net/docker/
+#
+# v6+ (date-based tags). Set FTLCONF_dns_listeningMode=ALL when on Docker's
+# default bridge so it answers queries from other hosts. Point UniFi DHCP DNS
+# at this host's LAN IP. Admin UI proxied by Caddy at dns.<domain> (port 80).
+
+services:
+  pihole:
+    image: pihole/pihole:2026.06.0
+    container_name: pihole
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "8053:80/tcp" # admin UI (proxied by Caddy); avoid clashing with Caddy's :80
+    environment:
+      TZ: ${TZ:-America/New_York}
+      FTLCONF_webserver_api_password: ${PIHOLE_PASSWORD}
+      FTLCONF_dns_listeningMode: ALL
+    volumes:
+      - ./etc-pihole:/etc/pihole
+    cap_add:
+      - SYS_NICE # recommended; add NET_ADMIN only if using Pi-hole as DHCP server
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true

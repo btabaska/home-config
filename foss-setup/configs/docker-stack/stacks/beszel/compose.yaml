@@ -1,0 +1,42 @@
+# Beszel — ultra-light monitoring (hub + agent)
+# Phase 4. Docs: https://beszel.dev/guide/hub-installation
+#
+# This deploys BOTH the hub (dashboard) and a local agent for this host.
+# To monitor other boxes (NAS, rig), deploy just the agent there with the KEY
+# the hub gives you when you click "Add System". The agent talks to the hub over
+# a local unix socket here (no extra ports exposed).
+
+services:
+  beszel:
+    image: henrygd/beszel:0.18.7
+    container_name: beszel
+    restart: unless-stopped
+    environment:
+      APP_URL: ${BESZEL_APP_URL:-http://localhost:8090}
+    ports:
+      - "8090:8090" # also fronted by Caddy at status.<domain>
+    volumes:
+      - ./beszel_data:/beszel_data
+      - ./beszel_socket:/beszel_socket
+    networks:
+      - edge
+
+  beszel-agent:
+    image: henrygd/beszel-agent:0.18.7
+    container_name: beszel-agent
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./beszel_agent_data:/var/lib/beszel-agent
+      - ./beszel_socket:/beszel_socket
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      LISTEN: /beszel_socket/beszel.sock
+      HUB_URL: ${BESZEL_APP_URL:-http://localhost:8090}
+      # Fill these from the hub UI (Add System) after first boot:
+      TOKEN: ${BESZEL_AGENT_TOKEN}
+      KEY: ${BESZEL_AGENT_KEY}
+
+networks:
+  edge:
+    external: true

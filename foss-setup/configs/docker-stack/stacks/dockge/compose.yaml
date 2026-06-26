@@ -1,0 +1,32 @@
+# Dockge — lightweight Docker Compose stack manager (SIMPLE DEFAULT)
+# Phase 4. Docs: https://github.com/louislam/dockge
+#
+# CRITICAL: the stacks directory must be mounted at the SAME absolute path on
+# both sides (/opt/stacks:/opt/stacks) and match DOCKGE_STACKS_DIR, or Dockge
+# writes data to the wrong place. This stack lives at /opt/stacks/dockge/.
+#
+# Dockhand is the "power option" (logs, metrics history, vuln scanning, safe
+# pulls + rollback, Apprise notifications). See ../README.md to swap it in.
+
+services:
+  dockge:
+    image: louislam/dockge:1.5.0
+    container_name: dockge
+    restart: unless-stopped
+    ports:
+      - "5001:5001" # also fronted by Caddy at dockge.<domain>
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/app/data
+      # Stacks dir — left and right paths MUST be identical.
+      - /opt/stacks:/opt/stacks
+    environment:
+      - DOCKGE_STACKS_DIR=/opt/stacks
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true

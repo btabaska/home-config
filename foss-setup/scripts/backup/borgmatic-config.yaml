@@ -1,0 +1,89 @@
+# borgmatic config example — off-site backup to a Hetzner Storage Box over SSH (BorgBackup).
+#
+# Install to: /etc/borgmatic/config.yaml   (or ~/.config/borgmatic/config.yaml)
+# Validate:   borgmatic config validate
+# Generate a fresh annotated sample: borgmatic config generate
+#
+# Docs:
+#   borgmatic set-up:          https://torsion.org/borgmatic/docs/how-to/set-up-backups/
+#   config reference:          https://torsion.org/borgmatic/docs/reference/configuration/
+#   Hetzner + borgmatic:       https://community.hetzner.com/tutorials/install-and-configure-borgmatic/
+#   Hetzner SSH/Borg access:   https://docs.hetzner.com/robot/storage-box/access/access-ssh-rsync-borg
+#
+# Hetzner Storage Box notes:
+#   - BorgBackup/SSH is served on PORT 23 (not 22). Enable "SSH support" in the Hetzner console first.
+#   - Add your client's SSH PUBLIC key to the box (see restore-test.sh / Hetzner docs). Key-based, no password.
+#   - Pin the remote Borg version with remote_path to avoid compatibility surprises (borg-1.4 below).
+#
+# Init the repo ONCE before the first backup (append-only protects against ransomware deletes):
+#   borgmatic init --encryption repokey-blake2 --append-only
+#   (older borgmatic: `borgmatic init --encryption repokey-blake2`)
+
+# ---------------------------------------------------------------------------------
+# What to back up (Tier 1 irreplaceable data — adjust to your host's real paths).
+# ---------------------------------------------------------------------------------
+source_directories:
+  - /home
+  - /etc
+  - /opt
+  - /srv
+
+# ---------------------------------------------------------------------------------
+# Where to back up. Replace u123456 with your Storage Box sub-account/username.
+# The `./` after the port makes the path relative to the SSH home directory.
+# ---------------------------------------------------------------------------------
+repositories:
+  - path: ssh://u123456@u123456.your-storagebox.de:23/./borg/homelab
+    label: hetzner
+
+# Pin the remote borg binary served by Hetzner.
+remote_path: borg-1.4
+
+# Storage Box requires SSH on port 23; point at the dedicated backup key.
+ssh_command: ssh -p 23 -i /root/.ssh/id_ed25519_borg
+
+# Encryption passphrase. Prefer the env var over inlining the secret here:
+#   export BORG_PASSPHRASE="$(< /etc/borgmatic/passphrase)"   # chmod 600 that file
+# Save this passphrase in your password manager AND on paper — no passphrase = no restore.
+encryption_passphrase: ${BORG_PASSPHRASE}
+
+# Compression (zstd is a good speed/ratio default on modern borg).
+compression: zstd,6
+
+# Stable, sortable archive names.
+archive_name_format: '{hostname}-{now:%Y-%m-%dT%H:%M:%S}'
+
+# Skip churny/regenerable paths.
+exclude_caches: true
+exclude_if_present:
+  - .nobackup
+exclude_patterns:
+  - '*/.cache/*'
+  - '*/node_modules/*'
+  - '*.tmp'
+  - '*/.local/share/Trash/*'
+
+# ---------------------------------------------------------------------------------
+# Retention (GFS). borgmatic runs `borg prune` after each backup.
+# ---------------------------------------------------------------------------------
+keep_daily: 7
+keep_weekly: 4
+keep_monthly: 12
+keep_yearly: 3
+
+# ---------------------------------------------------------------------------------
+# Consistency checks — verify the repo can actually restore. Spread cost over time.
+# ---------------------------------------------------------------------------------
+checks:
+  - name: repository
+    frequency: 2 weeks
+  - name: archives
+    frequency: 1 month
+  - name: extract        # test-extracts a recent archive to prove restorability
+    frequency: 1 month
+
+# ---------------------------------------------------------------------------------
+# Notifications (optional). Wire to your channel of choice; example uses healthchecks.io.
+# ---------------------------------------------------------------------------------
+# healthchecks:
+#   ping_url: https://hc-ping.com/your-uuid-here

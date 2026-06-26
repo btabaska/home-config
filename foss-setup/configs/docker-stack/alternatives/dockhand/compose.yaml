@@ -1,0 +1,28 @@
+# Dockhand — ALTERNATIVE to Dockge (power option)
+# Docs: https://dockhand.pro/  https://github.com/Finsys/dockhand
+#
+# One container that absorbs logs, metrics history, update tracking with safe
+# pulls + rollback, Apprise notifications (ntfy/Telegram/Discord/email), visual
+# Compose editing + Git sync, and Grype/Trivy vuln scanning. If you run Dockhand,
+# you can drop Dockge (and optionally lean on it instead of Diun for updates).
+#
+# Tip: if your stacks use relative volume paths, mount the stacks dir at a
+# matching path on both sides (like Dockge) so the host daemon resolves them.
+
+services:
+  dockhand:
+    image: fnsys/dockhand:v1.0.35
+    container_name: dockhand
+    restart: unless-stopped
+    ports:
+      - "3000:3000" # front with Caddy (e.g. dockhand.<domain>)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/app/data
+      - /opt/stacks:/opt/stacks # match host path for relative-volume stacks
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true

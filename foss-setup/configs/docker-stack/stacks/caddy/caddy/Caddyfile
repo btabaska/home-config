@@ -1,0 +1,77 @@
+# Caddyfile — reverse proxy for the Mac mini docker stack.
+# Docs: https://caddyserver.com/docs/caddyfile
+#
+# Each service is reachable by its container name on the shared `edge` network.
+# Replace example.com with your domain. Subdomains assume a wildcard DNS record
+# (*.example.com -> Mac mini LAN IP) or individual A/AAAA records.
+
+{
+	email {$ACME_EMAIL}
+	# Optional: smaller log, and enable HTTP/3 is on by default in Caddy 2.11.
+}
+
+# ---------------------------------------------------------------------------
+# Reusable TLS snippet. Choose ONE approach per site below.
+#
+# (A) DNS-01 wildcard via Cloudflare (recommended for internal-only services).
+#     Requires the custom image built from ./Dockerfile and a CLOUDFLARE_API_TOKEN.
+(cloudflare_tls) {
+	tls {
+		dns cloudflare {$CLOUDFLARE_API_TOKEN}
+		resolvers 1.1.1.1
+	}
+}
+#
+# (B) Caddy internal CA (no public DNS needed; clients must trust Caddy's root).
+(local_tls) {
+	tls internal
+}
+# ---------------------------------------------------------------------------
+
+# Media request portal
+seerr.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy seerr:5055
+}
+
+# RSS reader
+rss.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy miniflux:8080
+}
+
+# Music streaming
+music.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy navidrome:4533
+}
+
+# Container management
+dockge.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy dockge:5001
+}
+
+# Monitoring hub
+status.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy beszel:8090
+}
+
+# Uptime monitoring
+uptime.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy uptime-kuma:3001
+}
+
+# Push notifications
+ntfy.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy ntfy:80
+}
+
+# AdGuard Home admin UI (DNS itself is served directly on port 53, not via Caddy)
+dns.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy adguardhome:80
+}

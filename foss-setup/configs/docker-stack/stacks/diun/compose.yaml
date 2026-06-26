@@ -1,0 +1,43 @@
+# Diun — Docker Image Update Notifier (NOTIFY-ONLY; no auto-update)
+# Phase 4. Docs: https://crazymax.dev/diun/  https://crazymax.dev/diun/providers/docker/
+#
+# This is the set-and-forget update story: Diun watches your running containers'
+# PINNED tags and pushes a notification to ntfy when a newer tag/digest exists.
+# It NEVER pulls or restarts anything — you update deliberately, on your schedule.
+#
+# WATCHBYDEFAULT=true watches every running container. To watch a *repo* for new
+# version tags (not just the pinned one), add label `diun.watch_repo=true` to that
+# service. Results notify to the ntfy topic configured below.
+
+services:
+  diun:
+    image: crazymax/diun:4.33.0
+    container_name: diun
+    command: serve
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - LOG_LEVEL=info
+      - DIUN_WATCH_WORKERS=10
+      - DIUN_WATCH_SCHEDULE=0 6 * * * # daily at 06:00
+      - DIUN_WATCH_JITTER=30s
+      - DIUN_PROVIDERS_DOCKER=true
+      - DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=true
+      # --- ntfy notifier (self-hosted) ---
+      - DIUN_NOTIF_NTFY_ENDPOINT=${DIUN_NTFY_ENDPOINT}
+      - DIUN_NOTIF_NTFY_TOPIC=${DIUN_NTFY_TOPIC:-diun}
+      - DIUN_NOTIF_NTFY_TOKEN=${DIUN_NTFY_TOKEN}
+      - DIUN_NOTIF_NTFY_PRIORITY=3
+    healthcheck:
+      test: ["CMD", "diun", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    labels:
+      - "diun.enable=true"
+
+# Diun only needs the Docker socket; no shared network required.

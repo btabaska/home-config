@@ -1,0 +1,17 @@
+# Secrets — never commit
+.env
+**/.env
+
+# Runtime state / bind-mount data (back up separately, don't version)
+**/data/
+**/db/
+**/images/
+**/redis/
+**/conf/
+**/work/
+**/cache/
+**/lib/
+**/config/
+**/beszel_data/
+**/beszel_agent_data/
+**/beszel_socket/

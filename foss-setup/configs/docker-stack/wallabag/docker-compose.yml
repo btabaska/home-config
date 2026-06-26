@@ -1,0 +1,112 @@
+# Wallabag — self-hosted read-it-later (replaces Pocket)
+# Phase 3. Runs on the Mac mini (Ubuntu) Docker stack alongside Miniflux/Navidrome.
+# Feeds KOReader's Wallabag plugin on the Kobo (see
+# foss-setup/scripts/reading/koreader-cwa-wallabag-wiring.md §F).
+#
+# Docs:
+#   - Official docker image + env vars: https://github.com/wallabag/docker
+#   - Install guide:                    https://doc.wallabag.org/admin/installation/installation/
+#   - Parameters reference:             https://doc.wallabag.org/admin/parameters/
+#   - Image tags:                       https://hub.docker.com/r/wallabag/wallabag/tags
+#
+# PINNED to wallabag 2.6.14 (latest stable tag). MariaDB 11.4 (LTS) + Redis 7.
+# To upgrade: bump the tag, read release notes, `docker compose pull && up -d`.
+# Wallabag runs DB migrations on boot when POPULATE_DATABASE=true (first run);
+# you can flip it false after the first successful start if you prefer.
+#
+# NOTE: filename is docker-compose.yml (per the task spec). The rest of this
+# repo's Dockge stacks use compose.yaml — either name is auto-detected by
+# `docker compose`. If you manage it from Dockge, drop this in
+# /opt/stacks/wallabag/ and Dockge will pick it up.
+
+name: wallabag
+
+services:
+  wallabag:
+    image: wallabag/wallabag:2.6.14
+    container_name: wallabag
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Root creds let wallabag create its DB/run migrations on first boot.
+      - MYSQL_ROOT_PASSWORD=${WALLABAG_DB_ROOT_PASSWORD}
+      - POPULATE_DATABASE=${WALLABAG_POPULATE_DATABASE:-true}
+      # Database (MariaDB). HOST must match the db service/container name.
+      - SYMFONY__ENV__DATABASE_DRIVER=pdo_mysql
+      - SYMFONY__ENV__DATABASE_HOST=wallabag_db
+      - SYMFONY__ENV__DATABASE_PORT=3306
+      - SYMFONY__ENV__DATABASE_NAME=wallabag
+      - SYMFONY__ENV__DATABASE_USER=wallabag
+      - SYMFONY__ENV__DATABASE_PASSWORD=${WALLABAG_DB_PASSWORD}
+      - SYMFONY__ENV__DATABASE_CHARSET=utf8mb4
+      - SYMFONY__ENV__DATABASE_TABLE_PREFIX=wallabag_
+      # Redis (used for async import / 2FA throttling, etc.).
+      - SYMFONY__ENV__REDIS_HOST=wallabag_redis
+      - SYMFONY__ENV__REDIS_PORT=6379
+      # App secret — set to a long random string (see .env.example).
+      - SYMFONY__ENV__SECRET=${WALLABAG_SECRET}
+      # Public URL (must match how you actually reach it; used in links/cookies).
+      - SYMFONY__ENV__DOMAIN_NAME=${WALLABAG_DOMAIN_NAME:-http://localhost:8085}
+      - SYMFONY__ENV__SERVER_NAME=${WALLABAG_SERVER_NAME:-Wallabag}
+      # Outbound mail (password resets / share). Point at a real SMTP if wanted.
+      - SYMFONY__ENV__MAILER_DSN=${WALLABAG_MAILER_DSN:-smtp://127.0.0.1}
+      - SYMFONY__ENV__FROM_EMAIL=${WALLABAG_FROM_EMAIL:-wallabag@example.com}
+    ports:
+      - "8085:80" # direct LAN access; also fronted by Caddy via the edge network
+    volumes:
+      # Persistent app data (SQLite-style internal files, sessions) + article images.
+      - ./data:/var/www/wallabag/data
+      - ./images:/var/www/wallabag/web/assets/images
+    networks:
+      - edge
+      - wallabag
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/api/info"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 2m
+
+  db:
+    image: mariadb:11.4
+    container_name: wallabag_db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${WALLABAG_DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=wallabag
+      - MYSQL_USER=wallabag
+      - MYSQL_PASSWORD=${WALLABAG_DB_PASSWORD}
+    volumes:
+      - ./db:/var/lib/mysql
+    networks:
+      - wallabag
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: wallabag_redis
+    restart: unless-stopped
+    volumes:
+      - ./redis:/data
+    networks:
+      - wallabag
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+networks:
+  edge:
+    external: true
+  wallabag:
+    driver: bridge

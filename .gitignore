@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Secrets — never commit
+.env
+**/.env
+
+# Runtime state / bind-mount data (back up separately, don't version)
+**/data/
+**/db/
+**/redis/
+**/cache/

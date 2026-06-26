@@ -1,0 +1,23 @@
+# Uptime Kuma — service uptime monitoring & status pages
+# Phase 4. Docs: https://github.com/louislam/uptime-kuma
+#
+# Use the :2 line (v2). The :latest tag is deprecated and still points to v1.
+# NFS is NOT supported for the data volume — use a local bind mount or named volume.
+
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:2.1.1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "3001:3001" # also fronted by Caddy at uptime.<domain>
+    volumes:
+      - ./data:/app/data
+    environment:
+      - TZ=${TZ:-America/New_York}
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true

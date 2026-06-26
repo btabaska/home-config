@@ -1,0 +1,85 @@
+# ESPHome firmware for an SLWF-01Pro (ESP8266) dongle controlling a Midea AC.
+# Path B in midea-local-setup.md — fully cloud-free local control.
+# Flash via the ESPHome dashboard (HA add-on) or https://web.esphome.io after
+# entering the FLH bootloader (hold FLH, plug USB-C).
+#
+# The Midea protocol requires UART at 9600 baud, 5V logic. The SLWF-01Pro wires
+# the ESP8266 hardware UART (GPIO1 TX / GPIO3 RX) to the AC connector.
+#
+# Docs: https://esphome.io/components/climate/midea/
+#       https://smlight.tech/product/slwf-01/
+
+substitutions:
+  device_name: midea-ac-living-room
+  friendly_name: "Living Room AC"
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+
+esp8266:
+  board: esp01_1m
+
+logger:
+  # Disable the UART logger so it does not conflict with the AC UART.
+  baud_rate: 0
+
+api:
+  encryption:
+    key: !secret api_encryption_key   # define in ESPHome secrets.yaml
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret iot_wifi_ssid          # IoT VLAN SSID
+  password: !secret iot_wifi_password
+  # Fallback hotspot if Wi-Fi fails.
+  ap:
+    ssid: "${device_name} fallback"
+    password: !secret ap_password
+
+captive_portal:
+
+uart:
+  tx_pin: GPIO1
+  rx_pin: GPIO3
+  baud_rate: 9600
+
+climate:
+  - platform: midea
+    name: "${friendly_name}"
+    id: midea_ac
+    period: 1s
+    timeout: 2s
+    num_attempts: 3
+    autoconf: true
+    beeper: false
+    supported_modes:
+      - FAN_ONLY
+      - HEAT_COOL
+      - COOL
+      - HEAT
+      - DRY
+    supported_swing_modes:
+      - VERTICAL
+      - HORIZONTAL
+      - BOTH
+    supported_presets:
+      - ECO
+      - BOOST
+      - SLEEP
+
+# Optional helper buttons exposed to Home Assistant.
+button:
+  - platform: template
+    name: "${friendly_name} Display Toggle"
+    icon: mdi:theme-light-dark
+    on_press:
+      midea_ac.display_toggle:
+  - platform: template
+    name: "${friendly_name} Swing Step"
+    icon: mdi:tailwind
+    on_press:
+      midea_ac.swing_step:

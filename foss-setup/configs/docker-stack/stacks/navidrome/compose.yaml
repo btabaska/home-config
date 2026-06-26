@@ -1,0 +1,30 @@
+# Navidrome — self-hosted music streaming (Subsonic/OpenSubsonic API)
+# Phase 3. Docs: https://www.navidrome.org/docs/installation/docker/
+#
+# Point ND_MUSIC_FOLDER at your music library (e.g. an NFS/SMB mount from the NAS),
+# mounted read-only. Set `user` to the UID:GID that owns ./data.
+
+services:
+  navidrome:
+    image: deluan/navidrome:0.61.2
+    container_name: navidrome
+    user: "${PUID:-1000}:${PGID:-1000}" # must own ./data
+    restart: unless-stopped
+    ports:
+      - "4533:4533" # direct LAN access for Symfonium/Amperfy; also fronted by Caddy
+    environment:
+      ND_SCANSCHEDULE: 1h
+      ND_LOGLEVEL: info
+      ND_SESSIONTIMEOUT: 24h
+      ND_BASEURL: ${ND_BASEURL:-}
+      ND_MUSICFOLDER: /music
+      TZ: ${TZ:-America/New_York}
+    volumes:
+      - ./data:/data
+      - ${MUSIC_FOLDER:?set MUSIC_FOLDER to your music library path}:/music:ro
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true

@@ -1,0 +1,52 @@
+# Example Home Assistant configuration.yaml snippets for the FOSS homelab.
+# HAOS already ships a working default configuration.yaml. Most integrations
+# (Hue, Nest, midea_ac_lan, Whisper, Piper, Ollama) are added via the UI, NOT YAML.
+# Only add the blocks below if you specifically need them. Merge — do not blindly
+# overwrite your existing file.
+#
+# Docs:
+#   Hue:          https://www.home-assistant.io/integrations/hue/
+#   Assist:       https://www.home-assistant.io/voice_control/voice_remote_local_assistant/
+#   Energy:       https://www.home-assistant.io/docs/energy/
+#   HTTP/proxy:   https://www.home-assistant.io/integrations/http/
+
+# --- Defaults (present by default; shown for reference) ---
+default_config:
+
+# --- Enable the Assist voice pipeline UI ---
+# Needed if "Settings > Voice assistants" shows no assistants (non-default config).
+assist_pipeline:
+
+# --- Reverse proxy (only if HA sits behind nginx/Traefik on the Trusted VLAN) ---
+# Required for OAuth (Nest) over HTTPS. Set trusted_proxies to your proxy's IP.
+# http:
+#   use_x_forwarded_for: true
+#   trusted_proxies:
+#     - 192.168.10.2        # your reverse proxy on the Trusted VLAN
+#     - 127.0.0.1
+
+# --- Philips Hue ---
+# Hue is local LAN via the Hue Bridge (keep the bridge). Add it in the UI:
+# Settings > Devices & Services > + Add Integration > Philips Hue, then press the
+# bridge button. No YAML required. Listed here only as documentation.
+
+# --- Google Nest (SDM) ---
+# Configured entirely via the UI (Application Credentials + integration).
+# See nest-sdm-oauth-checklist.md. No YAML required.
+
+# --- Energy dashboard ---
+# Configured in the UI: Settings > Dashboards > Energy. Point it at your grid
+# consumption / solar / individual-device power sensors. No YAML required, but
+# template sensors for derived energy can live here, e.g.:
+# template:
+#   - sensor:
+#       - name: "AC Daily Energy"
+#         unit_of_measurement: "kWh"
+#         device_class: energy
+#         state_class: total_increasing
+#         state: "{{ states('sensor.midea_ac_power') | float(0) }}"
+
+# Split automations/scripts/scenes into their own files (HAOS default already does):
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml

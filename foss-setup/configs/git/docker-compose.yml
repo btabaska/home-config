@@ -1,0 +1,89 @@
+# Forgejo — self-hosted Git forge (the "rebuild in an hour" backbone)
+# Phase 4. Runs on the always-on Mac mini (Ubuntu). Mirror/private GitHub is the
+# alternative; self-hosting keeps your config-as-code repo on your own metal.
+#
+# Docs: https://forgejo.org/docs/latest/admin/installation/docker/
+#       https://forgejo.org/docs/latest/admin/config-cheat-sheet/
+#
+# Version policy (matches the rest of this repo: pinned, never :latest):
+#   forgejo  -> 15.0.x  (15.0 is the current LTS, supported until 2027-07-15)
+#   postgres -> 17-alpine
+# Forgejo majors (X -> X+1) require a manual, human-verified upgrade and may have
+# breaking changes — read the release notes before bumping. Patch bumps within
+# 15.0.x are safe; Diun will notify you when one lands.
+# Release schedule: https://forgejo.org/docs/latest/admin/release-schedule/
+
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:15.0.1
+    container_name: forgejo
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # The container chowns /data to this UID/GID on start. Match a real host
+      # user (id -u / id -g) so bind-mounted ./data is owned correctly.
+      - USER_UID=${FORGEJO_UID:-1000}
+      - USER_GID=${FORGEJO_GID:-1000}
+      # app.ini is generated on first boot; these env keys keep the critical bits
+      # in version control / .env instead of an un-tracked app.ini.
+      - FORGEJO__database__DB_TYPE=postgres
+      - FORGEJO__database__HOST=db:5432
+      - FORGEJO__database__NAME=forgejo
+      - FORGEJO__database__USER=forgejo
+      - FORGEJO__database__PASSWD=${FORGEJO_DB_PASSWORD}
+      - FORGEJO__server__DOMAIN=${FORGEJO_DOMAIN:-git.local}
+      - FORGEJO__server__ROOT_URL=${FORGEJO_ROOT_URL:-http://localhost:3000/}
+      - FORGEJO__server__SSH_DOMAIN=${FORGEJO_DOMAIN:-git.local}
+      # Git-over-SSH is published on host port 2222 (see ports:); advertise it so
+      # clone URLs are correct.
+      - FORGEJO__server__SSH_PORT=${FORGEJO_SSH_PORT:-2222}
+      - FORGEJO__server__LFS_START_SERVER=true
+      # Lock the instance down after you create your admin account on first run.
+      # Single-user homelab: leave this true and just make your one account.
+      - FORGEJO__service__DISABLE_REGISTRATION=${FORGEJO_DISABLE_REGISTRATION:-true}
+      - FORGEJO__service__REQUIRE_SIGNIN_VIEW=${FORGEJO_REQUIRE_SIGNIN:-true}
+    volumes:
+      - ./data/forgejo:/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    ports:
+      - "3000:3000"                              # web UI (front with Caddy in prod)
+      - "${FORGEJO_SSH_PORT:-2222}:22"           # git clone over SSH
+    networks:
+      - edge
+      - forgejo
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  db:
+    image: postgres:17-alpine
+    container_name: forgejo_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=forgejo
+      - POSTGRES_PASSWORD=${FORGEJO_DB_PASSWORD}
+      - POSTGRES_DB=forgejo
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    networks:
+      - forgejo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forgejo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+# `edge` is the shared external network created for Caddy (docker network create edge).
+# Drop it (and the 3000 port) if you only ever reach Forgejo over Tailscale/LAN.
+networks:
+  edge:
+    external: true
+  forgejo:
+    driver: bridge

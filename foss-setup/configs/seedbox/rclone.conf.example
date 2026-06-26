@@ -1,0 +1,46 @@
+# rclone.conf — SFTP remote template for pulling finished media from the seedbox -> NAS
+# Phase 2.  This file lives on the NAS (the machine that PULLS), not the seedbox.
+#
+# Default location rclone looks for this file:
+#   Linux/NAS:  ~/.config/rclone/rclone.conf   (check with: rclone config file)
+# Copy this template there and replace every <PLACEHOLDER>. Then `chmod 600` it.
+#
+# Docs:
+#   SFTP backend:        https://rclone.org/sftp/
+#   Config file:         https://rclone.org/docs/#config-config-file
+#   rclone copy:         https://rclone.org/commands/rclone_copy/
+#   rclone sync:         https://rclone.org/commands/rclone_sync/
+#
+# SECURITY: prefer key-based auth over a password. Generate a dedicated key on the NAS:
+#   ssh-keygen -t ed25519 -f ~/.ssh/seedbox_ed25519 -C "nas-rclone"
+#   ssh-copy-id -i ~/.ssh/seedbox_ed25519.pub -p <SEEDBOX_SSH_PORT> <SEEDBOX_USER>@<SEEDBOX_HOST>
+# Then point key_file at the PRIVATE key below. Do NOT also set `pass`.
+#
+# HOST CHOICE: use the seedbox's Tailscale name/IP (100.x.y.z or <name>.<tailnet>.ts.net)
+# so the transfer rides the encrypted tailnet and nothing is exposed to the internet.
+# A public SFTP hostname also works (SFTP is encrypted), but Tailscale is preferred here.
+
+[seedbox]
+type = sftp
+# Tailscale MagicDNS name (recommended) e.g. seedbox.tailnet-name.ts.net, or the 100.x.y.z IP,
+# or the provider's SFTP host if you are not using Tailscale for the transfer.
+host = <SEEDBOX_HOST>
+user = <SEEDBOX_USER>
+# Most managed seedboxes expose SSH/SFTP on a non-standard port — check your control panel.
+port = <SEEDBOX_SSH_PORT>
+# Key-based auth (recommended). Absolute path to the PRIVATE key on the NAS.
+key_file = /root/.ssh/seedbox_ed25519
+# --- Password auth alternative (NOT recommended) ----------------------------------
+# Leave key_file blank and instead set an obscured password. NEVER paste a plaintext
+# password here — obscure it first:  rclone obscure 'your-sftp-password'
+# pass = <OUTPUT_OF_rclone_obscure>
+# ----------------------------------------------------------------------------------
+# Pin the host key after the first connect to defeat MITM (get it with: ssh-keyscan -p <port> <host>).
+# Format: "ssh-ed25519 AAAA..."  Comma-separate multiple keys.
+known_hosts_file = ~/.ssh/known_hosts
+# Disable legacy/weak algorithms; modern seedboxes support ed25519 fine.
+# shell_type lets rclone use server-side features when available.
+shell_type = unix
+# md5sum/sha1 over SSH speed up checksum comparisons if the seedbox shell provides them.
+# Leave default unless the provider's restricted shell errors on these.
+# disable_hashcheck = false

@@ -1,0 +1,35 @@
+# Seerr — unified successor to Overseerr + Jellyseerr (media request portal)
+# Phase 2. Docs: https://docs.seerr.dev/getting-started/docker/
+#
+# Existing Jellyseerr/Overseerr data is migrated automatically on first start
+# if you mount the old config dir at /app/config.
+# Migration guide: https://docs.seerr.dev/migration-guide/
+#
+# NOTE: the Seerr image ships NO internal init process — `init: true` is required.
+
+services:
+  seerr:
+    image: ghcr.io/seerr-team/seerr:v3.2.0
+    container_name: seerr
+    init: true # required: image no longer bundles an init process
+    restart: unless-stopped
+    environment:
+      - LOG_LEVEL=info
+      - TZ=${TZ:-America/New_York}
+      - PORT=5055
+    ports:
+      - "5055:5055" # direct LAN access; also fronted by Caddy via the edge network
+    volumes:
+      - ./config:/app/config
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/status || exit 1"]
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3
+
+networks:
+  edge:
+    external: true

@@ -1,0 +1,40 @@
+# Calibre-Web-Automated (CWA) on Synology DS920+ (Container Manager / Docker Compose)
+#
+# Project (the actively-developed fork): https://github.com/crocodilestick/Calibre-Web-Automated
+# Reference compose:                     https://github.com/crocodilestick/Calibre-Web-Automated/blob/main/docker-compose.yml
+# Image tags:                            https://hub.docker.com/r/crocodilestick/calibre-web-automated/tags
+#
+# PINNED to v4.0.6 (latest tagged release as of writing). To upgrade, bump the tag,
+# read the release notes, then `docker compose pull && docker compose up -d`.
+#
+# SECURITY: A Kobo auth-bypass issue (CVE-2026-7713) was reported against the Kobo
+# sync token route. Mitigations: keep CWA on the latest patch release, do NOT expose
+# CWA directly to the internet (put it behind your reverse proxy + auth, or VPN only),
+# and leave Kobo sync disabled unless you use it. Re-check the releases page before deploy.
+
+name: calibre-web-automated
+
+services:
+  calibre-web-automated:
+    image: crocodilestick/calibre-web-automated:v4.0.6
+    container_name: calibre-web-automated
+    environment:
+      # PUID/PGID must match the Synology user that owns the volume paths below.
+      # Find them via SSH: `id your_user`  (DSM admin users are often 1026/100, etc.)
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+      # Default listen port inside the container; only change if you also change the mapping.
+      # - CWA_PORT_OVERRIDE=8083
+      # Synology shared folders are typically SMB/NFS-backed; polling avoids missed inotify events.
+      - NETWORK_SHARE_MODE=true
+    volumes:
+      # Persistent app config + the CWA SQLite app DB (Tier 1: small, back this up).
+      - /volume1/docker/calibre-web-automated/config:/config
+      # Drop new .epub/.mobi/etc. here; CWA auto-imports + converts into the library.
+      - /volume1/docker/calibre-web-automated/ingest:/cwa-book-ingest
+      # The Calibre library (metadata.db + book files). Tier 1 if curated; otherwise Tier 2.
+      - /volume1/docker/calibre-web-automated/library:/calibre-library
+    ports:
+      - '8083:8083'
+    restart: unless-stopped

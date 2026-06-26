@@ -1,0 +1,42 @@
+# ntfy — self-hosted push notifications (the notification backbone)
+# Phase 4. Docs: https://docs.ntfy.sh/install/  https://docs.ntfy.sh/config/
+#
+# Diun, Uptime Kuma, backup jobs, etc. publish to ntfy topics; the ntfy app on
+# your phone subscribes. Web Push lets you install the PWA on iOS — see config docs.
+# `init: true` is required when a healthcheck is set (prevents zombie processes).
+
+services:
+  ntfy:
+    image: binwiederhier/ntfy:v2.19.2
+    container_name: ntfy
+    command:
+      - serve
+    init: true
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - NTFY_BASE_URL=${NTFY_BASE_URL}
+      - NTFY_CACHE_FILE=/var/cache/ntfy/cache.db
+      - NTFY_AUTH_FILE=/var/lib/ntfy/auth.db
+      - NTFY_AUTH_DEFAULT_ACCESS=${NTFY_AUTH_DEFAULT_ACCESS:-deny-all}
+      - NTFY_BEHIND_PROXY=true
+      - NTFY_ATTACHMENT_CACHE_DIR=/var/lib/ntfy/attachments
+      - NTFY_ENABLE_LOGIN=true
+    user: "${PUID:-1000}:${PGID:-1000}"
+    volumes:
+      - ./cache:/var/cache/ntfy
+      - ./lib:/var/lib/ntfy
+    ports:
+      - "8080:80" # also fronted by Caddy at ntfy.<domain>
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --tries=1 http://localhost:80/v1/health -O - | grep -Eo '\"healthy\"\\s*:\\s*true' || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  edge:
+    external: true
