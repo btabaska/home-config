@@ -1,0 +1,273 @@
+# ==============================================================================
+# Home media-automation stack — Synology DS920+ (Container Manager / Compose)
+# ==============================================================================
+# Phase 2. This is the FULL home *arr stack. It runs on the NAS (DS920+),
+# co-located with the library at /volume1/media (Plex serves it; the
+# Rhythmbox/libgpod iPod pipeline and Calibre-Web-Automated/Kobo pipeline read
+# from it). The off-site seedbox "Betty" (Bytesized AppBox, 185.162.184.38)
+# runs ONLY Deluge — it downloads and seeds, permanently. Nothing else is added
+# to the seedbox.
+#
+# HOW THE TWO HALVES CONNECT
+#   - Home apps reach remote Deluge over its API (host 185.162.184.38).
+#   - Home apps READ completed downloads through an rclone SFTP mount of the
+#     seedbox `files/` folder (see ../../../scripts/media/rclone-seedbox-mount.sh):
+#         seedbox:/home/hd34/btabaska/files  ->  /volume1/mounts/seedbox-files
+#   - Each *arr's Completed Download Handling works via a Remote Path Mapping:
+#         remote /home/hd34/btabaska/files/  ->  local /seedbox/
+#     so the path Deluge reports resolves to the rclone mount inside the
+#     container. (Set the mapping per-*arr in the UI — see README.md §7.)
+#
+# ------------------------------------------------------------------------------
+# SHARED INVARIANTS (change-one-change-all — a self-check must verify these)
+# ------------------------------------------------------------------------------
+#   1. Every DOWNLOAD-TOUCHING service (sonarr, radarr, lidarr, readarr,
+#      unpackerr) mounts the seedbox files at the IDENTICAL in-container path
+#      `/seedbox` with the `:rslave` propagation flag. If you change the host
+#      mount path, the container path, or the flag, change it in ALL of them at
+#      once — Unpackerr acts on the path the *arr reports (post-mapping) and
+#      must see /seedbox at the exact same place as the *arrs, with no separate
+#      mapping of its own.
+#   2. `:rslave` is mandatory: the rclone FUSE mount is created on the host
+#      AFTER the container may start. rslave lets the host's later (re)mount
+#      propagate into the running container. Without it, a remount leaves the
+#      container staring at an empty dir and every import silently stalls.
+#   3. Identical PUID/PGID across all services (TODO: fill from `id <user>` on
+#      the NAS), TZ=America/New_York, restart: unless-stopped, and /config on
+#      /volume1/docker/<app>.
+#
+# ------------------------------------------------------------------------------
+# PINNED IMAGE TAGS (verified current as of June 2026 — never :latest/:develop)
+# ------------------------------------------------------------------------------
+#   sonarr          lscr.io/linuxserver/sonarr:4.0.19          (Sonarr 4.0.19.2979)
+#   radarr          lscr.io/linuxserver/radarr:6.2.1           (Radarr 6.2.1.10461)
+#   prowlarr        lscr.io/linuxserver/prowlarr:2.4.0         (Prowlarr 2.4.0.5391)
+#   lidarr          lscr.io/linuxserver/lidarr:3.1.2           (Lidarr 3.1.2.4938)
+#   readarr         lscr.io/linuxserver/readarr:develop-0.4.18.2805-ls157  (EOL, see note)
+#   rreading-glasses blampe/rreading-glasses@sha256:<digest>   (rolling tag -> pin by digest)
+#   postgres        postgres:17.6
+#   unpackerr       golift/unpackerr:0.15.2
+#   flaresolverr    ghcr.io/flaresolverr/flaresolverr:v3.5.0
+# To upgrade any image: bump the tag, read release notes, then
+#   docker compose pull && docker compose up -d
+#
+# ------------------------------------------------------------------------------
+# RAM-PHASED ROLLOUT (DS920+ ships 4 GB; recommended 20 GB. Bring up in order.)
+# Full checklist is in README.md and the living guide. You can bring services up
+# incrementally with `docker compose up -d <service>`:
+#   Phase A (core):     prowlarr flaresolverr sonarr radarr
+#   Phase B (extend):   lidarr  +  readarr + rreading-glasses + rreading-glasses-db
+#   Phase C (polish):   unpackerr
+# ==============================================================================
+
+name: media-automation
+
+# ------------------------------------------------------------------------------
+# YAML anchors keep the shared invariants literally identical across services.
+# Edit the anchor once; every service that references it updates together.
+# ------------------------------------------------------------------------------
+x-common-env: &common-env
+  # TODO: set PUID/PGID to the Synology user that OWNS /volume1/docker and
+  # /volume1/media — find them via SSH: `id <user>` (DSM users are often
+  # 1026/100, etc.). MUST be identical across every service below.
+  PUID: ${PUID:?run 'id <user>' on the NAS and set PUID in .env}
+  PGID: ${PGID:?run 'id <user>' on the NAS and set PGID in .env}
+  TZ: ${TZ:-America/New_York}
+
+# The seedbox mount — IDENTICAL path + :rslave everywhere it appears. (Anchor so
+# you physically cannot drift one service's mount from the others.)
+x-seedbox-mount: &seedbox-mount
+  type: bind
+  source: ${SEEDBOX_MOUNT:-/volume1/mounts/seedbox-files}
+  target: /seedbox
+  bind:
+    propagation: rslave
+
+services:
+
+  # ----------------------------------------------------------------------------
+  # Prowlarr — indexer manager (Phase A). NOT download-touching: no /seedbox.
+  # Pushes indexers to sonarr/radarr/lidarr/readarr. Music + book acquisition
+  # each need a CAPABLE indexer added here (see README §4/§5).
+  # ----------------------------------------------------------------------------
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:2.4.0   # Prowlarr 2.4.0.5391 (stable, May 2026)
+    container_name: prowlarr
+    environment: *common-env
+    volumes:
+      - /volume1/docker/prowlarr/config:/config
+    ports:
+      - "9696:9696"
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # FlareSolverr — Cloudflare solver for Prowlarr (Phase A). Stateless, no mounts.
+  # ----------------------------------------------------------------------------
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:v3.5.0   # FlareSolverr v3.5.0 (May 2026)
+    container_name: flaresolverr
+    environment:
+      LOG_LEVEL: info
+      TZ: ${TZ:-America/New_York}
+    ports:
+      - "8191:8191"   # add to Prowlarr as a FlareSolverr proxy: http://flaresolverr:8191
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # Sonarr — TV (Phase A). DOWNLOAD-TOUCHING -> /seedbox:rslave.
+  # Root folder: /media/TV. Download client: remote Deluge (label `sonarr`).
+  # ----------------------------------------------------------------------------
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:4.0.19   # Sonarr 4.0.19.2979 (Jun 2026)
+    container_name: sonarr
+    environment: *common-env
+    volumes:
+      - /volume1/docker/sonarr/config:/config
+      - /volume1/media:/media          # root folder /media/TV lives here
+      - *seedbox-mount                 # /seedbox (rslave) — completed downloads, read for import
+    ports:
+      - "8989:8989"
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # Radarr — Movies (Phase A). DOWNLOAD-TOUCHING -> /seedbox:rslave.
+  # Root folder: /media/Movies. Download client: remote Deluge (label `radarr`).
+  # ----------------------------------------------------------------------------
+  radarr:
+    image: lscr.io/linuxserver/radarr:6.2.1   # Radarr 6.2.1.10461 (stable, Jun 2026)
+    container_name: radarr
+    environment: *common-env
+    volumes:
+      - /volume1/docker/radarr/config:/config
+      - /volume1/media:/media          # root folder /media/Movies lives here
+      - *seedbox-mount                 # /seedbox (rslave)
+    ports:
+      - "7878:7878"
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # Lidarr — Music acquisition AND final import/organize (Phase B). NO beets.
+  # DOWNLOAD-TOUCHING -> /seedbox:rslave. Root folder: /media/Music.
+  # Download client: remote Deluge (label `lidarr` -> seedbox files/music).
+  # NOTE: /media/Music is consumed by Plex AND the Rhythmbox/libgpod iPod sync;
+  # do NOT change the naming scheme without checking both (README §4).
+  # ----------------------------------------------------------------------------
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:3.1.2   # Lidarr 3.1.2.4938 (Mar 2026)
+    container_name: lidarr
+    environment: *common-env
+    volumes:
+      - /volume1/docker/lidarr/config:/config
+      - /volume1/media:/media          # root folder /media/Music lives here
+      - *seedbox-mount                 # /seedbox (rslave)
+    ports:
+      - "8686:8686"
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # Readarr — Books (Phase B). DOWNLOAD-TOUCHING -> /seedbox:rslave.
+  # Download client: remote Deluge (label `readarr` -> seedbox files/books).
+  # IMPORT TARGET = the Calibre-Web-Automated INGEST folder (mounted at
+  # /cwa-book-ingest). Readarr does NOT own the final library — it drops the
+  # imported file into CWA's ingest; CWA converts/organizes into the Calibre
+  # library. Set Readarr's ROOT FOLDER to /cwa-book-ingest (README §5).
+  #
+  # METADATA: point Readarr's metadata provider at the SELF-HOSTED
+  # rreading-glasses below (http://rreading-glasses:8788), NOT a public instance.
+  #
+  # EOL NOTE: the original Readarr project is retired (metadata service dead).
+  # We pin the FINAL immutable LinuxServer build (develop-0.4.18.2805-ls157) —
+  # this is a specific build number, NOT the floating `develop` tag. It works
+  # fine once its metadata provider points at rreading-glasses (Goodreads
+  # upstream is fully backward-compatible with existing Readarr DBs/images).
+  # Maintained community forks exist if you'd rather migrate later:
+  #   ghcr.io/pennydreadful/bookshelf  and  ghcr.io/faustvii/readarr
+  # ----------------------------------------------------------------------------
+  readarr:
+    image: lscr.io/linuxserver/readarr:develop-0.4.18.2805-ls157   # EOL final build (immutable)
+    container_name: readarr
+    environment: *common-env
+    volumes:
+      - /volume1/docker/readarr/config:/config
+      # Readarr's import/root target = CWA ingest (CWA owns the final library):
+      - /volume1/docker/calibre-web-automated/ingest:/cwa-book-ingest
+      - *seedbox-mount                 # /seedbox (rslave)
+    ports:
+      - "8787:8787"
+    restart: unless-stopped
+    depends_on:
+      - rreading-glasses
+
+  # ----------------------------------------------------------------------------
+  # rreading-glasses — self-hosted Readarr metadata provider (Phase B).
+  # Canonical compose: github.com/blampe/rreading-glasses (docker-compose-gr.yml).
+  # Goodreads upstream = backward-compatible with existing Readarr installs.
+  # Point Readarr at http://rreading-glasses:8788 in Settings > Development
+  # (Metadata Provider Source) — that page is hidden; browse to it directly.
+  #
+  # PINNING: this project publishes NO semver releases — only the rolling tags
+  # `latest` (Goodreads) and `hardcover`. To honor "never :latest", pin by
+  # IMMUTABLE DIGEST. Refresh the digest deliberately when you choose to update:
+  #   docker buildx imagetools inspect blampe/rreading-glasses:latest
+  # TODO: replace the digest below with the one you verified at deploy time.
+  # ----------------------------------------------------------------------------
+  rreading-glasses:
+    image: blampe/rreading-glasses@sha256:8d5062e2a47a0ef831dc06ac9eb99badd5f95ebc94ff2f9c6e1279ec4ccb6b8c   # TODO verify/refresh digest (rolling `latest`)
+    container_name: rreading-glasses
+    hostname: rreading-glasses
+    entrypoint: ["/main", "serve"]
+    command:
+      - --upstream=www.goodreads.com
+      - --verbose
+    environment:
+      POSTGRES_HOST: rreading-glasses-db
+      POSTGRES_DATABASE: ${RG_DB_NAME:-rreading-glasses}
+      POSTGRES_USER: ${RG_DB_USER:-rreading-glasses}
+      POSTGRES_PASSWORD: ${RG_DB_PASSWORD:?set RG_DB_PASSWORD in .env (no special symbols)}
+    mem_limit: 128m   # uses all available RAM for cache; cap it (upstream guidance)
+    ports:
+      - "8788:8788"
+    restart: unless-stopped
+    depends_on:
+      rreading-glasses-db:
+        condition: service_started
+
+  rreading-glasses-db:
+    image: postgres:17.6   # any version works; pin a specific 17.x minor (verify latest)
+    container_name: rreading-glasses-db
+    environment:
+      POSTGRES_USER: ${RG_DB_USER:-rreading-glasses}
+      POSTGRES_PASSWORD: ${RG_DB_PASSWORD:?set RG_DB_PASSWORD in .env}
+      POSTGRES_DB: ${RG_DB_NAME:-rreading-glasses}
+    volumes:
+      - /volume1/docker/rreading-glasses/postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+    # No host port published — only rreading-glasses needs it, on the compose net.
+
+  # ----------------------------------------------------------------------------
+  # Unpackerr — extracts multi-part archives so the *arrs can import (Phase C).
+  # DOWNLOAD-TOUCHING -> /seedbox:rslave at the SAME path as the *arrs, with NO
+  # separate mapping: it acts on the path each *arr reports AFTER that *arr's
+  # Remote Path Mapping (i.e. /seedbox/...). Config in ./unpackerr/unpackerr.conf
+  # (fill the TODO url/api_key per app). delete_after removes extracted files so
+  # they don't linger on the seedbox.
+  # ----------------------------------------------------------------------------
+  unpackerr:
+    image: golift/unpackerr:0.15.2   # Unpackerr 0.15.2
+    container_name: unpackerr
+    user: ${PUID:?set PUID in .env}:${PGID:?set PGID in .env}
+    environment:
+      TZ: ${TZ:-America/New_York}
+    volumes:
+      - ./unpackerr/unpackerr.conf:/etc/unpackerr/unpackerr.conf:ro
+      - *seedbox-mount                 # /seedbox (rslave) — MUST match the *arrs exactly
+    restart: unless-stopped
+    depends_on:
+      - sonarr
+      - radarr
+      - lidarr
+      - readarr
+
+# A single user-defined default network is created automatically by Compose;
+# every service resolves the others by name (e.g. http://flaresolverr:8191,
+# http://rreading-glasses:8788). Remote Deluge is reached by its public IP.
