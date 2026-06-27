@@ -42,7 +42,8 @@ build — we have no public-facing servers to isolate there.) A minimal, sane ma
 
 > Each network belongs to exactly one zone. Assign in
 > Settings → Security → Zone-Based Firewall → Zones (path differs slightly by 9.x minor;
-> see firewall-policy-order.md).
+> see firewall-policy-order.md). Create policies per
+> [firewall-policy-walkthrough.md](firewall-policy-walkthrough.md) (net-05).
 
 ## Zone matrix (intended traffic flows)
 
