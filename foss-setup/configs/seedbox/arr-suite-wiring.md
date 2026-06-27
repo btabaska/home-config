@@ -1,3 +1,19 @@
+> ## ⚠️ SUPERSEDED (2026 architecture change) — read this first
+>
+> This runbook describes the **old** model (the \*arr suite + qBittorrent running
+> **on the seedbox**). The current architecture is different and is **not up for
+> re-litigation**:
+>
+> - **Seedbox "Betty" runs ONLY Deluge** — download + seed, nothing else.
+> - **The full \*arr stack runs on the NAS (DS920+)**, reading completed
+>   downloads through an **rclone SFTP mount** of the seedbox `files/` folder and
+>   reaching Deluge over its **API**.
+>
+> **Use [`../nas/media-automation/`](../nas/media-automation/) instead** (compose,
+> `unpackerr.conf`, README) plus the rclone scripts in `../../scripts/media/`.
+> The sections below are kept only as historical reference for the TRaSH
+> naming/quality and Prowlarr concepts, which still apply on the NAS.
+
 # *arr Suite Wiring on the Seedbox (Sonarr / Radarr / Prowlarr / qBittorrent / Bazarr)
 
 **Phase 2.** Everything in this runbook runs **on the off-site seedbox**, installed from the

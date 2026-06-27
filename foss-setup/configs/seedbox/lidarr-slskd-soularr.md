@@ -1,3 +1,13 @@
+> ## ⚠️ SUPERSEDED (2026 architecture change) — read this first
+>
+> The current music pipeline is **Lidarr only — NO slskd, NO Soularr, NO beets**.
+> Lidarr runs **on the NAS** and does both acquisition and final import/organize
+> into `/media/Music`, using **remote Deluge** (label `lidarr`) + a music-capable
+> Prowlarr indexer. See **[`../nas/media-automation/README.md` §4](../nas/media-automation/README.md)**.
+>
+> This slskd/Soularr/Soulseek runbook is retained only as historical reference;
+> do not deploy it under the current architecture.
+
 # Lidarr + slskd + Soularr — music acquisition on the seedbox
 
 **Phase 2.** Music slots into the *same* off-site seedbox pipeline as movies/TV

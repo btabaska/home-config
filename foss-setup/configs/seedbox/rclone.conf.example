@@ -11,27 +11,34 @@
 #   rclone copy:         https://rclone.org/commands/rclone_copy/
 #   rclone sync:         https://rclone.org/commands/rclone_sync/
 #
-# SECURITY: prefer key-based auth over a password. Synology cron runs jobs as
-# ROOT, so generate the key in root's home and reference it by ABSOLUTE path
-# (a `~` in this file would expand to whoever runs rclone — inconsistent). Both the
-# private key AND known_hosts live under /root/.ssh so the cron run finds them:
+# TWO CONSUMERS of this `seedbox:` remote (see ../../scripts/media/):
+#   1. rclone-seedbox-mount.sh  — the LIVE mount the *arrs import from
+#                                 (seedbox:/home/hd34/btabaska/files -> /volume1/mounts/seedbox-files)
+#   2. rclone-manual-copy.sh    — the ONE scheduled job, manual lane only
+#                                 (seedbox:.../files/manual -> /volume1/media/manual)
+# Both reference the SAME remote defined below.
+#
+# SECURITY: prefer key-based auth over a password. Synology Task Scheduler runs
+# these as ROOT, so generate the key in root's home and reference it by ABSOLUTE
+# path (a `~` here would expand to whoever runs rclone — inconsistent). Both the
+# private key AND known_hosts live under /root/.ssh so the (root) run finds them:
 #   sudo ssh-keygen -t ed25519 -f /root/.ssh/seedbox_ed25519 -C "nas-rclone"
-#   sudo ssh-copy-id -i /root/.ssh/seedbox_ed25519.pub -p <SEEDBOX_SSH_PORT> <SEEDBOX_USER>@<SEEDBOX_HOST>
+#   sudo ssh-copy-id -i /root/.ssh/seedbox_ed25519.pub -p 22 btabaska@185.162.184.38
 # Then point key_file at the PRIVATE key below. Do NOT also set `pass`.
 #
-# HOST CHOICE: use the seedbox's Tailscale name/IP (100.x.y.z or <name>.<tailnet>.ts.net)
-# so the transfer rides the encrypted tailnet and nothing is exposed to the internet.
-# A public SFTP hostname also works (SFTP is encrypted), but Tailscale is preferred here.
+# HOST: the seedbox "Betty" (Bytesized AppBox) is reached directly over SFTP at
+# its shared IP. SFTP is encrypted, so direct is fine. (If you later put the box
+# on Tailscale you may swap `host` for the 100.x.y.z / MagicDNS name.)
 
 [seedbox]
 type = sftp
-# Tailscale MagicDNS name (recommended) e.g. seedbox.tailnet-name.ts.net, or the 100.x.y.z IP,
-# or the provider's SFTP host if you are not using Tailscale for the transfer.
-host = <SEEDBOX_HOST>
-user = <SEEDBOX_USER>
-# Most managed seedboxes expose SSH/SFTP on a non-standard port — check your control panel.
-port = <SEEDBOX_SSH_PORT>
+# Seedbox "Betty" — Bytesized AppBox, no root, shared IP.
+host = 185.162.184.38
+user = btabaska
+# Bytesized AppBox SSH/SFTP is on the standard port 22.
+port = 22
 # Key-based auth (recommended). Absolute path to the PRIVATE key on the NAS.
+# TODO: generate this key on the NAS (as root) and ssh-copy-id it to the seedbox.
 key_file = /root/.ssh/seedbox_ed25519
 # --- Password auth alternative (NOT recommended) ----------------------------------
 # Leave key_file blank and instead set an obscured password. NEVER paste a plaintext

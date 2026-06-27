@@ -157,6 +157,70 @@ Device notes: **Kobo** = smoothest (native CWA sync + optional KOReader). **Kind
 ### Media acquisition — private, off-site (replaces the dual-LAN VPN/Gluetun setup)
 **Decision: a managed seedbox runs the whole download stack off-site; finished media syncs to the NAS for Plex.** This retires the home VPN routing entirely.
 
+> #### ⭐ ARCHITECTURE UPDATE (2026) — this is the authoritative model
+> The earlier plan put the whole \*arr suite + qBittorrent **on the seedbox**.
+> The current split is different and **settled** (configs:
+> [`configs/nas/media-automation/`](foss-setup/configs/nas/media-automation/) +
+> [`scripts/media/rclone-seedbox-*.sh`](foss-setup/scripts/media/)):
+>
+> **Seedbox = Deluge only.** The seedbox **"Betty"** (Bytesized AppBox, no root,
+> shared IP `185.162.184.38`, home `/home/hd34/btabaska`) runs **only Deluge** —
+> it downloads and seeds, permanently. Nothing else is ever installed on it.
+> Deluge sorts completed downloads into label folders under `files/`:
+> `tv`, `movies`, `music`, `books`, and `manual`.
+>
+> **Home stack + mount.** The **full \*arr stack runs on the NAS (DS920+)** in
+> Container Manager — `sonarr`, `radarr`, `prowlarr`, `lidarr`, `readarr`,
+> `rreading-glasses` (+ its Postgres), `unpackerr`, `flaresolverr` — co-located
+> with the library at `/volume1/media` that Plex, the iPod pipeline, and CWA all
+> read. The home apps reach Deluge over its **API**, and read completed downloads
+> through a persistent **rclone SFTP mount** of the seedbox `files/` folder:
+> `seedbox:/home/hd34/btabaska/files → /volume1/mounts/seedbox-files`, bound into
+> every download-touching container at **`/seedbox` with `:rslave`**. Each \*arr's
+> **Remote Path Mapping** `/home/hd34/btabaska/files/ → /seedbox/` makes the path
+> Deluge reports resolve to the mount. A **watchdog** remounts if the mount goes
+> empty/stale — *a dropped mount silently stalls every import*. Import is a
+> cross-filesystem **copy** (not a hardlink), and **"Remove Completed" stays OFF**
+> in every \*arr so the seedbox keeps seeding. There is **exactly one scheduled
+> rclone job** — the **manual lane** (`files/manual → /volume1/media/manual`,
+> `copy`, re-run-safe, never touching the \*arr label folders). \*arr media never
+> arrives via a scheduled copy — only via the live mount + import.
+>
+> - **Music = Lidarr only** (acquisition *and* import/organize into `/media/Music`).
+>   **No slskd, no Soularr, no beets.** Needs a music-capable Prowlarr indexer.
+> - **Books = Readarr + self-hosted rreading-glasses → CWA.** Readarr's metadata
+>   provider points at the **local** rreading-glasses (not a public instance);
+>   Readarr imports into the **CWA ingest** folder and CWA owns the final Calibre
+>   library. Book automation is **inherently less reliable than video** (no
+>   organized scene, messy metadata, Readarr is retired) — **expect occasional
+>   manual metadata fixes**.
+>
+> ##### RAM-phased rollout checklist (DS920+ ships 4 GB; 20 GB recommended first)
+> - [ ] `id <user>` on the NAS → set identical `PUID`/`PGID` (+ `TZ`, DB password).
+> - [ ] Install rclone on DSM; create `rclone.conf`; run the mount; confirm
+>       `/volume1/mounts/seedbox-files` lists the seedbox tree (*nothing imports
+>       without this*).
+> - [ ] Task Scheduler: boot-up task = mount; every-5-min task = watchdog.
+> - [ ] **Phase A (core):** `prowlarr flaresolverr sonarr radarr` — indexers,
+>       Deluge client, remote path mapping, roots `/media/TV`, `/media/Movies`.
+> - [ ] **Phase B (extend):** `lidarr` + `readarr rreading-glasses
+>       rreading-glasses-db` — music + books pipelines.
+> - [ ] **Phase C (polish):** `unpackerr` — fill API keys in `unpackerr.conf`.
+> - [ ] Task Scheduler: every-15-min task = the single manual-lane `rclone copy`.
+> - [ ] Run the self-check in the stack README.
+>
+> ##### Physical-device last hop (iPod + Kobo)
+> The library at `/volume1/media` is **always kept current automatically**, but
+> the **final hop to a handheld is physical/triggered**, not push: the **iPod**
+> (Rhythmbox/libgpod) syncs from `/media/Music` **when you physically plug it
+> in**, and the **Kobo** (KOReader OPDS) pulls from the CWA/Calibre library **when
+> it wakes on WiFi**. So "is it up to date?" has two answers — the library, yes,
+> continuously; the device, as of its last plug-in / wake. Don't change the
+> `/media/Music` naming scheme without checking **both** Plex and the iPod sync.
+
+The sections below describe the original seedbox-hosted pipeline and are kept for
+context; where they conflict with the box above, **the box above wins.**
+
 Why this is the answer to "never visible to my ISP" *and* the network crashes: the old setup torrented on the NAS behind a home VPN, and thousands of simultaneous peer connections (DHT/uTP especially) exhausted the connection-state (conntrack) table until you rebooted — the classic torrent-kills-the-network failure. (VPN encapsulation adds its own MTU/fragmentation headaches on top, a separate reliability drag — though note a full tunnel can actually *reduce* the router's tracked-connection count by collapsing all peers into one encrypted flow.) The 5 Mbps cap was a band-aid. A seedbox eliminates the root cause: **the P2P happens on a rented server, so your home network only ever does one tidy encrypted download from a datacenter.** Your ISP never sees a swarm (or even an always-on VPN tunnel) — just a normal-looking transfer — which is the purest form of "invisible to my ISP."
 
 **The pipeline (fully automated: request -> auto-appears in Plex):**
