@@ -2,9 +2,9 @@
 # Home media-automation stack — Synology DS920+ (Container Manager / Compose)
 # ==============================================================================
 # Phase 2. This is the FULL home *arr stack. It runs on the NAS (DS920+),
-# co-located with the library at /volume1/media (Plex serves it; the
-# Rhythmbox/libgpod iPod pipeline and Calibre-Web-Automated/Kobo pipeline read
-# from it). The off-site seedbox "Betty" (Bytesized AppBox, 185.162.184.38)
+# co-located with libraries split across three Basic volumes (Vol1 TV, Vol2
+# Movies, Vol3 Music + CWA ingest). Plex, the iPod pipeline, and CWA read from
+# those paths. The off-site seedbox "Betty" (Bytesized AppBox, 185.162.184.38)
 # runs ONLY Deluge — it downloads and seeds, permanently. Nothing else is added
 # to the seedbox.
 #
@@ -34,7 +34,7 @@
 #      container staring at an empty dir and every import silently stalls.
 #   3. Identical PUID/PGID across all services (TODO: fill from `id <user>` on
 #      the NAS), TZ=America/New_York, restart: unless-stopped, and /config on
-#      /volume1/docker/<app>.
+#      ${DOCKER_ROOT}/<app> (default /volume1/docker/<app>).
 #
 # ------------------------------------------------------------------------------
 # PINNED IMAGE TAGS (verified current as of June 2026 — never :latest/:develop)
@@ -67,15 +67,15 @@ name: media-automation
 # Edit the anchor once; every service that references it updates together.
 # ------------------------------------------------------------------------------
 x-common-env: &common-env
-  # TODO: set PUID/PGID to the Synology user that OWNS /volume1/docker and
-  # /volume1/media — find them via SSH: `id <user>` (DSM users are often
+  # TODO: set PUID/PGID to the Synology user that OWNS ${DOCKER_ROOT} and the
+  # library shares — find them via SSH: `id <user>` (DSM users are often
   # 1026/100, etc.). MUST be identical across every service below.
   PUID: ${PUID:?run 'id <user>' on the NAS and set PUID in .env}
   PGID: ${PGID:?run 'id <user>' on the NAS and set PGID in .env}
   TZ: ${TZ:-America/New_York}
 
-# The seedbox mount — IDENTICAL path + :rslave everywhere it appears. (Anchor so
-# you physically cannot drift one service's mount from the others.)
+# Host paths — set in .env (see nas-storage-schema.md three-volume layout).
+
 x-seedbox-mount: &seedbox-mount
   type: bind
   source: ${SEEDBOX_MOUNT:-/volume1/mounts/seedbox-files}
@@ -95,7 +95,7 @@ services:
     container_name: prowlarr
     environment: *common-env
     volumes:
-      - /volume1/docker/prowlarr/config:/config
+      - ${DOCKER_ROOT:-/volume1/docker}/prowlarr/config:/config
     ports:
       - "9696:9696"
     restart: unless-stopped
@@ -115,51 +115,48 @@ services:
 
   # ----------------------------------------------------------------------------
   # Sonarr — TV (Phase A). DOWNLOAD-TOUCHING -> /seedbox:rslave.
-  # Root folder: /media/TV. Download client: remote Deluge (label `sonarr`).
+  # Root folder: /tv (Volume 1). Download client: remote Deluge (label `sonarr`).
   # ----------------------------------------------------------------------------
   sonarr:
     image: lscr.io/linuxserver/sonarr:4.0.19   # Sonarr 4.0.19.2979 (Jun 2026)
     container_name: sonarr
     environment: *common-env
     volumes:
-      - /volume1/docker/sonarr/config:/config
-      - /volume1/media:/media          # root folder /media/TV lives here
-      - *seedbox-mount                 # /seedbox (rslave) — completed downloads, read for import
+      - ${DOCKER_ROOT:-/volume1/docker}/sonarr/config:/config
+      - ${TV_LIBRARY:-/volume3/tv}:/tv
+      - *seedbox-mount
     ports:
       - "8989:8989"
     restart: unless-stopped
 
   # ----------------------------------------------------------------------------
   # Radarr — Movies (Phase A). DOWNLOAD-TOUCHING -> /seedbox:rslave.
-  # Root folder: /media/Movies. Download client: remote Deluge (label `radarr`).
+  # Root folder: /movies (Volume 2). Download client: remote Deluge (label `radarr`).
   # ----------------------------------------------------------------------------
   radarr:
     image: lscr.io/linuxserver/radarr:6.2.1   # Radarr 6.2.1.10461 (stable, Jun 2026)
     container_name: radarr
     environment: *common-env
     volumes:
-      - /volume1/docker/radarr/config:/config
-      - /volume1/media:/media          # root folder /media/Movies lives here
-      - *seedbox-mount                 # /seedbox (rslave)
+      - ${DOCKER_ROOT:-/volume1/docker}/radarr/config:/config
+      - ${MOVIES_LIBRARY:-/volume2/movies}:/movies
+      - *seedbox-mount
     ports:
       - "7878:7878"
     restart: unless-stopped
 
   # ----------------------------------------------------------------------------
-  # Lidarr — Music acquisition AND final import/organize (Phase B). NO beets.
-  # DOWNLOAD-TOUCHING -> /seedbox:rslave. Root folder: /media/Music.
-  # Download client: remote Deluge (label `lidarr` -> seedbox files/music).
-  # NOTE: /media/Music is consumed by Plex AND the Rhythmbox/libgpod iPod sync;
-  # do NOT change the naming scheme without checking both (README §4).
+  # Lidarr — Music (Phase B). NO beets. Root folder: /music (Volume 3).
+  # NOTE: /music is consumed by Plex AND Rhythmbox/libgpod iPod sync (README §4).
   # ----------------------------------------------------------------------------
   lidarr:
     image: lscr.io/linuxserver/lidarr:3.1.2   # Lidarr 3.1.2.4938 (Mar 2026)
     container_name: lidarr
     environment: *common-env
     volumes:
-      - /volume1/docker/lidarr/config:/config
-      - /volume1/media:/media          # root folder /media/Music lives here
-      - *seedbox-mount                 # /seedbox (rslave)
+      - ${DOCKER_ROOT:-/volume1/docker}/lidarr/config:/config
+      - ${MUSIC_LIBRARY:-/volume1/music}:/music
+      - *seedbox-mount
     ports:
       - "8686:8686"
     restart: unless-stopped
@@ -188,10 +185,9 @@ services:
     container_name: readarr
     environment: *common-env
     volumes:
-      - /volume1/docker/readarr/config:/config
-      # Readarr's import/root target = CWA ingest (CWA owns the final library):
-      - /volume1/docker/calibre-web-automated/ingest:/cwa-book-ingest
-      - *seedbox-mount                 # /seedbox (rslave)
+      - ${DOCKER_ROOT:-/volume1/docker}/readarr/config:/config
+      - ${CWA_INGEST:-/volume1/docker/calibre-web-automated/ingest}:/cwa-book-ingest
+      - *seedbox-mount
     ports:
       - "8787:8787"
     restart: unless-stopped
@@ -240,7 +236,7 @@ services:
       POSTGRES_PASSWORD: ${RG_DB_PASSWORD:?set RG_DB_PASSWORD in .env}
       POSTGRES_DB: ${RG_DB_NAME:-rreading-glasses}
     volumes:
-      - /volume1/docker/rreading-glasses/postgres:/var/lib/postgresql/data
+      - ${DOCKER_ROOT:-/volume1/docker}/rreading-glasses/postgres:/var/lib/postgresql/data
     restart: unless-stopped
     # No host port published — only rreading-glasses needs it, on the compose net.
 

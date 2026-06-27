@@ -68,7 +68,7 @@ Counts: **1 Critical, 9 High, ~20 Medium, ~20 Low/Nice-to-have.**
 - **M-ma2.** Upload-cap number conflicts with Bytesized's own table (Stream +3 = 6 TB on `/plans` vs 10 TB on `/appbox`). → Verify at checkout; say "6–10 TB."
 - **M-ma3.** "3000 GB NVMe-class storage" (line 173) — the New Appbox tier is **HDD**. → Drop "NVMe-class."
 - **M-ma4.** `lidarr-slskd-soularr.md:60-65` tells you to override `REMOTE_MOVIES/LOCAL_MOVIES` to add music — but `seedbox-sync.sh` already syncs music natively (`SYNC_MUSIC=1` default). Following the doc breaks movie sync. → Replace with "music is automatic; `SYNC_MUSIC=0` to disable."
-- **M-ma5.** Music dest path mismatch: `seedbox-sync.sh:57` `/volume1/music` vs doc `/volume1/media/music`. → Pick one (match Navidrome's library path).
+- **M-ma5.** ~~Music dest path mismatch~~ **Resolved (2026-06):** three-volume layout — Vol 1 = music/books/docker, Vol 3 = TV; Lidarr → `/volume1/music`; Navidrome mounts `/volume1/music`.
 - **M-ma6.** `configs/seedbox/.env.example` is missing, but `lidarr-slskd-soularr.md:78` says `cp .env.example .env`. → Add the template (covers slskd/Soularr/Unpackerr vars).
 - **M-ma7.** Maintainerr pinned to the deprecated `jorenn92` image repo (comment even notes the move). → Switch to `ghcr.io/maintainerr/maintainerr`.
 - **M-ma8.** Unpackerr container path prefixes won't match the native *arrs' reported paths → never extracts (moot if Docker isn't available, see M-ma1). → Align mount/paths or run as a native binary.

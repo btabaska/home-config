@@ -1,0 +1,2291 @@
+{
+  "net-14": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: net-13 complete.",
+      "MacBook: `ssh-keygen -t ed25519 -C homelab-maint -f ~/.ssh/id_ed25519_homelab`",
+      "Per host: DSM \u2192 Control Panel \u2192 Terminal & SNMP \u2192 Enable SSH; Ubuntu: `sudo systemctl enable --now ssh`",
+      "`ssh-copy-id -i ~/.ssh/id_ed25519_homelab.pub user@192.168.10.10` (nas) and `.11` (mini); rig after WoL (game-08)",
+      "`cp ~/Documents/Home/foss-setup/configs/network/ssh-config.example ~/.ssh/config` \u2014 set tailnet names/users; `chmod 600 ~/.ssh/config`",
+      "Test: `ssh nas hostname`, `ssh mini hostname`, `ssh rig hostname`",
+      "Document break-glass path in configs/network/ssh-maintenance-access.md"
+    ],
+    "commands": [
+      "ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_homelab -C homelab-maint",
+      "cp ~/Documents/Home/foss-setup/configs/network/ssh-config.example ~/.ssh/config",
+      "chmod 600 ~/.ssh/config",
+      "ssh nas 'hostname'",
+      "ssh mini 'hostname'"
+    ],
+    "files": [
+      "configs/network/ssh-config.example",
+      "configs/network/ssh-maintenance-access.md"
+    ],
+    "docs": [
+      {
+        "title": "SSH config",
+        "url": "https://man.openbsd.org/ssh_config"
+      },
+      {
+        "title": "Synology SSH",
+        "url": "https://kb.synology.com/en-us/DSM/help/DSM/AdminCenter/system_terminal_snmp"
+      }
+    ],
+    "verify": "MacBook `ssh nas` and `ssh mini` work without password; ~/.ssh/config IdentityFile matches id_ed25519_homelab."
+  },
+  "glue-01": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: net-08, net-14 complete.",
+      "MacBook \u2192 DSM https://nas.<tailnet>:5001 \u2192 Control Panel \u2192 Hardware & Power \u2192 UPS",
+      "Enable USB UPS; shutdown after N minutes on battery",
+      "Enable Network UPS server; permit device IP **192.168.10.11** (mini)",
+      "`scp ~/Documents/Home/foss-setup/scripts/setup/nut-client-ubuntu.sh mini:/tmp/`",
+      "`ssh mini 'sudo NAS_IP=192.168.10.10 bash /tmp/nut-client-ubuntu.sh'` \u2014 installs nut-client if missing",
+      "`ssh mini 'upsc ups@192.168.10.10'` shows battery status",
+      "`ssh mini 'systemctl is-active nut-monitor.service || systemctl is-active nut-client.service'`"
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/setup/nut-client-ubuntu.sh mini:/tmp/",
+      "ssh mini 'sudo NAS_IP=192.168.10.10 bash /tmp/nut-client-ubuntu.sh'",
+      "ssh mini 'upsc ups@192.168.10.10'"
+    ],
+    "files": [
+      "scripts/setup/nut-client-ubuntu.sh"
+    ],
+    "verify": "mini reads UPS from NAS; Dream Wall on UPS battery."
+  },
+  "nas-00a": {
+    "steps": [
+      "Prerequisite: net-08 complete.",
+      "MacBook: `ssh nas` \u2192 record used space: `df -h /volume1 /volume2 /volume3`",
+      "Open Storage Manager in DSM; confirm **three separate Basic pools** (~14.6 / 10.9 / 16.4 TB usable) \u2014 not SHR, not merged.",
+      "Map where TV, movies, music, books, and Tier 1 data live **today** on each volume (not just vol1) \u2014 see nas-storage-schema.md \u00a75 runbook.",
+      "Confirm Tailscale on NAS (net-08) before any bulk data moves.",
+      "Optional: `ssh nas 'sudo btrfs filesystem usage /volume1 /volume2 /volume3'` for detailed audit"
+    ],
+    "commands": [
+      "ssh nas 'df -h /volume1 /volume2 /volume3'",
+      "ssh nas 'cat /proc/mdstat'"
+    ],
+    "files": [
+      "../nas-storage-schema.md"
+    ],
+    "verify": "Written path map shows target placement: TV\u2192vol3/tv, movies\u2192vol2/movies, music/books/Tier1\u2192vol1; notes which libraries need moving vs already correct."
+  },
+  "nas-00b": {
+    "steps": [
+      "Prerequisite: nas-00a complete.",
+      "**Only if vol2/vol3 are unorganized:** MacBook \u2192 DSM \u2192 Control Panel \u2192 Shared Folder \u2192 delete media shares on vol2/vol3.",
+      "**Only if needed:** Storage Manager \u2192 wipe vol2/vol3 data; recreate empty Basic Btrfs volumes on bays 2 and 3. Do **not** convert to SHR or merge pools.",
+      "If vol2/vol3 already hold movies/TV in the right place, **skip wipe** \u2014 go straight to nas-00c.",
+      "Do NOT touch vol1 \u2014 docker, Tier 1, and any rsync sources stay until nas-00c/nas-00e.",
+      "Storage Manager \u2192 confirm three **independent** Basic pools remain (~14.6 / 10.9 / 16.4 TB usable).",
+      "DSM Storage Manager \u2192 verify pool healthy before continuing"
+    ],
+    "commands": [
+      "ssh nas 'ls -la /volume2 /volume3'",
+      "ssh nas 'synogetkeyvalue /etc/synoinfo.conf volume_count'"
+    ],
+    "files": [
+      "../nas-storage-schema.md"
+    ],
+    "verify": "Three separate Basic pools healthy; vol2 ready for movies, vol3 ready for TV (empty or already correct). Vol1 untouched."
+  },
+  "nas-00c": {
+    "title": "Create DSM shares on each Basic volume (+ Btrfs settings)",
+    "estimate": "45 min\u20138 hrs (depends on rsync)",
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-00b complete.",
+      "Safety: net-08 complete (Tailscale on NAS) before bulk data moves. Hyper Backup (nas-02) comes after shares exist.",
+      "You have **three independent Basic volumes** \u2014 each DSM share lives on **one volume only** (vol3=TV, vol2=movies, vol1=music/books/Tier1/docker). No merged pool, no cross-volume shares.",
+      "**Volume 3:** DSM \u2192 Control Panel \u2192 Shared Folder \u2192 Create **`tv`** on **Volume 3**.",
+      "**Volume 2:** Create **`movies`** on **Volume 2**.",
+      "**Volume 1:** Create shares: `music`, `books`, `youtube`, `games`, `manual`, `photo`, `docs`, `appdata`, `backups`, `vault`, `home`, `staging`, `frigate`, `cache` \u2014 all on **Volume 1**.",
+      "**Volume 1 infrastructure (directories, NOT Shared Folders):** `ssh nas 'sudo mkdir -p /volume1/docker /volume1/mounts/seedbox-files /volume1/scripts/media'`",
+      "Storage Manager \u2192 each volume: Btrfs checksums ON; compression ON for docs/appdata/vault on vol1; OFF for media shares; atime OFF.",
+      "**Move data only where nas-00a path map shows wrong placement** (skip libraries already on the correct volume): TV\u2192`/volume3/tv/`, movies\u2192`/volume2/movies/`; on vol1 organize music/books/Tier1 into their shares if still flat.",
+      "Verify any rsync: `ssh nas 'du -sb <src> <dest>'` byte counts match; dry-run `rsync -avhn --delete` shows zero pending.",
+      "Do **not** delete old duplicate paths until nas-00d exports work and **nas-00e** confirms Ubuntu Plex/*arr see the new paths."
+    ],
+    "commands": [
+      "ssh nas 'sudo mkdir -p /volume1/docker /volume1/mounts/seedbox-files /volume1/scripts/media'",
+      "ssh nas 'rsync -avh --info=progress2 /volume1/<old-tv>/ /volume3/tv/'",
+      "ssh nas 'rsync -avh --info=progress2 /volume1/<old-movies>/ /volume2/movies/'",
+      "ssh nas 'du -sb /volume3/tv /volume2/movies'",
+      "ssh nas 'rsync -avhn --delete /volume1/<old-tv>/ /volume3/tv/'"
+    ],
+    "files": [
+      "../nas-storage-schema.md"
+    ],
+    "verify": "Each volume holds only its role: vol3/tv, vol2/movies, vol1/music+books+Tier1+docker infra. Byte counts match after any rsync."
+  },
+  "nas-00d": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-00c, net-01 complete.",
+      "DSM \u2192 Control Panel \u2192 Group: create household, media, docker-service groups",
+      "DSM \u2192 Control Panel \u2192 Shared Folder \u2192 Edit each share: NFS/SMB permissions per schema",
+      "Control Panel \u2192 File Services \u2192 SMB: min SMB2, max SMB3; enable Bonjour",
+      "Control Panel \u2192 File Services \u2192 NFS: export tv,movies,music to Trusted 192.168.10.0/24 only, squash",
+      "MacBook test mount: `mkdir -p ~/mnt/test && mount -t nfs nas:/volume3/tv ~/mnt/test` (from LAN or Tailscale subnet route)"
+    ],
+    "commands": [
+      "showmount -e nas.<tailnet>.ts.net",
+      "ssh nas 'synoshare --enum ALL'"
+    ],
+    "files": [
+      "../nas-storage-schema.md",
+      "configs/network/vlan-zone-firewall-plan.md"
+    ],
+    "verify": "Trusted client mounts NFS exports; SMB works for household."
+  },
+  "nas-00e": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-00d complete.",
+      "**Interim** while Plex/*arr still on Ubuntu (before nas-10/nas-21 migrate them to NAS).",
+      "`ssh mini 'sudo apt install -y nfs-common'` if mount fails",
+      "`ssh mini 'sudo mkdir -p /mnt/nas/{tv,movies,music,books}'` \u2014 add NFS fstab lines to 192.168.10.10 exports",
+      "`ssh mini 'sudo mount -a && ls /mnt/nas/tv | head'`",
+      "Re-point Plex (Ubuntu) libraries and Sonarr/Radarr/Lidarr root folders to /mnt/nas/*",
+      "Play test in Plex; spot-check *arr import \u2014 only then delete vol1 duplicates",
+      "After nas-10 + nas-21 land on NAS, retire Ubuntu stacks (seed-08)"
+    ],
+    "commands": [
+      "ssh mini 'grep /mnt/nas /etc/fstab'",
+      "ssh mini 'sudo mount -a && ls /mnt/nas/tv | head'"
+    ],
+    "files": [
+      "../nas-storage-schema.md"
+    ],
+    "verify": "Ubuntu apps use NAS paths; duplicates removed safely."
+  },
+  "nas-01": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-00c complete.",
+      "DSM Package Center \u2192 install **Snapshot Replication**",
+      "Snapshot Replication \u2192 Snapshots \u2192 select Tier1 shares on vol1",
+      "Hourly snapshots Tier1; daily on tv/movies/music/books",
+      "Retention \u2192 GFS + Immutable 7\u201314 days on Tier1",
+      "`ssh nas 'synosharesnap --help'` if CLI preferred"
+    ],
+    "commands": [
+      "ssh nas 'synosharesnap --help'"
+    ],
+    "files": [
+      "configs/nas/backup-architecture.md"
+    ],
+    "verify": "Snapshots visible in DSM; test restore one file."
+  },
+  "nas-02": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-01 complete.",
+      "Backblaze: create private bucket + application key with Object Lock",
+      "DSM Package Center \u2192 **Hyper Backup** \u2192 + \u2192 Cloud \u2192 S3 Compatible \u2192 Backblaze B2",
+      "Select Tier1 shares (photo,docs,appdata,backups,vault,home) \u2014 add Immich dump folder **after nas-08**",
+      "Enable client-side encryption; store .pem in password manager + paper",
+      "Schedule daily 03:00; run first backup now",
+      "Store B2 application key in Bitwarden; scope to single bucket only",
+      "Store B2 application key in Bitwarden; scope to single bucket only"
+    ],
+    "commands": [
+      "ssh nas 'synogetkeyvalue /usr/syno/etc/synobackup.conf' 2>/dev/null || echo configure in DSM GUI"
+    ],
+    "files": [
+      "configs/nas/backup-architecture.md"
+    ],
+    "verify": "Hyper Backup task succeeds; encrypted .pem stored offline."
+  },
+  "nas-03": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-01 complete.",
+      "Attach USB HDD to NAS",
+      "Hyper Backup or USB Copy \u2192 Tier2 paths: **/volume3/tv**, **/volume2/movies**, **/volume1/music**, **/volume1/books**",
+      "Schedule weekly; label two drives for rotation",
+      "Run first backup now; test restore one file from USB",
+      "Log rotation date in configs/nas/backup-architecture.md"
+    ],
+    "commands": [],
+    "files": [
+      "configs/nas/backup-architecture.md"
+    ],
+    "verify": "Weekly job completes; offsite drive rotation logged."
+  },
+  "nas-04": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-02 complete.",
+      "Backblaze: create **separate** bucket + application key for Linux hosts (not the NAS Hyper Backup bucket)",
+      "`scp ~/Documents/Home/foss-setup/scripts/backup/restic-backup.sh ~/Documents/Home/foss-setup/scripts/backup/restic-backup.env.example ~/Documents/Home/foss-setup/scripts/backup/restic-backup.service ~/Documents/Home/foss-setup/scripts/backup/restic-backup.timer mini:/tmp/`",
+      "`ssh mini 'sudo apt install -y restic && sudo install -d -m 0700 /etc/restic /opt/scripts'`",
+      "`ssh mini 'sudo install -m 755 /tmp/restic-backup.sh /opt/scripts/ && sudo install -m 600 /tmp/restic-backup.env.example /etc/restic/b2.env'`",
+      "Edit /etc/restic/b2.env on mini (RESTIC_REPOSITORY, B2 keys); `openssl rand -base64 48` \u2192 /etc/restic/password",
+      "`ssh mini 'sudo cp /tmp/restic-backup.service /tmp/restic-backup.timer /etc/systemd/system/'`",
+      "`ssh mini 'sudo systemctl daemon-reload && sudo systemctl enable --now restic-backup.timer'`",
+      "`ssh mini 'sudo ENV_FILE=/etc/restic/b2.env /opt/scripts/restic-backup.sh'`"
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/backup/restic-backup.sh mini:/tmp/",
+      "ssh mini 'sudo apt install -y restic'",
+      "ssh mini 'sudo systemctl enable --now restic-backup.timer'"
+    ],
+    "files": [
+      "scripts/backup/restic-backup.sh",
+      "scripts/backup/restic-backup.env.example",
+      "scripts/backup/restic-backup.timer"
+    ],
+    "verify": "restic snapshots lists on mini; timer active."
+  },
+  "nas-05": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-04 complete.",
+      "`ssh rig 'sudo pacman -S --needed restic'`",
+      "Copy restic script; create /etc/restic/b2.env with RESTIC_REPOSITORY=b2:bucket:rig",
+      "Exclude caches/Steam from BACKUP_PATHS",
+      "Enable timer (Persistent=true for on-demand rig)"
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/backup/restic-backup.sh rig:/tmp/",
+      "ssh rig 'sudo pacman -S --needed restic'",
+      "ssh rig 'sudo systemctl enable --now restic-backup.timer'"
+    ],
+    "files": [
+      "scripts/backup/restic-backup.sh"
+    ],
+    "verify": "rig restic repo initialized; timer enabled."
+  },
+  "nas-06": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-04 complete.",
+      "Order Hetzner Storage Box; enable SSH (port 23)",
+      "`ssh mini 'ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_borg -C borgmatic'`",
+      "Install borgmatic; copy borgmatic-config.yaml to /etc/borgmatic/",
+      "Init append-only repo; first backup; timer 03:10"
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/backup/borgmatic-config.yaml mini:/tmp/",
+      "ssh mini 'sudo apt install -y borgbackup borgmatic'",
+      "ssh mini 'borgmatic create --stats'"
+    ],
+    "files": [
+      "scripts/backup/borgmatic-config.yaml",
+      "scripts/backup/borgmatic.timer"
+    ],
+    "verify": "borgmatic list shows archive; timer active. (Append-only is via B2 Object Lock on restic \u2014 not borg client append-only.)"
+  },
+  "nas-07": {
+    "steps": [
+      "Prerequisite: nas-02, nas-04, nas-06 complete.",
+      "Confirm all encryption keys in Bitwarden + paper",
+      "MacBook: `ENV_FILE=/etc/restic/b2.env ssh mini '~/Documents/Home/foss-setup/scripts/backup/restore-test.sh restic'`",
+      "borgmatic restore test on mini",
+      "DSM Hyper Backup: restore sample from B2",
+      "Log restore date in backup-architecture.md"
+    ],
+    "commands": [
+      "ssh mini 'ENV_FILE=/etc/restic/b2.env /opt/scripts/restore-test.sh restic'",
+      "ssh mini '/opt/scripts/restore-test.sh borgmatic /etc/borgmatic/config.yaml'"
+    ],
+    "files": [
+      "scripts/backup/restore-test.sh",
+      "configs/nas/backup-architecture.md"
+    ],
+    "verify": "All three backup paths restore a test file."
+  },
+  "glue-02": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "`scp ~/Documents/Home/foss-setup/scripts/setup/cachyos-desktop-baseline.sh rig:/tmp/`",
+      "`ssh rig 'bash /tmp/cachyos-desktop-baseline.sh'` \u2014 browsers + LibreOffice",
+      "Set default browser; pin favorites",
+      "Reboot optional; verify desktop apps launch"
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/setup/cachyos-desktop-baseline.sh rig:/tmp/",
+      "ssh rig 'bash /tmp/cachyos-desktop-baseline.sh'"
+    ],
+    "files": [
+      "scripts/setup/cachyos-desktop-baseline.sh"
+    ],
+    "verify": "Firefox/Chromium and LibreOffice open on rig."
+  },
+  "glue-03": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: glue-02 complete.",
+      "On rig: set Kagi as default search in browser settings",
+      "Install Kagi browser extension if desired",
+      "Document choice in dotfiles if tracked"
+    ],
+    "commands": [
+      "ssh rig 'xdg-settings get default-web-browser'"
+    ],
+    "files": [],
+    "verify": "Address bar searches use Kagi."
+  },
+  "glue-04": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "MacBook: `brew install chezmoi` (or `~/Documents/Home/foss-setup/scripts/dotfiles/bootstrap-dotfiles.sh` with `CHEZMOI_NO_APPLY=1`).",
+      "`chezmoi init` \u2014 import live configs: `chezmoi add ~/.config/fish ~/.config/nvim ~/.config/alacritty ~/.gitconfig` (adjust paths).",
+      "Add homelab SSH config: `cp ~/Documents/Home/foss-setup/configs/network/ssh-config.example ~/.ssh/config`, edit tailnet/users, `chezmoi add --encrypt ~/.ssh/config` (age key in Proton Pass).",
+      "`chezmoi apply` \u2192 `chezmoi cd` \u2192 commit and push to GitHub (`git branch -M main` if branch is still `master`).",
+      "MacBook verify: `chezmoi diff` empty; `chezmoi managed` lists fish/nvim/alacritty/ssh/gitconfig.",
+      "Continue to **glue-04b** to bootstrap the CachyOS rig and Mac mini."
+    ],
+    "commands": [
+      "brew install chezmoi",
+      "chezmoi init",
+      "chezmoi add ~/.config/fish ~/.config/nvim ~/.config/alacritty ~/.gitconfig",
+      "cp ~/Documents/Home/foss-setup/configs/network/ssh-config.example ~/.ssh/config",
+      "chezmoi apply",
+      "chezmoi cd && git branch -M main && git push -u origin main",
+      "chezmoi diff",
+      "chezmoi status"
+    ],
+    "files": [
+      "scripts/dotfiles/bootstrap-dotfiles.sh",
+      "scripts/dotfiles/chezmoi-quickstart.md",
+      "configs/network/ssh-config.example"
+    ],
+    "docs": [
+      {
+        "title": "chezmoi",
+        "url": "https://www.chezmoi.io/"
+      },
+      {
+        "title": "chezmoi quick start",
+        "url": "https://www.chezmoi.io/quick-start/"
+      }
+    ],
+    "verify": "GitHub `btabaska/dotfiles` has chezmoi source layout; MacBook `chezmoi diff` is empty."
+  },
+  "glue-04b": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: glue-04 complete.",
+      "**Before bootstrapping other hosts:** confirm the age private key (`~/.config/chezmoi/key.txt`) is backed up in Proton Pass \u2014 encrypted SSH config won't decrypt without it.",
+      "**CachyOS rig** (fish/nvim/alacritty + ssh): `scp ~/Documents/Home/foss-setup/scripts/dotfiles/bootstrap-dotfiles.sh rig:/tmp/` then `ssh rig 'DOTFILES_REPO=btabaska bash /tmp/bootstrap-dotfiles.sh'`.",
+      "**Mac mini** (ssh + gitconfig; lighter set): `scp ~/Documents/Home/foss-setup/scripts/dotfiles/bootstrap-dotfiles.sh mini:/tmp/` then `ssh mini 'DOTFILES_REPO=btabaska bash /tmp/bootstrap-dotfiles.sh'`.",
+      "On each host after bootstrap: copy age key from Proton Pass to `~/.config/chezmoi/key.txt` if SSH config is encrypted, then `chezmoi apply`.",
+      "Verify fleet-wide from MacBook: `ssh rig 'chezmoi diff && chezmoi status'` and `ssh mini 'chezmoi diff && chezmoi status'` \u2014 both diffs must be empty.",
+      "Test SSH aliases: `ssh mini hostname`, `ssh rig hostname` (wake rig first via game-08 if needed).",
+      "**Ongoing sync:** edit on one box \u2192 `chezmoi edit` \u2192 `chezmoi apply` \u2192 `chezmoi cd && git push`; on others \u2192 `chezmoi update`. Use `.tmpl` files for per-host differences (see chezmoi-quickstart.md).",
+      "glue-08 ansible-pull will automate `chezmoi init --apply` later; manual bootstrap is fine until Forgejo (glue-05) is up."
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/dotfiles/bootstrap-dotfiles.sh rig:/tmp/",
+      "ssh rig 'DOTFILES_REPO=btabaska bash /tmp/bootstrap-dotfiles.sh'",
+      "scp ~/Documents/Home/foss-setup/scripts/dotfiles/bootstrap-dotfiles.sh mini:/tmp/",
+      "ssh mini 'DOTFILES_REPO=btabaska bash /tmp/bootstrap-dotfiles.sh'",
+      "ssh rig 'chezmoi diff && chezmoi status'",
+      "ssh mini 'chezmoi diff && chezmoi status'",
+      "ssh mini 'hostname'",
+      "ssh rig 'hostname'"
+    ],
+    "files": [
+      "scripts/dotfiles/bootstrap-dotfiles.sh",
+      "scripts/dotfiles/chezmoi-quickstart.md",
+      "configs/network/ssh-config.example",
+      "configs/network/ssh-maintenance-access.md"
+    ],
+    "docs": [
+      {
+        "title": "chezmoi",
+        "url": "https://www.chezmoi.io/"
+      },
+      {
+        "title": "chezmoi templating",
+        "url": "https://www.chezmoi.io/user-guide/templating/"
+      }
+    ],
+    "verify": "`chezmoi diff` empty on rig and mini; `ssh mini` / `ssh rig` work from MacBook."
+  },
+  "docker-01": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "`scp ~/Documents/Home/foss-setup/scripts/setup/install-docker-ubuntu.sh mini:/tmp/`",
+      "`ssh mini 'sudo bash /tmp/install-docker-ubuntu.sh'`",
+      "`ssh mini 'sudo usermod -aG docker $USER'` \u2014 re-login or `newgrp docker`",
+      "`ssh mini 'docker run --rm hello-world'`",
+      "**Before docker-07 (AdGuard :53):** disable systemd-resolved stub per script output:",
+      "`ssh mini 'sudo sed -i \"s/^#\\?DNSStubListener=.*/DNSStubListener=no/\" /etc/systemd/resolved.conf'`",
+      "`ssh mini 'sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf && sudo systemctl restart systemd-resolved'`"
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/setup/install-docker-ubuntu.sh mini:/tmp/",
+      "ssh mini 'sudo bash /tmp/install-docker-ubuntu.sh'",
+      "ssh mini 'docker compose version'",
+      "ssh mini 'docker run --rm hello-world'"
+    ],
+    "files": [
+      "scripts/setup/install-docker-ubuntu.sh"
+    ],
+    "docs": [
+      {
+        "title": "Docker Ubuntu",
+        "url": "https://docs.docker.com/engine/install/ubuntu/"
+      }
+    ],
+    "verify": "docker and docker compose work on mini without sudo."
+  },
+  "docker-02": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01 complete.",
+      "`ssh mini 'sudo docker network create edge || true'`",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks mini:/tmp/stacks`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks && sudo rsync -a /tmp/stacks/ /opt/stacks/'`",
+      "`ssh mini 'for d in /opt/stacks/*/; do cp -n \"$d/.env.example\" \"$d/.env\" 2>/dev/null; done'`",
+      "Read configs/docker-stack/README.md for port map"
+    ],
+    "commands": [
+      "ssh mini 'docker network create edge || true'",
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks mini:/tmp/stacks",
+      "ssh mini 'sudo rsync -a /tmp/stacks/ /opt/stacks/'"
+    ],
+    "files": [
+      "configs/docker-stack/README.md"
+    ],
+    "verify": "docker network ls shows edge; /opt/stacks populated."
+  },
+  "docker-03": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/seerr mini:/tmp/seerr`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/seerr && sudo rsync -a /tmp/seerr/ /opt/stacks/seerr/'`",
+      "`ssh mini 'cd /opt/stacks/seerr && cp -n .env.example .env 2>/dev/null || true'` \u2014 TZ; init: true mandatory; mount old Jellyseerr config if migrating",
+      "`ssh mini 'cd /opt/stacks/seerr && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/seerr/compose.yaml ps'`",
+      "MacBook browser (Tailscale): http://macmini.<tailnet>:5055"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/seerr mini:/tmp/seerr",
+      "ssh mini 'sudo rsync -a /tmp/seerr/ /opt/stacks/seerr/'",
+      "ssh mini 'cd /opt/stacks/seerr && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sfI http://127.0.0.1:5055/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/seerr/compose.yaml",
+      "configs/docker-stack/stacks/seerr/.env.example"
+    ]
+  },
+  "docker-04": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/miniflux mini:/tmp/miniflux`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/miniflux && sudo rsync -a /tmp/miniflux/ /opt/stacks/miniflux/'`",
+      "`ssh mini 'cd /opt/stacks/miniflux && cp -n .env.example .env 2>/dev/null || true'` \u2014 ADMIN_USERNAME/PASSWORD before first up",
+      "`ssh mini 'cd /opt/stacks/miniflux && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/miniflux/compose.yaml ps'`",
+      "MacBook browser (Tailscale): http://macmini.<tailnet>:8082"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/miniflux mini:/tmp/miniflux",
+      "ssh mini 'sudo rsync -a /tmp/miniflux/ /opt/stacks/miniflux/'",
+      "ssh mini 'cd /opt/stacks/miniflux && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sfI http://127.0.0.1:8082/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/miniflux/compose.yaml",
+      "configs/docker-stack/stacks/miniflux/.env.example"
+    ]
+  },
+  "docker-05": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/navidrome mini:/tmp/navidrome`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/navidrome && sudo rsync -a /tmp/navidrome/ /opt/stacks/navidrome/'`",
+      "`ssh mini 'cd /opt/stacks/navidrome && cp -n .env.example .env 2>/dev/null || true'` \u2014 ND_MUSICFOLDER=/mnt/nas/music after nas-00e NFS mount",
+      "`ssh mini 'cd /opt/stacks/navidrome && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/navidrome/compose.yaml ps'`",
+      "MacBook browser (Tailscale): http://macmini.<tailnet>:4533"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/navidrome mini:/tmp/navidrome",
+      "ssh mini 'sudo rsync -a /tmp/navidrome/ /opt/stacks/navidrome/'",
+      "ssh mini 'cd /opt/stacks/navidrome && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sfI http://127.0.0.1:4533/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/navidrome/compose.yaml",
+      "configs/docker-stack/stacks/navidrome/.env.example"
+    ]
+  },
+  "docker-07": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/adguard mini:/tmp/adguard`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/adguard && sudo rsync -a /tmp/adguard/ /opt/stacks/adguard/'`",
+      "`ssh mini 'cd /opt/stacks/adguard && cp -n .env.example .env 2>/dev/null || true'` \u2014 complete wizard; upstream=unbound:5335 after dns-01",
+      "`ssh mini 'cd /opt/stacks/adguard && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/adguard/compose.yaml ps'`",
+      "MacBook browser (Tailscale): http://macmini.<tailnet>:3000"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/adguard mini:/tmp/adguard",
+      "ssh mini 'sudo rsync -a /tmp/adguard/ /opt/stacks/adguard/'",
+      "ssh mini 'cd /opt/stacks/adguard && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sfI http://127.0.0.1:3000/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/adguard/compose.yaml",
+      "configs/docker-stack/stacks/adguard/.env.example"
+    ]
+  },
+  "docker-08": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/dockge mini:/tmp/dockge`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/dockge && sudo rsync -a /tmp/dockge/ /opt/stacks/dockge/'`",
+      "`ssh mini 'cd /opt/stacks/dockge && cp -n .env.example .env 2>/dev/null || true'` \u2014 DOCKGE_STACKS_DIR=/opt/stacks",
+      "`ssh mini 'cd /opt/stacks/dockge && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/dockge/compose.yaml ps'`",
+      "MacBook browser (Tailscale): http://macmini.<tailnet>:5001"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/dockge mini:/tmp/dockge",
+      "ssh mini 'sudo rsync -a /tmp/dockge/ /opt/stacks/dockge/'",
+      "ssh mini 'cd /opt/stacks/dockge && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sfI http://127.0.0.1:5001/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/dockge/compose.yaml",
+      "configs/docker-stack/stacks/dockge/.env.example"
+    ]
+  },
+  "docker-09": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/ntfy mini:/tmp/ntfy`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/ntfy && sudo rsync -a /tmp/ntfy/ /opt/stacks/ntfy/'`",
+      "`ssh mini 'cd /opt/stacks/ntfy && cp -n .env.example .env 2>/dev/null || true'` \u2014 NTFY_BASE_URL=http://macmini.<tailnet>:8080 \u2014 host port 8080 not 80",
+      "`ssh mini 'cd /opt/stacks/ntfy && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/ntfy/compose.yaml ps'`",
+      "MacBook browser (Tailscale): http://macmini.<tailnet>:8080"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/ntfy mini:/tmp/ntfy",
+      "ssh mini 'sudo rsync -a /tmp/ntfy/ /opt/stacks/ntfy/'",
+      "ssh mini 'cd /opt/stacks/ntfy && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sfI http://127.0.0.1:8080/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/ntfy/compose.yaml",
+      "configs/docker-stack/stacks/ntfy/.env.example"
+    ]
+  },
+  "docker-10": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/beszel mini:/tmp/beszel`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/beszel && sudo rsync -a /tmp/beszel/ /opt/stacks/beszel/'`",
+      "`ssh mini 'cd /opt/stacks/beszel && cp -n .env.example .env 2>/dev/null || true'` \u2014 hub first; paste agent TOKEN/KEY into .env then recreate agent",
+      "`ssh mini 'cd /opt/stacks/beszel && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/beszel/compose.yaml ps'`",
+      "MacBook browser (Tailscale): http://macmini.<tailnet>:8090"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/beszel mini:/tmp/beszel",
+      "ssh mini 'sudo rsync -a /tmp/beszel/ /opt/stacks/beszel/'",
+      "ssh mini 'cd /opt/stacks/beszel && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sfI http://127.0.0.1:8090/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/beszel/compose.yaml",
+      "configs/docker-stack/stacks/beszel/.env.example"
+    ]
+  },
+  "docker-11": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/uptime-kuma mini:/tmp/uptime-kuma`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/uptime-kuma && sudo rsync -a /tmp/uptime-kuma/ /opt/stacks/uptime-kuma/'`",
+      "`ssh mini 'cd /opt/stacks/uptime-kuma && cp -n .env.example .env 2>/dev/null || true'` \u2014 create admin on first visit",
+      "`ssh mini 'cd /opt/stacks/uptime-kuma && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/uptime-kuma/compose.yaml ps'`",
+      "MacBook browser (Tailscale): http://macmini.<tailnet>:3001"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/uptime-kuma mini:/tmp/uptime-kuma",
+      "ssh mini 'sudo rsync -a /tmp/uptime-kuma/ /opt/stacks/uptime-kuma/'",
+      "ssh mini 'cd /opt/stacks/uptime-kuma && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sfI http://127.0.0.1:3001/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/uptime-kuma/compose.yaml",
+      "configs/docker-stack/stacks/uptime-kuma/.env.example"
+    ]
+  },
+  "doc-02": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/mealie mini:/tmp/mealie`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/mealie && sudo rsync -a /tmp/mealie/ /opt/stacks/mealie/'`",
+      "`ssh mini 'cd /opt/stacks/mealie && cp -n .env.example .env 2>/dev/null || true'` \u2014 BASE_URL + secret",
+      "`ssh mini 'cd /opt/stacks/mealie && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/mealie/compose.yaml ps'`",
+      "MacBook browser (Tailscale): http://macmini.<tailnet>:9000"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/mealie mini:/tmp/mealie",
+      "ssh mini 'sudo rsync -a /tmp/mealie/ /opt/stacks/mealie/'",
+      "ssh mini 'cd /opt/stacks/mealie && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sfI http://127.0.0.1:9000/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/mealie/compose.yaml",
+      "configs/docker-stack/stacks/mealie/.env.example"
+    ]
+  },
+  "read-14": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/pinchflat mini:/tmp/pinchflat`",
+      "`ssh mini 'sudo mkdir -p /mnt/nas/youtube && sudo mount -t nfs 192.168.10.10:/volume1/youtube /mnt/nas/youtube'` \u2014 add to fstab; set PINCHFLAT_DOWNLOADS in .env",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/pinchflat && sudo rsync -a /tmp/pinchflat/ /opt/stacks/pinchflat/'`",
+      "`ssh mini 'cd /opt/stacks/pinchflat && cp -n .env.example .env 2>/dev/null || true'` \u2014 mount NAS /volume1/youtube on mini first \u2014 see step below",
+      "`ssh mini 'cd /opt/stacks/pinchflat && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/pinchflat/compose.yaml ps'`",
+      "MacBook browser (Tailscale): http://macmini.<tailnet>:8945"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/pinchflat mini:/tmp/pinchflat",
+      "ssh mini 'sudo rsync -a /tmp/pinchflat/ /opt/stacks/pinchflat/'",
+      "ssh mini 'cd /opt/stacks/pinchflat && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sfI http://127.0.0.1:8945/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/pinchflat/compose.yaml",
+      "configs/docker-stack/stacks/pinchflat/.env.example"
+    ]
+  },
+  "media-01": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/tautulli mini:/tmp/tautulli`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/tautulli && sudo rsync -a /tmp/tautulli/ /opt/stacks/tautulli/'`",
+      "`ssh mini 'cd /opt/stacks/tautulli && cp -n .env.example .env 2>/dev/null || true'` \u2014 wizard: Plex http://192.168.10.10:32400 + token",
+      "`ssh mini 'cd /opt/stacks/tautulli && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/tautulli/compose.yaml ps'`",
+      "MacBook browser (Tailscale): http://macmini.<tailnet>:8181"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/tautulli mini:/tmp/tautulli",
+      "ssh mini 'sudo rsync -a /tmp/tautulli/ /opt/stacks/tautulli/'",
+      "ssh mini 'cd /opt/stacks/tautulli && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sfI http://127.0.0.1:8181/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/tautulli/compose.yaml",
+      "configs/docker-stack/stacks/tautulli/.env.example"
+    ]
+  },
+  "media-03": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/maintainerr mini:/tmp/maintainerr`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/maintainerr && sudo rsync -a /tmp/maintainerr/ /opt/stacks/maintainerr/'`",
+      "`ssh mini 'cd /opt/stacks/maintainerr && cp -n .env.example .env 2>/dev/null || true'` \u2014 NAS Plex + *arr at 192.168.10.10; dry-run rules first",
+      "`ssh mini 'cd /opt/stacks/maintainerr && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/maintainerr/compose.yaml ps'`",
+      "MacBook browser (Tailscale): http://macmini.<tailnet>:6246"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/maintainerr mini:/tmp/maintainerr",
+      "ssh mini 'sudo rsync -a /tmp/maintainerr/ /opt/stacks/maintainerr/'",
+      "ssh mini 'cd /opt/stacks/maintainerr && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sfI http://127.0.0.1:6246/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/maintainerr/compose.yaml",
+      "configs/docker-stack/stacks/maintainerr/.env.example"
+    ]
+  },
+  "docker-12": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/diun mini:/tmp/diun`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/diun && sudo rsync -a /tmp/diun/ /opt/stacks/diun/'`",
+      "`ssh mini 'cd /opt/stacks/diun && cp -n .env.example .env 2>/dev/null || true'` \u2014 DIUN_NTFY_* webhook to ntfy topic",
+      "`ssh mini 'cd /opt/stacks/diun && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/diun/compose.yaml ps'`",
+      "Deploy **after** docker-09 (ntfy) and other stacks \u2014 Diun watches running containers only",
+      "Verify: `ssh mini 'docker inspect diun --format \"{{.State.Health.Status}}\"'` \u2014 no web UI"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/diun mini:/tmp/diun",
+      "ssh mini 'sudo rsync -a /tmp/diun/ /opt/stacks/diun/'",
+      "ssh mini 'cd /opt/stacks/diun && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'docker inspect diun --format \"{{.State.Health.Status}}\"'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/diun/compose.yaml",
+      "configs/docker-stack/stacks/diun/.env.example"
+    ],
+    "verify": "Diun healthy; test image-update notification arrives in ntfy app."
+  },
+  "media-02": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/kometa mini:/tmp/kometa`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/kometa && sudo rsync -a /tmp/kometa/ /opt/stacks/kometa/'`",
+      "`ssh mini 'cd /opt/stacks/kometa && cp -n .env.example .env 2>/dev/null || true'` \u2014 copy config.yml.example; fill Plex URL + TMDb",
+      "`ssh mini 'cd /opt/stacks/kometa && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/kometa/compose.yaml ps'`",
+      "`ssh mini 'cd /opt/stacks/kometa && cp -n config/config.yml.example config/config.yml'`",
+      "`ssh mini 'cd /opt/stacks/kometa && docker compose run --rm kometa --run'` \u2014 batch job, no HTTP port",
+      "`ssh mini 'docker logs kometa --tail 50'`"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/kometa mini:/tmp/kometa",
+      "ssh mini 'sudo rsync -a /tmp/kometa/ /opt/stacks/kometa/'",
+      "ssh mini 'cd /opt/stacks/kometa && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'cd /opt/stacks/kometa && docker compose run --rm kometa --run'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/kometa/compose.yaml",
+      "configs/docker-stack/stacks/kometa/.env.example"
+    ],
+    "verify": "Kometa one-shot run exits 0; collections/overlays appear in Plex."
+  },
+  "ha-01": {
+    "steps": [
+      "Decision: HA Green purchased \u2014 unbox and connect Ethernet to Trusted LAN",
+      "MacBook: reserve static IP or DHCP reservation 192.168.10.x in UniFi",
+      "Note MAC for inventory",
+      "Photograph cable/serial for inventory",
+      "Add to Homepage when deployed"
+    ],
+    "commands": [
+      "ping -c 2 homeassistant.local || ping -c 2 192.168.10.x"
+    ],
+    "files": [],
+    "verify": "HA Green on network."
+  },
+  "ha-02": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-01 complete.",
+      "Browse to http://homeassistant.local:8123 or IP from router",
+      "Create owner account; complete onboarding",
+      "Settings \u2192 System \u2192 Updates: enable automatic backups later (ha-11)",
+      "Install Advanced SSH & Web Terminal add-on for break-glass (net-14)"
+    ],
+    "commands": [
+      "ping homeassistant.local"
+    ],
+    "files": [],
+    "verify": "HA UI loads; owner account works."
+  },
+  "ha-03": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-01 complete.",
+      "Alternative to Green: on rig `scp ~/Documents/Home/foss-setup/scripts/setup/install-haos-vm.sh rig:/tmp/`",
+      "`ssh rig 'sudo bash /tmp/install-haos-vm.sh'` \u2014 KVM VM",
+      "Bridge VM NIC to Trusted LAN; browse VM IP:8123"
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/setup/install-haos-vm.sh rig:/tmp/",
+      "ssh rig 'sudo bash /tmp/install-haos-vm.sh'"
+    ],
+    "files": [
+      "scripts/setup/install-haos-vm.sh"
+    ],
+    "verify": "HAOS VM reachable at :8123."
+  },
+  "ha-04": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-02 complete.",
+      "HACS: https://hacs.xyz/docs/setup/download \u2014 run install script via SSH add-on or UI",
+      "Restart HA; HACS appears in sidebar",
+      "Install HACS integrations as needed",
+      "Restart Home Assistant Core after HACS install"
+    ],
+    "commands": [
+      "curl -sf http://homeassistant:8123/api/ || true"
+    ],
+    "files": [],
+    "verify": "HACS sidebar present."
+  },
+  "ha-05": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-02 complete.",
+      "Settings \u2192 Devices \u2192 Add Integration \u2192 Philips Hue",
+      "Press Hue bridge button when prompted",
+      "Assign Hue entities to areas",
+      "Move Hue bridge to IoT VLAN per net-02"
+    ],
+    "commands": [],
+    "files": [],
+    "verify": "Hue lights controllable locally."
+  },
+  "ha-06": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-02 complete.",
+      "Google Cloud: enable Smart Device Management API; create OAuth client",
+      "HA: Add Google Nest integration; complete OAuth",
+      "Store refresh token backup in Bitwarden"
+    ],
+    "commands": [],
+    "files": [],
+    "verify": "Nest climate visible in HA."
+  },
+  "ha-07": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-04 complete.",
+      "HACS \u2192 midea_ac_lan or official integration",
+      "Add each Midea device by IP on IoT VLAN",
+      "BACK UP integration config to NAS",
+      "Test local control without cloud"
+    ],
+    "commands": [],
+    "files": [
+      "configs/homeassistant/midea-local-setup.md"
+    ],
+    "verify": "Midea AC responds from HA."
+  },
+  "ha-08": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-07 complete.",
+      "Flash ESPHome on SLWF-01Pro per configs/homeassistant/esphome-midea-slwf01.yaml",
+      "Add ESPHome integration; adopt device on IoT",
+      "Disable cloud Midea dongle after cutover"
+    ],
+    "commands": [],
+    "files": [
+      "configs/homeassistant/esphome-midea-slwf01.yaml"
+    ],
+    "verify": "AC controlled via ESPHome only."
+  },
+  "ha-09": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-02 complete.",
+      "Install Whisper + Piper add-ons for Assist",
+      "Settings \u2192 Voice assistants \u2192 pipeline",
+      "Point conversation agent to LiteLLM (ha-17) for complex queries",
+      "Test wake word on phone Companion app"
+    ],
+    "commands": [],
+    "files": [],
+    "verify": "Voice command triggers automation."
+  },
+  "ha-10": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-05, ha-07 complete.",
+      "Settings \u2192 Dashboards \u2192 Energy",
+      "Add grid, solar if any, device monitors from Hue/Nest/Midea",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [],
+    "files": [],
+    "verify": "Energy dashboard shows live usage."
+  },
+  "ha-11": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-02 complete.",
+      "Install Samba Backup or HA backup to NAS share backups/ha/",
+      "Schedule nightly 04:00",
+      "Copy encryption key to Bitwarden + paper \u2014 loss = unrecoverable backups",
+      "Test restore on spare VM or second instance"
+    ],
+    "commands": [],
+    "files": [
+      "configs/homeassistant/backup-checklist.md"
+    ],
+    "verify": "Backup file lands on NAS nightly."
+  },
+  "ha-12": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-04 complete.",
+      "Add-on: Mosquitto broker",
+      "Add-on or container: Zigbee2MQTT + USB coordinator on Trusted",
+      "Z2M \u2192 MQTT \u2192 HA auto-discovery",
+      "Pair first sensor"
+    ],
+    "commands": [],
+    "files": [],
+    "verify": "Zigbee sensor updates in HA."
+  },
+  "ha-13": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-02 complete.",
+      "Install Companion on phones; enable location",
+      "Add mmWave or Bermuda for room presence",
+      "Create person-based automations"
+    ],
+    "commands": [],
+    "files": [],
+    "verify": "Arrival automation fires."
+  },
+  "ha-14": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-02 complete.",
+      "HACS/integration: UniFi Protect",
+      "Enter Protect credentials; adopt cameras",
+      "Assign camera entities to areas"
+    ],
+    "commands": [],
+    "files": [],
+    "verify": "Camera streams in HA."
+  },
+  "ha-15": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-14 complete.",
+      "**GATE:** NAS RAM \u226520GB recommended (defer with Immich ML on 4GB).",
+      "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/frigate nas:/tmp/frigate`",
+      "`ssh nas 'sudo mkdir -p /volume1/docker/frigate && sudo rsync -a /tmp/frigate/ /volume1/docker/frigate/'`",
+      "Copy config/config.yml.example \u2192 config.yml; set RTSP URLs + detector (Quick Sync or Coral)",
+      "`ssh nas 'cd /volume1/docker/frigate && cp -n .env.example .env && docker compose up -d'`",
+      "HA \u2192 Frigate integration for person/package events"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/frigate nas:/tmp/frigate",
+      "ssh nas 'cd /volume1/docker/frigate && docker compose up -d'",
+      "ssh nas 'curl -sfI http://127.0.0.1:8971/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/frigate/compose.yaml",
+      "configs/docker-stack/stacks/frigate/config/config.yml.example"
+    ],
+    "docs": [
+      {
+        "title": "Frigate",
+        "url": "https://docs.frigate.video/"
+      }
+    ],
+    "verify": "Frigate detects person; HA receives events."
+  },
+  "ha-16": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-05 complete.",
+      "HA \u2192 HomeKit Bridge integration",
+      "Pair iPhone Home app via QR",
+      "Expose only needed domains"
+    ],
+    "commands": [],
+    "files": [],
+    "verify": "Siri controls Hue via HomeKit."
+  },
+  "ha-17": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/litellm mini:/tmp/litellm`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/litellm && sudo rsync -a /tmp/litellm/ /opt/stacks/litellm/'`",
+      "`ssh mini 'cd /opt/stacks/litellm && cp -n .env.example .env 2>/dev/null || true'` \u2014 LITELLM_MASTER_KEY + Ollama upstream",
+      "`ssh mini 'cd /opt/stacks/litellm && docker compose up -d'`",
+      "`ssh mini 'docker compose -f /opt/stacks/litellm/compose.yaml ps'`",
+      "MacBook browser (Tailscale): http://macmini.<tailnet>:4000",
+      "Point HA Assist conversation agent to http://192.168.10.11:4000 (LiteLLM)",
+      "On rig: set OLLAMA_KEEP_ALIVE=0 so VRAM frees between requests (game-13)"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/litellm mini:/tmp/litellm",
+      "ssh mini 'sudo rsync -a /tmp/litellm/ /opt/stacks/litellm/'",
+      "ssh mini 'cd /opt/stacks/litellm && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sfI http://127.0.0.1:4000/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/litellm/compose.yaml",
+      "configs/docker-stack/stacks/litellm/.env.example"
+    ]
+  },
+  "seed-01": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "MacBook browser: sign up bytesized-hosting.com **Stream +3** (3000 GB, \u20ac16/mo EU)",
+      "Record SFTP user, home /home/hd34/btabaska, IP **185.162.184.38** in Bitwarden",
+      "Architecture lock-in: Betty runs **ONLY Deluge** \u2014 do NOT install Sonarr/Radarr/Prowlarr/qBittorrent on seedbox",
+      "One-click install Deluge only; set ratio/seed-time limits for self-prune under 3 TB",
+      "Record Deluge daemon port + password (needed by nas-22)"
+    ],
+    "commands": [],
+    "files": [
+      "configs/seedbox/provider-comparison.md",
+      "configs/seedbox/rclone.conf.example"
+    ],
+    "docs": [
+      {
+        "title": "Bytesized",
+        "url": "https://bytesized-hosting.com/"
+      },
+      {
+        "title": "Deluge labels",
+        "url": "https://deluge.readthedocs.io/en/latest/modules/label.html"
+      }
+    ],
+    "verify": "AppBox active; Deluge installed; credentials documented; no *arr apps on Betty."
+  },
+  "betty-01": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: seed-01 complete.",
+      "`ssh seedbox` \u2192 confirm Deluge WebUI",
+      "Note daemon port + password for nas-22",
+      "Create labels: sonarr\u2192files/tv, radarr\u2192files/movies, lidarr\u2192files/music, readarr\u2192files/books, manual\u2192files/manual",
+      "`mkdir -p ~/files/{tv,movies,music,books,manual}`",
+      "In Deluge: Preferences \u2192 Plugins \u2192 Label enabled"
+    ],
+    "commands": [
+      "ssh seedbox 'mkdir -p ~/files/{tv,movies,music,books,manual} && ls ~/files'",
+      "ssh seedbox 'deluge-console info 2>/dev/null || echo configure labels in WebUI'"
+    ],
+    "files": [
+      "configs/nas/media-automation/README.md"
+    ],
+    "verify": "Deluge sorts completed torrents into label folders."
+  },
+  "seed-03": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: seed-01 complete.",
+      "`ssh seedbox` \u2192 install Tailscale static binaries userspace mode",
+      "Start tailscaled with custom socket; `tailscale up`",
+      "`scp ~/Documents/Home/foss-setup/scripts/media/verify-tailscale-seedbox.sh seedbox:~/`",
+      "`PEERS='mac-mini nas' ~/verify-tailscale-seedbox.sh`"
+    ],
+    "commands": [
+      "ssh seedbox 'mkdir -p ~/tailscale && cd ~/tailscale'",
+      "scp ~/Documents/Home/foss-setup/scripts/media/verify-tailscale-seedbox.sh seedbox:~/",
+      "ssh seedbox 'PEERS=\"mac-mini nas\" ./verify-tailscale-seedbox.sh'"
+    ],
+    "files": [
+      "scripts/media/verify-tailscale-seedbox.sh"
+    ],
+    "verify": "Seedbox on tailnet; Deluge WebUI up."
+  },
+  "nas-20": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: betty-01 complete.",
+      "Install rclone on NAS (SynoCommunity or static binary) if not present",
+      "`scp ~/Documents/Home/foss-setup/configs/seedbox/rclone.conf.example ~/Documents/Home/foss-setup/scripts/media/rclone-seedbox-mount.sh ~/Documents/Home/foss-setup/scripts/media/rclone-seedbox-watchdog.sh nas:/tmp/`",
+      "`ssh nas 'sudo mkdir -p /root/.ssh /volume1/scripts/media /volume1/mounts/seedbox-files'`",
+      "`ssh nas 'sudo ssh-keygen -t ed25519 -f /root/.ssh/seedbox_ed25519 -N \"\" -C nas-rclone'`",
+      "`ssh nas 'sudo ssh-copy-id -i /root/.ssh/seedbox_ed25519.pub -p 22 btabaska@185.162.184.38'`",
+      "`ssh nas 'sudo cp /tmp/rclone.conf.example /root/.config/rclone/rclone.conf && sudo chmod 600 /root/.config/rclone/rclone.conf'`",
+      "`ssh nas 'sudo cp /tmp/rclone-seedbox-*.sh /volume1/scripts/media/ && sudo chmod +x /volume1/scripts/media/rclone-seedbox-*.sh'`",
+      "`ssh nas 'grep -q user_allow_other /etc/fuse.conf || echo user_allow_other | sudo tee -a /etc/fuse.conf'`",
+      "`ssh nas 'sudo /volume1/scripts/media/rclone-seedbox-mount.sh'`",
+      "DSM Task Scheduler: boot = mount script; every 5 min = watchdog",
+      "`ssh nas 'mountpoint /volume1/mounts/seedbox-files && ls /volume1/mounts/seedbox-files'`"
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/configs/seedbox/rclone.conf.example nas:/tmp/",
+      "scp ~/Documents/Home/foss-setup/scripts/media/rclone-seedbox-mount.sh ~/Documents/Home/foss-setup/scripts/media/rclone-seedbox-watchdog.sh nas:/tmp/",
+      "ssh nas 'sudo /volume1/scripts/media/rclone-seedbox-mount.sh'",
+      "ssh nas 'mountpoint /volume1/mounts/seedbox-files'"
+    ],
+    "files": [
+      "configs/seedbox/rclone.conf.example",
+      "scripts/media/rclone-seedbox-mount.sh",
+      "scripts/media/rclone-seedbox-watchdog.sh"
+    ],
+    "verify": "Mount lists Betty files/ tree; watchdog scheduled."
+  },
+  "nas-21": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-20 complete.",
+      "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
+      "**Migrate configs (before first start):** on Ubuntu `docker compose stop` sonarr radarr lidarr readarr.",
+      "Fresh-copy from Ubuntu: `scp -r mini:/home/btabaska/server/configs/sonarr nas:/tmp/` \u2192 /volume1/docker/sonarr/ (repeat radarr, liadarr\u2192lidarr, readarr). See migration-from-ubuntu.md.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/nas/media-automation nas:/tmp/` \u2192 /volume1/docker/media-automation/",
+      "`ssh nas 'cd /volume1/docker/media-automation && cp .env.example .env'` \u2014 PUID/PGID from id, paths, RG_DB_PASSWORD",
+      "Phase A: `docker compose up -d prowlarr flaresolverr sonarr radarr`",
+      "Phase B: lidarr readarr rreading-glasses rreading-glasses-db",
+      "Phase C: unpackerr after nas-25 config"
+    ],
+    "commands": [
+      "scp -r mini:/home/btabaska/server/configs/sonarr nas:/tmp/",
+      "scp -r ~/Documents/Home/foss-setup/configs/nas/media-automation nas:/tmp/",
+      "ssh nas 'cd /volume1/docker/media-automation && cp .env.example .env'",
+      "ssh nas 'cd /volume1/docker/media-automation && docker compose up -d prowlarr flaresolverr sonarr radarr'"
+    ],
+    "files": [
+      "configs/nas/media-automation/docker-compose.yml",
+      "configs/nas/media-automation/.env.example",
+      "configs/nas/media-automation/README.md",
+      "configs/nas/media-automation/migration-from-ubuntu.md"
+    ],
+    "verify": "Core *arr UIs respond on NAS ports; migrated library counts look correct."
+  },
+  "nas-22": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-21 complete.",
+      "**If migrating from Ubuntu:** update root folders (/data/tv/\u2192/tv, /data/movies/\u2192/movies, /data/music/\u2192/music, /data/books/\u2192/cwa-book-ingest) and Refresh & Scan.",
+      "Remove qBittorrent download clients; add remote Deluge @ 185.162.184.38 + label per app.",
+      "Remove Jackett Torznab indexers; Prowlarr \u2192 Apps Full Sync. Re-add private indexers using old Jackett Indexers/*.json from migration-snapshot as credential reference.",
+      "Remote Path Mapping: /home/hd34/btabaska/files/ \u2192 /seedbox/",
+      "Prowlarr \u2192 FlareSolverr http://flaresolverr:8191; test search",
+      "Test import: manual Deluge torrent with label sonarr \u2192 Sonarr imports from /seedbox",
+      "Test import: add manual torrent in Deluge with label sonarr; confirm Sonarr Activity shows import"
+    ],
+    "commands": [
+      "ssh nas 'docker compose -f /volume1/docker/media-automation/docker-compose.yml ps'",
+      "ssh nas 'docker logs sonarr --tail 30'",
+      "ssh nas 'docker logs sonarr --tail 30'"
+    ],
+    "files": [
+      "configs/nas/media-automation/README.md",
+      "configs/nas/media-automation/migration-from-ubuntu.md"
+    ],
+    "verify": "Migrated library counts match expectations; manual grab imports from /seedbox."
+  },
+  "nas-28": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-22, docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/recyclarr mini:/tmp/recyclarr`",
+      "`ssh mini 'sudo rsync -a /tmp/recyclarr/ /opt/stacks/recyclarr/'`",
+      "Edit config/recyclarr.yml: NAS base_url http://192.168.10.10:8989 / :7878 + API keys from each *arr",
+      "`ssh mini 'cd /opt/stacks/recyclarr && cp -n .env.example .env && docker compose run --rm recyclarr sync'`",
+      "`ssh mini 'cd /opt/stacks/recyclarr && docker compose run --rm recyclarr list templates'`",
+      "Schedule weekly: `0 3 * * 0 cd /opt/stacks/recyclarr && docker compose run --rm recyclarr sync`"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/recyclarr mini:/tmp/recyclarr",
+      "ssh mini 'sudo rsync -a /tmp/recyclarr/ /opt/stacks/recyclarr/'",
+      "ssh mini 'cd /opt/stacks/recyclarr && docker compose run --rm recyclarr sync'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/recyclarr/compose.yaml",
+      "configs/docker-stack/stacks/recyclarr/config/recyclarr.yml",
+      "configs/docker-stack/stacks/recyclarr/.env.example"
+    ],
+    "docs": [
+      {
+        "title": "Recyclarr",
+        "url": "https://recyclarr.dev/guide/getting-started/"
+      },
+      {
+        "title": "TRaSH Sonarr naming",
+        "url": "https://trash-guides.info/Sonarr/Sonarr-recommended-naming-scheme/"
+      }
+    ],
+    "verify": "recyclarr sync exits 0; Sonarr/Radarr show TRaSH quality profiles + plex-tmdb naming."
+  },
+  "nas-23": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-22 complete.",
+      "Lidarr: Deluge label lidarr; root /music; FLAC preferred",
+      "Prowlarr music indexer sync",
+      "Rename tracks ON",
+      "Verify Plex Music + iPod path /volume1/music"
+    ],
+    "commands": [
+      "ssh nas 'curl -s http://127.0.0.1:8686/api/v1/system/status -H \"X-Api-Key: <KEY>\"'"
+    ],
+    "files": [
+      "configs/nas/media-automation/README.md"
+    ],
+    "verify": "Album imports to /volume1/music."
+  },
+  "nas-24": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-22 complete.",
+      "Prerequisite: nas-09 complete.",
+      "Readarr metadata http://rreading-glasses:8788 via /settings/development",
+      "Root /cwa-book-ingest",
+      "Deluge label readarr"
+    ],
+    "commands": [
+      "ssh nas 'docker compose -f /volume1/docker/media-automation/docker-compose.yml ps readarr'"
+    ],
+    "files": [
+      "configs/nas/media-automation/README.md",
+      "configs/nas/calibre-web-automated/docker-compose.yml"
+    ],
+    "verify": "Book lands in CWA ingest."
+  },
+  "nas-25": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-22 complete.",
+      "Fill unpackerr.conf API keys",
+      "`docker compose up -d unpackerr`",
+      "Test RAR extract"
+    ],
+    "commands": [
+      "ssh nas 'cd /volume1/docker/media-automation && docker compose up -d unpackerr'",
+      "ssh nas 'docker logs unpackerr --tail 30'"
+    ],
+    "files": [
+      "configs/nas/media-automation/unpackerr/unpackerr.conf"
+    ],
+    "verify": "RAR release auto-imported."
+  },
+  "nas-26": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-20 complete.",
+      "Schedule rclone-manual-copy.sh every 15 min as root",
+      "ONLY manual lane",
+      "Never sync *arr folders"
+    ],
+    "commands": [
+      "ssh nas 'sudo /volume1/scripts/media/rclone-manual-copy.sh'"
+    ],
+    "files": [
+      "scripts/media/rclone-manual-copy.sh"
+    ],
+    "verify": "manual/ file copies to /volume1/manual."
+  },
+  "nas-27": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-22, nas-23, nas-24, nas-25, nas-26 complete.",
+      "Run README self-check docker inspect mounts",
+      "Confirm single scheduled rclone job",
+      "Report violations"
+    ],
+    "commands": [
+      "ssh nas \"docker inspect sonarr radarr lidarr readarr unpackerr --format '{{.Name}}{{range .Mounts}} {{.Destination}}({{.Propagation}}){{end}}'\""
+    ],
+    "files": [
+      "configs/nas/media-automation/README.md"
+    ],
+    "verify": "All self-check items pass."
+  },
+  "nas-10": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-00d complete.",
+      "**Before install:** stop Ubuntu Plex (`docker compose stop`). Never run old + new Plex with the same MachineIdentifier.",
+      "Take a **fresh** copy from Ubuntu Plex appdata (linuxserver `/config` \u2192 `Library/Application Support/Plex Media Server/`).",
+      "DSM Package Center \u2192 Plex Media Server (NOT Container Manager). Copy P0 files before first start: Preferences.xml, .LocalAdminToken, com.plexapp.plugins.library.db, com.plexapp.plugins.library.blobs.db. Optional P1/P2: Plug-in Support/Preferences|Data/, Metadata/, Media/. Skip Logs/ and dated *.db-* backups.",
+      "http://nas:32400/web \u2014 sign in (skip claim wizard if Preferences.xml has valid PlexOnlineToken).",
+      "Libraries: movies=/volume2/movies tv=/volume3/tv music=/volume1/music \u2014 run Scan Library Files if needed.",
+      "Transcoder \u2192 hardware acceleration ON (Quick Sync). Verify Home users + resume playback.",
+      "Add Plex appdata to Hyper Backup Tier1. See configs/nas/plex/README.md \u00a74 for full vs scan-only fallback."
+    ],
+    "commands": [
+      "ssh mini 'cd ~/server/compose/plex && docker compose stop'",
+      "ssh nas 'ls /volume2/movies /volume3/tv /volume1/music'",
+      "curl -s http://192.168.10.10:32400/identity"
+    ],
+    "files": [
+      "configs/nas/plex/README.md",
+      "configs/nas/backup-architecture.md"
+    ],
+    "verify": "Plex plays with HW transcode; Home users and watch history preserved (or scan-only fallback documented)."
+  },
+  "seed-05": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-03, nas-22, nas-28 complete.",
+      "Seerr :5055 \u2192 Services \u2192 Radarr/Sonarr/Lidarr at 192.168.10.10",
+      "Root folders /movies /tv /music; TRaSH profiles",
+      "Link Plex NAS server + token"
+    ],
+    "commands": [
+      "curl -s http://192.168.10.10:7878/api/v3/system/status -H 'X-Api-Key: <KEY>'",
+      "curl -s http://192.168.10.10:8989/api/v3/system/status -H 'X-Api-Key: <KEY>'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/seerr/compose.yaml"
+    ],
+    "verify": "Seerr test passes; request hits NAS *arr."
+  },
+  "seed-07": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: seed-05, nas-25, nas-10 complete.",
+      "Request small title in Seerr",
+      "Watch Deluge \u2192 NAS import \u2192 Plex",
+      "Seerr Available"
+    ],
+    "commands": [
+      "ssh nas 'ls /volume1/mounts/seedbox-files/movies'",
+      "ssh nas 'docker logs sonarr --tail 20'"
+    ],
+    "files": [
+      "configs/nas/plex/README.md"
+    ],
+    "verify": "End-to-end playable in Plex."
+  },
+  "seed-08": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: seed-07 complete.",
+      "Backup UniFi",
+      "Remove NAS qbittorrent/gluetun",
+      "Undo dual-LAN routing",
+      "Stop Ubuntu Plex/*arr if still running",
+      "Document completion date in configs/seedbox/decommission-old-nas-torrent.md"
+    ],
+    "commands": [
+      "ssh nas 'docker rm -f qbittorrent gluetun 2>/dev/null; ip rule show'",
+      "ssh mini 'docker ps -a | grep -i plex || echo moved to NAS'"
+    ],
+    "files": [
+      "configs/seedbox/decommission-old-nas-torrent.md"
+    ],
+    "verify": "No P2P/VPN sockets on NAS."
+  },
+  "nas-08": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-01, nas-02, nas-00c complete.",
+      "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
+      "`ssh nas 'sudo mkdir -p /volume1/docker/immich'`",
+      "`scp -r ~/Documents/Home/foss-setup/configs/nas/immich nas:/tmp/immich`",
+      "`ssh nas 'sudo rsync -a /tmp/immich/ /volume1/docker/immich/'`",
+      "`ssh nas 'cd /volume1/docker/immich && cp -n .env.example .env 2>/dev/null || true'` \u2014 edit secrets before up",
+      "`ssh nas 'cd /volume1/docker/immich && docker compose pull && docker compose up -d'`",
+      "`ssh nas 'cd /volume1/docker/immich && docker compose ps'`",
+      "Browser http://192.168.10.10:2283 \u2192 create admin \u2192 Settings \u2192 Video Transcoding \u2192 Quick Sync",
+      "DSM Task Scheduler: nightly pg_dump to /volume1/docker/immich/backups; add folder to Hyper Backup after first dump"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/nas/immich nas:/tmp/immich",
+      "ssh nas 'sudo rsync -a /tmp/immich/ /volume1/docker/immich/'",
+      "ssh nas 'cd /volume1/docker/immich && docker compose up -d'",
+      "ssh nas 'cd /volume1/docker/immich && docker compose ps'"
+    ],
+    "files": [
+      "configs/nas/immich/docker-compose.yml",
+      "configs/nas/immich/.env.example"
+    ],
+    "verify": "Immich :2283 loads; test upload succeeds; HW transcode enabled.",
+    "docs": [
+      {
+        "title": "Immich Docker",
+        "url": "https://docs.immich.app/install/docker-compose"
+      },
+      {
+        "title": "Immich HW transcoding",
+        "url": "https://docs.immich.app/features/hardware-transcoding"
+      }
+    ]
+  },
+  "nas-08b": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-08, net-14 complete.",
+      "Immich UI \u2192 Account Settings \u2192 API Keys \u2192 create key",
+      "Copy SD card to rig SSD first (see scripts/media/immich-go-import.md)",
+      "`scp ~/Documents/Home/foss-setup/scripts/media/immich-go-import.sh ~/Documents/Home/foss-setup/scripts/media/immich-go-import.md rig:~/`",
+      "`ssh rig 'chmod +x ~/immich-go-import.sh'`",
+      "`ssh rig 'DRY_RUN=1 CARD_PATH=/path/to/copy IMMICH_SERVER=http://192.168.10.10:2283 IMMICH_API_KEY=<key> ~/immich-go-import.sh'`",
+      "`ssh rig 'CARD_PATH=/path/to/copy IMMICH_SERVER=http://192.168.10.10:2283 IMMICH_API_KEY=<key> ~/immich-go-import.sh'`"
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/media/immich-go-import.sh rig:~/",
+      "ssh rig 'IMMICH_SERVER=http://192.168.10.10:2283 IMMICH_API_KEY=<key> CARD_PATH=/path/to/copy ~/immich-go-import.sh'"
+    ],
+    "files": [
+      "scripts/media/immich-go-import.sh",
+      "scripts/media/immich-go-import.md"
+    ],
+    "docs": [
+      {
+        "title": "immich-go",
+        "url": "https://github.com/simulot/immich-go"
+      }
+    ],
+    "verify": "RAW+JPEG from test SD copy appear stacked in Immich library."
+  },
+  "nas-09": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-02, nas-00c complete.",
+      "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
+      "`ssh nas 'sudo mkdir -p /volume1/docker/calibre-web-automated'`",
+      "`scp -r ~/Documents/Home/foss-setup/configs/nas/calibre-web-automated nas:/tmp/calibre-web-automated`",
+      "`ssh nas 'sudo rsync -a /tmp/calibre-web-automated/ /volume1/docker/calibre-web-automated/'`",
+      "`ssh nas 'cd /volume1/docker/calibre-web-automated && cp -n .env.example .env 2>/dev/null || true'` \u2014 edit secrets before up",
+      "`ssh nas 'cd /volume1/docker/calibre-web-automated && docker compose pull && docker compose up -d'`",
+      "`ssh nas 'cd /volume1/docker/calibre-web-automated && docker compose ps'`",
+      "http://192.168.10.10:8083 \u2014 LAN/Tailscale only; **disable Kobo sync** until CWA v4.0.7+ (CVE-2026-7713)",
+      "Drop test EPUB into ingest folder; confirm appears in /volume1/books"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/nas/calibre-web-automated nas:/tmp/calibre-web-automated",
+      "ssh nas 'sudo rsync -a /tmp/calibre-web-automated/ /volume1/docker/calibre-web-automated/'",
+      "ssh nas 'cd /volume1/docker/calibre-web-automated && docker compose up -d'",
+      "ssh nas 'cd /volume1/docker/calibre-web-automated && docker compose ps'"
+    ],
+    "files": [
+      "configs/nas/calibre-web-automated/docker-compose.yml"
+    ],
+    "verify": "CWA UI loads; ingest works; not exposed publicly.",
+    "docs": [
+      {
+        "title": "Calibre-Web-Automated",
+        "url": "https://github.com/crocodilestick/Calibre-Web-Automated"
+      }
+    ]
+  },
+  "doc-01": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-01, nas-02, nas-00c complete.",
+      "**GATE:** NAS RAM \u226520GB OR defer until RAM upgrade (Paperless + Immich ML cannot share 4GB).",
+      "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
+      "`ssh nas 'sudo mkdir -p /volume1/docs/{consume,media,export} /volume1/docker/paperless-ngx'`",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/paperless-ngx nas:/tmp/paperless`",
+      "Adapt compose on NAS: remove external `edge` network; bind /volume1/docs/* ; set PUID/PGID from `id`",
+      "`ssh nas 'sudo rsync -a /tmp/paperless/ /volume1/docker/paperless-ngx/ && cd /volume1/docker/paperless-ngx && cp -n .env.example .env'`",
+      "Edit .env: PAPERLESS_SECRET_KEY, PAPERLESS_DBPASS, PAPERLESS_ADMIN_PASSWORD",
+      "`ssh nas 'cd /volume1/docker/paperless-ngx && docker compose up -d'`",
+      "SMB mount docs share from MacBook; drop test PDF in consume/"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/paperless-ngx nas:/tmp/paperless",
+      "ssh nas 'cd /volume1/docker/paperless-ngx && docker compose up -d'",
+      "ssh nas 'curl -sfI http://127.0.0.1:8000/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/paperless-ngx/compose.yaml",
+      "configs/docker-stack/stacks/paperless-ngx/.env.example"
+    ],
+    "docs": [
+      {
+        "title": "Paperless-ngx Docker",
+        "url": "https://docs.paperless-ngx.com/setup/#docker"
+      }
+    ],
+    "verify": "http://nas:8000 shows OCR'd searchable PDF; consume via SMB works."
+  },
+  "read-01": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "`ssh rig 'sudo pacman -S --needed calibre'`",
+      "Create library ~/CalibreLibrary",
+      "Enable content server optional",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "ssh rig 'calibre --version'"
+    ],
+    "files": [],
+    "verify": "Calibre opens on rig."
+  },
+  "read-02": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: read-01 complete.",
+      "`scp ~/Documents/Home/foss-setup/scripts/reading/syncthing-setup-cachyos.sh rig:~/`",
+      "Enable systemd user syncthing",
+      "Pair with NAS/other devices"
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/reading/syncthing-setup-cachyos.sh rig:~/"
+    ],
+    "files": [
+      "scripts/reading/syncthing-setup-cachyos.sh"
+    ],
+    "verify": "Syncthing UI :8384 synced."
+  },
+  "read-03": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: read-01, read-02, nas-09 complete.",
+      "CVE note: keep CWA LAN-only; disable Kobo sync until v4.0.7+",
+      "Syncthing on rig: share EPUB folder \u2192 NAS CWA ingest path",
+      "Drop test EPUB into shared folder; refresh CWA library",
+      "`ssh nas 'curl -sfI http://127.0.0.1:8083/ | head -1'`"
+    ],
+    "commands": [
+      "ssh nas 'curl -sfI http://127.0.0.1:8083/ | head -1'"
+    ],
+    "files": [
+      "configs/nas/calibre-web-automated/docker-compose.yml",
+      "scripts/reading/koreader-cwa-wallabag-wiring.md"
+    ],
+    "verify": "EPUB in CWA library and OPDS catalog."
+  },
+  "read-04": {
+    "steps": [
+      "Kobo: install KOReader via NickelMenu/CrossPoint",
+      "Enable OPDS plugin",
+      "Connect Kobo to MacBook USB for initial KOReader install only",
+      "Disconnect USB \u2014 all sync is WiFi after setup",
+      "Document OPDS URL in KOReader favorites"
+    ],
+    "commands": [],
+    "files": [
+      "scripts/reading/koreader-cwa-wallabag-wiring.md"
+    ],
+    "verify": "KOReader boots on Kobo."
+  },
+  "read-05": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: read-01, read-03, read-04 complete.",
+      "KOReader OPDS \u2192 CWA URL on LAN/Tailscale",
+      "Download test book",
+      "On Kobo WiFi: open KOReader \u2192 OPDS \u2192 add http://192.168.10.10:8083/opds",
+      "Download one test book; confirm cover renders"
+    ],
+    "commands": [],
+    "files": [
+      "scripts/reading/koreader-cwa-wallabag-wiring.md"
+    ],
+    "verify": "Book opens on Kobo."
+  },
+  "read-06": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: read-03, read-04 complete.",
+      "Enable KOSync in KOReader + CWA",
+      "In CWA admin enable KOSync; match username on Kobo plugin settings",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [],
+    "files": [],
+    "verify": "Progress syncs Kobo\u2194CWA."
+  },
+  "read-07": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/wallabag mini:/tmp/wallabag`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/wallabag && sudo rsync -a /tmp/wallabag/ /opt/stacks/wallabag/'`",
+      "`ssh mini 'cd /opt/stacks/wallabag && cp -n .env.example .env && docker compose up -d'`",
+      "Browser http://macmini.<tailnet>:8200 \u2192 create user \u2192 save test article",
+      "`ssh mini 'curl -sfI http://127.0.0.1:8200/ | head -1'`"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/wallabag mini:/tmp/wallabag",
+      "ssh mini 'sudo rsync -a /tmp/wallabag/ /opt/stacks/wallabag/'",
+      "ssh mini 'cd /opt/stacks/wallabag && docker compose up -d'",
+      "ssh mini 'curl -sfI http://127.0.0.1:8200/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/wallabag/docker-compose.yml",
+      "configs/docker-stack/wallabag/.env.example"
+    ],
+    "docs": [
+      {
+        "title": "Wallabag",
+        "url": "https://doc.wallabag.org/"
+      }
+    ],
+    "verify": "Wallabag UI loads; saved article retrievable; /api/info returns 200."
+  },
+  "read-08": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: read-04, read-07 complete.",
+      "KOReader Wallabag plugin with mini URL",
+      "Wallabag URL http://macmini.<tailnet>:8200 \u2014 create API token in Wallabag settings",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [],
+    "files": [
+      "scripts/reading/koreader-cwa-wallabag-wiring.md"
+    ],
+    "verify": "Article syncs to Kobo."
+  },
+  "read-09": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: read-04, docker-04 complete.",
+      "KOReader news plugin \u2192 Miniflux API",
+      "Miniflux \u2192 Settings \u2192 API \u2192 create key; paste into KOReader news plugin",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [],
+    "files": [],
+    "verify": "RSS item readable on Kobo."
+  },
+  "read-10": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "`scp ~/Documents/Home/foss-setup/scripts/media/install-ipod-tools-cachyos.sh rig:~/`",
+      "`ssh rig 'bash ~/install-ipod-tools-cachyos.sh'`",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/media/install-ipod-tools-cachyos.sh rig:~/"
+    ],
+    "files": [
+      "scripts/media/install-ipod-tools-cachyos.sh",
+      "scripts/media/ipod-sync-cachyos.md"
+    ],
+    "verify": "rhythmbox detects iPod."
+  },
+  "read-11": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: read-10 complete.",
+      "Mount iPod; Rhythmbox sync /volume1/music master",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "ssh rig 'rhythmbox-client --print-playing'"
+    ],
+    "files": [
+      "scripts/media/ipod-sync-cachyos.md"
+    ],
+    "verify": "Playlist on iPod plays."
+  },
+  "read-12": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: read-10 complete.",
+      "Install gPodder; subscribe podcasts; sync via libgpod",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "ssh rig 'gpodder --version'"
+    ],
+    "files": [],
+    "verify": "Podcast episode on iPod."
+  },
+  "read-13": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "On rig: `ssh rig 'sudo pacman -S --needed obsidian'` (or Flatpak)",
+      "Create vault e.g. ~/Documents/ObsidianVault on rig",
+      "On MacBook: install Obsidian; subscribe to **official Obsidian Sync** (paid, E2E encrypted \u2014 not self-hosted)",
+      "Settings \u2192 Sync \u2192 enable E2E encryption; confirm note syncs MacBook \u2194 rig",
+      "Ensure vault path is in NAS Tier-1 backup scope (nas-02)"
+    ],
+    "commands": [
+      "ssh rig 'pacman -Q obsidian 2>/dev/null || echo install obsidian'"
+    ],
+    "docs": [
+      {
+        "title": "Obsidian Sync",
+        "url": "https://help.obsidian.md/Obsidian+Sync/Obsidian+Sync"
+      }
+    ],
+    "verify": "Vault syncs E2E across MacBook and rig via official Obsidian Sync."
+  },
+  "docker-14": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-06, docker-07, docker-08 complete.",
+      "Optional Coolify \u2014 or stay Dockge+Caddy",
+      "Document chosen path",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [],
+    "files": [
+      "configs/docker-stack/README.md"
+    ],
+    "verify": "New app reachable via Caddy."
+  },
+  "dns-01": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-07 complete.",
+      "`ssh mini 'cd /opt/stacks/unbound && docker compose up -d'`",
+      "AdGuard UI \u2192 DNS \u2192 upstream: `unbound:5335` (container name on edge network, not 127.0.0.1)",
+      "`ssh mini 'cd /opt/stacks/adguard && docker compose restart'`",
+      "Dream Wall: NAT redirect outbound UDP/TCP 53 to mini; block known DoH endpoints",
+      "Optional NAS redundancy: CM on NAS \u2192 second AdGuard; DHCP secondary DNS = nas IP",
+      "Test from MacBook: `dig @192.168.10.11 cloudflare.com` + DNSSEC; attempt client bypass (should fail)"
+    ],
+    "commands": [
+      "ssh mini 'cd /opt/stacks/unbound && docker compose up -d'",
+      "ssh mini 'docker inspect unbound --format \"{{.State.Health.Status}}\"'",
+      "ssh mini 'cd /opt/stacks/adguard && docker compose restart'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/unbound/compose.yaml",
+      "configs/docker-stack/stacks/unbound/unbound/unbound.conf",
+      "configs/docker-stack/stacks/adguard/compose.yaml"
+    ],
+    "docs": [
+      {
+        "title": "Unbound",
+        "url": "https://docs.pi-hole.net/guides/dns/unbound/"
+      },
+      {
+        "title": "AdGuard upstream",
+        "url": "https://github.com/AdguardTeam/AdGuardHome/wiki/Configuration"
+      }
+    ],
+    "verify": "DNSSEC validates via mini resolver; bypass blocked; AdGuard shows unbound upstream."
+  },
+  "docker-06": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-02, docker-03, docker-04, docker-05 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/caddy mini:/tmp/caddy`",
+      "`ssh mini 'sudo rsync -a /tmp/caddy/ /opt/stacks/caddy/'`",
+      "Edit caddy/.env: DOMAIN, ACME_EMAIL, CLOUDFLARE_API_TOKEN, NAS_IP for offloaded services",
+      "Edit caddy/caddy/Caddyfile hostnames",
+      "`ssh mini 'cd /opt/stacks/caddy && cp -n .env.example .env && docker compose up -d --build'`",
+      "UniFi: allow 80/443 to mini only"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/caddy mini:/tmp/caddy",
+      "ssh mini 'sudo rsync -a /tmp/caddy/ /opt/stacks/caddy/'",
+      "ssh mini 'cd /opt/stacks/caddy && docker compose up -d --build'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/caddy/compose.yaml",
+      "configs/docker-stack/stacks/caddy/caddy/Caddyfile",
+      "configs/docker-stack/stacks/caddy/Dockerfile"
+    ],
+    "verify": "HTTPS vhosts resolve via Tailscale/LAN; caddy_data volume persists certs."
+  },
+  "docker-15": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-06, docker-10, docker-11 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/homepage mini:/tmp/homepage`",
+      "`ssh mini 'sudo rsync -a /tmp/homepage/ /opt/stacks/homepage/'`",
+      "Edit config/services.yaml + widgets.yaml; set HOMEPAGE_ALLOWED_HOSTS in .env",
+      "`ssh mini 'cd /opt/stacks/homepage && cp -n .env.example .env && docker compose up -d'`",
+      "Add Caddy vhost home.<domain>; include HA Green tile after ha-01",
+      "MacBook: http://macmini.<tailnet>:3010"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/homepage mini:/tmp/homepage",
+      "ssh mini 'sudo rsync -a /tmp/homepage/ /opt/stacks/homepage/'",
+      "ssh mini 'curl -sfI http://127.0.0.1:3010/ | head -1'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/homepage/compose.yaml",
+      "configs/docker-stack/stacks/homepage/config/services.yaml"
+    ],
+    "verify": "Homepage :3010 shows live widgets for family + operator sections."
+  },
+  "glue-05": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01, docker-02 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/git mini:/tmp/forgejo`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/forgejo && sudo rsync -a /tmp/forgejo/ /opt/stacks/forgejo/'`",
+      "`ssh mini 'cd /opt/stacks/forgejo && cp -n .env.example .env'` \u2014 FORGEJO_DB_PASSWORD, domain, UID/GID",
+      "`ssh mini 'cd /opt/stacks/forgejo && docker compose up -d'` \u2014 uses docker-compose.yml + edge network",
+      "Browser :3030 \u2192 create admin; disable open registration; create homelab repo",
+      "Push foss-setup mirror; set CONTROL_REPO_URL for glue-08 ansible-pull"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/git mini:/tmp/forgejo",
+      "ssh mini 'sudo rsync -a /tmp/forgejo/ /opt/stacks/forgejo/'",
+      "ssh mini 'cd /opt/stacks/forgejo && docker compose up -d'",
+      "ssh mini 'curl -sf http://127.0.0.1:3030/api/healthz'"
+    ],
+    "files": [
+      "configs/git/docker-compose.yml",
+      "configs/git/.env.example",
+      "configs/git/repo-structure.md"
+    ],
+    "docs": [
+      {
+        "title": "Forgejo Docker",
+        "url": "https://forgejo.org/docs/latest/admin/installation/docker/"
+      }
+    ],
+    "verify": "Git push to Forgejo succeeds; healthz returns ok."
+  },
+  "glue-08": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: glue-07, glue-06 complete.",
+      "Each host hostname must match inventory (macmini, cachyos, seedbox)",
+      "`scp ~/Documents/Home/foss-setup/configs/ansible/ansible-pull.service ~/Documents/Home/foss-setup/configs/ansible/ansible-pull.timer mini:/tmp/`",
+      "Edit CONTROL_REPO_URL in ansible-pull.service to Forgejo SSH URL before copying",
+      "`ssh mini 'sudo cp /tmp/ansible-pull.service /tmp/ansible-pull.timer /etc/systemd/system/'`",
+      "`ssh mini 'sudo systemctl daemon-reload && sudo systemctl enable --now ansible-pull.timer'`",
+      "Repeat on rig (OnBootSec=3min timer for wake-gated rig); verify `systemctl list-timers ansible-pull.timer`"
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/configs/ansible/ansible-pull.service ~/Documents/Home/foss-setup/configs/ansible/ansible-pull.timer mini:/tmp/",
+      "ssh mini 'sudo systemctl enable --now ansible-pull.timer'",
+      "ssh mini 'systemctl list-timers ansible-pull.timer'"
+    ],
+    "files": [
+      "configs/ansible/ansible-pull.service",
+      "configs/ansible/ansible-pull.timer",
+      "configs/ansible/README.md"
+    ],
+    "docs": [
+      {
+        "title": "ansible-pull",
+        "url": "https://docs.ansible.com/ansible/latest/cli/ansible-pull.html"
+      }
+    ],
+    "verify": "ansible-pull.timer active on mini and rig; first run reports drift (check mode)."
+  },
+  "docker-13": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-06, docker-07, docker-08, docker-10, docker-11, docker-12, glue-05 complete.",
+      "`ssh mini 'cd /opt/stacks && git init || true'` \u2014 remote = Forgejo URL from glue-05",
+      "Commit compose + Caddyfile; **never** commit `.env` or `data/` dirs",
+      "Document rebuild order in configs/git/repo-structure.md; push to Forgejo",
+      "MacBook: clone from Forgejo and dry-run rebuild checklist"
+    ],
+    "commands": [
+      "ssh mini 'cd /opt/stacks && git status'",
+      "ssh mini 'cd /opt/stacks && git remote -v'"
+    ],
+    "files": [
+      "configs/git/repo-structure.md"
+    ],
+    "verify": "Forgejo shows all stack folders; no secrets in git history."
+  },
+  "glue-06": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-13 complete.",
+      "Follow configs/inventory/restore-runbook-template.md for one throwaway VM",
+      "Target: bare OS \u2192 docker-01 \u2192 clone Forgejo \u2192 fill `.env` files \u2192 compose up in README order \u2192 <1 hr",
+      "Record gaps; update runbook in Forgejo"
+    ],
+    "commands": [],
+    "files": [
+      "configs/inventory/restore-runbook-template.md"
+    ],
+    "verify": "Rebuild drill completes under 1 hour; gaps documented."
+  },
+  "glue-07": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: net-14, glue-05 complete.",
+      "MacBook: `pipx install ansible` or brew install ansible",
+      "`cd ~/Documents/Home/foss-setup/configs/ansible && ansible-galaxy collection install -r requirements.yml`",
+      "Wake rig if testing all hosts: `ssh mini 'bash ~/wake-rig.sh'`",
+      "`cd ~/Documents/Home/foss-setup/configs/ansible && ansible all -i inventory.ini -m ping`"
+    ],
+    "commands": [
+      "cd ~/Documents/Home/foss-setup/configs/ansible && ansible-galaxy collection install -r requirements.yml",
+      "cd ~/Documents/Home/foss-setup/configs/ansible && ansible all -i inventory.ini -m ping"
+    ],
+    "files": [
+      "configs/ansible/README.md",
+      "configs/ansible/inventory.ini"
+    ],
+    "verify": "ansible ping all green (mini + rig; NAS/HA excluded by design)."
+  },
+  "sbom-01": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-06, docker-09 complete.",
+      "**GATE:** NAS RAM \u226520GB before Dependency-Track + Immich ML (apiserver wants 4GB+ alone).",
+      "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/dependency-track nas:/tmp/dependency-track`",
+      "`ssh nas 'sudo mkdir -p /volume1/docker/dependency-track && sudo rsync -a /tmp/dependency-track/ /volume1/docker/dependency-track/'`",
+      "`ssh nas 'cd /volume1/docker/dependency-track && cp -n .env.example .env && docker compose up -d'`",
+      "Browser :9010 \u2192 create Automation team API key for sbom-nightly"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/dependency-track nas:/tmp/dependency-track",
+      "ssh nas 'cd /volume1/docker/dependency-track && docker compose up -d'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/dependency-track/compose.yaml",
+      "configs/docker-stack/stacks/dependency-track/.env.example"
+    ],
+    "docs": [
+      {
+        "title": "Dependency-Track Docker",
+        "url": "https://docs.dependencytrack.org/getting-started/deploy-docker/"
+      }
+    ],
+    "verify": "DepTrack UI loads at :9010 or Caddy vhost."
+  },
+  "sbom-02": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: sbom-01 complete.",
+      "Install sbom-nightly on each host from ~/Documents/Home/foss-setup/scripts/inventory",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/inventory/sbom-nightly.sh mini:/opt/scripts/"
+    ],
+    "files": [
+      "scripts/inventory/sbom-nightly.sh"
+    ],
+    "verify": "SBOM uploaded nightly."
+  },
+  "sbom-03": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: glue-05 complete.",
+      "etckeeper on mini/rig/nas",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/inventory/etckeeper-setup.sh mini:/tmp/"
+    ],
+    "files": [
+      "configs/inventory/etckeeper.conf"
+    ],
+    "verify": "etc commits on apt change."
+  },
+  "sbom-04": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: glue-05 complete.",
+      "export-manifests.sh cron",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/inventory/export-manifests.sh mini:/opt/scripts/"
+    ],
+    "files": [
+      "scripts/inventory/export-manifests.sh"
+    ],
+    "verify": "Manifest in git."
+  },
+  "sbom-05": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: sbom-02, sbom-03, sbom-04, glue-06 complete.",
+      "Write restore runbooks per host",
+      "Execute one full rebuild",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [],
+    "files": [
+      "configs/inventory/restore-runbook-template.md"
+    ],
+    "verify": "Rebuild drill documented."
+  },
+  "sec-01": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Hardware key: Bitwarden, Proton, DSM, Tailscale, Forgejo",
+      "TOTP: Immich, Plex, Seerr, HA, seedbox panel",
+      "Store backup codes offline",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [],
+    "files": [],
+    "verify": "2FA on all crown jewels."
+  },
+  "sec-02": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-01 complete.",
+      "daemon.json log limits on mini/rig/nas docker",
+      "Restart docker; recreate containers",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "ssh mini 'cat /etc/docker/daemon.json'",
+      "ssh rig 'cat /etc/docker/daemon.json'"
+    ],
+    "files": [],
+    "verify": "Log max-size 10m."
+  },
+  "sec-05": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "unattended-upgrades on mini",
+      "pacman cadence on rig",
+      "DSM auto security updates",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "ssh mini 'sudo unattended-upgrade --dry-run -d'"
+    ],
+    "files": [],
+    "verify": "Security updates automatic."
+  },
+  "sec-03": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-02, nas-06, docker-09 complete.",
+      "B2 Object Lock",
+      "Deploy healthchecks",
+      "Wire backup pings to ntfy"
+    ],
+    "commands": [
+      "ssh mini 'cd /opt/stacks/healthchecks && docker compose up -d'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/healthchecks/compose.yaml"
+    ],
+    "verify": "Skipped backup alerts."
+  },
+  "sec-04": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: seed-01, docker-06 complete.",
+      "CrowdSec on seedbox",
+      "Caddy forward-auth for public apps",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "ssh seedbox 'cscli metrics'"
+    ],
+    "files": [],
+    "verify": "CrowdSec banning."
+  },
+  "media-04": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-10, game-08 complete.",
+      "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
+      "Tdarr server on NAS; node on rig",
+      "Scan test folder"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/tdarr nas:/tmp/"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/tdarr/compose.yaml"
+    ],
+    "verify": "Transcode completes on rig node."
+  },
+  "game-01": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "LinuxGSM on mini per ~/Documents/Home/foss-setup/scripts/gaming/linuxgsm-quickstart.md",
+      "Start light server",
+      "Tailscale only exposure",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/gaming/linuxgsm-quickstart.md mini:/tmp/"
+    ],
+    "files": [
+      "scripts/gaming/linuxgsm-quickstart.md"
+    ],
+    "verify": "Server starts on mini."
+  },
+  "game-02": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: game-08 complete.",
+      "Pelican on rig for heavy servers",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [],
+    "files": [],
+    "verify": "Panel manages instance."
+  },
+  "game-03": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: game-08 complete.",
+      "Heavy servers on rig via LinuxGSM/Pelican",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [],
+    "files": [],
+    "verify": "Minecraft modpack runs."
+  },
+  "game-04": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: game-01 complete.",
+      "No port forwards; friends use Tailscale",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "ssh mini 'tailscale status'"
+    ],
+    "files": [],
+    "verify": "Friend joins via tailnet."
+  },
+  "game-05": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: game-08 complete.",
+      "Wake rig if asleep: `ssh mini 'bash ~/wake-rig.sh'`",
+      "`scp ~/Documents/Home/foss-setup/scripts/gaming/sunshine-autostart-notes.md rig:~/`",
+      "On rig: add LizardByte pacman repo; `sudo pacman -S sunshine cuda`",
+      "`ssh rig 'loginctl enable-linger $USER'`; enable user unit app-dev.lizardbyte.app.Sunshine",
+      "First-run UI via tunnel: `ssh -L 47990:localhost:47990 rig` \u2192 https://localhost:47990",
+      "Set NVENC; add Desktop app; clients must stay on Trusted VLAN for mDNS (game-06)"
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/gaming/sunshine-autostart-notes.md rig:~/",
+      "ssh rig 'systemctl --user enable --now app-dev.lizardbyte.app.Sunshine'",
+      "ssh rig 'sunshine --version'"
+    ],
+    "files": [
+      "scripts/gaming/sunshine-autostart-notes.md"
+    ],
+    "docs": [
+      {
+        "title": "Sunshine",
+        "url": "https://docs.lizardbyte.dev/projects/sunshine/latest/md_docs_2getting__started.html"
+      }
+    ],
+    "verify": "Sunshine streams desktop with NVENC; user unit survives reboot."
+  },
+  "game-06": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: game-05 complete.",
+      "Moonlight on phone/TV same VLAN",
+      "Pair with PIN",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [],
+    "files": [],
+    "verify": "In-home stream works."
+  },
+  "game-07": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: game-05, game-06 complete.",
+      "`tailscale ping rig --until-direct`",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "tailscale ping rig --until-direct"
+    ],
+    "files": [],
+    "verify": "Remote stream direct."
+  },
+  "game-08": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "`scp ~/Documents/Home/foss-setup/scripts/gaming/enable-wol-cachyos.sh rig:~/`",
+      "`scp ~/Documents/Home/foss-setup/scripts/gaming/wake-rig.sh mini:~/`",
+      "Test wake from mini",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/gaming/wake-rig.sh mini:~/",
+      "ssh mini '~/wake-rig.sh'"
+    ],
+    "files": [
+      "scripts/gaming/enable-wol-cachyos.sh",
+      "scripts/gaming/wake-rig.sh"
+    ],
+    "verify": "rig wakes from off."
+  },
+  "game-09": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: game-08 complete.",
+      "systemd suspend after idle on rig",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "ssh rig 'systemctl status suspend.target'"
+    ],
+    "files": [],
+    "verify": "rig suspends when idle."
+  },
+  "game-10": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "`scp ~/Documents/Home/foss-setup/scripts/gaming/gpu-power-tune.sh rig:~/`",
+      "Install gpu-power-tune.service",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "scp ~/Documents/Home/foss-setup/scripts/gaming/gpu-power-tune.sh rig:~/"
+    ],
+    "files": [
+      "scripts/gaming/gpu-power-tune.sh",
+      "scripts/gaming/gpu-power-tune.service"
+    ],
+    "verify": "Power limit persists reboot."
+  },
+  "game-11": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: game-05 complete.",
+      "Dummy HDMI or sunshine_virt_display",
+      "PipeWire virtual sink",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "ssh rig 'sudo pacman -S evdi-dkms'"
+    ],
+    "files": [],
+    "verify": "Headless stream matches client res."
+  },
+  "game-12": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: read-02 complete.",
+      "Ludusavi + Syncthing saves",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "ssh rig 'ludusavi backup --force'"
+    ],
+    "files": [],
+    "verify": "Save restores on laptop."
+  },
+  "game-13": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: game-05, ha-17 complete.",
+      "OLLAMA_KEEP_ALIVE=0",
+      "No inference during stream",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "ssh rig 'nvidia-smi --query-gpu=memory.used --format=csv'"
+    ],
+    "files": [],
+    "verify": "VRAM free after inference."
+  },
+  "game-14": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: game-05 complete.",
+      "Lutris/Heroic on rig; RomM on mini optional",
+      "From MacBook: confirm completion matches the verify block before checking this task done."
+    ],
+    "commands": [
+      "ssh rig 'lutris --version'"
+    ],
+    "files": [],
+    "verify": "Non-Steam game streams."
+  },
+  "ai-01": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ha-17 complete.",
+      "ComfyUI on rig on-demand",
+      "Continue \u2192 LiteLLM",
+      "Open WebUI RAG optional"
+    ],
+    "commands": [
+      "ssh rig 'git clone https://github.com/comfyanonymous/ComfyUI'"
+    ],
+    "files": [],
+    "verify": "Image gen via ComfyUI."
+  }
+}

@@ -11,3 +11,6 @@
 **/db/
 **/redis/
 **/cache/
+
+# Local server migration snapshot (contains Plex tokens, API keys, indexer cookies)
+migration-snapshot/

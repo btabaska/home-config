@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 #
+# ⚠️ LEGACY — SUPERSEDED by the NAS *arr stack (2026 architecture).
+#
+# The current model does NOT use a scheduled seedbox→NAS copy for tv/movies/music.
+# Betty runs Deluge only; the *arr stack on the NAS imports via a live rclone mount
+# (rclone-seedbox-mount.sh). The ONLY scheduled rclone job is rclone-manual-copy.sh
+# (manual lane → /volume1/manual).
+#
+# This script is kept for reference or one-off bulk migrations. Paths below match the
+# three-volume layout (nas-storage-schema.md) if you still need a cron-pull.
+#
 # seedbox-sync.sh — pull finished, named media from the off-site seedbox to the NAS via rclone+SFTP.
 #                   Phase 2. Runs ON THE NAS (the puller). Designed for cron. Idempotent.
 #
@@ -32,7 +42,7 @@
 #   DRY_RUN=1 ./seedbox-sync.sh
 #   ./seedbox-sync.sh
 #
-# Cron (every 15 min, log to file):
+# Cron (every 15 min, log to file) — LEGACY only; do not run alongside *arr import:
 #   */15 * * * * RCLONE_REMOTE=seedbox /volume1/scripts/media/seedbox-sync.sh >> /var/log/seedbox-sync.log 2>&1
 #
 # A lockfile prevents overlapping runs (a slow pull won't stack up under cron).
@@ -52,8 +62,8 @@ REMOTE_TV="${REMOTE_TV:-data/media/tv}"
 REMOTE_MUSIC="${REMOTE_MUSIC:-data/media/music}"
 
 # Destination paths on the NAS (your Plex/Navidrome library roots).
-LOCAL_MOVIES="${LOCAL_MOVIES:-/volume1/media/movies}"
-LOCAL_TV="${LOCAL_TV:-/volume1/media/tv}"
+LOCAL_MOVIES="${LOCAL_MOVIES:-/volume2/movies}"
+LOCAL_TV="${LOCAL_TV:-/volume3/tv}"
 LOCAL_MUSIC="${LOCAL_MUSIC:-/volume1/music}"
 SYNC_MUSIC="${SYNC_MUSIC:-1}"    # 1 = also pull music (Lidarr); 0 = movies/tv only
 

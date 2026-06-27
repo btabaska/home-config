@@ -82,27 +82,26 @@ else
   done
 fi
 
-# --- 3. Local *arr ports listening (so Seerr at home can reach them over the tailnet) ------------
-# Userspace mode reaches local services fine; this just confirms the apps are actually up.
-log "Checking *arr web ports are listening locally:"
-declare -A PORTS=( [Sonarr]=8989 [Radarr]=7878 [Prowlarr]=9696 [qBittorrent]=8080 [Bazarr]=6767 )
-checker=""
-command -v ss >/dev/null 2>&1 && checker="ss" || { command -v netstat >/dev/null 2>&1 && checker="netstat"; }
-for app in "${!PORTS[@]}"; do
-  p="${PORTS[$app]}"
-  listening=1
-  if [[ "$checker" == "ss" ]]; then
-    ss -tlnp 2>/dev/null | grep -q ":${p} " || listening=0
-  elif [[ "$checker" == "netstat" ]]; then
-    netstat -tln 2>/dev/null | grep -q ":${p} " || listening=0
-  else
-    # Fallback: probe with curl.
-    curl -s -o /dev/null --max-time 2 "http://localhost:${p}" && listening=1 || listening=0
-  fi
-  if [[ "$listening" == "1" ]]; then ok "${app} listening on :${p}"; else warn "${app} not detected on :${p} (install/start it, or adjust the port)"; fi
-done
+# --- 3. Deluge daemon reachable (Betty = Deluge only; *arrs run on the NAS) -----------------------
+# The home NAS *arr stack talks to Deluge over its public API (185.162.184.38), not over Tailscale.
+# This section only confirms Deluge is up on the seedbox for manual sanity checks.
+log "Checking Deluge WebUI is listening locally (seedbox runs Deluge only):"
+DELUGE_PORT="${DELUGE_WEB_PORT:-8112}"
+listening=0
+if command -v ss >/dev/null 2>&1; then
+  ss -tlnp 2>/dev/null | grep -q ":${DELUGE_PORT} " && listening=1
+elif command -v netstat >/dev/null 2>&1; then
+  netstat -tln 2>/dev/null | grep -q ":${DELUGE_PORT} " && listening=1
+else
+  curl -s -o /dev/null --max-time 2 "http://localhost:${DELUGE_PORT}" && listening=1
+fi
+if [[ "$listening" == "1" ]]; then
+  ok "Deluge WebUI listening on :${DELUGE_PORT}"
+else
+  warn "Deluge WebUI not detected on :${DELUGE_PORT} (install Deluge via Bytesized one-click, or set DELUGE_WEB_PORT)"
+fi
 
 echo
-log "Reminder: in Seerr (home) add Sonarr/Radarr using this node's Tailscale name/IP (${SELF_IP:-100.x.y.z}),"
-log "and point rclone.conf 'host' at the same name so seedbox-sync.sh rides the tailnet."
+log "Reminder: Sonarr/Radarr/Lidarr run on the NAS and reach Deluge at 185.162.184.38 (API)."
+log "Seerr (home) should point at the NAS *arr ports (8989/7878/8686), not this seedbox."
 ok "Verification complete."

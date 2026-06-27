@@ -15,7 +15,7 @@
 #   1. rclone-seedbox-mount.sh  — the LIVE mount the *arrs import from
 #                                 (seedbox:/home/hd34/btabaska/files -> /volume1/mounts/seedbox-files)
 #   2. rclone-manual-copy.sh    — the ONE scheduled job, manual lane only
-#                                 (seedbox:.../files/manual -> /volume1/media/manual)
+#                                 (seedbox:.../files/manual -> /volume1/manual)
 # Both reference the SAME remote defined below.
 #
 # SECURITY: prefer key-based auth over a password. Synology Task Scheduler runs

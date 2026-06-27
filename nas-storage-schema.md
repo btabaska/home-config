@@ -1,111 +1,136 @@
 # NAS Storage Schema (DS920+)
 
-A drive / file / storage / network-drive schema for the Synology DS920+, designed to be implemented by hand in DSM. It replaces the current three independent single-disk **Basic** volumes (no redundancy) with one redundant **SHR-1 Btrfs pool**, then lays a shared-folder, network-drive, snapshot, and backup schema on top that maps 1:1 to the services and the Tier 1 / Tier 2 data model in [foss-setup-plan-2.md](foss-setup-plan-2.md) Section 6.
+A drive / file / storage / network-drive schema for the Synology DS920+, designed to be implemented by hand in DSM. It **retains three independent single-disk Basic storage pools** (one volume per drive, no parity) to maximize usable capacity (~42 TB raw), then lays a shared-folder, network-drive, snapshot, and backup schema on top that maps 1:1 to the services and the Tier 1 / Tier 2 data model in [foss-setup-plan-2.md](foss-setup-plan-2.md) Section 6.
 
-This is the implementable spec; DSM itself is configured by following the [migration runbook](#5-migration-runbook-destructive) at the end.
+This is the implementable spec; DSM itself is configured by following the [reorganization runbook](#5-reorganization-runbook) at the end.
 
-> **Pre-flight capacity check — do this first.** SHR-1 across these three drives yields **~28TB usable** (down from 46TB raw across the current Basic volumes), because ~18TB goes to parity. Record current USED bytes per volume *before* you start. If your media is anywhere near or above ~26TB, the ~28TB ceiling is tight: either install the **bay-4 drive first** (it grows the pool online) or prune with **Maintainerr** (foss-setup-plan-2.md Section 2, media companion layer) before migrating. Everything below assumes the library fits inside ~28TB after this check.
+> **Capacity model — read this first.** Three Basic volumes yield **~42 TB usable** (full raw capacity of all drives — no parity tax). A single drive failure loses **that entire volume** until restore from backup. Tier 1 data still rides Hyper Backup → B2 + snapshots; Tier 2 media rides daily snapshots + a rotated external HDD. Record current USED bytes per volume (`df -h` or Storage Manager) before reorganizing.
 
 ---
 
-## Current state (what we're replacing)
+## Chosen layout (three Basic volumes)
 
-Three independent **Basic** volumes, one per drive, no parity or mirror between them:
+Three independent **Basic** storage pools, one per drive, no parity or mirror between them:
 
-| Bay | Device | Drive | Current volume |
-|---|---|---|---|
-| 1 (`sata1`) | `WD120EMFZ` | WD 12TB Red Plus, 5400-class, CMR | Volume 2 (`md3` -> `vg2`) |
-| 2 (`sata2`) | `WD161KFGX` | WD Red Pro 16TB, 7200 RPM, CMR | Volume 1 (`md2` -> `vg1`) |
-| 3 (`sata3`) | `ST18000NM002J` | Seagate Exos (X18) 18TB, 7200 RPM, CMR | Volume 3 (`md4` -> `vg3`) |
+| DSM volume | Usable | Role | Primary consumers |
+|------------|--------|------|-------------------|
+| **Volume 1** | ~14.6 TB | **Music, Books, Tier 1, Docker, infra** | Lidarr, Readarr/CWA, Immich, Paperless, game saves, rclone mount, manual lane |
+| **Volume 2** | ~10.9 TB | **Movies only** | Radarr, Plex Movies library |
+| **Volume 3** | ~16.4 TB | **TV only** | Sonarr, Plex TV library |
 
-`md0` (DSM system) and `md1` (swap) already mirror across all three drives; only the **data** volumes lack protection. A drive failure today loses that whole volume until a restore from backup. The schema below changes that.
+`md0` (DSM system) and `md1` (swap) mirror across all three drives; only the **data** volumes lack cross-drive protection. That trade-off is intentional — maximum space over RAID redundancy.
+
+> **Why Docker stays on Volume 1:** if your NAS already runs Container Manager from `/volume1/docker/`, keeping Tier 1 + Docker + *arr configs on the same volume avoids a large cross-volume migration. TV moves to the larger Volume 3 (~16.4 TB).
 
 ---
 
 ## 1. Drive + storage-pool layout
 
-- **One SHR-1 storage pool** spanning all three drives (bays 1-3). Usable **~28TB**, **1-disk fault tolerance** — Plex, Immich, and HA stay online through any single drive failure and the pool rebuilds onto a replacement.
-- **One Btrfs volume** on the pool. Do *not* carve multiple volumes — a single volume keeps space flexible; organize with shared folders and (optional) per-share quotas instead.
-- **Bay 4 reserved for expansion.** Dropping a 4th drive into the empty bay later and choosing **Storage Manager -> Storage Pool -> Add Drive** grows the SHR-1 pool **online**, adding capacity while preserving redundancy. This is the primary capacity escape hatch.
-- **`md0` (system) / `md1` (swap)** continue to mirror across all member drives automatically; DSM recreates them when the pool is rebuilt — nothing to configure.
-- **NVMe (2x M.2 slots):** optional SSD **read/write cache** (uses both slots so the write cache is redundant) to accelerate the random IO of the Immich/Plex/Paperless databases. Default: **skip it** — the 20GB RAM upgrade (foss-setup-plan-2.md Section 0) covers most of this. Do **not** use the community "NVMe as a storage volume" mod; it is unsupported on the 920+ and works against the set-and-forget goal.
+- **Three Basic storage pools** — one per bay (bays 1–3), one Btrfs volume each. **~42 TB total usable.**
+- **Volume assignment is fixed by role**, not flexible pooling: TV growth cannot consume movie space (and vice versa) because they live on separate disks.
+- **Bay 4 (optional):** a 4th drive can become a **fourth Basic volume** (more capacity) or a **dedicated cold-backup / Tier-1 offload** target — not an SHR expansion path in this schema.
+- **`md0` (system) / `md1` (swap)** continue to mirror across member drives automatically; nothing to configure.
+- **NVMe (2x M.2 slots):** optional SSD **read/write cache** on Volume 1 (where Immich/Paperless databases live). Default: **skip it** — the 20 GB RAM upgrade (foss-setup-plan-2.md Section 0) covers most of this. Do **not** use the community "NVMe as a storage volume" mod; it is unsupported on the 920+.
 
 ### Btrfs / volume settings
 
-- **Filesystem: Btrfs** (required for Snapshot Replication, immutable snapshots, Active Backup dedup, and self-healing).
-- **Data checksum + file self-healing: ON.** Self-healing corrects bit-rot from the redundant copy — this only works because SHR-1 provides redundancy, so it's a real win here.
-- **Transparent compression: ON** for text/config shares (`docs`, `appdata`, `vault`); **OFF** for `media` (already-compressed files gain nothing).
+- **Filesystem: Btrfs** on all three volumes (required for Snapshot Replication, immutable snapshots, Active Backup dedup).
+- **Data checksum: ON** on all volumes (detects bit-rot; without RAID there is no redundant copy to self-heal from — a checksum mismatch means restore from backup).
+- **File self-healing: OFF** (or leave default) — self-healing requires redundant copies; Basic volumes do not provide them.
+- **Transparent compression: ON** for text/config shares on Volume 1 (`docs`, `appdata`, `vault`); **OFF** for media shares (already-compressed files gain nothing).
 - **Record file access time (atime): OFF** for performance.
-- **Share-level AES encryption: OFF by default.** Rely on Hyper Backup's client-side encryption for the cloud copy. If you want at-rest encryption on `docs`/`home`, note the trade-offs: you must safely escrow the key (Bitwarden + printed copy), the share auto-unmounts on reboot until re-keyed, and some features (e.g., certain replication paths) are restricted.
+- **Share-level AES encryption: OFF by default.** Rely on Hyper Backup's client-side encryption for the cloud copy.
 
 ```mermaid
 flowchart TD
-  d1["Bay1 WD 12TB"] --> pool["SHR-1 Storage Pool"]
-  d2["Bay2 WD Red Pro 16TB"] --> pool
-  d3["Bay3 Seagate Exos 18TB"] --> pool
-  bay4["Bay4 empty (future expand)"] -.-> pool
-  pool --> vol["Btrfs Volume1 ~28TB usable"]
-  vol --> t1["Tier1 shares"]
-  vol --> t2["Tier2 media share"]
-  vol --> t3["Tier3 scratch shares"]
+  d1["Bay1 Volume1 14.6TB"] --> vol1shares["music books games Tier1 docker infra"]
+  d2["Bay2 Volume2 10.9TB"] --> movies["movies share"]
+  d3["Bay3 Volume3 16.4TB"] --> tv["tv share"]
+  bay4["Bay4 empty optional"] -.-> cold["cold backup or 4th Basic vol"]
 ```
 
 ---
 
 ## 2. Shared-folder schema
 
-Shared folders are grouped by the data tier they belong to (foss-setup-plan-2.md Section 6). The tier drives every downstream policy — snapshots, cloud backup, and whether the data is worth protecting at all.
+Shared folders are grouped by data tier (foss-setup-plan-2.md Section 6). The tier drives snapshot, cloud backup, and whether the data is worth protecting at all.
 
-### Tier 1 — irreplaceable
+### Volume 3 — TV (Tier 2)
 
-Frequent + immutable snapshots; Hyper Backup -> Backblaze B2 with Object Lock.
+- **`tv`** — Sonarr root folder `/tv` inside the container; Plex TV library. Replaceable via seedbox; daily snapshot + cold external HDD copy.
 
-- **`photo`** — Immich `UPLOAD_LOCATION`. Immich creates `library/`, `upload/`, `thumbs/`, `encoded-video/`, `profile/`, `backups/` inside it.
-- **`docs`** — Paperless-ngx (`consume/`, `media/`, `export/`) plus any directly-scanned documents.
-- **`appdata`** — the Docker control plane: compose files, per-app config and volumes, database data directories, and `db-dumps/` (nightly `pg_dump` landing zone). Backing this up = the apps are rebuildable.
-- **`backups`** — Samba/NFS target for Home Assistant backups, database dumps, and miscellaneous app backup archives written *to* the NAS.
-- **`vault`** — optional Obsidian vault copy (Syncthing target). Obsidian Sync remains primary; this is a belt-and-suspenders local copy that rides the Tier 1 backup.
-- **`home`** — DSM user home folders (per-user personal files). Enable User Home service.
+### Volume 2 — Movies (Tier 2)
 
-### Tier 2 — replaceable media
+- **`movies`** — Radarr root folder `/movies`; Plex Movies library. Replaceable via seedbox; daily snapshot + cold external HDD copy.
 
-RAID redundancy + one cold external copy. **No cloud backup** (re-acquirable via the seedbox).
+### Volume 1 — Tier 1, Docker, music/books, infra
 
-- **`media`** — a single share with subfolders. Keep it as **one** share so the seedbox's atomic moves / hardlinks work and every reader (Plex, Navidrome, Calibre-Web-Automated, Pinchflat) points at one root.
-  - `movies/` — Plex/Radarr
-  - `tv/` — Plex/Sonarr
-  - `music/` — Navidrome/Lidarr
-  - `youtube/` — Pinchflat (a dedicated Plex library or mixed into TV)
-  - `audiobooks/`
-  - `books/` — Calibre library / Calibre-Web-Automated
+**Tier 2 — replaceable media** (daily snapshot, cold external HDD; **no cloud**):
 
-### Tier 3 — ephemeral / scratch
+- **`music`** — Lidarr root `/music`; Plex Music library; Rhythmbox/libgpod iPod sync master.
+- **`books`** — Calibre-Web-Automated organized library (Plex Books); CWA writes here after ingest.
+- **`youtube`** — Pinchflat (optional dedicated Plex library or mixed into TV).
 
-No snapshots, no backup. High-churn or trivially re-created data.
+**Tier 1 — irreplaceable** (hourly snapshots + immutable lock + Hyper Backup → B2):
 
-- **`staging`** — SD-card / import landing for immich-go / pbak, watched-folder ingest, and download scratch.
-- **`frigate`** — Frigate recordings and clips (continuous writes, large, churny). Keep off snapshots and off the cloud.
-- **`cache`** — Tdarr transcode cache and Plex transcode temp. (If you ever add the NVMe cache, this is the natural thing to put on it.)
+- **`photo`** — Immich `UPLOAD_LOCATION`.
+- **`docs`** — Paperless-ngx (`consume/`, `media/`, `export/`).
+- **`appdata`** — optional compose recipe mirror; `db-dumps/` landing zone.
+- **`backups`** — HA backups, DB dumps, archives written *to* the NAS.
+- **`vault`** — optional Obsidian vault copy.
+- **`home`** — DSM user home folders. Enable User Home service.
 
-### Active Backup for Business
+**Tier 3 — ephemeral / scratch** (no snapshots, no backup):
 
-- **`ActiveBackupforBusiness`** — DSM-managed share holding pull-backups of the CachyOS rig and the Ubuntu (Mac mini) host. It has its own deduplication, so **exclude it from Btrfs snapshots** (snapshotting a dedup repo wastes space). It's a backup target, not primary data.
+- **`staging`** — SD-card / import landing for immich-go.
+- **`frigate`** — camera clips.
+- **`cache`** — Tdarr / Plex transcode temp.
+- **`manual`** — rclone manual-lane destination (non-*arr downloads).
+- **`games`** — game-server world saves (LinuxGSM / Pelican).
+
+**Infrastructure** (not SMB-exported):
+
+- **`docker/`** — Container Manager bind-mount roots (`/volume1/docker/<app>/`).
+- **`mounts/seedbox-files/`** — rclone FUSE mount of Betty's `files/` tree.
+- **`scripts/media/`** — `rclone-*.sh` copies for Task Scheduler.
+
+**Active Backup for Business**
+
+- **`ActiveBackupforBusiness`** on Volume 1 — pull-backups of the CachyOS rig and Ubuntu host. Exclude from Btrfs snapshots (dedup repo).
 
 ### Example tree
 
 ```text
-/volume1
-├── photo/            # Tier1  Immich (library/ upload/ thumbs/ encoded-video/ profile/)
-├── docs/             # Tier1  Paperless (consume/ media/ export/) + scans
-├── appdata/          # Tier1  docker/<app>/ + db-dumps/
-├── backups/          # Tier1  HA backups, DB dumps, archives
-├── vault/            # Tier1  Obsidian copy (optional)
-├── home/             # Tier1  per-user homes
-├── media/            # Tier2  movies/ tv/ music/ youtube/ audiobooks/ books/
-├── staging/          # Tier3  import/ingest scratch
-├── frigate/          # Tier3  camera clips
-├── cache/            # Tier3  transcode cache/temp
-└── ActiveBackupforBusiness/   # ABB repo (own dedup, no snapshots)
+/volume1/
+├── music/                      # Tier2  Lidarr + Plex + iPod sync
+├── books/                      # Tier2  CWA library + Plex Books
+├── youtube/                    # Tier2  Pinchflat (optional)
+├── games/                      # game-server saves
+├── manual/                     # rclone manual lane
+├── photo/                      # Tier1  Immich
+├── docs/                       # Tier1  Paperless
+├── appdata/                    # Tier1  db-dumps/ + compose refs
+├── backups/                    # Tier1  HA + DB dumps
+├── vault/                      # Tier1  Obsidian copy
+├── home/                       # Tier1  per-user homes
+├── staging/                    # Tier3  import scratch
+├── frigate/                    # Tier3  camera clips
+├── cache/                      # Tier3  transcode temp
+├── docker/                     # infra  Container Manager state
+│   ├── media-automation/       # compose project + .env
+│   ├── sonarr/ radarr/ .../config
+│   └── calibre-web-automated/{config,ingest}
+├── mounts/
+│   └── seedbox-files/          # infra  rclone FUSE (not a share)
+├── scripts/
+│   └── media/                  # infra  rclone-*.sh
+└── ActiveBackupforBusiness/    # ABB repo (own dedup, no snapshots)
+
+/volume2/
+└── movies/                     # Tier2  Radarr + Plex Movies
+
+/volume3/
+└── tv/                         # Tier2  Sonarr + Plex TV
 ```
 
 ---
@@ -114,78 +139,96 @@ No snapshots, no backup. High-churn or trivially re-created data.
 
 ### Protocols
 
-- **SMB3** for household clients (the wife's laptop, Macs, the rig if you prefer SMB):
-  - Expose `media` (read for the `household` group, read/write for media service accounts), `home`, and an optional quota'd **`timemachine`** share for Mac Time Machine (set "Enable Time Machine" + a quota so it can't eat the pool).
-  - **Disable SMB1**; set min protocol SMB2, max SMB3. Enable **Bonjour / WS-Discovery** so Macs and Windows see the NAS. Keep opportunistic locking on.
-- **NFS** for Linux hosts (the CachyOS rig) wanting direct, low-overhead access:
-  - Export `media` (and `staging` if needed) **to the Trusted subnet only**, with mapped UID/GID and **root squash** on.
-- **App access is not SMB.** The seedbox sync (Syncthing / SFTP), the Immich mobile app, and Plex all reach the NAS over Tailscale / their own protocols — don't plumb those through SMB shares.
+- **SMB3** for household clients:
+  - Export **`music`** + **`books`** + **`home`** (vol1), **`movies`** (vol2), **`tv`** (vol3). Read for `household`, read/write for `media` service accounts.
+  - Optional quota'd **`timemachine`** share on Volume 1.
+  - **Disable SMB1**; min SMB2, max SMB3. Enable Bonjour / WS-Discovery.
+- **NFS** for Linux hosts (CachyOS rig):
+  - Export `music`, `movies`, `tv` **to the Trusted subnet only**, mapped UID/GID, **root squash** on.
+- **App access is not SMB.** Immich, Plex, Betty rclone, and Tailscale reach the NAS by their own protocols.
 
 ### Network placement
 
-- **VLAN:** the NAS lives **only on the Trusted VLAN** (foss-setup-plan-2.md Section 1). SMB/NFS is never served to IoT or Guest. Remote reach is via **Tailscale** installed on the NAS — no port-forwarding.
-- **Both 1GbE ports:** now that the old dual-LAN / Gluetun torrent routing is decommissioned (foss-setup-plan-2.md Section 2), the freed second port can be used for an **LACP bond** or **SMB Multichannel** for throughput and link failover.
+- **VLAN:** NAS lives **only on the Trusted VLAN** (foss-setup-plan-2.md Section 1). Remote reach via **Tailscale** — no port-forwarding.
+- **Both 1GbE ports:** LACP bond or SMB Multichannel now that dual-LAN torrent routing is decommissioned.
 
 ### Permissions model
 
 - **Groups:**
-  - `household` — humans (you + wife). Read `media`, own their `home`.
-  - `media` — application service identities. Read/write `media`.
-- **`docker` service account** — a dedicated DSM user whose UID/GID is passed to Container Manager containers as `PUID`/`PGID`, owning `appdata` and writing to the shares each app needs.
-- **Principle:** apps write via service accounts; humans read via the `household` group. No human account needs write to `appdata` or `frigate`.
+  - `household` — humans. Read media shares, own `home`.
+  - `media` — application service identities. Read/write `tv`, `movies`, `music`, `books`.
+- **`docker` service account** — DSM user whose UID/GID is `PUID`/`PGID` in containers; owns `/volume1/docker/` and writes to shares each app needs.
+- **Principle:** apps write via service accounts; humans read via `household`. No human write to `docker/` or `frigate`.
 
 ---
 
 ## 4. Snapshot + backup mapping (3-2-1-1-0)
 
-Three copies, two media, one off-site, one immutable, zero restore errors (verified). Per-tier policy:
-
-- **Tier 1** (`photo`, `docs`, `appdata`, `backups`, `vault`, `home`):
-  - **Snapshot Replication** hourly, retain roughly 24 hourly / 7 daily / 4 weekly.
-  - Enable **immutable / locked snapshots** (DSM 7.2+) so even an admin can't delete a point-in-time early (ransomware defense).
-  - Nightly **Hyper Backup -> Backblaze B2**, into a bucket with **Object Lock** enabled, **client-side encrypted** (key in Bitwarden + printed copy).
-- **Tier 2** (`media`):
-  - **Daily** snapshot, **short** retention (accidental-delete safety only).
-  - One **cold copy to a rotated external HDD** (kept off-site at an office / relative's). **No cloud** — it's re-acquirable.
-- **Tier 3** (`staging`, `frigate`, `cache`) and the ABB share: **no snapshots, no backup**.
-- **Database safety:** a nightly `pg_dump` of every Postgres app (Immich's VectorChord, Paperless, etc.) writes into `appdata/db-dumps/` **before** the Hyper Backup window, so the off-site copy captures a consistent dump rather than a hot, half-written DB file. SQLite apps use the SQLite `.backup` command, not a raw file copy.
+- **Tier 1** (vol1: `photo`, `docs`, `appdata`, `backups`, `vault`, `home`):
+  - Snapshot Replication hourly; immutable snapshots 7–14 days.
+  - Nightly Hyper Backup → Backblaze B2 (Object Lock, client-side encrypted).
+- **Tier 2** (vol3 `tv`, vol2 `movies`, vol1 `music`, `books`, `youtube`):
+  - Daily snapshot, short retention.
+  - One **cold copy to rotated external HDD** covering **all four media locations** (off-site). No cloud.
+- **Tier 3** + ABB: no snapshots, no backup.
+- **Database safety:** nightly `pg_dump` into `/volume1/docker/<app>/backups/` or `/volume1/appdata/db-dumps/` before the Hyper Backup window.
 
 ```mermaid
 flowchart LR
-  subgraph nas["DS920+ SHR-1 Btrfs"]
+  subgraph vol1 ["Volume1 Tier1+Docker"]
     t1["Tier1 shares"]
-    t2["media (Tier2)"]
+    t2media["music books"]
     t3["Tier3 + ABB"]
   end
+  subgraph vol2 ["Volume2 Movies"]
+    mov["movies"]
+  end
+  subgraph vol3 ["Volume3 TV"]
+    tv2["tv"]
+  end
   t1 --> snap1["Snapshots hourly + immutable"]
-  t1 --> b2["Hyper Backup -> B2 (Object Lock)"]
-  t2 --> snap2["Snapshots daily (short)"]
-  t2 --> ext["Cold external HDD (off-site)"]
+  t1 --> b2["Hyper Backup -> B2"]
+  tv2 --> snap2["Snapshots daily"]
+  mov --> snap2
+  t2media --> snap2
+  tv2 --> ext["Cold external HDD"]
+  mov --> ext
+  t2media --> ext
   t3 --> none["No snapshot / no backup"]
 ```
 
 ---
 
-## 5. Migration runbook (destructive)
+## 5. Reorganization runbook
 
-Chosen path: **offload Tier 1, re-acquire media.** Going from three Basic volumes to one SHR-1 pool is inherently destructive — DSM cannot convert single-disk Basic pools into a shared SHR-1 pool in place — so all three drives are wiped and re-pooled. Sequence it *after* the Phase-1 safety net exists.
+Chosen path: **keep three Basic pools; split content across volumes.** Docker **stays on Volume 1**. No SHR rebuild. Sequence after Phase-1 safety net (Tailscale + B2) exists.
 
-0. **Pre-flight capacity check.** Record current USED bytes per volume (Storage Manager, or `df -h` over SSH). Confirm the library fits inside ~28TB; if not, install the bay-4 drive first or prune with Maintainerr. (See the banner at the top.)
-1. **Safety net.** Stand up the foss-setup-plan-2.md Phase-1 items: Tailscale on the NAS, and a Backblaze B2 bucket ready (Object Lock on).
-2. **Offload Tier 1 (~1-2TB).** Copy it to an external USB drive **and** run a Hyper Backup / Restic job to B2. **Verify a test restore** before proceeding — this is the only protected copy during the wipe.
-3. **Media decision.** Re-acquire via the seedbox after rebuild (chosen). *Optional:* also copy `media` to an external drive now to skip the re-download.
-4. **Delete the three Basic storage pools** (`md3`/`md2`/`md4` -> `vg2`/`vg1`/`vg3`) in Storage Manager. The system/swap arrays (`md0`/`md1`) rebuild automatically.
-5. **Create one SHR-1 pool** across all three drives; create **one Btrfs volume** on it.
-6. **Create the shared folders** from Section 2; apply the Btrfs/compression/snapshot settings (Section 1) and the groups/permissions (Section 3).
-7. **Restore Tier 1** from the external drive / B2 into the new shares; re-point Container Manager bind mounts at the new `appdata` / share paths.
-8. **Re-acquire media** via the seedbox *arrs into `media/` (or copy back from the optional external copy).
-9. **Configure protection:** Snapshot Replication (+ immutable) on Tier 1, Hyper Backup -> B2 (Object Lock), Active Backup for Business for the rig + Ubuntu box, and the cold external copy of `media`. **Test one restore** — that's the "0" (zero restore errors) in 3-2-1-1-0.
+0. **Pre-flight.** Record USED bytes per volume (`df -h`). Confirm TV fits on vol3 (~16.4 TB), movies on vol2 (~10.9 TB), music/books/Tier 1/docker on vol1 (~14.6 TB). Prune with **Maintainerr** if any volume is over capacity.
+1. **Safety net.** Tailscale on NAS; B2 bucket with Object Lock; Hyper Backup ready.
+2. **Wipe volumes 2 & 3** (if unorganized). Delete shares on vol2 and vol3; recreate empty Basic volumes. **Leave Volume 1 untouched** — Docker and Tier 1 likely already live here.
+3. **Create shares** on all three volumes per Section 2; apply Btrfs settings (Section 1); configure groups/permissions (Section 3).
+4. **Split Volume 1** (when everything currently lives there):
+   - Identify the TV / movies / music / books roots from your path map (nas-00a).
+   - `rsync -avh`: **movies** → `/volume2/movies/`, **TV** → `/volume3/tv/`, **music** → `/volume1/music/`, **books** → `/volume1/books/`.
+   - **Keep** Tier 1 + `docker/` + `mounts/` + `scripts/` on Volume 1 (organize into the share tree if still flat).
+   - Verify **rsync integrity** (`du -sb`, `rsync -avhn --delete` dry-run) — **do not delete vol1 duplicates yet.**
+5. **Export SMB/NFS** (nas-00d) so clients can reach the new paths.
+6. **Re-point consumers, then prune:**
+   - **Today (Ubuntu):** mount NFS at stable paths; re-point Plex + Sonarr/Radarr/Lidarr bind mounts and library/root folders; confirm playback/import; **then** delete old vol1 duplicates (tracker: nas-00e).
+   - **Later (NAS):** when Plex lands (nas-10) and the media-automation stack lands (nas-21+), point those containers at the **same** share paths — no second data move; confirm `.env` paths in `configs/nas/media-automation/.env.example` and *arr root folders (`/tv`, `/movies`, `/music`, `/cwa-book-ingest`).
+7. **Protection:** Snapshot Replication on Tier 1 (vol1); daily snapshots on `tv`, `movies`, `music`; Hyper Backup → B2; external HDD job for all Tier 2 paths. **Test one restore.**
 
 ---
 
 ## Risks / assumptions
 
-- **Capacity drop:** 28TB usable vs 46TB raw today. Mitigations: bay-4 online expansion and Maintainerr pruning.
-- **Destructive rebuild:** NAS services are down during the migration window; only run it once the Phase-1 safety net and a verified Tier 1 offload exist.
-- **Media re-acquisition:** re-pulling a large library via the seedbox costs time/bandwidth; the optional external copy in step 3 avoids it.
-- **Unsupported tweaks excluded:** NVMe-as-storage and other community mods are deliberately left out for set-and-forget reliability.
+- **No RAID:** a dead drive loses that volume entirely. Mitigate with B2 (Tier 1), external HDD (Tier 2), and seedbox re-acquisition (media).
+- **Fixed volume sizes:** TV cannot borrow space from movies. Monitor `df -h` per volume; prune or add bay-4 drive if a library outgrows its disk.
+- **Cross-volume *arr imports:** Betty → rclone → Deluge import is already a cross-filesystem **copy** (not a hardlink) — splitting volumes does not change that pipeline.
+- **If you later want redundancy:** migrating to SHR-1 requires deleting all three pools and rebuilding (~28 TB usable) — see Synology docs; back up Tier 1 first.
+
+---
+
+## Appendix: SHR-1 alternative (not chosen)
+
+Pooling all three drives into one SHR-1 Btrfs volume yields **~28 TB usable** with 1-disk fault tolerance. DSM cannot convert Basic pools in place — it is a destructive rebuild. This schema deliberately keeps three Basic volumes for **~42 TB** capacity instead.

@@ -35,10 +35,8 @@ services:
     volumes:
       # Persistent app config + the CWA SQLite app DB (Tier 1: small, back this up).
       - /volume1/docker/calibre-web-automated/config:/config
-      # Drop new .epub/.mobi/etc. here; CWA auto-imports + converts into the library.
       - /volume1/docker/calibre-web-automated/ingest:/cwa-book-ingest
-      # The Calibre library (metadata.db + book files). Tier 1 if curated; otherwise Tier 2.
-      - /volume1/docker/calibre-web-automated/library:/calibre-library
+      - /volume1/books:/calibre-library
     ports:
       - '8083:8083'
     restart: unless-stopped

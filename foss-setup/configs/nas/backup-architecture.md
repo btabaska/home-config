@@ -18,7 +18,7 @@ Reference for the FOSS homelab migration. Implements the **3-2-1 rule**: at leas
 | Tier | Data | ~Size | Irreplaceable? |
 |------|------|-------|----------------|
 | **Tier 1** | Immich photos/videos, Postgres dump, documents, Obsidian vault, Home Assistant config, game saves, all compose files + `.env` / configs | ~1–2 TB | **Yes** → must go off-site |
-| **Tier 2** | Replaceable media (Plex movies/TV, downloadable book library, ripped music) | large | No → local + rotated external HDD only |
+| **Tier 2** | Replaceable media on vol3 `tv`, vol2 `movies`, vol1 `music` + `books` | large | No → daily snapshots + rotated external HDD only |
 
 ---
 
@@ -28,7 +28,7 @@ Reference for the FOSS homelab migration. Implements the **3-2-1 rule**: at leas
 |---|------|------|--------|----------|------------|
 | 1 | NAS Tier 1 shares (photos, docs, Obsidian, HA config, configs) | **Synology Hyper Backup** | **Backblaze B2** (per-TB, S3-compatible API) | Daily 03:00, Smart Recycle versioning | Client-side encryption ON |
 | 2 | All NAS Btrfs shares (fast local rollback / ransomware) | **Snapshot Replication** (Btrfs CoW) | Same NAS volume (+ optional 2nd NAS) | Hourly, GFS retention, immutable snapshots 7–14 days | n/a (local) |
-| 3 | Tier 2 replaceable media | **Hyper Backup** (or rsync/USB Copy) | **Rotated external HDD** | Weekly, swap drives offsite-in-a-drawer | Optional |
+| 3 | Tier 2 media (`/volume3/tv`, `/volume2/movies`, `/volume1/music`, `/volume1/books`) | **Hyper Backup** (or rsync/USB Copy) | **Rotated external HDD** | Weekly, swap drives offsite-in-a-drawer | Optional |
 | 4 | Ubuntu / CachyOS host Tier 1 (`/home`, `/etc`, `/opt`, docker volumes) | **restic** (`restic-backup.sh`) | **Backblaze B2** (per-TB) | Daily 02:30 via cron/systemd timer | restic native (AES) |
 | 5 | SSH-reachable host Tier 1 (alt off-site path) | **BorgBackup + borgmatic** | **Hetzner Storage Box** (SSH port 23) | Daily, GFS retention, append-only repo | Borg repokey-blake2 |
 | 6 | Windows PCs / laptops (optional) | **Synology Active Backup for Business** | NAS volume (then folded into #1) | Daily | n/a → covered by #1 off-site |
@@ -42,8 +42,9 @@ so it intentionally does **not** consume cloud spend.
 
 ## Immich-specific backup
 
-Immich photos live under `UPLOAD_LOCATION` and are captured by Hyper Backup (#1).
-The Postgres database needs a **logical dump**, not a raw file copy, for a clean restore:
+Immich photos live under `UPLOAD_LOCATION` (`/volume1/photo`) on Volume 1 and are
+captured by Hyper Backup (#1). The Postgres database needs a **logical dump**, not
+a raw file copy, for a clean restore:
 
 - Dump on a schedule (DSM Task Scheduler), then let Hyper Backup ship the dump file:
   ```bash

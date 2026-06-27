@@ -8,7 +8,7 @@
 # ONLY for the non-*arr / manual downloads lane:
 #
 #   Seedbox Deluge `manual` label  ->  /home/hd34/btabaska/files/manual
-#   this job copies it down to      ->  /volume1/media/manual
+#   this job copies it down to      ->  /volume1/manual
 #
 # !!! IT MUST NEVER TOUCH THE *ARR LABEL FOLDERS !!!
 # *arr-managed media (tv/movies/music/books) arrives via the LIVE rclone mount +
@@ -36,7 +36,7 @@ set -euo pipefail
 RCLONE="${RCLONE:-/usr/local/bin/rclone}"               # TODO: adjust (`which rclone`)
 RCLONE_CONF="${RCLONE_CONF:-/root/.config/rclone/rclone.conf}"
 SRC="${SRC:-seedbox:/home/hd34/btabaska/files/manual}"  # manual label folder ONLY
-DST="${DST:-/volume1/media/manual}"
+DST="${DST:-/volume1/manual}"
 LOG="${LOG:-/var/log/rclone-manual.log}"
 
 mkdir -p "$DST"

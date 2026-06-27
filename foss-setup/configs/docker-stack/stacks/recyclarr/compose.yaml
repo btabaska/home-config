@@ -1,0 +1,11 @@
+# Recyclarr — sync TRaSH Guides quality profiles + naming to NAS Sonarr/Radarr
+# Runs on the Mac mini (Ubuntu); targets the *arr APIs on the NAS over LAN/Tailscale.
+services:
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:7.4.2
+    container_name: recyclarr
+    environment:
+      TZ: ${TZ:-America/New_York}
+    volumes:
+      - ./config:/config
+    restart: unless-stopped

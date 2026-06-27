@@ -18,7 +18,7 @@ a host.
 
 | Tier | Host | Role |
 |---|---|---|
-| Always-on | **DS920+ NAS** | storage, Immich, Plex, Calibre-Web-Automated, backups |
+| Always-on | **DS920+ NAS** | three Basic volumes (~42 TB): Vol 1 Music/Books/Tier1/Docker, Vol 2 Movies, Vol 3 TV; Immich, Plex, CWA, *arr stack, backups |
 | Always-on | **Mac mini → Ubuntu Server** (~12W) | the Docker stack, light game servers |
 | Always-on | **UniFi Dream Wall** | router + firewall + switch + WiFi + controller |
 | On-demand | **CachyOS rig** (3090 Ti / 12700K) | local LLM, game streaming, heavy game servers |

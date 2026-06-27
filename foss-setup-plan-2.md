@@ -172,9 +172,11 @@ Device notes: **Kobo** = smoothest (native CWA sync + optional KOReader). **Kind
 > **Home stack + mount.** The **full \*arr stack runs on the NAS (DS920+)** in
 > Container Manager — `sonarr`, `radarr`, `prowlarr`, `lidarr`, `readarr`,
 > `rreading-glasses` (+ its Postgres), `unpackerr`, `flaresolverr` — co-located
-> with the library at `/volume1/media` that Plex, the iPod pipeline, and CWA all
-> read. The home apps reach Deluge over its **API**, and read completed downloads
-> through a persistent **rclone SFTP mount** of the seedbox `files/` folder:
+> with the library split across three Basic volumes — **TV** on `/volume3/tv`,
+> **Movies** on `/volume2/movies`, **Music + Books + Tier 1 + Docker** on
+> `/volume1/` — that Plex, the iPod pipeline, and CWA all read. The home apps
+> reach Deluge over its **API**, and read completed downloads through a persistent
+> **rclone SFTP mount** of the seedbox `files/` folder:
 > `seedbox:/home/hd34/btabaska/files → /volume1/mounts/seedbox-files`, bound into
 > every download-touching container at **`/seedbox` with `:rslave`**. Each \*arr's
 > **Remote Path Mapping** `/home/hd34/btabaska/files/ → /seedbox/` makes the path
@@ -182,11 +184,11 @@ Device notes: **Kobo** = smoothest (native CWA sync + optional KOReader). **Kind
 > empty/stale — *a dropped mount silently stalls every import*. Import is a
 > cross-filesystem **copy** (not a hardlink), and **"Remove Completed" stays OFF**
 > in every \*arr so the seedbox keeps seeding. There is **exactly one scheduled
-> rclone job** — the **manual lane** (`files/manual → /volume1/media/manual`,
+> rclone job** — the **manual lane** (`files/manual → /volume1/manual`,
 > `copy`, re-run-safe, never touching the \*arr label folders). \*arr media never
 > arrives via a scheduled copy — only via the live mount + import.
 >
-> - **Music = Lidarr only** (acquisition *and* import/organize into `/media/Music`).
+> - **Music = Lidarr only** (acquisition *and* import/organize into `/music`).
 >   **No slskd, no Soularr, no beets.** Needs a music-capable Prowlarr indexer.
 > - **Books = Readarr + self-hosted rreading-glasses → CWA.** Readarr's metadata
 >   provider points at the **local** rreading-glasses (not a public instance);
@@ -202,7 +204,7 @@ Device notes: **Kobo** = smoothest (native CWA sync + optional KOReader). **Kind
 >       without this*).
 > - [ ] Task Scheduler: boot-up task = mount; every-5-min task = watchdog.
 > - [ ] **Phase A (core):** `prowlarr flaresolverr sonarr radarr` — indexers,
->       Deluge client, remote path mapping, roots `/media/TV`, `/media/Movies`.
+>       Deluge client, remote path mapping, roots `/tv`, `/movies`.
 > - [ ] **Phase B (extend):** `lidarr` + `readarr rreading-glasses
 >       rreading-glasses-db` — music + books pipelines.
 > - [ ] **Phase C (polish):** `unpackerr` — fill API keys in `unpackerr.conf`.
@@ -210,13 +212,14 @@ Device notes: **Kobo** = smoothest (native CWA sync + optional KOReader). **Kind
 > - [ ] Run the self-check in the stack README.
 >
 > ##### Physical-device last hop (iPod + Kobo)
-> The library at `/volume1/media` is **always kept current automatically**, but
-> the **final hop to a handheld is physical/triggered**, not push: the **iPod**
-> (Rhythmbox/libgpod) syncs from `/media/Music` **when you physically plug it
-> in**, and the **Kobo** (KOReader OPDS) pulls from the CWA/Calibre library **when
-> it wakes on WiFi**. So "is it up to date?" has two answers — the library, yes,
-> continuously; the device, as of its last plug-in / wake. Don't change the
-> `/media/Music` naming scheme without checking **both** Plex and the iPod sync.
+> The library on `/volume3/tv`, `/volume2/movies`, and `/volume1/music` is
+> **always kept current automatically**, but the **final hop to a handheld is
+> physical/triggered**, not push: the **iPod** (Rhythmbox/libgpod) syncs from
+> `/volume1/music` **when you physically plug it in**, and the **Kobo** (KOReader
+> OPDS) pulls from the CWA/Calibre library on `/volume1/books` **when it wakes on
+> WiFi**. So "is it up to date?" has two answers — the library, yes, continuously;
+> the device, as of its last plug-in / wake. Don't change the `/volume1/music`
+> naming scheme without checking **both** Plex and the iPod sync.
 
 The sections below describe the original seedbox-hosted pipeline and are kept for
 context; where they conflict with the box above, **the box above wins.**
@@ -399,7 +402,7 @@ Ollama + Open WebUI already give you local chat. Cheap extensions, all on the on
 
 RAID is not a backup — it survives a dead drive, not a deletion, ransomware hit, fire, or theft. Target: **3-2-1 — three copies, two media types, one off-site.**
 
-> **NAS storage layout that implements this tiering:** the drive/pool/shared-folder/network-drive schema that puts Tier 1 and Tier 2 onto the right shares (with matching snapshot/backup policies) lives in [nas-storage-schema.md](nas-storage-schema.md). It converts the DS920+'s three independent Basic volumes into one redundant SHR-1 Btrfs pool — read it before the rebuild (it's destructive).
+> **NAS storage layout that implements this tiering:** the drive/pool/shared-folder/network-drive schema that puts Tier 1 and Tier 2 onto the right shares (with matching snapshot/backup policies) lives in [nas-storage-schema.md](nas-storage-schema.md). It **retains three Basic volumes** (~42 TB usable, no parity) with Volume 1 = Music/Books/Tier 1/Docker, Volume 2 = Movies, Volume 3 = TV — read it before reorganizing shares.
 
 ### Tier your data first (the key move)
 Don't back up 40TB to the cloud (~$278/month at B2's current ~$6.95/TB). Split it:
@@ -758,7 +761,7 @@ Do a phase before starting the next; each leaves you better off.
 **Phase 1 — Foundation (network, access, safety net)**
 1. **Back up your UniFi config**, then build the segmentation: Default(mgmt) / Trusted / IoT / Guest / Work, the firewall rules, mDNS reflector on + IGMP snooping off. (One-way door on the new firewall — back up first. **Start here.**)
 2. **Install Tailscale** on the NAS, Mac mini, rig, laptop, and phone. Turn on **Tailscale SSH** (`tailscale up --ssh`) with `tag:admin`->`tag:server` ACLs, and drop in your `~/.ssh/config` aliases + ed25519 key as the break-glass fallback (enable SSH on DSM, the HA SSH add-on) — so admin access to every box exists from day one. (See Section 7's *SSH & maintenance access*.)
-3. **Lock in backups:** Synology Hyper Backup + Snapshot Replication, plus a Restic/Kopia job for your irreplaceable data -> B2. Test one restore. **If you're also re-pooling the NAS into SHR-1, follow [nas-storage-schema.md](nas-storage-schema.md)** — its migration runbook depends on this safety net (Tailscale + B2 + a verified Tier 1 offload) being in place first, and the re-pool is destructive.
+3. **Lock in backups:** Synology Hyper Backup + Snapshot Replication, plus a Restic/Kopia job for your irreplaceable data -> B2. Test one restore. **When reorganizing NAS shares across the three Basic volumes, follow [nas-storage-schema.md](nas-storage-schema.md)** — its runbook depends on this safety net (Tailscale + B2) being in place first.
 
 **Phase 2 — De-cloud the essentials**
 

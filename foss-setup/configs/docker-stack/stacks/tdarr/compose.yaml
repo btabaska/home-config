@@ -1,17 +1,15 @@
 # Tdarr — distributed audio/video transcoding automation (server + local node)
 # Phase 4. Docs: https://docs.tdarr.io/
 #
-# This deploys the Tdarr SERVER + WebUI plus ONE internal CPU node on the Mac mini.
+# This deploys the Tdarr SERVER + WebUI on the NAS (light; next to the media library).
 #   - 8265: Web UI (browse here)
 #   - 8266: server <-> node communication
-# Set MEDIA_FOLDER to the library Tdarr watches and TRANSCODE_CACHE to fast local
-# scratch (don't put the cache on the NAS — transcodes hammer it).
+# Set MEDIA_FOLDER to the library Tdarr watches (vol2/vol3 paths on the NAS).
+# TRANSCODE_CACHE should be fast local scratch on the node doing the work.
 #
-# ── SECOND NODE (CachyOS rig, NVENC) ────────────────────────────────────────
-# The Mac mini has no usable GPU, so heavy/bulk transcodes should offload to a
-# second node on the CachyOS gaming rig using its NVIDIA GPU (NVENC). Only run it
-# when the rig is awake — start it manually / on a Wake-on-LAN schedule, not
-# restart: unless-stopped. Deploy this as its own stack ON THE RIG:
+# ── NVENC NODE (CachyOS rig) ────────────────────────────────────────────────
+# Heavy/bulk transcodes offload to the CachyOS gaming rig using NVENC. Only run
+# when the rig is awake — start manually / on Wake-on-LAN, not restart: unless-stopped.
 #
 #   services:
 #     tdarr-node-nvenc:

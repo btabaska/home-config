@@ -11,7 +11,7 @@
 
 Host *
     AddKeysToAgent yes
-    IdentityFile ~/.ssh/id_ed25519
+    IdentityFile ~/.ssh/id_ed25519_homelab
     ForwardAgent no
     ServerAliveInterval 30
     ServerAliveCountMax 3
