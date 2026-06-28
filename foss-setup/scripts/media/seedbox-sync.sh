@@ -57,7 +57,7 @@ RCLONE_REMOTE="${RCLONE_REMOTE:-seedbox}"
 # These are the *named/organized* library folders the *arr apps write to — NOT the torrents dir.
 REMOTE_MOVIES="${REMOTE_MOVIES:-data/media/movies}"
 REMOTE_TV="${REMOTE_TV:-data/media/tv}"
-# Music (Lidarr + slskd/Soularr — see configs/seedbox/lidarr-slskd-soularr.md). Set
+# Music (Lidarr + Soulseek via slskd on Betty — see configs/seedbox/music-pipeline-soulseek.md).
 # SYNC_MUSIC=1 to also pull the music library down to the NAS for Navidrome.
 REMOTE_MUSIC="${REMOTE_MUSIC:-data/media/music}"
 

@@ -163,19 +163,21 @@ Device notes: **Kobo** = smoothest (native CWA sync + optional KOReader). **Kind
 > [`configs/nas/media-automation/`](foss-setup/configs/nas/media-automation/) +
 > [`scripts/media/rclone-seedbox-*.sh`](foss-setup/scripts/media/)):
 >
-> **Seedbox = Deluge only.** The seedbox **"Betty"** (Bytesized AppBox, no root,
-> shared IP `185.162.184.38`, home `/home/hd34/btabaska`) runs **only Deluge** —
-> it downloads and seeds, permanently. Nothing else is ever installed on it.
-> Deluge sorts completed downloads into label folders under `files/`:
-> `tv`, `movies`, `music`, `books`, and `manual`.
+> **Seedbox = Deluge + slskd.** The seedbox **"Betty"** (Bytesized AppBox, no root,
+> shared IP `185.162.184.38`, home `/home/hd34/btabaska`) runs **Deluge** (torrents)
+> and **slskd** (Soulseek) — both are P2P and stay off-site permanently. No *arr
+> apps, Soularr, beets, qBittorrent, or sync agents on Betty. Deluge sorts completed
+> torrents into label folders under `files/`: `tv`, `movies`, `music`, `books`, and
+> `manual`. slskd writes Soulseek downloads to `files/slskd/`.
 >
 > **Home stack + mount.** The **full \*arr stack runs on the NAS (DS920+)** in
 > Container Manager — `sonarr`, `radarr`, `prowlarr`, `lidarr`, `readarr`,
-> `rreading-glasses` (+ its Postgres), `unpackerr`, `flaresolverr` — co-located
-> with the library split across three Basic volumes — **TV** on `/volume3/tv`,
-> **Movies** on `/volume2/movies`, **Music + Books + Tier 1 + Docker** on
-> `/volume1/` — that Plex, the iPod pipeline, and CWA all read. The home apps
-> reach Deluge over its **API**, and read completed downloads through a persistent
+> `rreading-glasses` (+ its Postgres), `soularr`, `unpackerr`, `flaresolverr`
+> — co-located with the library split across three Basic volumes — **TV** on
+> `/volume3/tv`, **Movies** on `/volume2/movies`, **Music + Books + Tier 1 + Docker**
+> on `/volume1/` — that Plex, the iPod pipeline, and CWA all read. Optional
+> **beets** (tag-only) runs on the NAS against `/volume1/music` after Lidarr import.
+> The home apps reach Deluge over its **API**, and read completed downloads through a persistent
 > **rclone SFTP mount** of the seedbox `files/` folder:
 > `seedbox:/home/hd34/btabaska/files → /volume1/mounts/seedbox-files`, bound into
 > every download-touching container at **`/seedbox` with `:rslave`**. Each \*arr's
@@ -188,8 +190,11 @@ Device notes: **Kobo** = smoothest (native CWA sync + optional KOReader). **Kind
 > `copy`, re-run-safe, never touching the \*arr label folders). \*arr media never
 > arrives via a scheduled copy — only via the live mount + import.
 >
-> - **Music = Lidarr only** (acquisition *and* import/organize into `/music`).
->   **No slskd, no Soularr, no beets.** Needs a music-capable Prowlarr indexer.
+> - **Music = Lidarr + Soulseek (split) + optional beets.** Torrent music via
+>   Deluge (label `lidarr` → `/seedbox/music/`). Soulseek via **slskd on Betty**
+>   + **Soularr on NAS** (imports from `/seedbox/slskd/`). **beets** is tag-only
+>   on `/music` — Lidarr owns layout. Needs a music-capable Prowlarr indexer for
+>   the torrent half.
 > - **Books = Readarr + self-hosted rreading-glasses → CWA.** Readarr's metadata
 >   provider points at the **local** rreading-glasses (not a public instance);
 >   Readarr imports into the **CWA ingest** folder and CWA owns the final Calibre
@@ -208,6 +213,8 @@ Device notes: **Kobo** = smoothest (native CWA sync + optional KOReader). **Kind
 > - [ ] **Phase B (extend):** `lidarr` + `readarr rreading-glasses
 >       rreading-glasses-db` — music + books pipelines.
 > - [ ] **Phase C (polish):** `unpackerr` — fill API keys in `unpackerr.conf`.
+> - [ ] **Phase D (Soulseek):** `slskd` on Betty (seed-09) → `soularr` on NAS (nas-29).
+> - [ ] **Phase E (optional):** `beets` tag layer on NAS (nas-30).
 > - [ ] Task Scheduler: every-15-min task = the single manual-lane `rclone copy`.
 > - [ ] Run the self-check in the stack README.
 >
@@ -844,7 +851,7 @@ Grounded picks for the Zigbee backbone in Section 3 — all pair cleanly with **
 | Pre-transcode automation | **Tdarr** (node on rig) / FileFlows | NAS + rig |
 | YouTube / web video archive | **Pinchflat** (Tube Archivist / MeTube alt) | NAS / Ubuntu |
 | Private media acquisition | **Managed seedbox** (qBit + *arr) + **Seerr** | off-site + Mac mini |
-| Automated music acquisition | **Lidarr** + **slskd** + **Soularr** | off-site (seedbox) |
+| Automated music acquisition | **Lidarr** + **slskd** (seedbox) + **Soularr** (NAS) + **beets** (optional) | Betty + NAS |
 | Documents (scan/OCR/search) | **Paperless-ngx** | NAS |
 | Recipes & meal planning | **Mealie** | Mac mini |
 | Passwords | **Bitwarden** (Vaultwarden if self-hosting) | cloud / optional self-host |

@@ -60,7 +60,7 @@ TRACK_META = {
         "tier": "workstreams",
         "order": 2,
         "title": "Media pipeline (seedbox → Plex)",
-        "sub": "Betty seedbox, NAS *arr import stack, Plex on the NAS, and Seerr requests — no P2P at home.",
+        "sub": "Betty (Deluge + slskd), NAS *arr + Soularr, optional beets, Plex, Seerr — no P2P at home.",
     },
     "photos": {
         "tier": "workstreams",
@@ -145,6 +145,7 @@ TRACK_BY_ID = {
     "nas-25": "media-pipeline", "nas-26": "media-pipeline", "nas-27": "media-pipeline",
     "nas-10": "media-pipeline", "docker-03": "media-pipeline", "seed-05": "media-pipeline",
     "seed-07": "media-pipeline", "seed-08": "media-pipeline",
+    "seed-09": "media-pipeline", "nas-29": "media-pipeline", "nas-30": "media-pipeline",
     # photos
     "nas-08": "photos", "nas-08b": "photos",
     # reading
@@ -180,7 +181,7 @@ DEP_FIXES = {
     "nas-24": ["nas-22"],  # was nas-22,nas-09 — CWA can be wired later
 }
 
-REMOVE = {"seed-02", "seed-04", "seed-06", "seed-09", "seed-10"}
+REMOVE = {"seed-02", "seed-04", "seed-06", "seed-10"}
 
 TIER_ORDER = ["backbone", "workstreams", "operations", "enhancements"]
 

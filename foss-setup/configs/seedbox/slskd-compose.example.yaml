@@ -1,0 +1,36 @@
+# slskd — Soulseek daemon on the seedbox (P2P off-site)
+# Phase 2 extension. Docs: https://github.com/slskd/slskd
+#
+# RUNS ON BETTY ONLY. Soulseek is P2P — keep it on the seedbox, not the NAS.
+# Soularr runs on the NAS (see configs/nas/media-automation/) and reaches slskd
+# over Tailscale. Finished downloads land under ~/files/slskd/ so the NAS Lidarr
+# container imports via the existing rclone mount at /seedbox/slskd/.
+#
+# DEPLOYMENT: slskd is NOT in Bytesized's one-click catalog. Deploy via rootless
+# Docker (no root needed). See configs/seedbox/music-pipeline-soulseek.md.
+#
+# Copy to docker-compose.yml on the seedbox, fill .env, then:
+#   docker compose up -d
+
+services:
+  slskd:
+    image: slskd/slskd:0.25.1
+    container_name: slskd
+    restart: unless-stopped
+    user: ${PUID:-1000}:${PGID:-1000}
+    ports:
+      # Bind API to localhost; reach from NAS over Tailscale SSH tunnel or tailnet IP.
+      # Do NOT expose :5030 to the public internet.
+      - "127.0.0.1:5030:5030"   # web UI / API (Soularr on NAS calls this via tailnet)
+      - "50300:50300"           # Soulseek listen port (required for good peer connectivity)
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - SLSKD_REMOTE_CONFIGURATION=true
+      - SLSKD_SLSK_USERNAME=${SLSKD_SLSK_USERNAME}
+      - SLSKD_SLSK_PASSWORD=${SLSKD_SLSK_PASSWORD}
+      - SLSKD_USERNAME=${SLSKD_WEB_USERNAME:-slskd}
+      - SLSKD_PASSWORD=${SLSKD_WEB_PASSWORD}
+    volumes:
+      - ./slskd:/app
+      # Host path MUST be under ~/files/ so rclone mount on NAS exposes it at /seedbox/slskd/
+      - ${SLSKD_DOWNLOADS:-/home/hd34/btabaska/files/slskd}:/downloads

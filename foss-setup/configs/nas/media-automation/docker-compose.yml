@@ -5,8 +5,8 @@
 # co-located with libraries split across three Basic volumes (Vol1 TV, Vol2
 # Movies, Vol3 Music + CWA ingest). Plex, the iPod pipeline, and CWA read from
 # those paths. The off-site seedbox "Betty" (Bytesized AppBox, 185.162.184.38)
-# runs ONLY Deluge — it downloads and seeds, permanently. Nothing else is added
-# to the seedbox.
+# runs ONLY Deluge + slskd (Soulseek) — P2P stays off-site. Nothing else is added
+# to the seedbox beyond those two download daemons.
 #
 # HOW THE TWO HALVES CONNECT
 #   - Home apps reach remote Deluge over its API (host 185.162.184.38).
@@ -54,6 +54,8 @@
 #   Phase A (core):     prowlarr flaresolverr sonarr radarr
 #   Phase B (extend):   lidarr  +  readarr + rreading-glasses + rreading-glasses-db
 #   Phase C (polish):   unpackerr
+#   Phase D (Soulseek): soularr  (requires slskd on Betty — seed-09)
+#   Phase E (optional): beets    (tag-only; schedule beet write via DSM cron)
 # ==============================================================================
 
 name: media-automation
@@ -141,7 +143,9 @@ services:
     restart: unless-stopped
 
   # ----------------------------------------------------------------------------
-  # Lidarr — Music (Phase B). NO beets. Root folder: /music (Volume 3).
+  # Lidarr — Music (Phase B). Root folder: /music (Volume 1).
+  # Dual acquisition: torrents via Deluge (/seedbox/music) + Soulseek via Soularr
+  # (/seedbox/slskd). beets (Phase E) is tag-only — see README §4.
   # NOTE: /music is consumed by Plex AND Rhythmbox/libgpod iPod sync (README §4).
   # ----------------------------------------------------------------------------
   lidarr:
@@ -154,6 +158,45 @@ services:
       - *seedbox-mount
     ports:
       - "8686:8686"
+    restart: unless-stopped
+
+  # ----------------------------------------------------------------------------
+  # Soularr — Soulseek bridge (Phase D). Reads Lidarr Wanted; drives remote slskd
+  # on Betty over Tailscale. Downloads land in files/slskd/ on Betty → Lidarr
+  # imports from /seedbox/slskd/. Config: soularr/config.ini (see config.ini.example).
+  # ----------------------------------------------------------------------------
+  soularr:
+    image: ghcr.io/mrusse/soularr:1.2.2
+    container_name: soularr
+    restart: unless-stopped
+    depends_on:
+      - lidarr
+    user: ${PUID:?set PUID in .env}:${PGID:?set PGID in .env}
+    environment:
+      TZ: ${TZ:-America/New_York}
+      SCRIPT_INTERVAL: ${SOULARR_INTERVAL:-300}
+    volumes:
+      - ${DOCKER_ROOT:-/volume1/docker}/soularr:/data
+      - *seedbox-mount
+    # No host port — headless cron-like bridge.
+
+  # ----------------------------------------------------------------------------
+  # beets — tag-only metadata layer (Phase E, optional). Lidarr owns layout.
+  # Not started by default; run on demand or via DSM Task Scheduler:
+  #   docker compose run --rm beets beet write
+  # Web UI on :8337 if you `docker compose up -d beets` for manual review.
+  # ----------------------------------------------------------------------------
+  beets:
+    image: lscr.io/linuxserver/beets:2.1.0
+    container_name: beets
+    environment: *common-env
+    volumes:
+      - ${DOCKER_ROOT:-/volume1/docker}/beets:/config
+      - ${MUSIC_LIBRARY:-/volume1/music}:/music
+    ports:
+      - "8337:8337"
+    profiles:
+      - music-tags
     restart: unless-stopped
 
   # ----------------------------------------------------------------------------

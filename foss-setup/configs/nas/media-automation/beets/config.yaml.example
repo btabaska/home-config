@@ -1,0 +1,28 @@
+# beets config — tag-only layer on top of Lidarr's /music layout.
+# Lidarr owns acquisition + folder structure; beets refreshes MusicBrainz tags in place.
+#
+#   cp config.yaml.example config.yaml
+#
+# Run manually or via DSM Task Scheduler (weekly):
+#   docker compose -f /volume1/docker/media-automation/docker-compose.yml run --rm beets beet write
+#   docker compose -f /volume1/docker/media-automation/docker-compose.yml run --rm beets beet update
+
+directory: ''
+library: /music
+
+import:
+    copy: no
+    move: no
+    write: yes
+    autotag: yes
+
+plugins: musicbrainz
+
+musicbrainz:
+    searchlimit: 5
+
+# Match Lidarr's layout — do not let beets reorganize files (Plex + iPod sync depend on paths).
+paths:
+    default: $albumartist/$album%aunique{}/$track $title
+    singleton: Non-Album/$artist - $title
+    comp: Compilations/$album%aunique{}/$track $title

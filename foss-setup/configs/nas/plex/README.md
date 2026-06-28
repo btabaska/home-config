@@ -120,4 +120,4 @@ separately.
 ## 6. Seerr + *arr integration
 
 Seerr (Mac mini) links to **this** Plex server URL + token. Sonarr/Radarr/Lidarr on the NAS handle
-acquisition; Plex scans when imports land. No seedbox Sonarr/Radarr — Betty runs Deluge only.
+acquisition; Plex scans when imports land. Betty runs Deluge + slskd (P2P off-site); Soularr on the NAS.

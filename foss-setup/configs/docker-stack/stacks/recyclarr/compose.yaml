@@ -2,7 +2,7 @@
 # Runs on the Mac mini (Ubuntu); targets the *arr APIs on the NAS over LAN/Tailscale.
 services:
   recyclarr:
-    image: ghcr.io/recyclarr/recyclarr:7.4.2
+    image: ghcr.io/recyclarr/recyclarr:8.4.0
     container_name: recyclarr
     environment:
       TZ: ${TZ:-America/New_York}

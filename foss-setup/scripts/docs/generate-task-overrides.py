@@ -86,7 +86,7 @@ O["net-14"] = {
         P("net-13"),
         "MacBook: `ssh-keygen -t ed25519 -C homelab-maint -f ~/.ssh/id_ed25519_homelab`",
         "Per host: DSM → Control Panel → Terminal & SNMP → Enable SSH; Ubuntu: `sudo systemctl enable --now ssh`",
-        "`ssh-copy-id -i ~/.ssh/id_ed25519_homelab.pub user@192.168.10.10` (nas) and `.11` (mini); rig after WoL (game-08)",
+        "`ssh-copy-id -i ~/.ssh/id_ed25519_homelab.pub user@192.168.10.4` (nas) and `.11` (mini); rig after WoL (game-08)",
         f"`cp {REPO}/configs/network/ssh-config.example ~/.ssh/config` — set tailnet names/users; `chmod 600 ~/.ssh/config`",
         "Test: `ssh nas hostname`, `ssh mini hostname`, `ssh rig hostname`",
         "Document break-glass path in configs/network/ssh-maintenance-access.md",
@@ -109,16 +109,16 @@ O["glue-01"] = {
         P("net-08", "net-14"),
         "MacBook → DSM https://nas.<tailnet>:5001 → Control Panel → Hardware & Power → UPS",
         "Enable USB UPS; shutdown after N minutes on battery",
-        "Enable Network UPS server; permit device IP **192.168.10.11** (mini)",
+        "Enable Network UPS server; permit device IP **192.168.10.2** (mini)",
         f"`scp {REPO}/scripts/setup/nut-client-ubuntu.sh mini:/tmp/`",
-        "`ssh mini 'sudo NAS_IP=192.168.10.10 bash /tmp/nut-client-ubuntu.sh'` — installs nut-client if missing",
-        "`ssh mini 'upsc ups@192.168.10.10'` shows battery status",
+        "`ssh mini 'sudo NAS_IP=192.168.10.4 bash /tmp/nut-client-ubuntu.sh'` — installs nut-client if missing",
+        "`ssh mini 'upsc ups@192.168.10.4'` shows battery status",
         "`ssh mini 'systemctl is-active nut-monitor.service || systemctl is-active nut-client.service'`",
     ],
     "commands": [
         f"scp {REPO}/scripts/setup/nut-client-ubuntu.sh mini:/tmp/",
-        "ssh mini 'sudo NAS_IP=192.168.10.10 bash /tmp/nut-client-ubuntu.sh'",
-        "ssh mini 'upsc ups@192.168.10.10'",
+        "ssh mini 'sudo NAS_IP=192.168.10.4 bash /tmp/nut-client-ubuntu.sh'",
+        "ssh mini 'upsc ups@192.168.10.4'",
     ],
     "files": ["scripts/setup/nut-client-ubuntu.sh"],
     "verify": "mini reads UPS from NAS; Dream Wall on UPS battery.",
@@ -207,7 +207,7 @@ O["nas-00e"] = {
         P("nas-00d"),
         "**Interim** while Plex/*arr still on Ubuntu (before nas-10/nas-21 migrate them to NAS).",
         "`ssh mini 'sudo apt install -y nfs-common'` if mount fails",
-        "`ssh mini 'sudo mkdir -p /mnt/nas/{tv,movies,music,books}'` — add NFS fstab lines to 192.168.10.10 exports",
+        "`ssh mini 'sudo mkdir -p /mnt/nas/{tv,movies,music,books}'` — add NFS fstab lines to 192.168.10.4 exports",
         "`ssh mini 'sudo mount -a && ls /mnt/nas/tv | head'`",
         "Re-point Plex (Ubuntu) libraries and Sonarr/Radarr/Lidarr root folders to /mnt/nas/*",
         "Play test in Plex; spot-check *arr import — only then delete vol1 duplicates",
@@ -479,12 +479,12 @@ for did, stack, port, env in [
     ("docker-11", "uptime-kuma", 3001, "create admin on first visit"),
     ("doc-02", "mealie", 9000, "BASE_URL + secret"),
     ("read-14", "pinchflat", 8945, "mount NAS /volume1/youtube on mini first — see step below"),
-    ("media-01", "tautulli", 8181, "wizard: Plex http://192.168.10.10:32400 + token"),
-    ("media-03", "maintainerr", 6246, "NAS Plex + *arr at 192.168.10.10; dry-run rules first"),
+    ("media-01", "tautulli", 8181, "wizard: Plex http://192.168.10.4:32400 + token"),
+    ("media-03", "maintainerr", 6246, "NAS Plex + *arr at 192.168.10.4; dry-run rules first"),
 ]:
     o = ustack(stack, port, env)
     if did == "read-14":
-        o["steps"].insert(3, "`ssh mini 'sudo mkdir -p /mnt/nas/youtube && sudo mount -t nfs 192.168.10.10:/volume1/youtube /mnt/nas/youtube'` — add to fstab; set PINCHFLAT_DOWNLOADS in .env")
+        o["steps"].insert(3, "`ssh mini 'sudo mkdir -p /mnt/nas/youtube && sudo mount -t nfs 192.168.10.4:/volume1/youtube /mnt/nas/youtube'` — add to fstab; set PINCHFLAT_DOWNLOADS in .env")
     O[did] = o
 
 O["docker-12"] = ustack("diun", 0, "DIUN_NTFY_* webhook to ntfy topic", no_curl=True)
@@ -577,7 +577,7 @@ O["ha-17"] = {
     **ustack("litellm", 4000, "LITELLM_MASTER_KEY + Ollama upstream"),
 }
 O["ha-17"]["steps"] = O["ha-17"]["steps"] + [
-    "Point HA Assist conversation agent to http://192.168.10.11:4000 (LiteLLM)",
+    "Point HA Assist conversation agent to http://192.168.10.2:4000 (LiteLLM)",
     "On rig: set OLLAMA_KEEP_ALIVE=0 so VRAM frees between requests (game-13)",
 ]
 
@@ -587,9 +587,9 @@ O["seed-01"] = {
         MAC_OPEN,
         "MacBook browser: sign up bytesized-hosting.com **Stream +3** (3000 GB, €16/mo EU)",
         "Record SFTP user, home /home/hd34/btabaska, IP **185.162.184.38** in Bitwarden",
-        "Architecture lock-in: Betty runs **ONLY Deluge** — do NOT install Sonarr/Radarr/Prowlarr/qBittorrent on seedbox",
+        "Architecture lock-in: Betty runs **Deluge + slskd** (P2P off-site) — do NOT install *arr apps, Soularr, or beets on Betty",
         "One-click install Deluge only; set ratio/seed-time limits for self-prune under 3 TB",
-        "Record Deluge daemon port + password (needed by nas-22)",
+        "Record Deluge daemon port + password (needed by nas-22). slskd is added later in **seed-09**.",
     ],
     "commands": [],
     "files": ["configs/seedbox/provider-comparison.md", "configs/seedbox/rclone.conf.example"],
@@ -602,9 +602,9 @@ O["betty-01"] = {
         "`ssh seedbox` → confirm Deluge WebUI",
         "Note daemon port + password for nas-22",
         "Create labels: sonarr→files/tv, radarr→files/movies, lidarr→files/music, readarr→files/books, manual→files/manual",
-        "`mkdir -p ~/files/{tv,movies,music,books,manual}`",
+        "`mkdir -p ~/files/{tv,movies,music,books,manual,slskd}` — slskd/ is for Soulseek (seed-09)",
     ],
-    "commands": ["ssh seedbox 'mkdir -p ~/files/{tv,movies,music,books,manual} && ls ~/files'"],
+    "commands": ["ssh seedbox 'mkdir -p ~/files/{tv,movies,music,books,manual,slskd} && ls ~/files'"],
     "files": ["configs/nas/media-automation/README.md"],
     "verify": "Deluge sorts completed torrents into label folders.",
 }
@@ -705,7 +705,7 @@ O["nas-28"] = {
         P("nas-22", "docker-01", "docker-02"),
         f"`scp -r {REPO}/configs/docker-stack/stacks/recyclarr mini:/tmp/recyclarr`",
         "`ssh mini 'sudo rsync -a /tmp/recyclarr/ /opt/stacks/recyclarr/'`",
-        "Edit config/recyclarr.yml: NAS base_url http://192.168.10.10:8989 / :7878 + API keys from each *arr",
+        "Edit config/recyclarr.yml: NAS base_url http://192.168.10.4:8989 / :7878 + API keys from each *arr",
         "`ssh mini 'cd /opt/stacks/recyclarr && cp -n .env.example .env && docker compose run --rm recyclarr sync'`",
         "`ssh mini 'cd /opt/stacks/recyclarr && docker compose run --rm recyclarr list templates'`",
         "Schedule weekly: `0 3 * * 0 cd /opt/stacks/recyclarr && docker compose run --rm recyclarr sync`",
@@ -727,10 +727,16 @@ O["nas-28"] = {
     "verify": "recyclarr sync exits 0; Sonarr/Radarr show TRaSH quality profiles + plex-tmdb naming.",
 }
 O["nas-23"] = {
-    "steps": [P("nas-22"), "Lidarr: Deluge label lidarr; root /music; FLAC preferred", "Prowlarr music indexer sync", "Rename tracks ON", "Verify Plex Music + iPod path /volume1/music"],
+    "steps": [
+        P("nas-22"),
+        "**Torrent path:** Lidarr → remote Deluge label **lidarr**; import from /seedbox/music/; root /music; FLAC preferred; Rename Tracks ON",
+        "Prowlarr music-capable indexer → Full Sync to Lidarr",
+        "Soulseek path is **seed-09 + nas-29** (slskd on Betty, Soularr on NAS) — not configured here",
+        "Do NOT change /music naming without checking Plex + iPod sync (read-11)",
+    ],
     "commands": ["ssh nas 'curl -s http://127.0.0.1:8686/api/v1/system/status -H \"X-Api-Key: <KEY>\"'"],
-    "files": ["configs/nas/media-automation/README.md"],
-    "verify": "Album imports to /volume1/music.",
+    "files": ["configs/nas/media-automation/README.md", "configs/seedbox/music-pipeline-soulseek.md"],
+    "verify": "Torrent album imports to /volume1/music and appears in Plex Music.",
 }
 O["nas-24"] = {
     "steps": [P("nas-22"), P("nas-09"), "Readarr metadata http://rreading-glasses:8788 via /settings/development", "Root /cwa-book-ingest", "Deluge label readarr"],
@@ -751,10 +757,10 @@ O["nas-26"] = {
     "verify": "manual/ file copies to /volume1/manual.",
 }
 O["nas-27"] = {
-    "steps": [P("nas-22", "nas-23", "nas-24", "nas-25", "nas-26"), "Run README self-check docker inspect mounts", "Confirm single scheduled rclone job", "Report violations"],
+    "steps": [P("nas-22", "nas-23", "nas-24", "nas-25", "nas-26"), "Run README self-check docker inspect mounts", "Confirm single scheduled rclone job (manual only)", "Report violations — Soulseek/beets checked in nas-29/30"],
     "commands": ["ssh nas \"docker inspect sonarr radarr lidarr readarr unpackerr --format '{{.Name}}{{range .Mounts}} {{.Destination}}({{.Propagation}}){{end}}'\""],
     "files": ["configs/nas/media-automation/README.md"],
-    "verify": "All self-check items pass.",
+    "verify": "Core *arr self-check items pass.",
 }
 O["nas-10"] = {
     "steps": [
@@ -772,7 +778,7 @@ O["nas-10"] = {
     "commands": [
         "ssh mini 'cd ~/server/compose/plex && docker compose stop'",
         "ssh nas 'ls /volume2/movies /volume3/tv /volume1/music'",
-        "curl -s http://192.168.10.10:32400/identity",
+        "curl -s http://192.168.10.4:32400/identity",
     ],
     "files": ["configs/nas/plex/README.md", "configs/nas/backup-architecture.md"],
     "verify": "Plex plays with HW transcode; Home users and watch history preserved (or scan-only fallback documented).",
@@ -780,13 +786,13 @@ O["nas-10"] = {
 O["seed-05"] = {
     "steps": [
         P("docker-03", "nas-22", "nas-28"),
-        "Seerr :5055 → Services → Radarr/Sonarr/Lidarr at 192.168.10.10",
+        "Seerr :5055 → Services → Radarr/Sonarr/Lidarr at 192.168.10.4",
         "Root folders /movies /tv /music; TRaSH profiles",
         "Link Plex NAS server + token",
     ],
     "commands": [
-        "curl -s http://192.168.10.10:7878/api/v3/system/status -H 'X-Api-Key: <KEY>'",
-        "curl -s http://192.168.10.10:8989/api/v3/system/status -H 'X-Api-Key: <KEY>'",
+        "curl -s http://192.168.10.4:7878/api/v3/system/status -H 'X-Api-Key: <KEY>'",
+        "curl -s http://192.168.10.4:8989/api/v3/system/status -H 'X-Api-Key: <KEY>'",
     ],
     "files": ["configs/docker-stack/stacks/seerr/compose.yaml"],
     "verify": "Seerr test passes; request hits NAS *arr.",
@@ -801,14 +807,73 @@ O["seed-08"] = {
     "steps": [P("seed-07"), "Backup UniFi", "Remove NAS qbittorrent/gluetun", "Undo dual-LAN routing", "Stop Ubuntu Plex/*arr if still running"],
     "commands": ["ssh nas 'docker rm -f qbittorrent gluetun 2>/dev/null; ip rule show'"],
     "files": ["configs/seedbox/decommission-old-nas-torrent.md"],
-    "verify": "No P2P/VPN sockets on NAS.",
+    "verify": "No P2P/VPN sockets on NAS (slskd on Betty is OK).",
+}
+O["seed-09"] = {
+    "steps": [
+        P("seed-03", "betty-01"),
+        "SSH to Betty. Deploy **slskd** (Soulseek P2P stays off-site):",
+        f"`scp {REPO}/configs/seedbox/slskd-compose.example.yaml seedbox:~/slskd-stack/docker-compose.yml`",
+        f"`scp {REPO}/configs/seedbox/.env.example seedbox:~/slskd-stack/.env` — set SLSKD_SLSK_* creds, SLSKD_DOWNLOADS=/home/hd34/btabaska/files/slskd",
+        "`ssh seedbox 'cd ~/slskd-stack && docker compose up -d'`",
+        "In slskd web UI (via SSH tunnel or tailnet): create API key for Soularr (nas-29)",
+        "Confirm test download lands in ~/files/slskd/ and is visible on NAS at /volume1/mounts/seedbox-files/slskd/",
+    ],
+    "commands": [
+        f"scp {REPO}/configs/seedbox/slskd-compose.example.yaml seedbox:~/slskd-stack/docker-compose.yml",
+        "ssh seedbox 'mkdir -p ~/slskd-stack ~/files/slskd && cd ~/slskd-stack && docker compose up -d'",
+        "ssh seedbox 'ls ~/files/slskd'",
+    ],
+    "files": ["configs/seedbox/slskd-compose.example.yaml", "configs/seedbox/.env.example", "configs/seedbox/music-pipeline-soulseek.md"],
+    "docs": D(("slskd", "https://github.com/slskd/slskd"), ("Soulseek", "https://www.slsknet.org/")),
+    "verify": "slskd running on Betty; API key created; ~/files/slskd visible via NAS rclone mount.",
+}
+O["nas-29"] = {
+    "steps": [
+        P("nas-23", "seed-09"),
+        "Copy soularr config: `cp soularr/config.ini.example soularr/config.ini` in media-automation/",
+        "Edit config.ini: Lidarr API key, slskd API key, Slskd host_url = http://betty.<tailnet>:5030, Lidarr download_dir = /seedbox/slskd",
+        "`ssh nas 'cd /volume1/docker/media-automation && docker compose up -d soularr'`",
+        "In Lidarr add a wanted album; watch Soularr logs search slskd and Lidarr import from /seedbox/slskd/",
+        "Confirm album in Plex Music + Navidrome (docker-05)",
+    ],
+    "commands": [
+        "ssh nas 'cd /volume1/docker/media-automation && docker compose up -d soularr'",
+        "ssh nas 'docker logs soularr --tail 40'",
+    ],
+    "files": [
+        "configs/nas/media-automation/docker-compose.yml",
+        "configs/nas/media-automation/soularr/config.ini.example",
+        "configs/seedbox/music-pipeline-soulseek.md",
+    ],
+    "docs": D(("Soularr", "https://github.com/mrusse/soularr"),),
+    "verify": "Soulseek album imports to /volume1/music via Soularr → slskd → Lidarr.",
+}
+O["nas-30"] = {
+    "steps": [
+        P("nas-29"),
+        "Copy beets config: `cp beets/config.yaml.example beets/config.yaml` in media-automation/",
+        "**Tag-only:** Lidarr owns layout — do NOT run beet import with move/copy",
+        "Test: `docker compose --profile music-tags run --rm beets beet write` on a small album",
+        "DSM Task Scheduler: weekly `docker compose --profile music-tags run --rm beets beet write`",
+        "Optional: `docker compose --profile music-tags up -d beets` for web UI on :8337 (LAN only)",
+    ],
+    "commands": [
+        "ssh nas 'cd /volume1/docker/media-automation && docker compose --profile music-tags run --rm beets beet write'",
+    ],
+    "files": [
+        "configs/nas/media-automation/beets/config.yaml.example",
+        "configs/nas/media-automation/README.md",
+    ],
+    "docs": D(("beets", "https://beets.readthedocs.io/"),),
+    "verify": "beet write refreshes tags in place without moving files under /volume1/music.",
 }
 O["nas-08"] = nas_docker(
     "immich",
     "configs/nas/immich",
     prereqs=("nas-01", "nas-02", "nas-00c"),
     extra_steps=[
-        "Browser http://192.168.10.10:2283 → create admin → Settings → Video Transcoding → Quick Sync",
+        "Browser http://192.168.10.4:2283 → create admin → Settings → Video Transcoding → Quick Sync",
         "DSM Task Scheduler: nightly pg_dump to /volume1/docker/immich/backups; add folder to Hyper Backup after first dump",
     ],
     verify="Immich :2283 loads; test upload succeeds; HW transcode enabled.",
@@ -827,12 +892,12 @@ O["nas-08b"] = {
         "Copy SD card to rig SSD first (see scripts/media/immich-go-import.md)",
         f"`scp {REPO}/scripts/media/immich-go-import.sh {REPO}/scripts/media/immich-go-import.md rig:~/`",
         "`ssh rig 'chmod +x ~/immich-go-import.sh'`",
-        "`ssh rig 'DRY_RUN=1 CARD_PATH=/path/to/copy IMMICH_SERVER=http://192.168.10.10:2283 IMMICH_API_KEY=<key> ~/immich-go-import.sh'`",
-        "`ssh rig 'CARD_PATH=/path/to/copy IMMICH_SERVER=http://192.168.10.10:2283 IMMICH_API_KEY=<key> ~/immich-go-import.sh'`",
+        "`ssh rig 'DRY_RUN=1 CARD_PATH=/path/to/copy IMMICH_SERVER=http://192.168.10.4:2283 IMMICH_API_KEY=<key> ~/immich-go-import.sh'`",
+        "`ssh rig 'CARD_PATH=/path/to/copy IMMICH_SERVER=http://192.168.10.4:2283 IMMICH_API_KEY=<key> ~/immich-go-import.sh'`",
     ],
     "commands": [
         f"scp {REPO}/scripts/media/immich-go-import.sh rig:~/",
-        "ssh rig 'IMMICH_SERVER=http://192.168.10.10:2283 IMMICH_API_KEY=<key> CARD_PATH=/path/to/copy ~/immich-go-import.sh'",
+        "ssh rig 'IMMICH_SERVER=http://192.168.10.4:2283 IMMICH_API_KEY=<key> CARD_PATH=/path/to/copy ~/immich-go-import.sh'",
     ],
     "files": ["scripts/media/immich-go-import.sh", "scripts/media/immich-go-import.md"],
     "docs": D(("immich-go", "https://github.com/simulot/immich-go"),),
@@ -845,7 +910,7 @@ O["nas-09"] = nas_docker(
     dest="/volume1/docker/calibre-web-automated",
     prereqs=("nas-02", "nas-00c"),
     extra_steps=[
-        "http://192.168.10.10:8083 — LAN/Tailscale only; **disable Kobo sync** until CWA v4.0.7+ (CVE-2026-7713)",
+        "http://192.168.10.4:8083 — LAN/Tailscale only; **disable Kobo sync** until CWA v4.0.7+ (CVE-2026-7713)",
         "Drop test EPUB into ingest folder; confirm appears in /volume1/books",
     ],
     verify="CWA UI loads; ingest works; not exposed publicly.",
@@ -946,7 +1011,7 @@ O["dns-01"] = {
         "`ssh mini 'cd /opt/stacks/adguard && docker compose restart'`",
         "Dream Wall: NAT redirect outbound UDP/TCP 53 to mini; block known DoH endpoints",
         "Optional NAS redundancy: CM on NAS → second AdGuard; DHCP secondary DNS = nas IP",
-        "Test from MacBook: `dig @192.168.10.11 cloudflare.com` + DNSSEC; attempt client bypass (should fail)",
+        "Test from MacBook: `dig @192.168.10.2 cloudflare.com` + DNSSEC; attempt client bypass (should fail)",
     ],
     "commands": [
         "ssh mini 'cd /opt/stacks/unbound && docker compose up -d'",
@@ -1176,7 +1241,7 @@ pad("nas-02", ["Store B2 application key in Bitwarden; scope to single bucket on
 pad("ha-01", ["Photograph cable/serial for inventory", "Add to Homepage when deployed"], ["ping -c 2 homeassistant.local || ping -c 2 192.168.10.x"])
 pad("ha-04", ["Restart Home Assistant Core after HACS install"], ["curl -sf http://homeassistant:8123/api/ || true"])
 pad("read-04", ["Connect Kobo to MacBook USB for initial KOReader install only", "Disconnect USB — all sync is WiFi after setup", "Document OPDS URL in KOReader favorites"], [])
-pad("read-05", ["On Kobo WiFi: open KOReader → OPDS → add http://192.168.10.10:8083/opds", "Download one test book; confirm cover renders"], [])
+pad("read-05", ["On Kobo WiFi: open KOReader → OPDS → add http://192.168.10.4:8083/opds", "Download one test book; confirm cover renders"], [])
 pad("read-06", ["In CWA admin enable KOSync; match username on Kobo plugin settings"], [])
 pad("read-08", ["Wallabag URL http://macmini.<tailnet>:8200 — create API token in Wallabag settings"], [])
 pad("read-09", ["Miniflux → Settings → API → create key; paste into KOReader news plugin"], [])

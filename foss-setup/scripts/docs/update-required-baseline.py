@@ -81,7 +81,7 @@ NEW_TASKS = {
             "Recyclarr runs on the Mac mini and pushes TRaSH Guides profiles + Plex-friendly naming to Sonarr/Radarr on the NAS.",
             "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/recyclarr mini:/tmp/recyclarr`",
             "`ssh mini 'sudo rsync -a /tmp/recyclarr/ /opt/stacks/recyclarr/'`",
-            "Edit config/recyclarr.yml: NAS base_url http://192.168.10.10:8989 / :7878 + API keys from each *arr → Settings → General.",
+            "Edit config/recyclarr.yml: NAS base_url http://192.168.10.4:8989 / :7878 + API keys from each *arr → Settings → General.",
             "`ssh mini 'cd /opt/stacks/recyclarr && cp -n .env.example .env && docker compose run --rm recyclarr sync'`",
             "Schedule weekly recyclarr sync (cron or Diun-triggered).",
         ],

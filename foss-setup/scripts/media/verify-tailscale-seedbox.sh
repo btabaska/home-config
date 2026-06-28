@@ -102,6 +102,6 @@ else
 fi
 
 echo
-log "Reminder: Sonarr/Radarr/Lidarr run on the NAS and reach Deluge at 185.162.184.38 (API)."
+log "Reminder: Sonarr/Radarr/Lidarr run on the NAS; Betty runs Deluge + slskd (P2P off-site)."
 log "Seerr (home) should point at the NAS *arr ports (8989/7878/8686), not this seedbox."
 ok "Verification complete."

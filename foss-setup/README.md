@@ -136,7 +136,7 @@ git clone <your-forgejo-or-github-url> foss-setup && cd foss-setup
 
 # 2. Run the relevant idempotent baseline from scripts/setup/, e.g.:
 sudo ./scripts/setup/install-docker-ubuntu.sh           # Ubuntu Docker host
-sudo NAS_IP=192.168.10.10 ./scripts/setup/nut-client-ubuntu.sh   # UPS monitoring
+sudo NAS_IP=192.168.10.4 ./scripts/setup/nut-client-ubuntu.sh   # UPS monitoring
 ./scripts/setup/cachyos-desktop-baseline.sh             # CachyOS browser+office
 
 # 3. Bring up a stack: copy the env template, fill secrets, then up

@@ -189,7 +189,9 @@ ssh -t nas 'sudo /usr/local/bin/docker exec sonarr ls /seedbox/'
    only, lidarr `/music` only (not a shared `/media` tree).
 4. **Exactly ONE scheduled rclone transfer** — `rclone-manual-copy.sh` (manual
    lane → `/volume1/manual`). \*arr media arrives via **live mount + import**.
-5. **Music = Lidarr only** (acquisition + import/organize). **No beets.**
+5. **Music = Lidarr + Soulseek (split).** Torrents via Deluge (`/seedbox/music`);
+   Soulseek via **slskd on Betty** + **Soularr on NAS** (`/seedbox/slskd`). Optional
+   **beets** tag-only pass on `/music` — Lidarr owns layout.
 6. **Readarr → self-hosted rreading-glasses**, output to the **CWA ingest** folder.
 
 ---
@@ -204,6 +206,8 @@ ssh -t nas 'sudo /usr/local/bin/docker exec sonarr ls /seedbox/'
       root folders `/tv`, `/movies`.
 - [ ] **Phase B:** `lidarr` + `readarr rreading-glasses rreading-glasses-db`.
 - [ ] **Phase C:** `unpackerr` → fill API keys in `unpackerr.conf`.
+- [ ] **Phase D (Soulseek):** `slskd` on Betty (seed-09) → `soularr` on NAS (nas-29).
+- [ ] **Phase E (optional):** `beets` tag layer — `docker compose --profile music-tags run --rm beets beet write` (nas-30).
 - [ ] **Manual lane:** every-15-min Task Scheduler = `rclone-manual-copy.sh`.
 - [ ] Run the **self-check** (bottom of this file).
 
@@ -236,15 +240,40 @@ Every \*arr uses the **same remote Deluge** on the seedbox:
 
 ---
 
-## §4. Music pipeline — Lidarr only (NO beets, NO slskd/Soularr)
+## §4. Music pipeline — Lidarr + Soulseek (split) + optional beets
 
 Lidarr imports into **`/music`** (host: `/volume1/music`).
 
+### Torrent path (nas-23)
+
 - **Download client:** remote Deluge, label `lidarr`.
 - **Remote Path Mapping:** `/home/hd34/btabaska/files/` → `/seedbox/`.
+- **Import source:** `/seedbox/music/`.
 - **Root folder:** `/music`.
 - **FLAC-preferred with MP3 fallback**; Rename Tracks ON.
 - **Music-capable indexer** in Prowlarr.
+
+### Soulseek path (seed-09 + nas-29)
+
+Soulseek is P2P — **slskd runs on Betty only**. **Soularr** runs on the NAS next to
+Lidarr:
+
+1. slskd downloads to `~/files/slskd/` on Betty.
+2. NAS rclone mount exposes it at `/seedbox/slskd/` inside Lidarr/Soularr.
+3. Soularr reads Lidarr **Wanted**, searches slskd over Tailscale (`http://betty.<tailnet>:5030`), triggers Lidarr import from `/seedbox/slskd/`.
+
+Full wiring: **`configs/seedbox/music-pipeline-soulseek.md`**.
+
+### beets tag layer (nas-30, optional)
+
+Lidarr owns folder layout. beets only refreshes MusicBrainz tags in place:
+
+```bash
+docker compose --profile music-tags run --rm beets beet write
+```
+
+Copy `beets/config.yaml.example` → `beets/config.yaml`. Schedule weekly via DSM Task
+Scheduler. **Do not** run `beet import` with move/copy.
 
 > Do NOT change `/music` naming without checking **both** Plex and Rhythmbox/libgpod
 > iPod sync (`/volume1/music` on the host).
@@ -297,7 +326,8 @@ hardlink. Leave Remove Completed OFF.
 2. **Per-volume library mounts:** sonarr → `/tv` only; radarr → `/movies` only;
    lidarr → `/music` only.
 3. **One scheduled rclone job:** manual lane → `/volume1/manual` only.
-4. **Lidarr** root `/music`, rename ON; no beets/slskd/soularr.
+4. **Lidarr** root `/music`, rename ON; Soulseek via Soularr + `/seedbox/slskd`;
+   optional beets tag-only (no import/move).
 5. **Readarr** metadata = `http://rreading-glasses:8788`; root `/cwa-book-ingest`.
 6. **PUID/PGID/TZ** identical; `/config` under `/volume1/docker/<app>`.
 

@@ -1,0 +1,25 @@
+# Soularr config — copy to soularr/config.ini on the NAS (mounted at /data/config.ini).
+# Soularr bridges NAS Lidarr ↔ remote slskd on Betty.
+#
+#   cp config.ini.example config.ini   &&   edit API keys / host URLs
+
+[Lidarr]
+# Lidarr → Settings → General → API Key
+api_key = <lidarr-api-key>
+# Same compose network as Lidarr
+host_url = http://lidarr:8686
+# Path to slskd downloads INSIDE the Lidarr container (via /seedbox mount)
+download_dir = /seedbox/slskd
+disable_sync = False
+
+[Slskd]
+# slskd web UI → Options → API key (or slskd.yml under web.authentication.api_keys)
+api_key = <slskd-api-key>
+# Betty's Tailscale hostname or 100.x address — NOT the public shared IP for API traffic
+host_url = http://betty.<tailnet>:5030
+url_base = /
+# Path INSIDE the slskd container on Betty (not the NAS path)
+download_dir = /downloads
+
+[Release Preferences]
+# Optional: prefer FLAC, etc. — see Soularr wiki for full options

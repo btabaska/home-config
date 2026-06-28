@@ -32,7 +32,7 @@ by_id["docker-05"]["steps"] = [
     "Prerequisite: docker-01, docker-02 and nas-00d (NFS exports) complete.",
     "On the Mac mini, mount the NAS music library from Volume 1 (three-volume layout): "
     "`sudo mkdir -p /mnt/nas/music` and add to /etc/fstab: "
-    "`192.168.10.10:/volume1/music /mnt/nas/music nfs defaults,_netdev 0 0` then `sudo mount -a`.",
+    "`192.168.10.4:/volume1/music /mnt/nas/music nfs defaults,_netdev 0 0` then `sudo mount -a`.",
     "Copy the stack: `scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/navidrome mini:/tmp/navidrome`",
     "`ssh mini 'sudo mkdir -p /opt/stacks/navidrome && sudo rsync -a /tmp/navidrome/ /opt/stacks/navidrome/'`",
     "`ssh mini 'cd /opt/stacks/navidrome && cp -n .env.example .env'` — set MUSIC_FOLDER=/mnt/nas/music "
@@ -50,7 +50,7 @@ steps = by_id["read-14"]["steps"]
 by_id["read-14"]["steps"] = [
     "Prerequisite: docker-01, docker-02 and nas-00d (NFS export of /volume1/youtube) complete.",
     "`ssh mini 'sudo mkdir -p /mnt/nas/youtube && grep -q /mnt/nas/youtube /etc/fstab || "
-    "echo \"192.168.10.10:/volume1/youtube /mnt/nas/youtube nfs defaults,_netdev 0 0\" | sudo tee -a /etc/fstab'`",
+    "echo \"192.168.10.4:/volume1/youtube /mnt/nas/youtube nfs defaults,_netdev 0 0\" | sudo tee -a /etc/fstab'`",
     "`ssh mini 'sudo mount -a && ls /mnt/nas/youtube'`",
     "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/pinchflat mini:/tmp/pinchflat`",
     "`ssh mini 'sudo mkdir -p /opt/stacks/pinchflat && sudo rsync -a /tmp/pinchflat/ /opt/stacks/pinchflat/'`",
@@ -64,7 +64,7 @@ by_id["read-11"]["depends_on"] = ["read-10", "nas-00d", "nas-23"]
 by_id["read-11"]["steps"] = [
     "Prerequisite: read-10, nas-00d (NFS), and nas-23 (Lidarr → /volume1/music) complete.",
     "On the rig: mount the NAS music master — `sudo mkdir -p /mnt/nas/music`; fstab entry "
-    "`192.168.10.10:/volume1/music /mnt/nas/music nfs defaults,_netdev 0 0`; `sudo mount -a`.",
+    "`192.168.10.4:/volume1/music /mnt/nas/music nfs defaults,_netdev 0 0`; `sudo mount -a`.",
     "Rhythmbox → Preferences → Music → add /mnt/nas/music as a library location. "
     "Do NOT rename Lidarr's /music layout without checking both Plex and this sync.",
     "Plug in the iPod; Rhythmbox auto-detects it. Sync selected playlists/tracks to the device.",
@@ -133,33 +133,33 @@ by_id["nas-22"]["files"] = [
     "configs/nas/media-automation/migration-from-ubuntu.md",
 ]
 
-# --- nas-23: Lidarr only on NAS ------------------------------------------------
+# --- nas-23: Lidarr torrent path on NAS (Soulseek = seed-09 + nas-29) ------------
 by_id["nas-23"]["steps"] = [
-    "Music acquisition = **Lidarr only** on the NAS. Do **NOT** install slskd, Soularr, or beets anywhere.",
-    "Lidarr imports into **/music** (host: /volume1/music on Volume 1). Download client = remote Deluge on "
-    "185.162.184.38, label **lidarr**.",
+    "**Torrent path (this task):** Lidarr imports into **/music** (host: /volume1/music on Volume 1). "
+    "Download client = remote Deluge on 185.162.184.38, label **lidarr**; import from /seedbox/music/.",
     "Remote Path Mapping: Host 185.162.184.38, Remote /home/hd34/btabaska/files/, Local /seedbox/.",
     "Root folder: /music. Enable **Rename Tracks**. Quality: FLAC-preferred with MP3 fallback.",
     "In Prowlarr add a music-capable indexer and sync to Lidarr (Settings → Apps → Full Sync).",
+    "**Soulseek path** (slskd on Betty + Soularr on NAS) is **seed-09** and **nas-29** — run after this task.",
     "Do NOT change /music naming without checking BOTH Plex Music and Rhythmbox/libgpod iPod sync (read-11).",
 ]
 by_id["nas-23"]["verify"] = (
-    "Album imports to /volume1/music and appears in Plex Music and Navidrome (docker-05)."
+    "Torrent album imports to /volume1/music and appears in Plex Music and Navidrome (docker-05)."
 )
 
 # --- seed-01 / betty-01: Deluge-only seedbox -----------------------------------
 by_id["seed-01"]["steps"] = [
     'Sign up at bytesized-hosting.com for **Stream +3** (3000 GB, 6–10 TB/mo upload cap, €16/mo, EU). '
     "Record SFTP username, home path (/home/hd34/btabaska), and shared IP **185.162.184.38** in Bitwarden.",
-    "Architecture lock-in: Betty runs **ONLY Deluge** (download + seed). "
-    "Do **NOT** install Sonarr, Radarr, Prowlarr, Lidarr, Readarr, qBittorrent, Bazarr, slskd, Soularr, "
-    "Unpackerr, or sync agents on the seedbox — the full *arr stack lives on the NAS (nas-21).",
+    "Architecture lock-in: Betty runs **Deluge** (torrents) and **slskd** (Soulseek, added in seed-09) — "
+    "both P2P, both off-site. Do **NOT** install Sonarr, Radarr, Prowlarr, Lidarr, Readarr, qBittorrent, "
+    "Bazarr, Soularr, beets, Unpackerr, or sync agents on Betty — the *arr stack + Soularr live on the NAS.",
     "Install Deluge from the Bytesized panel (Deluge only — skip the *arr one-click catalog). "
     "Set ratio/seed-time limits so torrents age out and the box self-prunes under 3 TB.",
     "Record Deluge daemon port + password (needed by nas-22). Continue to **betty-01** for label folders.",
 ]
 by_id["seed-01"]["verify"] = (
-    "Bytesized panel shows an active AppBox with Deluge only; credentials documented; no *arr apps on Betty."
+    "Bytesized panel shows an active AppBox with Deluge; credentials documented; no *arr apps on Betty."
 )
 
 by_id["betty-01"]["steps"] = [
@@ -169,7 +169,7 @@ by_id["betty-01"]["steps"] = [
     "Create labels that map to folders under ~/files/ (Deluge sorts completed downloads here; "
     "NAS *arrs import via rclone mount — labels are routing hints, not apps on the seedbox): "
     "sonarr→files/tv, radarr→files/movies, lidarr→files/music, readarr→files/books, manual→files/manual.",
-    "`mkdir -p ~/files/{tv,movies,music,books,manual}`",
+    "`mkdir -p ~/files/{tv,movies,music,books,manual,slskd}` — slskd/ is for Soulseek downloads (seed-09).",
 ]
 by_id["betty-01"]["files"] = [
     "configs/nas/media-automation/README.md",
@@ -179,7 +179,7 @@ by_id["betty-01"]["files"] = [
 # --- seed-05 / seed-07: NAS *arr endpoints -------------------------------------
 by_id["seed-05"]["steps"] = [
     "Open Seerr at http://<mac-mini>:5055 → Settings → Services.",
-    "Add **Radarr**: Hostname = NAS IP or MagicDNS (192.168.10.10 / nas.<tailnet>), Port **7878**, "
+    "Add **Radarr**: Hostname = NAS IP or MagicDNS (192.168.10.4 / nas.<tailnet>), Port **7878**, "
     "API key from Radarr → Settings → General. Default root folder **/movies**; quality profile = TRaSH from nas-28.",
     "Add **Sonarr**: same NAS host, Port **8989**, root folder **/tv**, same quality profile.",
     "Add **Lidarr** (music requests): Port **8686**, root **/music**.",
@@ -241,7 +241,7 @@ by_id["nas-26"]["verify"] = (
 # --- media-03 Maintainerr: NAS *arrs not seedbox --------------------------------
 by_id["media-03"]["steps"] = [
     "Deploy Maintainerr at /opt/stacks/maintainerr (docker-02 layout). cp -n .env.example .env && docker compose up -d.",
-    "Connect to **NAS Plex** (http://<nas>:32400 + token), **Seerr**, and **NAS Sonarr/Radarr** at 192.168.10.10 "
+    "Connect to **NAS Plex** (http://<nas>:32400 + token), **Seerr**, and **NAS Sonarr/Radarr** at 192.168.10.4 "
     "— not the seedbox (Betty is Deluge-only).",
     "Create rules (e.g. unwatched > 90 days and not in a collection) with a grace period.",
     "Run dry-run/notification mode first; review candidates; enable enforcement to cap Tier-2 growth on vol2/vol3.",
@@ -410,7 +410,7 @@ by_id["dns-01"]["steps"] = [
     "AdGuard UI → DNS → upstream: `unbound:5335` (container name on edge network). Restart AdGuard.",
     "Dream Wall: NAT-redirect outbound UDP/TCP 53 to mini; block known DoH endpoints (force filtered path).",
     "Optional NAS redundancy: second AdGuard on NAS as DHCP secondary DNS.",
-    "Test: `dig @192.168.10.11 cloudflare.com +dnssec` from MacBook; confirm bypass attempts fail.",
+    "Test: `dig @192.168.10.2 cloudflare.com +dnssec` from MacBook; confirm bypass attempts fail.",
 ]
 
 by_id["glue-07"]["steps"] = [
@@ -543,7 +543,8 @@ by_id["nas-25"]["steps"] = [
 by_id["nas-27"]["steps"] = [
     "Prerequisite: nas-22 through nas-26 complete.",
     "Run self-check from configs/nas/media-automation/README.md (docker inspect mounts section).",
-    "Confirm: /seedbox(rslave) on sonarr/radarr/lidarr/readarr/unpackerr; per-volume roots; one scheduled rclone job (manual only); no slskd/beets/soularr.",
+    "Confirm: /seedbox on sonarr/radarr/lidarr/readarr/unpackerr; per-volume roots; one scheduled rclone job (manual only).",
+    "Soulseek stack (seed-09, nas-29, nas-30) is verified separately — not a blocker for this core self-check.",
     "Report violations — do not silently fix drift.",
 ]
 
@@ -638,6 +639,42 @@ by_id["game-10"]["files"] = ["scripts/gaming/gpu-power-tune.sh", "scripts/gaming
 
 # --- HTML reference tabs (Features / Hardware) ---------------------------------
 HTML_PATCHES = [
+    (
+        '<h4>Seedbox "Betty" — Bytesized Stream +3</h4><p>3000 GB, 6-10 TB/mo upload cap, €16/mo. <b>Deluge only</b> — downloads and seeds off-site. NAS *arr stack grabs via Deluge API and imports through an rclone SFTP mount. ISP never sees a swarm.</p>',
+        '<h4>Seedbox "Betty" — Bytesized Stream +3</h4><p>3000 GB, 6-10 TB/mo upload cap, €16/mo. <b>Deluge + slskd</b> — torrent and Soulseek P2P off-site. NAS *arr stack + Soularr import via rclone SFTP mount. ISP never sees a swarm.</p>',
+    ),
+    (
+        "<td>Off-site Deluge only (P2P + seeding buffer); NAS *arr stack imports via rclone mount</td>",
+        "<td>Off-site Deluge + slskd (P2P); NAS *arr + Soularr import via rclone mount</td>",
+    ),
+    (
+        "<td>Music — acquisition + import/organize (Lidarr-only)</td>",
+        "<td>Music — Lidarr + Soularr (torrents + Soulseek)</td>",
+    ),
+    (
+        "<tr><td>Lidarr</td><td>NAS</td><td class=\"num\">8686</td><td>TCP</td><td>Music — acquisition + import/organize (Lidarr-only)</td></tr>\n        <tr><td>Readarr</td>",
+        "<tr><td>Lidarr</td><td>NAS</td><td class=\"num\">8686</td><td>TCP</td><td>Music — Lidarr + Soularr (torrents + Soulseek)</td></tr>\n        <tr><td>Soularr</td><td>NAS</td><td class=\"num\">—</td><td>—</td><td>Soulseek bridge (Lidarr ↔ slskd on Betty)</td></tr>\n        <tr><td>beets</td><td>NAS</td><td class=\"num\">8337</td><td>TCP</td><td>Tag-only metadata on /music (optional profile)</td></tr>\n        <tr><td>Readarr</td>",
+    ),
+    (
+        "<p class=\"panel-sub\"><b>Deluge only.</b> Betty downloads and seeds — nothing else is installed here. The NAS *arr stack (Sonarr/Radarr/Lidarr/Readarr/Prowlarr) searches indexers, sends grabs to Deluge over its API, and imports completed files through a persistent rclone SFTP mount at <code>/volume1/mounts/seedbox-files</code>. No Sonarr, Radarr, Prowlarr, qBittorrent, Bazarr, slskd, or sync agents on the seedbox.</p>",
+        "<p class=\"panel-sub\"><b>Deluge + slskd.</b> Betty runs torrent (Deluge) and Soulseek (slskd) P2P off-site. The NAS *arr stack searches indexers and sends torrent grabs to Deluge; <b>Soularr</b> on the NAS drives remote slskd for Soulseek. All imports use the rclone SFTP mount at <code>/volume1/mounts/seedbox-files</code>. No *arr apps, Soularr, or beets on Betty.</p>",
+    ),
+    (
+        "<tr><td>Automated music acquisition</td><td>Request an album in Seerr; Lidarr on the NAS searches indexers, Deluge downloads off-site, and the NAS imports into /music for Plex and Navidrome — no slskd or Soularr.</td><td>Lidarr + Deluge (seedbox)</td><td>NAS + seedbox</td></tr>",
+        "<tr><td>Automated music acquisition</td><td>Request an album in Seerr → Lidarr on the NAS. <b>Torrents:</b> Deluge on Betty → /seedbox/music/. <b>Soulseek:</b> Soularr on NAS → slskd on Betty → /seedbox/slskd/ → /music. Optional beets tag pass.</td><td>Lidarr + Soularr + slskd + beets</td><td>NAS + seedbox</td></tr>",
+    ),
+    (
+        "Betty seedbox, NAS *arr import stack, Plex on the NAS, and Seerr requests — no P2P at home.",
+        "Betty (Deluge + slskd), NAS *arr + Soularr, optional beets, Plex, Seerr — no P2P at home.",
+    ),
+    (
+        "<tr><td>Deluge (download + seed ONLY)</td><td>Seedbox \"Betty\" (off-site)</td>",
+        "<tr><td>Deluge (torrents)</td><td>Seedbox \"Betty\" (off-site)</td>",
+    ),
+    (
+        "Reached by *arr API; files pulled via rclone SFTP mount</td></tr>\n      </tbody>",
+        "Reached by *arr API; files via rclone SFTP mount</td></tr>\n        <tr><td>slskd (Soulseek)</td><td>Seedbox \"Betty\" (off-site)</td><td class=\"num\">5030 / 50300</td><td>TCP</td><td>P2P off-site; Soularr on NAS drives API over Tailscale</td></tr>\n      </tbody>",
+    ),
     (
         "Frigate (camera AI — iGPU, or Mac mini + Coral)",
         "Frigate (camera AI — NAS Quick Sync iGPU; optional Coral on Mac mini)",
@@ -760,12 +797,43 @@ by_id["glue-04b"] = {
     "required": False,
 }
 
+# --- Soulseek music pipeline (late media-pipeline tasks) -----------------------
+for _tid, _title, _host, _type, _deps, _est in (
+    ("seed-09", "Deploy slskd on Betty (Soulseek P2P off-site)", "Seedbox", "async", ["seed-03", "betty-01"], "45-60 min"),
+    ("nas-29", "Deploy Soularr on NAS (Lidarr ↔ remote slskd bridge)", "NAS", "sync", ["nas-23", "seed-09"], "30-45 min"),
+    ("nas-30", "Deploy beets tag layer on NAS (optional)", "NAS", "async", ["nas-29"], "20-30 min"),
+):
+    if _tid not in by_id:
+        by_id[_tid] = {
+            "id": _tid,
+            "title": _title,
+            "host": _host,
+            "type": _type,
+            "depends_on": _deps,
+            "estimate": _est,
+            "steps": [],
+            "commands": [],
+            "files": [],
+            "docs": [],
+            "verify": "",
+            "track": "media-pipeline",
+            "required": False,
+        }
+
 # Rebuild task list preserving order; insert glue-04b after glue-04 if missing
 out = []
 for t in tasks:
     out.append(by_id.get(t["id"], t))
     if t["id"] == "glue-04" and not any(x["id"] == "glue-04b" for x in tasks):
         out.append(by_id["glue-04b"])
+
+# Insert Soulseek music tasks after seed-08 if missing
+SOULSEEK_TASKS = ("seed-09", "nas-29", "nas-30")
+if not any(x["id"] == "seed-09" for x in out):
+    insert_at = next((i + 1 for i, x in enumerate(out) if x["id"] == "seed-08"), len(out))
+    for j, tid in enumerate(SOULSEEK_TASKS):
+        if tid in by_id:
+            out.insert(insert_at + j, by_id[tid])
 
 new_json = json.dumps(out, separators=(",", ":"))
 text = text[: m.start(2)] + new_json + text[m.end(2) :]

@@ -9,7 +9,7 @@
         description: Movies & TV
         widget:
           type: plex
-          url: http://192.168.10.10:32400
+          url: http://192.168.10.4:32400
           key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
     - Immich:
         icon: immich.png
@@ -17,7 +17,7 @@
         description: Photos
         widget:
           type: immich
-          url: http://192.168.10.10:2283
+          url: http://192.168.10.4:2283
           key: "{{HOMEPAGE_VAR_IMMICH_KEY}}"
     - Calibre-Web:
         icon: calibre-web.png

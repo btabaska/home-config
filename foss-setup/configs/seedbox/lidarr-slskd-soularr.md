@@ -1,12 +1,12 @@
-> ## ⚠️ SUPERSEDED (2026 architecture change) — read this first
+> ## ⚠️ SUPERSEDED — use the split architecture instead
 >
-> The current music pipeline is **Lidarr only — NO slskd, NO Soularr, NO beets**.
-> Lidarr runs **on the NAS** and does both acquisition and final import/organize
-> into `/media/Music`, using **remote Deluge** (label `lidarr`) + a music-capable
-> Prowlarr indexer. See **[`../nas/media-automation/README.md` §4](../nas/media-automation/README.md)**.
+> **Current model:** slskd on Betty (seedbox), Soularr + Lidarr + beets on the NAS.
+> See **[`music-pipeline-soulseek.md`](music-pipeline-soulseek.md)** and
+> **[`../nas/media-automation/README.md` §4](../nas/media-automation/README.md)**.
 >
-> This slskd/Soularr/Soulseek runbook is retained only as historical reference;
-> do not deploy it under the current architecture.
+> This file documents the old "everything on the seedbox" layout. Do not deploy
+> `slskd-soularr-compose.example.yaml` as-is — use `slskd-compose.example.yaml` on
+> Betty and Soularr in `media-automation/docker-compose.yml` on the NAS.
 
 # Lidarr + slskd + Soularr — music acquisition on the seedbox
 

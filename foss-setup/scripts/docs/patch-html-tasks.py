@@ -12,20 +12,20 @@ if not m:
 tasks = json.loads(m.group(2))
 by_id = {t["id"]: t for t in tasks}
 
-REMOVE = {"seed-02", "seed-04", "seed-06", "seed-09", "seed-10"}
+REMOVE = {"seed-02", "seed-04", "seed-06", "seed-10"}
 
 # --- rewritten / new tasks ---------------------------------------------------
 by_id["seed-01"] = {
     "id": "seed-01",
     "phase": 2,
-    "title": 'Provision seedbox "Betty" — Bytesized Stream +3 (Deluge only)',
+    "title": 'Provision seedbox "Betty" — Bytesized Stream +3 (Deluge + slskd later)',
     "host": "Seedbox",
     "type": "async",
     "depends_on": [],
     "estimate": "1 hr + provisioning",
     "steps": [
         'Sign up at bytesized-hosting.com for **Stream +3** (3000 GB, 6–10 TB/mo upload cap, €16/mo, EU). Note your SFTP username, home path (/home/hd34/btabaska), and shared IP **185.162.184.38**.',
-        "Architecture lock-in: Betty runs **ONLY Deluge** (download + seed). No Sonarr, Radarr, Prowlarr, qBittorrent, or sync agents on the box — the NAS *arr stack imports via rclone SFTP mount (nas-20).",
+        "Architecture lock-in: Betty runs **Deluge** (torrents) and later **slskd** (Soulseek) — both P2P, both off-site. No *arr apps, Soularr, or beets on Betty — those live on the NAS.",
         "3000 GB is a working + seeding buffer, not your library. Set Deluge ratio/seed-time limits so torrents age out and the box self-prunes under 3 TB.",
         "After provisioning, continue to **betty-01** (Deluge labels) — do not install the old one-click *arr catalog apps.",
     ],
@@ -78,15 +78,15 @@ by_id["seed-05"] = {
     "estimate": "20-30 min",
     "steps": [
         "Open Seerr at http://<mac-mini>:5055 → Settings → Services.",
-        "Add **Radarr**: Hostname = NAS IP or MagicDNS (192.168.10.10 / nas.<tailnet>), Port **7878**, API key from Radarr → Settings → General. Default root folder **/movies**; quality profile = TRaSH profile from nas-28.",
+        "Add **Radarr**: Hostname = NAS IP or MagicDNS (192.168.10.4 / nas.<tailnet>), Port **7878**, API key from Radarr → Settings → General. Default root folder **/movies**; quality profile = TRaSH profile from nas-28.",
         "Add **Sonarr**: same host, Port **8989**, API key, root folder **/tv**, same quality profile.",
         "Add **Lidarr** (optional music requests): Port **8686**, root **/music**.",
         "Settings → Plex: link this NAS Plex server (URL http://<nas>:32400 + token from Plex account settings).",
         "Test each service → Save. A test request should appear in the NAS *arr, not on Betty.",
     ],
     "commands": [
-        "curl -s http://192.168.10.10:7878/api/v3/system/status -H 'X-Api-Key: <RADARR_API_KEY>'",
-        "curl -s http://192.168.10.10:8989/api/v3/system/status -H 'X-Api-Key: <SONARR_API_KEY>'",
+        "curl -s http://192.168.10.4:7878/api/v3/system/status -H 'X-Api-Key: <RADARR_API_KEY>'",
+        "curl -s http://192.168.10.4:8989/api/v3/system/status -H 'X-Api-Key: <SONARR_API_KEY>'",
     ],
     "files": ["configs/docker-stack/stacks/seerr/compose.yaml", "configs/nas/media-automation/README.md"],
     "docs": [{"title": "Seerr services setup", "url": "https://docs.seerr.dev/using-seerr/settings/services/"}],
@@ -208,7 +208,7 @@ by_id["nas-28"] = {
     "estimate": "30-45 min",
     "steps": [
         "Recyclarr runs on the Mac mini and pushes TRaSH Guides profiles + Plex-friendly naming to Sonarr/Radarr on the NAS.",
-        "Copy configs/docker-stack/stacks/recyclarr/ to /opt/stacks/recyclarr/. Edit config/recyclarr.yml: set NAS base_url (http://192.168.10.10:8989 / :7878) and API keys from each *arr → Settings → General.",
+        "Copy configs/docker-stack/stacks/recyclarr/ to /opt/stacks/recyclarr/. Edit config/recyclarr.yml: set NAS base_url (http://192.168.10.4:8989 / :7878) and API keys from each *arr → Settings → General.",
         "Pick quality profile trash_ids (HD Bluray + WEB is a balanced default — see TRaSH guides).",
         "cd /opt/stacks/recyclarr && cp -n .env.example .env && docker compose run --rm recyclarr sync",
         "In Sonarr/Radarr UI confirm quality profiles and media naming updated. Schedule: cron or Diun-triggered weekly recyclarr sync.",
@@ -230,15 +230,16 @@ by_id["nas-28"] = {
     "verify": "recyclarr sync exits 0; Sonarr/Radarr show TRaSH quality profiles and plex-tmdb naming enabled.",
 }
 
-# Fix nas-23 music volume
+# Fix nas-23 music — torrent path; Soulseek is seed-09 + nas-29
 by_id["nas-23"]["steps"] = [
-    "Lidarr imports into **/music** (host: /volume1/music on Vol 1). Download client = remote Deluge on 185.162.184.38, label **lidarr**.",
-    "Remote Path Mapping (Settings → Download Clients): Host 185.162.184.38, Remote /home/hd34/btabaska/files/, Local /seedbox/.",
+    "**Torrent path:** Lidarr imports into **/music** (host: /volume1/music). Download client = remote Deluge on 185.162.184.38, label **lidarr**.",
+    "Remote Path Mapping: Host 185.162.184.38, Remote /home/hd34/btabaska/files/, Local /seedbox/. Import from /seedbox/music/.",
     "Root folder: /music. Enable **Rename Tracks**. Quality: FLAC-preferred with MP3 fallback.",
     "In Prowlarr add a music-capable indexer and sync to Lidarr (Settings → Apps → Full Sync).",
-    "Do NOT change /music naming without checking BOTH Plex and Rhythmbox/libgpod iPod sync.",
+    "Soulseek (slskd on Betty + Soularr on NAS) is configured in **seed-09** and **nas-29** — after this task.",
+    "Do NOT change /music naming without checking BOTH Plex Music and Rhythmbox/libgpod iPod sync.",
 ]
-by_id["nas-23"]["verify"] = "Album imports to /volume1/music and appears in Plex Music library."
+by_id["nas-23"]["verify"] = "Torrent album imports to /volume1/music and appears in Plex Music library."
 
 by_id["nas-22"]["steps"] = [
     "Open each *arr web UI on the NAS (Sonarr :8989, Radarr :7878, Lidarr :8686, Readarr :8787).",
@@ -287,10 +288,74 @@ if "nas-00e" in by_id:
 by_id["media-03"]["depends_on"] = ["nas-10", "seed-05"]
 by_id["media-03"]["steps"] = [
     "Deploy Maintainerr at /opt/stacks/maintainerr (docker-02 layout). cp -n .env.example .env && docker compose up -d.",
-    "Connect to **NAS Plex** (http://<nas>:32400 + token), **Seerr**, and **NAS Sonarr/Radarr** (192.168.10.10 — not the seedbox).",
+    "Connect to **NAS Plex** (http://<nas>:32400 + token), **Seerr**, and **NAS Sonarr/Radarr** (192.168.10.4 — not the seedbox).",
     "Create rules (e.g. unwatched > 90 days and not in a collection) with a grace period.",
     "Run dry-run/notification mode first; review candidates; enable enforcement to cap Tier-2 growth.",
 ]
+
+by_id["seed-08"]["verify"] = "No P2P/VPN sockets on NAS (slskd on Betty is expected)."
+
+by_id["seed-09"] = {
+    "id": "seed-09",
+    "phase": 2,
+    "title": "Deploy slskd on Betty (Soulseek P2P off-site)",
+    "host": "Seedbox",
+    "type": "async",
+    "depends_on": ["seed-03", "betty-01"],
+    "estimate": "45-60 min",
+    "steps": [],
+    "commands": [],
+    "files": [
+        "configs/seedbox/slskd-compose.example.yaml",
+        "configs/seedbox/.env.example",
+        "configs/seedbox/music-pipeline-soulseek.md",
+    ],
+    "docs": [
+        {"title": "slskd", "url": "https://github.com/slskd/slskd"},
+        {"title": "Soulseek", "url": "https://www.slsknet.org/"},
+    ],
+    "verify": "slskd running on Betty; downloads land in ~/files/slskd/; visible on NAS rclone mount.",
+    "track": "media-pipeline",
+}
+
+by_id["nas-29"] = {
+    "id": "nas-29",
+    "phase": 2,
+    "title": "Deploy Soularr on NAS (Lidarr ↔ remote slskd bridge)",
+    "host": "NAS",
+    "type": "sync",
+    "depends_on": ["nas-23", "seed-09"],
+    "estimate": "30-45 min",
+    "steps": [],
+    "commands": [],
+    "files": [
+        "configs/nas/media-automation/docker-compose.yml",
+        "configs/nas/media-automation/soularr/config.ini.example",
+        "configs/seedbox/music-pipeline-soulseek.md",
+    ],
+    "docs": [{"title": "Soularr", "url": "https://github.com/mrusse/soularr"}],
+    "verify": "Soulseek album imports to /volume1/music via Soularr → slskd → Lidarr.",
+    "track": "media-pipeline",
+}
+
+by_id["nas-30"] = {
+    "id": "nas-30",
+    "phase": 2,
+    "title": "Deploy beets tag layer on NAS (optional, Lidarr owns layout)",
+    "host": "NAS",
+    "type": "async",
+    "depends_on": ["nas-29"],
+    "estimate": "20-30 min",
+    "steps": [],
+    "commands": [],
+    "files": [
+        "configs/nas/media-automation/beets/config.yaml.example",
+        "configs/nas/media-automation/README.md",
+    ],
+    "docs": [{"title": "beets", "url": "https://beets.readthedocs.io/"}],
+    "verify": "beet write refreshes tags in place without moving files under /volume1/music.",
+    "track": "media-pipeline",
+}
 
 # Reorder: swap nas-00d/00e, net-11/12; phase-2 media block
 ORDER = None  # computed below
@@ -314,6 +379,7 @@ PHASE2_MEDIA = [
     "nas-20", "nas-21", "nas-22", "nas-28", "nas-23", "nas-24", "nas-25", "nas-26", "nas-27",
     "nas-10",
     "docker-03", "seed-05", "seed-07", "seed-08",
+    "seed-09", "nas-29", "nas-30",
 ]
 
 def reorder_block(all_ids, block, after_id):
@@ -330,6 +396,11 @@ def reorder_block(all_ids, block, after_id):
 if "nas-28" not in [t["id"] for t in tasks]:
     tasks.append(by_id["nas-28"])
 
+# insert new tasks into by_id tasks list
+for new_id in ("seed-09", "nas-29", "nas-30"):
+    if new_id not in [t["id"] for t in tasks]:
+        tasks.append(by_id[new_id])
+
 # apply by_id updates to task objects
 id_to_task = {t["id"]: t for t in tasks}
 for k, v in by_id.items():
@@ -337,7 +408,7 @@ for k, v in by_id.items():
         if "track" in id_to_task[k]:
             v["track"] = id_to_task[k]["track"]
         id_to_task[k] = v
-    elif k == "nas-28":
+    elif k in ("nas-28", "seed-09", "nas-29", "nas-30"):
         id_to_task[k] = v
 
 ids = list(id_to_task.keys())

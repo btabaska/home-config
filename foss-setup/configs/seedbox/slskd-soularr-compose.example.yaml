@@ -1,6 +1,9 @@
-# slskd + Soularr — Soulseek-powered music acquisition glued to Lidarr
-# Phase 2. Docs: slskd    https://github.com/slskd/slskd
-#                Soularr  https://github.com/mrusse/soularr
+# DEPRECATED — use slskd-compose.example.yaml on Betty + Soularr on the NAS.
+# See music-pipeline-soulseek.md for the current split architecture.
+#
+# slskd + Soularr — legacy combined seedbox stack (pre-2026 split)
+# Docs: slskd    https://github.com/slskd/slskd
+#       Soularr  https://github.com/mrusse/soularr
 #
 # RUNS ON THE SEEDBOX, next to Lidarr (see lidarr-slskd-soularr.md). Soulseek is a
 # P2P network, so the daemon must be where the *arrs and the shared data tree live.
