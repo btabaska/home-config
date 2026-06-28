@@ -23,15 +23,11 @@
 # ------------------------------------------------------------------------------
 #   1. Every DOWNLOAD-TOUCHING service (sonarr, radarr, lidarr, readarr,
 #      unpackerr) mounts the seedbox files at the IDENTICAL in-container path
-#      `/seedbox` with the `:rslave` propagation flag. If you change the host
-#      mount path, the container path, or the flag, change it in ALL of them at
-#      once — Unpackerr acts on the path the *arr reports (post-mapping) and
-#      must see /seedbox at the exact same place as the *arrs, with no separate
-#      mapping of its own.
-#   2. `:rslave` is mandatory: the rclone FUSE mount is created on the host
-#      AFTER the container may start. rslave lets the host's later (re)mount
-#      propagate into the running container. Without it, a remount leaves the
-#      container staring at an empty dir and every import silently stalls.
+#      `/seedbox`. If you change the host mount path or container path, change
+#      it in ALL of them at once.
+#   2. DSM + rclone FUSE cannot satisfy Docker's :rslave propagation (kernel
+#      rejects shared/slave on fuse.rclone). Use a plain bind here; after a
+#      watchdog remount, restart download-touching containers (watchdog does this).
 #   3. Identical PUID/PGID across all services (TODO: fill from `id <user>` on
 #      the NAS), TZ=America/New_York, restart: unless-stopped, and /config on
 #      ${DOCKER_ROOT}/<app> (default /volume1/docker/<app>).
@@ -42,8 +38,8 @@
 #   sonarr          lscr.io/linuxserver/sonarr:4.0.19          (Sonarr 4.0.19.2979)
 #   radarr          lscr.io/linuxserver/radarr:6.2.1           (Radarr 6.2.1.10461)
 #   prowlarr        lscr.io/linuxserver/prowlarr:2.4.0         (Prowlarr 2.4.0.5391)
-#   lidarr          lscr.io/linuxserver/lidarr:3.1.2           (Lidarr 3.1.2.4938)
-#   readarr         lscr.io/linuxserver/readarr:develop-0.4.18.2805-ls157  (EOL, see note)
+#   lidarr          lscr.io/linuxserver/lidarr:3.1.0           (stable; bare 3.1.2 tag does not exist)
+#   readarr         docker.io/linuxserver/readarr:develop-0.4.18.2805-ls157  (EOL; pinned tag only on Docker Hub — removed from lscr.io/ghcr)
 #   rreading-glasses blampe/rreading-glasses@sha256:<digest>   (rolling tag -> pin by digest)
 #   postgres        postgres:17.6
 #   unpackerr       golift/unpackerr:0.15.2
@@ -80,8 +76,7 @@ x-seedbox-mount: &seedbox-mount
   type: bind
   source: ${SEEDBOX_MOUNT:-/volume1/mounts/seedbox-files}
   target: /seedbox
-  bind:
-    propagation: rslave
+  # No propagation: rslave — DSM fuse.rclone cannot be shared/slave; plain bind only.
 
 services:
 
@@ -150,7 +145,7 @@ services:
   # NOTE: /music is consumed by Plex AND Rhythmbox/libgpod iPod sync (README §4).
   # ----------------------------------------------------------------------------
   lidarr:
-    image: lscr.io/linuxserver/lidarr:3.1.2   # Lidarr 3.1.2.4938 (Mar 2026)
+    image: lscr.io/linuxserver/lidarr:3.1.0   # stable 3.1.x (3.1.2 bare tag never published; alt: develop-3.1.2.4938-ls249)
     container_name: lidarr
     environment: *common-env
     volumes:
@@ -181,7 +176,7 @@ services:
   #   ghcr.io/pennydreadful/bookshelf  and  ghcr.io/faustvii/readarr
   # ----------------------------------------------------------------------------
   readarr:
-    image: lscr.io/linuxserver/readarr:develop-0.4.18.2805-ls157   # EOL final build (immutable)
+    image: docker.io/linuxserver/readarr:develop-0.4.18.2805-ls157   # EOL final LS build — pinned tag on Docker Hub only (lscr.io removed June 2025)
     container_name: readarr
     environment: *common-env
     volumes:
@@ -205,28 +200,27 @@ services:
   # `latest` (Goodreads) and `hardcover`. To honor "never :latest", pin by
   # IMMUTABLE DIGEST. Refresh the digest deliberately when you choose to update:
   #   docker buildx imagetools inspect blampe/rreading-glasses:latest
-  # TODO: replace the digest below with the one you verified at deploy time.
-  # ----------------------------------------------------------------------------
+  # PINNING: refresh deliberately when Goodreads auth breaks — `docker buildx imagetools inspect blampe/rreading-glasses:latest`
+  # Verified amd64 index digest 2026-06-28 (replaces sha256:8d5062e2… which 400s on credential generation).
   rreading-glasses:
-    image: blampe/rreading-glasses@sha256:8d5062e2a47a0ef831dc06ac9eb99badd5f95ebc94ff2f9c6e1279ec4ccb6b8c   # TODO verify/refresh digest (rolling `latest`)
+    image: blampe/rreading-glasses@sha256:dd996a1db19ac4ef18df47f1671f608c0f097ed43c4776ebde94dee20c6b43c8
     container_name: rreading-glasses
     hostname: rreading-glasses
     entrypoint: ["/main", "serve"]
     command:
       - --upstream=www.goodreads.com
       - --verbose
-    environment:
-      POSTGRES_HOST: rreading-glasses-db
-      POSTGRES_DATABASE: ${RG_DB_NAME:-rreading-glasses}
-      POSTGRES_USER: ${RG_DB_USER:-rreading-glasses}
-      POSTGRES_PASSWORD: ${RG_DB_PASSWORD:?set RG_DB_PASSWORD in .env (no special symbols)}
+      - --postgres-host=rreading-glasses-db
+      - --postgres-user=${RG_DB_USER:-rreading-glasses}
+      - --postgres-password=${RG_DB_PASSWORD:?set RG_DB_PASSWORD in .env (no special symbols)}
+      - --postgres-database=${RG_DB_NAME:-rreading-glasses}
     mem_limit: 128m   # uses all available RAM for cache; cap it (upstream guidance)
     ports:
       - "8788:8788"
     restart: unless-stopped
     depends_on:
       rreading-glasses-db:
-        condition: service_started
+        condition: service_healthy
 
   rreading-glasses-db:
     image: postgres:17.6   # any version works; pin a specific 17.x minor (verify latest)
@@ -237,6 +231,12 @@ services:
       POSTGRES_DB: ${RG_DB_NAME:-rreading-glasses}
     volumes:
       - ${DOCKER_ROOT:-/volume1/docker}/rreading-glasses/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rreading-glasses -d rreading-glasses"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     restart: unless-stopped
     # No host port published — only rreading-glasses needs it, on the compose net.
 

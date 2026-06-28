@@ -62,7 +62,7 @@
       "Open Storage Manager in DSM; confirm **three separate Basic pools** (~14.6 / 10.9 / 16.4 TB usable) \u2014 not SHR, not merged.",
       "Map where TV, movies, music, books, and Tier 1 data live **today** on each volume (not just vol1) \u2014 see nas-storage-schema.md \u00a75 runbook.",
       "Confirm Tailscale on NAS (net-08) before any bulk data moves.",
-      "Optional: `ssh nas 'sudo btrfs filesystem usage /volume1 /volume2 /volume3'` for detailed audit"
+      "Optional: `ssh -t nas 'sudo btrfs filesystem usage /volume1 /volume2 /volume3'` for detailed audit"
     ],
     "commands": [
       "ssh nas 'df -h /volume1 /volume2 /volume3'",
@@ -103,14 +103,14 @@
       "**Volume 3:** DSM \u2192 Control Panel \u2192 Shared Folder \u2192 Create **`tv`** on **Volume 3**.",
       "**Volume 2:** Create **`movies`** on **Volume 2**.",
       "**Volume 1:** Create shares: `music`, `books`, `youtube`, `games`, `manual`, `photo`, `docs`, `appdata`, `backups`, `vault`, `home`, `staging`, `frigate`, `cache` \u2014 all on **Volume 1**.",
-      "**Volume 1 infrastructure (directories, NOT Shared Folders):** `ssh nas 'sudo mkdir -p /volume1/docker /volume1/mounts/seedbox-files /volume1/scripts/media'`",
+      "**Volume 1 infrastructure (directories, NOT Shared Folders):** `ssh -t nas 'sudo mkdir -p /volume1/docker /volume1/mounts/seedbox-files /volume1/scripts/media'`",
       "Storage Manager \u2192 each volume: Btrfs checksums ON; compression ON for docs/appdata/vault on vol1; OFF for media shares; atime OFF.",
       "**Move data only where nas-00a path map shows wrong placement** (skip libraries already on the correct volume): TV\u2192`/volume3/tv/`, movies\u2192`/volume2/movies/`; on vol1 organize music/books/Tier1 into their shares if still flat.",
       "Verify any rsync: `ssh nas 'du -sb <src> <dest>'` byte counts match; dry-run `rsync -avhn --delete` shows zero pending.",
       "Do **not** delete old duplicate paths until nas-00d exports work and **nas-00e** confirms Ubuntu Plex/*arr see the new paths."
     ],
     "commands": [
-      "ssh nas 'sudo mkdir -p /volume1/docker /volume1/mounts/seedbox-files /volume1/scripts/media'",
+      "ssh -t nas 'sudo mkdir -p /volume1/docker /volume1/mounts/seedbox-files /volume1/scripts/media'",
       "ssh nas 'rsync -avh --info=progress2 /volume1/<old-tv>/ /volume3/tv/'",
       "ssh nas 'rsync -avh --info=progress2 /volume1/<old-movies>/ /volume2/movies/'",
       "ssh nas 'du -sb /volume3/tv /volume2/movies'",
@@ -969,7 +969,7 @@
       "**GATE:** NAS RAM \u226520GB recommended (defer with Immich ML on 4GB).",
       "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
       "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/frigate nas:/tmp/frigate`",
-      "`ssh nas 'sudo mkdir -p /volume1/docker/frigate && sudo rsync -a /tmp/frigate/ /volume1/docker/frigate/'`",
+      "`ssh -t nas 'sudo mkdir -p /volume1/docker/frigate && sudo rsync -a /tmp/frigate/ /volume1/docker/frigate/'`",
       "Copy config/config.yml.example \u2192 config.yml; set RTSP URLs + detector (Quick Sync or Coral)",
       "`ssh nas 'cd /volume1/docker/frigate && cp -n .env.example .env && docker compose up -d'`",
       "HA \u2192 Frigate integration for person/package events"
@@ -1095,30 +1095,40 @@
     "steps": [
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
       "Prerequisite: betty-01 complete.",
-      "Install rclone on NAS (SynoCommunity or static binary) if not present",
-      "`scp ~/Documents/Home/foss-setup/configs/seedbox/rclone.conf.example ~/Documents/Home/foss-setup/scripts/media/rclone-seedbox-mount.sh ~/Documents/Home/foss-setup/scripts/media/rclone-seedbox-watchdog.sh nas:/tmp/`",
-      "`ssh nas 'sudo mkdir -p /root/.ssh /volume1/scripts/media /volume1/mounts/seedbox-files'`",
-      "`ssh nas 'sudo ssh-keygen -t ed25519 -f /root/.ssh/seedbox_ed25519 -N \"\" -C nas-rclone'`",
-      "`ssh nas 'sudo ssh-copy-id -i /root/.ssh/seedbox_ed25519.pub -p 22 btabaska@185.162.184.38'`",
-      "`ssh nas 'sudo cp /tmp/rclone.conf.example /root/.config/rclone/rclone.conf && sudo chmod 600 /root/.config/rclone/rclone.conf'`",
-      "`ssh nas 'sudo cp /tmp/rclone-seedbox-*.sh /volume1/scripts/media/ && sudo chmod +x /volume1/scripts/media/rclone-seedbox-*.sh'`",
-      "`ssh nas 'grep -q user_allow_other /etc/fuse.conf || echo user_allow_other | sudo tee -a /etc/fuse.conf'`",
-      "`ssh nas 'sudo /volume1/scripts/media/rclone-seedbox-mount.sh'`",
-      "DSM Task Scheduler: boot = mount script; every 5 min = watchdog",
-      "`ssh nas 'mountpoint /volume1/mounts/seedbox-files && ls /volume1/mounts/seedbox-files'`"
+      "Install rclone on NAS (SynoCommunity or static binary) if not present: `ssh -t nas 'which rclone || echo MISSING'`",
+      "Deploy scripts and config:",
+      "`scp -O ~/Documents/Home/foss-setup/configs/seedbox/rclone.conf.example ~/Documents/Home/foss-setup/scripts/media/rclone-seedbox-mount.sh ~/Documents/Home/foss-setup/scripts/media/rclone-seedbox-watchdog.sh nas:/tmp/`",
+      "`ssh -t nas 'sudo mkdir -p /root/.ssh /root/.config/rclone /volume1/scripts/media /volume1/mounts/seedbox-files'`",
+      "Generate SSH key for rclone (skip if already done): `ssh -t nas 'sudo test -f /root/.ssh/seedbox_ed25519 || sudo ssh-keygen -t ed25519 -f /root/.ssh/seedbox_ed25519 -N \"\" -C nas-rclone'`",
+      "Authorize key on seedbox (skip if already authorized): `ssh -t nas 'sudo ssh-copy-id -i /root/.ssh/seedbox_ed25519.pub btabaska@185.162.184.38'`",
+      "Install rclone config (only if not already configured): `ssh -t nas 'sudo test -f /root/.config/rclone/rclone.conf || (sudo cp /tmp/rclone.conf.example /root/.config/rclone/rclone.conf && sudo chmod 600 /root/.config/rclone/rclone.conf)'`",
+      "Install scripts: `ssh -t nas 'sudo cp /tmp/rclone-seedbox-mount.sh /tmp/rclone-seedbox-watchdog.sh /volume1/scripts/media/ && sudo chmod +x /volume1/scripts/media/rclone-seedbox-*.sh'`",
+      "Test SFTP reachability from root: `ssh -t nas 'sudo ssh -i /root/.ssh/seedbox_ed25519 -o StrictHostKeyChecking=no btabaska@185.162.184.38 ls files/'`",
+      "Run mount script: `ssh -t nas 'sudo /volume1/scripts/media/rclone-seedbox-mount.sh'`",
+      "Verify mount and files visible: `ssh nas 'grep seedbox-files /proc/mounts && ls /volume1/mounts/seedbox-files/'`",
+      "Verify inside container (after nas-21): `ssh -t nas 'sudo /usr/local/bin/docker exec sonarr ls /seedbox/'`",
+      "DSM Task Scheduler — create BOTH tasks (see README §0 for exact steps):",
+      "  Task 1 (boot): Triggered Task, root, Event=Boot-up, cmd=/volume1/scripts/media/rclone-seedbox-mount.sh",
+      "  Task 2 (watchdog): Scheduled Task, root, every 5 min, cmd=/volume1/scripts/media/rclone-seedbox-watchdog.sh",
+      "Run recovery test (README §0): `ssh -t nas 'sudo fusermount -uz /volume1/mounts/seedbox-files'` then wait 5 min or run watchdog manually; verify mount returns."
     ],
     "commands": [
-      "scp ~/Documents/Home/foss-setup/configs/seedbox/rclone.conf.example nas:/tmp/",
-      "scp ~/Documents/Home/foss-setup/scripts/media/rclone-seedbox-mount.sh ~/Documents/Home/foss-setup/scripts/media/rclone-seedbox-watchdog.sh nas:/tmp/",
-      "ssh nas 'sudo /volume1/scripts/media/rclone-seedbox-mount.sh'",
-      "ssh nas 'mountpoint /volume1/mounts/seedbox-files'"
+      "scp -O ~/Documents/Home/foss-setup/configs/seedbox/rclone.conf.example ~/Documents/Home/foss-setup/scripts/media/rclone-seedbox-mount.sh ~/Documents/Home/foss-setup/scripts/media/rclone-seedbox-watchdog.sh nas:/tmp/",
+      "ssh -t nas 'sudo mkdir -p /root/.ssh /root/.config/rclone /volume1/scripts/media /volume1/mounts/seedbox-files'",
+      "ssh -t nas 'sudo cp /tmp/rclone-seedbox-mount.sh /tmp/rclone-seedbox-watchdog.sh /volume1/scripts/media/ && sudo chmod +x /volume1/scripts/media/rclone-seedbox-*.sh'",
+      "ssh -t nas 'sudo /volume1/scripts/media/rclone-seedbox-mount.sh'",
+      "ssh nas 'grep seedbox-files /proc/mounts && ls /volume1/mounts/seedbox-files/'",
+      "ssh -t nas 'sudo fusermount -uz /volume1/mounts/seedbox-files'",
+      "ssh -t nas 'sudo /volume1/scripts/media/rclone-seedbox-watchdog.sh'",
+      "ssh nas 'grep seedbox-files /proc/mounts && ls /volume1/mounts/seedbox-files/'"
     ],
     "files": [
       "configs/seedbox/rclone.conf.example",
       "scripts/media/rclone-seedbox-mount.sh",
-      "scripts/media/rclone-seedbox-watchdog.sh"
+      "scripts/media/rclone-seedbox-watchdog.sh",
+      "configs/nas/media-automation/README.md"
     ],
-    "verify": "Mount lists Betty files/ tree; watchdog scheduled."
+    "verify": "Mount lists Betty files/ tree (tv movies music books manual); watchdog both tasks scheduled; recovery test passes (mount drops → returns within 10 min unattended); /var/run/seedbox-mount.ok present with recent timestamp."
   },
   "nas-21": {
     "steps": [
@@ -1264,7 +1274,7 @@
       "Never sync *arr folders"
     ],
     "commands": [
-      "ssh nas 'sudo /volume1/scripts/media/rclone-manual-copy.sh'"
+      "ssh -t nas 'sudo /volume1/scripts/media/rclone-manual-copy.sh'"
     ],
     "files": [
       "scripts/media/rclone-manual-copy.sh"
@@ -1368,9 +1378,9 @@
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
       "Prerequisite: nas-01, nas-02, nas-00c complete.",
       "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
-      "`ssh nas 'sudo mkdir -p /volume1/docker/immich'`",
+      "`ssh -t nas 'sudo mkdir -p /volume1/docker/immich'`",
       "`scp -r ~/Documents/Home/foss-setup/configs/nas/immich nas:/tmp/immich`",
-      "`ssh nas 'sudo rsync -a /tmp/immich/ /volume1/docker/immich/'`",
+      "`ssh -t nas 'sudo rsync -a /tmp/immich/ /volume1/docker/immich/'`",
       "`ssh nas 'cd /volume1/docker/immich && cp -n .env.example .env 2>/dev/null || true'` \u2014 edit secrets before up",
       "`ssh nas 'cd /volume1/docker/immich && docker compose pull && docker compose up -d'`",
       "`ssh nas 'cd /volume1/docker/immich && docker compose ps'`",
@@ -1379,7 +1389,7 @@
     ],
     "commands": [
       "scp -r ~/Documents/Home/foss-setup/configs/nas/immich nas:/tmp/immich",
-      "ssh nas 'sudo rsync -a /tmp/immich/ /volume1/docker/immich/'",
+      "ssh -t nas 'sudo rsync -a /tmp/immich/ /volume1/docker/immich/'",
       "ssh nas 'cd /volume1/docker/immich && docker compose up -d'",
       "ssh nas 'cd /volume1/docker/immich && docker compose ps'"
     ],
@@ -1431,9 +1441,9 @@
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
       "Prerequisite: nas-02, nas-00c complete.",
       "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
-      "`ssh nas 'sudo mkdir -p /volume1/docker/calibre-web-automated'`",
+      "`ssh -t nas 'sudo mkdir -p /volume1/docker/calibre-web-automated'`",
       "`scp -r ~/Documents/Home/foss-setup/configs/nas/calibre-web-automated nas:/tmp/calibre-web-automated`",
-      "`ssh nas 'sudo rsync -a /tmp/calibre-web-automated/ /volume1/docker/calibre-web-automated/'`",
+      "`ssh -t nas 'sudo rsync -a /tmp/calibre-web-automated/ /volume1/docker/calibre-web-automated/'`",
       "`ssh nas 'cd /volume1/docker/calibre-web-automated && cp -n .env.example .env 2>/dev/null || true'` \u2014 edit secrets before up",
       "`ssh nas 'cd /volume1/docker/calibre-web-automated && docker compose pull && docker compose up -d'`",
       "`ssh nas 'cd /volume1/docker/calibre-web-automated && docker compose ps'`",
@@ -1442,7 +1452,7 @@
     ],
     "commands": [
       "scp -r ~/Documents/Home/foss-setup/configs/nas/calibre-web-automated nas:/tmp/calibre-web-automated",
-      "ssh nas 'sudo rsync -a /tmp/calibre-web-automated/ /volume1/docker/calibre-web-automated/'",
+      "ssh -t nas 'sudo rsync -a /tmp/calibre-web-automated/ /volume1/docker/calibre-web-automated/'",
       "ssh nas 'cd /volume1/docker/calibre-web-automated && docker compose up -d'",
       "ssh nas 'cd /volume1/docker/calibre-web-automated && docker compose ps'"
     ],
@@ -1463,10 +1473,10 @@
       "Prerequisite: nas-01, nas-02, nas-00c complete.",
       "**GATE:** NAS RAM \u226520GB OR defer until RAM upgrade (Paperless + Immich ML cannot share 4GB).",
       "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
-      "`ssh nas 'sudo mkdir -p /volume1/docs/{consume,media,export} /volume1/docker/paperless-ngx'`",
+      "`ssh -t nas 'sudo mkdir -p /volume1/docs/{consume,media,export} /volume1/docker/paperless-ngx'`",
       "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/paperless-ngx nas:/tmp/paperless`",
       "Adapt compose on NAS: remove external `edge` network; bind /volume1/docs/* ; set PUID/PGID from `id`",
-      "`ssh nas 'sudo rsync -a /tmp/paperless/ /volume1/docker/paperless-ngx/ && cd /volume1/docker/paperless-ngx && cp -n .env.example .env'`",
+      "`ssh -t nas 'sudo rsync -a /tmp/paperless/ /volume1/docker/paperless-ngx/ && cd /volume1/docker/paperless-ngx && cp -n .env.example .env'`",
       "Edit .env: PAPERLESS_SECRET_KEY, PAPERLESS_DBPASS, PAPERLESS_ADMIN_PASSWORD",
       "`ssh nas 'cd /volume1/docker/paperless-ngx && docker compose up -d'`",
       "SMB mount docs share from MacBook; drop test PDF in consume/"
@@ -1904,7 +1914,7 @@
       "**GATE:** NAS RAM \u226520GB before Dependency-Track + Immich ML (apiserver wants 4GB+ alone).",
       "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
       "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/dependency-track nas:/tmp/dependency-track`",
-      "`ssh nas 'sudo mkdir -p /volume1/docker/dependency-track && sudo rsync -a /tmp/dependency-track/ /volume1/docker/dependency-track/'`",
+      "`ssh -t nas 'sudo mkdir -p /volume1/docker/dependency-track && sudo rsync -a /tmp/dependency-track/ /volume1/docker/dependency-track/'`",
       "`ssh nas 'cd /volume1/docker/dependency-track && cp -n .env.example .env && docker compose up -d'`",
       "Browser :9010 \u2192 create Automation team API key for sbom-nightly"
     ],

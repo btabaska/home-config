@@ -7,7 +7,7 @@
 #
 #     seedbox:/home/hd34/btabaska/files  ->  /volume1/mounts/seedbox-files
 #
-# The *arr containers bind this host path to /seedbox:rslave. Their Remote Path
+# The *arr containers bind this host path to /seedbox. Their Remote Path
 # Mapping (/home/hd34/btabaska/files/ -> /seedbox/) makes the path Deluge
 # reports resolve here.
 #
@@ -20,44 +20,153 @@
 # DSM SETUP (Synology has no systemd): Control Panel -> Task Scheduler ->
 #   Create -> Triggered Task -> User-defined script, Event = Boot-up, User = root,
 #   Command = /volume1/scripts/media/rclone-seedbox-mount.sh
-# (Install rclone on DSM via the SynoCommunity package or the static binary.)
-# On a systemd host instead, wrap this in a simple oneshot service (Type=forking).
+#
+# SAFETY CONTRACT:
+#   - This script ONLY mounts. It NEVER tears down a live mount.
+#   - Stale-mount detection is the watchdog's job.
+#   - Running this script when already mounted is a safe no-op (exit 0).
 #
 # Docs: https://rclone.org/commands/rclone_mount/  |  https://rclone.org/sftp/
 # ==============================================================================
 set -euo pipefail
 
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
+
 # --- config (override via environment if needed) ------------------------------
-REMOTE="${REMOTE:-seedbox:/home/hd34/btabaska/files}"   # rclone remote:path (see rclone.conf)
+REMOTE="${REMOTE:-seedbox:/home/hd34/btabaska/files}"
 MOUNTPOINT="${MOUNTPOINT:-/volume1/mounts/seedbox-files}"
-RCLONE="${RCLONE:-/usr/local/bin/rclone}"               # TODO: adjust to your rclone path (`which rclone`)
+RCLONE="${RCLONE:-/usr/local/bin/rclone}"
 RCLONE_CONF="${RCLONE_CONF:-/root/.config/rclone/rclone.conf}"
 LOG="${LOG:-/var/log/rclone-seedbox.log}"
+HEALTH_FILE="${HEALTH_FILE:-/var/run/seedbox-mount.ok}"
+COMPOSE_FILE="${COMPOSE_FILE:-/volume1/docker/media-automation/docker-compose.yml}"
+DOCKER="${DOCKER:-/usr/local/bin/docker}"
+
+# Rotate log if it exceeds 10 MB to prevent unbounded growth on DSM.
+if [[ -f "$LOG" ]] && (( $(stat -c%s "$LOG" 2>/dev/null || echo 0) > 10485760 )); then
+  mv "$LOG" "${LOG}.1"
+fi
 
 mkdir -p "$MOUNTPOINT"
 
-# Already mounted? Nothing to do. (mountpoint(1) is the reliable check.)
-if mountpoint -q "$MOUNTPOINT"; then
-  echo "$(date -Is) already mounted at $MOUNTPOINT" >>"$LOG"
+# is_mountpoint: check kernel mountinfo and /proc/mounts — no SFTP I/O.
+# Never uses `ls` so it cannot be fooled by a slow SFTP session.
+is_mountpoint() {
+  local mp="${1%/}"
+  # /proc/self/mountinfo field 5 = mount point
+  if awk -v mp="$mp" '$5 == mp { found=1 } END { exit !found }' /proc/self/mountinfo 2>/dev/null; then
+    return 0
+  fi
+  # /proc/mounts field 2 = mount point
+  if awk -v mp="$mp" '$2 == mp { found=1 } END { exit !found }' /proc/mounts 2>/dev/null; then
+    return 0
+  fi
+  if command -v mountpoint >/dev/null 2>&1 && mountpoint -q "$mp" 2>/dev/null; then
+    return 0
+  fi
+  return 1
+}
+
+restart_download_containers() {
+  [[ -f "$COMPOSE_FILE" ]] || return 0
+  echo "$(date -Is) INFO: restarting download-touching containers (post-remount)" >>"$LOG"
+  "$DOCKER" compose -f "$COMPOSE_FILE" restart sonarr radarr lidarr readarr unpackerr >>"$LOG" 2>&1 \
+    || echo "$(date -Is) WARN: container restart failed — run manually: docker compose restart sonarr radarr lidarr readarr unpackerr" >>"$LOG"
+}
+
+# ---- SAFETY GUARD: never remount if kernel already shows the FUSE mount -----
+# We check mountinfo only (no SFTP ls). The watchdog handles stale-handle
+# detection and calls this script only after it has already torn down a dead
+# FUSE handle. So if we see a mountpoint here, it is either healthy or the
+# watchdog is about to handle it — either way, do not touch it.
+if is_mountpoint "$MOUNTPOINT"; then
+  echo "$(date -Is) INFO: already mounted at $MOUNTPOINT — no-op" >>"$LOG"
   exit 0
 fi
 
-# Clean up a stale/half-dead FUSE handle before remounting (ignore errors).
+# ---- Ensure fusermount3 exists (DSM ships fusermount only) ------------------
+if ! command -v fusermount3 >/dev/null 2>&1; then
+  local_fusermount="$(command -v fusermount || true)"
+  if [[ -n "$local_fusermount" ]]; then
+    ln -sf "$local_fusermount" /usr/local/bin/fusermount3
+    echo "$(date -Is) INFO: created fusermount3 symlink -> $local_fusermount" >>"$LOG"
+  else
+    echo "$(date -Is) ERROR: no fusermount binary found; cannot mount FUSE" >>"$LOG"
+    exit 1
+  fi
+fi
+
+# ---- Ensure user_allow_other in /etc/fuse.conf (for PUID containers) --------
+if [[ -f /etc/fuse.conf ]] && ! grep -q '^user_allow_other' /etc/fuse.conf 2>/dev/null; then
+  echo 'user_allow_other' >> /etc/fuse.conf
+  echo "$(date -Is) INFO: added user_allow_other to /etc/fuse.conf" >>"$LOG"
+fi
+
+# ---- Verify rclone binary ---------------------------------------------------
+if [[ ! -x "$RCLONE" ]]; then
+  echo "$(date -Is) ERROR: rclone not found at $RCLONE" >>"$LOG"
+  exit 1
+fi
+
+# ---- Clean up any ghost FUSE handle (ignore errors) -------------------------
 fusermount -uz "$MOUNTPOINT" 2>/dev/null || umount -l "$MOUNTPOINT" 2>/dev/null || true
 
-echo "$(date -Is) mounting $REMOTE -> $MOUNTPOINT" >>"$LOG"
+echo "$(date -Is) INFO: mounting $REMOTE -> $MOUNTPOINT" >>"$LOG"
 
-# --allow-other      : so the *arr containers' PUID/PGID can read the mount
-#                      (requires `user_allow_other` in /etc/fuse.conf on the host)
-# --vfs-cache-mode writes : safe writes (Unpackerr extraction) + reliable reads
-# --dir-cache-time 1m     : pick up newly-completed downloads quickly
-# --buffer-size 64M       : per-file read-ahead for smooth import copies
-exec "$RCLONE" mount "$REMOTE" "$MOUNTPOINT" \
+# rclone mount flags:
+#   --allow-other          : *arr containers (PUID != root) can read the mount
+#   --vfs-cache-mode minimal : cache VFS metadata (dirs + open file handles) but
+#                             not file data. Lighter than `writes` on 4 GB RAM.
+#                             `reads` mode requires a newer rclone; `minimal` is
+#                             the correct choice for a read-only workload.
+#   --dir-cache-time 1m    : picks up newly-completed downloads within 60 s
+#   --buffer-size 32M      : per-file read-ahead; balanced for 4 GB NAS RAM
+#   --timeout 60s          : global I/O timeout per operation
+#   --contimeout 15s       : SFTP connection timeout (fail fast on network loss)
+#   --low-level-retries 3  : retry transient SFTP errors at the transport layer
+#   --retries 2            : retry at the rclone operation layer
+#   --sftp-idle-timeout 60s: kill idle SFTP connections so they don't go stale
+#   --log-level INFO       : mount events + errors go to LOG
+#   --daemon               : backgrounds immediately; kernel signals readiness
+"$RCLONE" mount "$REMOTE" "$MOUNTPOINT" \
   --config "$RCLONE_CONF" \
   --allow-other \
-  --vfs-cache-mode writes \
+  --vfs-cache-mode minimal \
   --dir-cache-time 1m \
-  --buffer-size 64M \
+  --buffer-size 32M \
+  --timeout 60s \
+  --contimeout 15s \
+  --low-level-retries 3 \
+  --retries 2 \
+  --sftp-idle-timeout 60s \
   --log-file "$LOG" \
   --log-level INFO \
   --daemon
+
+# --daemon returns as soon as the FUSE device is registered with the kernel.
+# Wait for /proc/self/mountinfo to confirm — this is fast (no SFTP I/O) and
+# reliable. We do NOT do an `ls` here; `ls` can be slow if SFTP negotiation is
+# still in progress, and a timeout here would exit 1 while rclone is still
+# starting up (leaving an orphaned daemon). The watchdog will verify readiness
+# with `ls` on the next cycle (within 5 min).
+WAIT_SECS=30
+for i in $(seq 1 "$WAIT_SECS"); do
+  if is_mountpoint "$MOUNTPOINT"; then
+    echo "$(date -Is) INFO: FUSE handle registered after ${i}s — mount started" >>"$LOG"
+    break
+  fi
+  sleep 1
+done
+
+if ! is_mountpoint "$MOUNTPOINT"; then
+  echo "$(date -Is) ERROR: rclone daemon started but FUSE mount not in mountinfo after ${WAIT_SECS}s" >>"$LOG"
+  grep -F "$MOUNTPOINT" /proc/self/mountinfo >>"$LOG" 2>&1 || true
+  exit 1
+fi
+
+echo "$(date -Is) INFO: mount registered — SFTP handshake may still be in progress; watchdog will verify" >>"$LOG"
+
+# Update health marker so the watchdog and external monitors have a reference.
+date -Is > "$HEALTH_FILE"
+
+restart_download_containers

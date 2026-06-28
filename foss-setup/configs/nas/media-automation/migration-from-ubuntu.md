@@ -17,10 +17,10 @@ on the NAS:
 
 | Ubuntu source | NAS destination | Key files |
 |---|---|---|
-| `configs/sonarr/` | `/volume1/docker/sonarr/` | `sonarr.db`, `config.xml`, `asp/` |
-| `configs/radarr/` | `/volume1/docker/radarr/` | `radarr.db`, `config.xml`, `asp/` |
-| `configs/liadarr/` *(typo on old host)* | `/volume1/docker/lidarr/` | `lidarr.db`, `config.xml`, `asp/` |
-| `configs/readarr/` | `/volume1/docker/readarr/` | `readarr.db`, `config.xml`, `asp/` |
+| `configs/sonarr/` | `/volume1/docker/sonarr/config/` | `sonarr.db`, `config.xml`, `asp/` |
+| `configs/radarr/` | `/volume1/docker/radarr/config/` | `radarr.db`, `config.xml`, `asp/` |
+| `configs/liadarr/` *(typo on old host)* | `/volume1/docker/lidarr/config/` | `lidarr.db`, `config.xml`, `asp/` |
+| `configs/readarr/` | `/volume1/docker/readarr/config/` | `readarr.db`, `config.xml`, `asp/` |
 
 Skip `logs/`, `Sentry/`, and `*.pid`. The SQLite `.db` files hold the library,
 quality profiles, naming, tags, and history.
@@ -32,7 +32,8 @@ quality profiles, naming, tags, and history.
 1. On Ubuntu: `docker compose stop` for sonarr, radarr, lidarr, readarr.
 2. From MacBook: `scp -r mini:/home/btabaska/server/configs/sonarr nas:/tmp/`
    (repeat for radarr, liadarr → `/volume1/docker/lidarr/`, readarr).
-3. Move into per-app `/config` mounts under `/volume1/docker/<app>/`.
+3. Move into per-app `/config` mounts: `/volume1/docker/<app>/config/` (LinuxServer
+   bind-mount target — **not** the parent `/volume1/docker/<app>/`).
 4. Deploy the NAS compose (see README RAM-phased checklist) — configs are pre-seeded.
 5. Complete **nas-22** rewire steps below before relying on searches/imports.
 

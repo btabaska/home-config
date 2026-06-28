@@ -4,23 +4,22 @@
 # Reference compose:                     https://github.com/crocodilestick/Calibre-Web-Automated/blob/main/docker-compose.yml
 # Image tags:                            https://hub.docker.com/r/crocodilestick/calibre-web-automated/tags
 #
-# PINNED to v4.0.6 (latest tagged release as of writing). To upgrade, bump the tag,
+# PINNED to v4.0.7 (contains the CVE-2026-7713 fix). To upgrade, bump the tag,
 # read the release notes, then `docker compose pull && docker compose up -d`.
+# Confirm the current tag at the Docker Hub tags page before deploying.
 #
-# SECURITY (load-bearing until a patched image ships): CVE-2026-7713 is a Kobo
-# auth-token IDOR/bypass in cps/kobo_auth.py affecting CWA up to and including
-# v4.0.6 (fixed upstream in 4.0.7, commit 9f50bb2). As of writing, v4.0.6 AND
-# :latest are still the vulnerable builds — v4.0.7 is not published on Docker Hub.
-# Until a patched stable tag lands: do NOT expose CWA to the internet (LAN/VPN only,
-# behind reverse-proxy auth); disable Kobo sync if you are not actively using it;
-# re-check https://hub.docker.com/r/crocodilestick/calibre-web-automated/tags before
-# every deploy and bump the pin the moment v4.0.7+ appears.
+# SECURITY: CVE-2026-7713 was a Kobo auth-token IDOR/bypass in cps/kobo_auth.py
+# affecting CWA up to and including v4.0.6, FIXED upstream in v4.0.7 (commit
+# 9f50bb2). This compose now pins v4.0.7, so Kobo sync is safe to use on a
+# trusted LAN. Still: do NOT expose CWA directly to the internet (LAN/Tailscale
+# or behind reverse-proxy auth), and re-check the tags page for newer patches:
+# https://hub.docker.com/r/crocodilestick/calibre-web-automated/tags
 
 name: calibre-web-automated
 
 services:
   calibre-web-automated:
-    image: crocodilestick/calibre-web-automated:v4.0.6
+    image: crocodilestick/calibre-web-automated:v4.0.7   # CVE-2026-7713 fixed in 4.0.7
     container_name: calibre-web-automated
     environment:
       # PUID/PGID must match the Synology user that owns the volume paths below.

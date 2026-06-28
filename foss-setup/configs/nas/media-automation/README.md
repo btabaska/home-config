@@ -36,11 +36,152 @@ Related scripts: copy `../../scripts/media/rclone-*.sh` to
 
 ---
 
+## §0. Seedbox mount — reliability design (nas-20 backbone)
+
+The rclone SFTP mount is the **single point of failure** for the entire media
+pipeline. A dropped mount silently stalls all \*arr imports with no error.
+
+### How it works
+
+```
+DSM boot → rclone-seedbox-mount.sh (boot trigger, root)
+              └─ launches rclone daemon (--daemon)
+              └─ waits for FUSE handle in /proc/self/mountinfo (no SFTP ls)
+              └─ restarts *arr containers so plain bind sees the new mount
+
+Every 5 min → rclone-seedbox-watchdog.sh (scheduled, root)
+              └─ if not in mountinfo     → remount immediately
+              └─ if ls times out (once)  → log "suspect", hold off (SFTP lag)
+              └─ if ls times out (twice) → confirmed stale → tear down + remount
+              └─ on healthy ls          → write /var/run/seedbox-mount.ok
+```
+
+### Two-strike rule
+
+SFTP connections over WAN can be slow to respond (up to 15–20 s on cold
+sessions). A single `ls` timeout does NOT mean the mount is dead. The watchdog
+uses a state file (`/var/run/seedbox-watchdog.fail_count`) so it only tears
+down the mount after **two consecutive 5-min cycles** where `ls` fails.
+This prevents the observed failure mode: watchdog destroys a healthy mount
+that was simply slow to respond.
+
+### Why plain bind (no :rslave)
+
+DSM's kernel rejects `mount --make-shared` on `fuse.rclone` mounts. Docker's
+`:rslave` propagation requires the source to be shared. Using plain bind means
+the container sees the mount **at startup only**. After a watchdog remount, the
+containers are restarted so they re-open their `/seedbox` file descriptors.
+
+### DSM Task Scheduler setup
+
+| Task | Type | User | Command | Schedule |
+|---|---|---|---|---|
+| rclone-seedbox-mount | Triggered | root | `/volume1/scripts/media/rclone-seedbox-mount.sh` | Event: Boot-up |
+| rclone-seedbox-watchdog | Scheduled | root | `/volume1/scripts/media/rclone-seedbox-watchdog.sh` | Every 5 min |
+
+Steps:
+1. Control Panel → Task Scheduler → Create → **Triggered Task** (boot)
+   - User: `root` | Event: `Boot-up`
+   - Command: `/volume1/scripts/media/rclone-seedbox-mount.sh`
+2. Control Panel → Task Scheduler → Create → **Scheduled Task** (watchdog)
+   - User: `root` | Advanced: repeat every **5 minutes**
+   - Command: `/volume1/scripts/media/rclone-seedbox-watchdog.sh`
+
+### Operational runbook — if imports stall
+
+1. **Is the mount present?**
+   ```bash
+   ssh nas 'grep seedbox-files /proc/mounts; ls /volume1/mounts/seedbox-files/'
+   ```
+   If empty → run mount script manually:
+   ```bash
+   ssh -t nas 'sudo /volume1/scripts/media/rclone-seedbox-mount.sh'
+   ```
+
+2. **Is the SFTP reachable from the NAS?**
+   ```bash
+   ssh -t nas 'sudo ssh -i /root/.ssh/seedbox_ed25519 btabaska@185.162.184.38 ls files/'
+   ```
+
+3. **Are containers seeing /seedbox?**
+   ```bash
+   ssh -t nas 'sudo /usr/local/bin/docker exec sonarr ls /seedbox/'
+   ```
+   If empty but mount is present → restart containers:
+   ```bash
+   ssh -t nas 'sudo /usr/local/bin/docker compose -f /volume1/docker/media-automation/docker-compose.yml restart sonarr radarr lidarr readarr unpackerr'
+   ```
+
+4. **Check the log:**
+   ```bash
+   ssh nas 'tail -50 /var/log/rclone-seedbox.log'
+   ```
+   Look for `ERROR`, `WARN`, repeated `mounting` lines (indicates recurring drops).
+
+5. **Is the watchdog scheduled?**
+   DSM → Control Panel → Task Scheduler → verify both tasks exist and are enabled.
+
+6. **Health marker** (updated by watchdog on every healthy ls):
+   ```bash
+   ssh nas 'cat /var/run/seedbox-mount.ok'
+   ```
+   If missing or older than 15 min → mount has been unhealthy for 3+ cycles.
+
+### Monitoring (optional)
+
+- **Uptime Kuma** (docker-11): add a "Command" monitor that SSHes to the NAS
+  and checks the age of `/var/run/seedbox-mount.ok` (alert if >15 min old).
+- **Beszel** (docker-10): agent on NAS watches system-level metrics.
+- **ntfy** (docker-09): add a curl push to the watchdog's remount path for
+  push alerts.
+
+### Recovery test procedure
+
+```bash
+# 1. Verify mount is healthy
+ssh nas 'ls /volume1/mounts/seedbox-files/'
+
+# 2. Kill the rclone daemon (simulates drop)
+ssh -t nas 'sudo fusermount -uz /volume1/mounts/seedbox-files'
+
+# 3. Verify mount gone
+ssh nas 'grep seedbox-files /proc/mounts || echo "gone"'
+
+# 4. Wait one watchdog cycle (up to 5 min) or run manually
+ssh -t nas 'sudo /volume1/scripts/media/rclone-seedbox-watchdog.sh'
+
+# 5. Verify restored
+ssh nas 'grep seedbox-files /proc/mounts; ls /volume1/mounts/seedbox-files/'
+
+# 6. Verify inside container
+ssh -t nas 'sudo /usr/local/bin/docker exec sonarr ls /seedbox/'
+```
+
+### Remaining risks
+
+- **DSM OOM (4 GB RAM)**: rclone with `--vfs-cache-mode reads` can cache up to
+  `--buffer-size` per file. With 4 GB RAM and many concurrent imports, this
+  could trigger the OOM killer. If you see rclone killed unexpectedly, reduce
+  `--buffer-size` to `16M` in the mount script, or upgrade NAS RAM.
+- **Inherent FUSE fragility on DSM**: Synology's kernel is not a mainstream
+  distro. FUSE mounts can drop after DSM software updates or kernel panics with
+  no warning. The two-strike watchdog bounds the outage to ≤10 min but cannot
+  prevent the initial drop.
+- **Alternative if FUSE remains unstable**: Replace the live mount with a
+  short-interval `rclone copy` (every 2–5 min) from `files/{tv,movies,music,books}`
+  into a local staging dir on `/volume1`. \*arrs point at staging. Eliminates
+  FUSE entirely; adds 2–5 min import lag vs live mount. Betty originals keep
+  seeding. This is the recommended fallback if you see >2 FUSE drops per week.
+
+---
+
 ## Shared invariants (the self-check at the bottom must verify these)
 
-1. **Identical `/seedbox` mount + `:rslave`** on every download-touching service
+1. **Identical `/seedbox` bind** on every download-touching service
    (`sonarr`, `radarr`, `lidarr`, `readarr`, `unpackerr`). Change-one-change-all —
    the compose uses a YAML anchor (`*seedbox-mount`) so they cannot drift.
+   **DSM note:** plain bind only (no `:rslave` — fuse.rclone cannot be shared/slave).
+   After a watchdog remount, containers are restarted automatically.
 2. **Identical PUID/PGID** (TODO from `id <user>`), **TZ=America/New_York**,
    **restart: unless-stopped**, **/config on `${DOCKER_ROOT}/<app>`** (default
    `/volume1/docker/<app>`).
@@ -152,7 +293,7 @@ hardlink. Leave Remove Completed OFF.
 
 ## Final self-check (report violations; don't silently fix)
 
-1. **`/seedbox(rslave)`** on sonarr, radarr, lidarr, readarr, unpackerr.
+1. **`/seedbox` bind** on sonarr, radarr, lidarr, readarr, unpackerr (same host path).
 2. **Per-volume library mounts:** sonarr → `/tv` only; radarr → `/movies` only;
    lidarr → `/music` only.
 3. **One scheduled rclone job:** manual lane → `/volume1/manual` only.
