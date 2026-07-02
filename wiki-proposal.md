@@ -108,7 +108,8 @@ Home
 │   ├── Media
 │   │   ├── Plex · Tautulli · Kometa · Maintainerr
 │   │   ├── *arr suite (Sonarr/Radarr/Lidarr/Readarr/Bazarr/Prowlarr)
-│   │   ├── Soularr + beets (NAS) · slskd (seedbox Soulseek)
+│   │   ├── Seerr · MusicSeerr (request portals — movies/TV vs albums)
+│   │   ├── Soularr + beets (NAS) · slskd native binary (seedbox Soulseek)
 │   │   ├── Recyclarr · Tdarr · Unpackerr
 │   │   └── Pinchflat / MeTube
 │   ├── Photos & Reading

@@ -1,34 +1,29 @@
 # Calibre-Web-Automated (CWA) on Synology DS920+ (Container Manager / Docker Compose)
 #
-# Project (the actively-developed fork): https://github.com/crocodilestick/Calibre-Web-Automated
-# Reference compose:                     https://github.com/crocodilestick/Calibre-Web-Automated/blob/main/docker-compose.yml
-# Image tags:                            https://hub.docker.com/r/crocodilestick/calibre-web-automated/tags
+# IMAGE DECISION (June 2026): upstream crocodilestick/calibre-web-automated on Docker
+# Hub stops at v4.0.6. CVE-2026-7713 (Kobo auth-token IDOR) is fixed in v4.0.7,
+# published only on the community fork Calibre-Web-NextGen:
+#   https://github.com/new-usemame/Calibre-Web-NextGen/releases/tag/v4.0.7
+# Drop-in replacement — same /config, /calibre-library, /cwa-book-ingest mounts.
 #
-# PINNED to v4.0.7 (contains the CVE-2026-7713 fix). To upgrade, bump the tag,
-# read the release notes, then `docker compose pull && docker compose up -d`.
-# Confirm the current tag at the Docker Hub tags page before deploying.
+# To upgrade: bump the tag below, read release notes, then:
+#   ssh -t nas 'cd /volume1/docker/calibre-web-automated && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'
 #
-# SECURITY: CVE-2026-7713 was a Kobo auth-token IDOR/bypass in cps/kobo_auth.py
-# affecting CWA up to and including v4.0.6, FIXED upstream in v4.0.7 (commit
-# 9f50bb2). This compose now pins v4.0.7, so Kobo sync is safe to use on a
-# trusted LAN. Still: do NOT expose CWA directly to the internet (LAN/Tailscale
-# or behind reverse-proxy auth), and re-check the tags page for newer patches:
-# https://hub.docker.com/r/crocodilestick/calibre-web-automated/tags
+# SECURITY: keep CWA LAN/Tailscale-only (no public :8083). With v4.0.7+, Kobo sync
+# and KOSync are safe to enable when you wire read-06.
 
 name: calibre-web-automated
 
 services:
   calibre-web-automated:
-    image: crocodilestick/calibre-web-automated:v4.0.7   # CVE-2026-7713 fixed in 4.0.7
+    image: ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7   # CVE-2026-7713 fixed; not on Docker Hub crocodilestick repo
     container_name: calibre-web-automated
     environment:
       # PUID/PGID must match the Synology user that owns the volume paths below.
-      # Find them via SSH: `id your_user`  (DSM admin users are often 1026/100, etc.)
-      - PUID=1000
-      - PGID=1000
+      # Find them via SSH: `id btabaska`  (DSM users are often 1026/100, etc.)
+      - PUID=1026
+      - PGID=100
       - TZ=America/New_York
-      # Default listen port inside the container; only change if you also change the mapping.
-      # - CWA_PORT_OVERRIDE=8083
       # Synology shared folders are typically SMB/NFS-backed; polling avoids missed inotify events.
       - NETWORK_SHARE_MODE=true
     volumes:

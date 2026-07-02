@@ -192,7 +192,7 @@ ssh -t nas 'sudo /usr/local/bin/docker exec sonarr ls /seedbox/'
 5. **Music = Lidarr + Soulseek (split).** Torrents via Deluge (`/seedbox/music`);
    Soulseek via **slskd on Betty** + **Soularr on NAS** (`/seedbox/slskd`). Optional
    **beets** tag-only pass on `/music` — Lidarr owns layout.
-6. **Readarr → self-hosted rreading-glasses**, output to the **CWA ingest** folder.
+6. **Readarr → self-hosted rreading-glasses**, permanent root **`/readarr-library`**, copy-on-import to **CWA ingest** (ebook-mgmt workstream).
 
 ---
 
@@ -208,6 +208,7 @@ ssh -t nas 'sudo /usr/local/bin/docker exec sonarr ls /seedbox/'
 - [ ] **Phase C:** `unpackerr` → fill API keys in `unpackerr.conf`.
 - [ ] **Phase D (Soulseek):** `slskd` on Betty (seed-09) → `soularr` on NAS (nas-29).
 - [ ] **Phase E (optional):** `beets` tag layer — `docker compose --profile music-tags run --rm beets beet write` (nas-30).
+- [ ] **MusicSeerr (Mac mini):** docker-16 → seed-06 → seed-10 E2E music verification.
 - [ ] **Manual lane:** every-15-min Task Scheduler = `rclone-manual-copy.sh`.
 - [ ] Run the **self-check** (bottom of this file).
 
@@ -240,7 +241,11 @@ Every \*arr uses the **same remote Deluge** on the seedbox:
 
 ---
 
-## §4. Music pipeline — Lidarr + Soulseek (split) + optional beets
+## §4. Music pipeline — MusicSeerr + Lidarr + Soulseek + optional beets
+
+**MusicSeerr** (Mac mini, docker-16 / seed-06) is the household album request portal.
+Seerr handles movies/TV only — it has no Lidarr integration. MusicSeerr forwards
+requests to **Lidarr** on this NAS.
 
 Lidarr imports into **`/music`** (host: `/volume1/music`).
 
@@ -255,14 +260,16 @@ Lidarr imports into **`/music`** (host: `/volume1/music`).
 
 ### Soulseek path (seed-09 + nas-29)
 
-Soulseek is P2P — **slskd runs on Betty only**. **Soularr** runs on the NAS next to
-Lidarr:
+Soulseek is P2P — **slskd runs natively on Betty** (not rootless Docker; port 50300
+must bind to the host like Deluge). **Soularr** runs on the NAS next to Lidarr:
 
-1. slskd downloads to `~/files/slskd/` on Betty.
+1. slskd downloads to `~/files/slskd/` on Betty (`~/slskd-native/.env` + user systemd service).
 2. NAS rclone mount exposes it at `/seedbox/slskd/` inside Lidarr/Soularr.
 3. Soularr reads Lidarr **Wanted**, searches slskd over Tailscale (`http://betty.<tailnet>:5030`), triggers Lidarr import from `/seedbox/slskd/`.
+4. Set `SLSKD_HTTP_IP` in Betty's `.env` to the Tailscale IP so the NAS can reach the slskd API.
 
-Full wiring: **`configs/seedbox/music-pipeline-soulseek.md`**.
+Deploy: **`scripts/media/install-slskd-native.sh`** + **`configs/seedbox/slskd-native.example.env`**.
+Full wiring: **`configs/seedbox/music-pipeline.md`**.
 
 ### beets tag layer (nas-30, optional)
 
@@ -280,13 +287,24 @@ Scheduler. **Do not** run `beet import` with move/copy.
 
 ---
 
-## §5. Books pipeline — Readarr + rreading-glasses → CWA
+## §5. Books pipeline — Readarr + rreading-glasses → CWA (+ Libreseerr)
+
+Three roles (see **ebook-mgmt** workstream for migration from ingest-as-root):
+
+| Layer | Tool | Role |
+|---|---|---|
+| Requests | **Libreseerr** (Mac mini) | Household search & request UI |
+| Acquisition & inventory | **Readarr** (NAS) | Deluge grabs, import to **`/readarr-library`** |
+| Library & reading | **CWA** (NAS) | Ingest → **`/volume1/books`**, OPDS, Kobo sync |
 
 - **Metadata:** Readarr → `http://<nas>:8787/settings/development` → Provider =
   `http://rreading-glasses:8788`.
 - **Download client:** Deluge, label `readarr`; mapping as in §7.
-- **Root folder:** `/cwa-book-ingest` (host: `${CWA_INGEST}`).
-- CWA organizes into **`/volume1/books`** for Plex/Kobo.
+- **Root folder:** `/readarr-library` (host: `${READARR_LIBRARY}`) — **not** ingest.
+- **CWA handoff:** Connect custom script `scripts/media/readarr-copy-to-cwa-ingest.sh`
+  on **On Import** + **On Upgrade** copies to `/cwa-book-ingest` (host: `${CWA_INGEST}`).
+- CWA organizes into **`/volume1/books`** for Plex/Kobo. Requires **nas-09**
+  (CWA container running — ingest folder alone is not enough).
 
 ---
 
@@ -311,7 +329,7 @@ Scheduler. **Do not** run `beet import` with move/copy.
 | Sonarr | `/tv` | `/volume3/tv` |
 | Radarr | `/movies` | `/volume2/movies` |
 | Lidarr | `/music` | `/volume1/music` |
-| Readarr | `/cwa-book-ingest` | `/volume1/docker/calibre-web-automated/ingest` |
+| Readarr | `/readarr-library` | `/volume1/docker/readarr/library` |
 
 **Plex** needs **separate library roots** for TV, Movies, Music, and Books.
 
@@ -328,7 +346,7 @@ hardlink. Leave Remove Completed OFF.
 3. **One scheduled rclone job:** manual lane → `/volume1/manual` only.
 4. **Lidarr** root `/music`, rename ON; Soulseek via Soularr + `/seedbox/slskd`;
    optional beets tag-only (no import/move).
-5. **Readarr** metadata = `http://rreading-glasses:8788`; root `/cwa-book-ingest`.
+5. **Readarr** metadata = `http://rreading-glasses:8788`; root `/readarr-library`; copy script → `/cwa-book-ingest`.
 6. **PUID/PGID/TZ** identical; `/config` under `/volume1/docker/<app>`.
 
 ```bash

@@ -8,7 +8,9 @@
 >
 > **Why it won:** the slickest one-click panel and the broadest catalog (qBittorrent + full *arr suite +
 > Seerr/Bazarr/Tautulli + rclone/Syncthing, 67+ apps), so the whole pipeline stands up fastest. The few
-> tools NOT in the catalog (slskd/Soularr/Unpackerr) deploy via the **rootless Docker** every plan includes.
+> tools NOT in the catalog (slskd/Soularr/Unpackerr) deploy yourself: **slskd** runs as a
+> **native binary** on Betty (rootless Docker cannot expose Soulseek peer port 50300);
+> Soularr/Unpackerr run on the NAS.
 >
 > **On the upload cap (the one trade-off):** the criteria below rank *uncapped* upload first, and Stream +3
 > is *capped* — but at **6–10 TB/month** (confirm the exact figure for the Stream +3 SKU at checkout)

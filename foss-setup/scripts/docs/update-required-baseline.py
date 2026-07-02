@@ -112,6 +112,15 @@ DEP_FIXES = {
     "doc-01": ["nas-01", "nas-prep-01"],
     "seed-05": ["docker-03", "nas-22", "nas-28"],
     "seed-07": ["seed-05", "nas-25", "nas-10"],
+    "docker-16": ["docker-02", "nas-00d", "nas-23"],
+    "seed-06": ["docker-16", "nas-23", "nas-10"],
+    "seed-10": ["seed-06", "nas-29", "docker-05"],
+    "ebook-01": ["nas-24", "nas-09"],
+    "ebook-02": ["ebook-01"],
+    "ebook-03": ["ebook-02"],
+    "ebook-04": ["docker-02", "ebook-03"],
+    "ebook-05": ["ebook-04", "nas-10"],
+    "ebook-06": ["ebook-05", "read-05"],
 }
 
 INSERT_AFTER = {

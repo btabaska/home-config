@@ -1032,7 +1032,7 @@
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
       "MacBook browser: sign up bytesized-hosting.com **Stream +3** (3000 GB, \u20ac16/mo EU)",
       "Record SFTP user, home /home/hd34/btabaska, IP **185.162.184.38** in Bitwarden",
-      "Architecture lock-in: Betty runs **Deluge + slskd** (P2P off-site) \u2014 do NOT install *arr apps, Soularr, or beets on Betty",
+      "Architecture lock-in: Betty runs **Deluge + slskd (native binary)** (P2P off-site) \u2014 do NOT install *arr apps, Soularr, or beets on Betty",
       "One-click install Deluge only; set ratio/seed-time limits for self-prune under 3 TB",
       "Record Deluge daemon port + password (needed by nas-22). slskd is added later in **seed-09**."
     ],
@@ -1218,7 +1218,7 @@
     ],
     "files": [
       "configs/nas/media-automation/README.md",
-      "configs/seedbox/music-pipeline-soulseek.md"
+      "configs/seedbox/music-pipeline.md"
     ],
     "verify": "Torrent album imports to /volume1/music and appears in Plex Music."
   },
@@ -1228,7 +1228,7 @@
       "Prerequisite: nas-22 complete.",
       "Prerequisite: nas-09 complete.",
       "Readarr metadata http://rreading-glasses:8788 via /settings/development",
-      "Root /cwa-book-ingest",
+      "Bootstrap root /cwa-book-ingest \u2014 migrate to /readarr-library via ebook-mgmt (ebook-01\u2013ebook-03)",
       "Deluge label readarr"
     ],
     "commands": [
@@ -1238,7 +1238,7 @@
       "configs/nas/media-automation/README.md",
       "configs/nas/calibre-web-automated/docker-compose.yml"
     ],
-    "verify": "Book lands in CWA ingest."
+    "verify": "Book lands in CWA ingest and CWA processes it into /volume1/books."
   },
   "nas-25": {
     "steps": [
@@ -1316,18 +1316,243 @@
     "steps": [
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
       "Prerequisite: docker-03, nas-22, nas-28 complete.",
-      "Seerr :5055 \u2192 Services \u2192 Radarr/Sonarr/Lidarr at 192.168.10.4",
-      "Root folders /movies /tv /music; TRaSH profiles",
-      "Link Plex NAS server + token"
+      "Seerr :5055 \u2192 Settings \u2192 Services \u2014 **Radarr + Sonarr only** (Seerr has no Lidarr support).",
+      "Radarr @ 192.168.10.4:7878, root /movies, TRaSH profile HD Bluray + WEB.",
+      "Sonarr @ 192.168.10.4:8989, root /tv, TRaSH profile WEB-1080p.",
+      "Settings \u2192 Plex: link NAS server http://192.168.10.4:32400 + token.",
+      "Music requests use **MusicSeerr** (docker-16 / seed-06) \u2014 not Seerr."
     ],
     "commands": [
-      "curl -s http://192.168.10.4:7878/api/v3/system/status -H 'X-Api-Key: <KEY>'",
-      "curl -s http://192.168.10.4:8989/api/v3/system/status -H 'X-Api-Key: <KEY>'"
+      "curl -s http://192.168.10.4:7878/api/v3/system/status -H 'X-Api-Key: <RADARR_KEY>'",
+      "curl -s http://192.168.10.4:8989/api/v3/system/status -H 'X-Api-Key: <SONARR_KEY>'"
     ],
     "files": [
-      "configs/docker-stack/stacks/seerr/compose.yaml"
+      "configs/docker-stack/stacks/seerr/compose.yaml",
+      "configs/nas/media-automation/README.md"
     ],
-    "verify": "Seerr test passes; request hits NAS *arr."
+    "verify": "Seerr Test passes for Radarr/Sonarr; test movie/TV request hits NAS *arr."
+  },
+  "docker-16": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-02, nas-00d, nas-23 complete.",
+      "Mount NAS music library on Mac mini (same NFS path as Navidrome): `ssh mini 'sudo mkdir -p /mnt/nas/music'` + fstab `192.168.10.4:/volume1/music /mnt/nas/music nfs defaults,_netdev 0 0`.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/musicseerr mini:/tmp/musicseerr`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/musicseerr && sudo rsync -a /tmp/musicseerr/ /opt/stacks/musicseerr/'`",
+      "`ssh mini 'cd /opt/stacks/musicseerr && cp -n .env.example .env'` \u2014 MUSIC_FOLDER=/mnt/nas/music",
+      "`ssh mini 'cd /opt/stacks/musicseerr && docker compose up -d'`",
+      "Browse http://macmini.<tailnet>:8688 \u2014 create admin on first launch."
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/musicseerr mini:/tmp/musicseerr",
+      "ssh mini 'sudo rsync -a /tmp/musicseerr/ /opt/stacks/musicseerr/'",
+      "ssh mini 'cd /opt/stacks/musicseerr && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sf http://127.0.0.1:8688/health'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/musicseerr/compose.yaml",
+      "configs/docker-stack/stacks/musicseerr/.env.example",
+      "configs/seedbox/music-pipeline.md"
+    ],
+    "docs": [
+      {
+        "title": "MusicSeerr",
+        "url": "https://musicseerr.com/docs/getting-started/"
+      }
+    ],
+    "verify": "MusicSeerr :8688 healthy; admin account created."
+  },
+  "seed-06": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-16, nas-23, nas-10 complete.",
+      "MusicSeerr \u2192 Settings \u2192 **Lidarr**: URL http://192.168.10.4:8686, API key from Lidarr \u2192 Settings \u2192 General.",
+      "Lidarr root folder **/music** (container path); quality profile = your FLAC-preferred profile from nas-23.",
+      "Optional: **Plex** http://192.168.10.4:32400 + token (availability badges for Plex Music).",
+      "Optional: **Navidrome** http://navidrome:4533 (same edge network; requires docker-05).",
+      "Optional: Local files \u2192 Music directory **/music** (matches compose NFS mount).",
+      "Request a test album \u2192 confirm it appears in **NAS Lidarr Activity** (not Betty)."
+    ],
+    "commands": [
+      "LIDARR_KEY=$(ssh nas 'grep -oP \"(?<=<ApiKey>)[^<]+\" /volume1/docker/lidarr/config/config.xml')",
+      "curl -s 'http://192.168.10.4:8686/api/v1/system/status' -H \"X-Api-Key: $LIDARR_KEY\""
+    ],
+    "files": [
+      "configs/seedbox/music-pipeline.md",
+      "configs/nas/media-automation/README.md"
+    ],
+    "docs": [
+      {
+        "title": "MusicSeerr Lidarr setup",
+        "url": "https://musicseerr.com/docs/getting-started/"
+      }
+    ],
+    "verify": "MusicSeerr request appears in NAS Lidarr; Plex Music library linked."
+  },
+  "seed-10": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: seed-06, nas-29, docker-05 complete.",
+      "Confirm prerequisites: rclone mount (nas-20), Lidarr torrent path (nas-23), Soularr (nas-29), MusicSeerr wired (seed-06), Plex Music + Navidrome (nas-10, docker-05).",
+      "**Torrent path:** Request small album in MusicSeerr \u2192 Lidarr Wanted \u2192 Deluge label lidarr on Betty \u2192 import from /seedbox/music/ \u2192 /volume1/music.",
+      "**Soulseek path:** Add album to Lidarr Wanted \u2192 Soularr searches slskd \u2192 files/slskd/ \u2192 Lidarr import from /seedbox/slskd/.",
+      "Confirm album in Plex Music and Navidrome; optional beet write (nas-30)."
+    ],
+    "commands": [
+      "ssh nas 'ls /volume1/mounts/seedbox-files/music /volume1/mounts/seedbox-files/slskd'",
+      "ssh seedbox 'ls ~/files/music ~/files/slskd'"
+    ],
+    "files": [
+      "configs/seedbox/music-pipeline.md",
+      "configs/nas/plex/README.md"
+    ],
+    "verify": "Album request playable in Plex Music and Navidrome via torrent or Soulseek path."
+  },
+  "ebook-01": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: nas-24, nas-09 complete.",
+      "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
+      "`ssh -t nas 'sudo mkdir -p /volume1/docker/readarr/{library,scripts}'`",
+      "`cd ~/Documents/Home/foss-setup && scp scripts/media/readarr-copy-to-cwa-ingest.sh nas:/tmp/`",
+      "`ssh -t nas 'sudo install -m 755 /tmp/readarr-copy-to-cwa-ingest.sh /volume1/docker/readarr/scripts/'`",
+      "`cd ~/Documents/Home/foss-setup/configs/nas && tar czf - media-automation | ssh nas 'tar xzf - -C /tmp/'`",
+      "`ssh -t nas 'sudo rsync -a /tmp/media-automation/ /volume1/docker/media-automation/'`",
+      "Add `READARR_LIBRARY=/volume1/docker/readarr/library` to `/volume1/docker/media-automation/.env`.",
+      "`ssh -t nas 'cd /volume1/docker/media-automation && sudo /usr/local/bin/docker compose up -d readarr'`",
+      "`ssh nas \"docker inspect readarr --format '{{range .Mounts}}{{.Destination}} {{end}}'\"` \u2014 expect /readarr-library /cwa-book-ingest /scripts"
+    ],
+    "commands": [
+      "ssh -t nas 'sudo mkdir -p /volume1/docker/readarr/{library,scripts}'",
+      "scp ~/Documents/Home/foss-setup/scripts/media/readarr-copy-to-cwa-ingest.sh nas:/tmp/",
+      "ssh -t nas 'sudo install -m 755 /tmp/readarr-copy-to-cwa-ingest.sh /volume1/docker/readarr/scripts/'",
+      "ssh -t nas 'cd /volume1/docker/media-automation && sudo /usr/local/bin/docker compose up -d readarr'"
+    ],
+    "files": [
+      "configs/nas/media-automation/docker-compose.yml",
+      "configs/nas/media-automation/.env.example",
+      "scripts/media/readarr-copy-to-cwa-ingest.sh"
+    ],
+    "docs": [
+      {
+        "title": "CWA + Readarr workflow",
+        "url": "https://github.com/crocodilestick/Calibre-Web-Automated/discussions/248"
+      }
+    ],
+    "verify": "Readarr container mounts /readarr-library, /cwa-book-ingest, and /scripts."
+  },
+  "ebook-02": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ebook-01 complete.",
+      "Readarr \u2192 Settings \u2192 Connect \u2192 + **Custom Script** \u2192 Name: `Copy to CWA ingest`",
+      "Path: `/scripts/readarr-copy-to-cwa-ingest.sh`",
+      "Triggers: **On Import** + **On Upgrade** (not On Grab)",
+      "Test \u2192 check `/volume1/docker/readarr/config/logs/readarr-copy-to-cwa-ingest.log`"
+    ],
+    "commands": [
+      "ssh nas 'tail -20 /volume1/docker/readarr/config/logs/readarr-copy-to-cwa-ingest.log 2>/dev/null || echo run Connect Test first'"
+    ],
+    "files": [
+      "scripts/media/readarr-copy-to-cwa-ingest.sh"
+    ],
+    "docs": [
+      {
+        "title": "readarr_addedbookpaths",
+        "url": "https://github.com/crocodilestick/Calibre-Web-Automated/discussions/248"
+      }
+    ],
+    "verify": "Connect Test succeeds; import copies to ingest without removing Readarr's file."
+  },
+  "ebook-03": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ebook-02 complete.",
+      "Readarr \u2192 Root Folders: add `/readarr-library`, remove `/cwa-book-ingest`",
+      "Re-add or manual-import titles you want Readarr to track going forward",
+      "Test import: file in `/volume1/docker/readarr/library`; copy in ingest; final in `/volume1/books`",
+      "Readarr status stays **Downloaded** after CWA ingests"
+    ],
+    "commands": [
+      "ssh nas 'ls /volume1/docker/readarr/library /volume1/books'"
+    ],
+    "files": [
+      "configs/nas/media-automation/README.md"
+    ],
+    "verify": "Readarr root is /readarr-library only; titles stay Downloaded after CWA ingest."
+  },
+  "ebook-04": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: docker-02, ebook-03 complete.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/libreseerr mini:/tmp/libreseerr`",
+      "`ssh mini 'sudo mkdir -p /opt/stacks/libreseerr && sudo rsync -a /tmp/libreseerr/ /opt/stacks/libreseerr/'`",
+      "`ssh mini 'cd /opt/stacks/libreseerr && cp -n .env.example .env'` \u2014 SECRET_KEY=`openssl rand -hex 32`",
+      "`ssh mini 'cd /opt/stacks/libreseerr && docker compose up -d'`",
+      "http://macmini.<tailnet>:8789 \u2014 default admin/admin \u2192 **change password immediately**"
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/libreseerr mini:/tmp/libreseerr",
+      "ssh mini 'sudo rsync -a /tmp/libreseerr/ /opt/stacks/libreseerr/'",
+      "ssh mini 'cd /opt/stacks/libreseerr && cp -n .env.example .env && docker compose up -d'",
+      "ssh mini 'curl -sf http://127.0.0.1:8789/'"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/libreseerr/compose.yaml",
+      "configs/docker-stack/stacks/libreseerr/.env.example"
+    ],
+    "docs": [
+      {
+        "title": "Libreseerr",
+        "url": "https://github.com/zamnzim/Libreseerr"
+      }
+    ],
+    "verify": "Libreseerr :8789 healthy; admin password changed from default."
+  },
+  "ebook-05": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ebook-04, nas-10 complete.",
+      "Libreseerr Settings \u2192 Ebook server: Readarr, http://192.168.10.4:8787 + API key",
+      "Root folder `/readarr-library`; Test Connection \u2192 Save",
+      "Optional Plex Books link; create household user accounts",
+      "Test request \u2192 NAS Readarr Activity"
+    ],
+    "commands": [
+      "READARR_KEY=$(ssh nas 'grep -oP \"(?<=<ApiKey>)[^<]+\" /volume1/docker/readarr/config/config.xml')",
+      "curl -s 'http://192.168.10.4:8787/api/v1/system/status' -H \"X-Api-Key: $READARR_KEY\""
+    ],
+    "files": [
+      "configs/nas/media-automation/README.md",
+      "configs/nas/calibre-web-automated/README.md"
+    ],
+    "docs": [
+      {
+        "title": "Libreseerr",
+        "url": "https://github.com/zamnzim/Libreseerr"
+      }
+    ],
+    "verify": "Libreseerr test request appears in NAS Readarr Activity."
+  },
+  "ebook-06": {
+    "steps": [
+      "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "Prerequisite: ebook-05, read-05 complete.",
+      "Request small ebook in Libreseerr \u2192 Deluge readarr on Betty \u2192 Readarr import",
+      "Confirm `/readarr-library` + ingest copy + `/volume1/books`",
+      "Readarr stays Downloaded after CWA ingest",
+      "Plex Books + CWA OPDS on Kobo"
+    ],
+    "commands": [
+      "ssh nas 'ls /volume1/docker/readarr/library /volume1/books'",
+      "ssh nas 'tail -30 /volume1/docker/readarr/config/logs/readarr-copy-to-cwa-ingest.log'"
+    ],
+    "files": [
+      "configs/nas/media-automation/README.md",
+      "configs/nas/calibre-web-automated/README.md",
+      "scripts/reading/koreader-cwa-wallabag-wiring.md"
+    ],
+    "verify": "Libreseerr \u2192 Plex Books + OPDS; Readarr stays Downloaded after CWA ingest."
   },
   "seed-07": {
     "steps": [
@@ -1369,22 +1594,29 @@
     "steps": [
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
       "Prerequisite: seed-03, betty-01 complete.",
-      "SSH to Betty. Deploy **slskd** (Soulseek P2P stays off-site):",
-      "`scp ~/Documents/Home/foss-setup/configs/seedbox/slskd-compose.example.yaml seedbox:~/slskd-stack/docker-compose.yml`",
-      "`scp ~/Documents/Home/foss-setup/configs/seedbox/.env.example seedbox:~/slskd-stack/.env` \u2014 set SLSKD_SLSK_* creds, SLSKD_DOWNLOADS=/home/hd34/btabaska/files/slskd",
-      "`ssh seedbox 'cd ~/slskd-stack && docker compose up -d'`",
-      "In slskd web UI (via SSH tunnel or tailnet): create API key for Soularr (nas-29)",
+      "SSH to Betty. Deploy **slskd** as a **native binary** (Soulseek P2P stays off-site).",
+      "**Do NOT use rootless Docker** for slskd on Bytesized — peer port 50300 will not be reachable from the Internet.",
+      "`scp ~/Documents/Home/foss-setup/scripts/media/install-slskd-native.sh seedbox:~/install-slskd-native.sh`",
+      "`scp ~/Documents/Home/foss-setup/configs/seedbox/slskd-native.example.env seedbox:~/slskd-native/.env`",
+      "Edit `~/slskd-native/.env`: `SLSKD_SLSK_*` = Soulseek network account; `SLSKD_WEB_*` = web UI login.",
+      "For Soularr (nas-29): uncomment/set `SLSKD_HTTP_IP` to Betty's Tailscale IP so the NAS can reach the API on :5030.",
+      "`ssh seedbox 'chmod 600 ~/slskd-native/.env && bash ~/install-slskd-native.sh'`",
+      "Web UI (operator): `ssh -L 5030:127.0.0.1:5030 seedbox` → http://localhost:5030",
+      "Verify on Betty: `curl -s 'https://www.slsknet.org/porttest.php?port=50300' | grep -i open`",
+      "Create API key in slskd web UI for Soularr (nas-29)",
       "Confirm test download lands in ~/files/slskd/ and is visible on NAS at /volume1/mounts/seedbox-files/slskd/"
     ],
     "commands": [
-      "scp ~/Documents/Home/foss-setup/configs/seedbox/slskd-compose.example.yaml seedbox:~/slskd-stack/docker-compose.yml",
-      "ssh seedbox 'mkdir -p ~/slskd-stack ~/files/slskd && cd ~/slskd-stack && docker compose up -d'",
+      "scp ~/Documents/Home/foss-setup/scripts/media/install-slskd-native.sh seedbox:~/install-slskd-native.sh",
+      "scp ~/Documents/Home/foss-setup/configs/seedbox/slskd-native.example.env seedbox:~/slskd-native/.env",
+      "ssh seedbox 'chmod 600 ~/slskd-native/.env && bash ~/install-slskd-native.sh'",
+      "ssh seedbox 'systemctl --user status slskd'",
       "ssh seedbox 'ls ~/files/slskd'"
     ],
     "files": [
-      "configs/seedbox/slskd-compose.example.yaml",
-      "configs/seedbox/.env.example",
-      "configs/seedbox/music-pipeline-soulseek.md"
+      "scripts/media/install-slskd-native.sh",
+      "configs/seedbox/slskd-native.example.env",
+      "configs/seedbox/music-pipeline.md"
     ],
     "docs": [
       {
@@ -1396,7 +1628,7 @@
         "url": "https://www.slsknet.org/"
       }
     ],
-    "verify": "slskd running on Betty; API key created; ~/files/slskd visible via NAS rclone mount."
+    "verify": "Native slskd running (systemctl --user); port 50300 open on slsknet port test; API key created; ~/files/slskd visible via NAS rclone mount."
   },
   "nas-29": {
     "steps": [
@@ -1404,6 +1636,8 @@
       "Prerequisite: nas-23, seed-09 complete.",
       "Copy soularr config: `cp soularr/config.ini.example soularr/config.ini` in media-automation/",
       "Edit config.ini: Lidarr API key, slskd API key, Slskd host_url = http://betty.<tailnet>:5030, Lidarr download_dir = /seedbox/slskd",
+      "Set Betty `SLSKD_HTTP_IP` in ~/slskd-native/.env to Tailscale IP so NAS can reach slskd API",
+      "Soularr Slskd download_dir = Betty host path to slskd downloads (see config.ini.example)",
       "`ssh nas 'cd /volume1/docker/media-automation && docker compose up -d soularr'`",
       "In Lidarr add a wanted album; watch Soularr logs search slskd and Lidarr import from /seedbox/slskd/",
       "Confirm album in Plex Music + Navidrome (docker-05)"
@@ -1415,7 +1649,7 @@
     "files": [
       "configs/nas/media-automation/docker-compose.yml",
       "configs/nas/media-automation/soularr/config.ini.example",
-      "configs/seedbox/music-pipeline-soulseek.md"
+      "configs/seedbox/music-pipeline.md"
     ],
     "docs": [
       {
@@ -1456,19 +1690,19 @@
       "Prerequisite: nas-01, nas-02, nas-00c complete.",
       "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
       "`ssh -t nas 'sudo mkdir -p /volume1/docker/immich'`",
-      "`scp -r ~/Documents/Home/foss-setup/configs/nas/immich nas:/tmp/immich`",
+      "`cd ~/Documents/Home/foss-setup/configs/nas && tar czf - immich | ssh nas 'tar xzf - -C /tmp/'`",
       "`ssh -t nas 'sudo rsync -a /tmp/immich/ /volume1/docker/immich/'`",
       "`ssh nas 'cd /volume1/docker/immich && cp -n .env.example .env 2>/dev/null || true'` \u2014 edit secrets before up",
-      "`ssh nas 'cd /volume1/docker/immich && docker compose pull && docker compose up -d'`",
-      "`ssh nas 'cd /volume1/docker/immich && docker compose ps'`",
+      "`ssh -t nas 'cd /volume1/docker/immich && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'`",
+      "`ssh -t nas 'cd /volume1/docker/immich && sudo /usr/local/bin/docker compose ps'`",
       "Browser http://192.168.10.4:2283 \u2192 create admin \u2192 Settings \u2192 Video Transcoding \u2192 Quick Sync",
       "DSM Task Scheduler: nightly pg_dump to /volume1/docker/immich/backups; add folder to Hyper Backup after first dump"
     ],
     "commands": [
-      "scp -r ~/Documents/Home/foss-setup/configs/nas/immich nas:/tmp/immich",
+      "cd ~/Documents/Home/foss-setup/configs/nas && tar czf - immich | ssh nas 'tar xzf - -C /tmp/'",
       "ssh -t nas 'sudo rsync -a /tmp/immich/ /volume1/docker/immich/'",
-      "ssh nas 'cd /volume1/docker/immich && docker compose up -d'",
-      "ssh nas 'cd /volume1/docker/immich && docker compose ps'"
+      "ssh -t nas 'cd /volume1/docker/immich && sudo /usr/local/bin/docker compose up -d'",
+      "ssh -t nas 'cd /volume1/docker/immich && sudo /usr/local/bin/docker compose ps'"
     ],
     "files": [
       "configs/nas/immich/docker-compose.yml",
@@ -1518,30 +1752,79 @@
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
       "Prerequisite: nas-02, nas-00c complete.",
       "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
-      "`ssh -t nas 'sudo mkdir -p /volume1/docker/calibre-web-automated'`",
-      "`scp -r ~/Documents/Home/foss-setup/configs/nas/calibre-web-automated nas:/tmp/calibre-web-automated`",
+      "**Image:** `ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7` \u2014 CVE-2026-7713 fix. `crocodilestick/...:v4.0.7` was never published on Docker Hub (stops at v4.0.6).",
+      "`ssh nas 'id btabaska'` \u2014 confirm PUID/PGID in docker-compose.yml match (1026/100).",
+      "`ssh -t nas 'sudo mkdir -p /volume1/docker/calibre-web-automated/{config,ingest} /volume1/books'`",
+      "`cd ~/Documents/Home/foss-setup/configs/nas && tar czf - calibre-web-automated | ssh nas 'tar xzf - -C /tmp/'`",
       "`ssh -t nas 'sudo rsync -a /tmp/calibre-web-automated/ /volume1/docker/calibre-web-automated/'`",
-      "`ssh nas 'cd /volume1/docker/calibre-web-automated && cp -n .env.example .env 2>/dev/null || true'` \u2014 edit secrets before up",
-      "`ssh nas 'cd /volume1/docker/calibre-web-automated && docker compose pull && docker compose up -d'`",
-      "`ssh nas 'cd /volume1/docker/calibre-web-automated && docker compose ps'`",
-      "http://192.168.10.4:8083 \u2014 LAN/Tailscale only; **disable Kobo sync** until CWA v4.0.7+ (CVE-2026-7713)",
-      "Drop test EPUB into ingest folder; confirm appears in /volume1/books"
+      "`ssh -t nas 'cd /volume1/docker/calibre-web-automated && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'`",
+      "`ssh -t nas 'cd /volume1/docker/calibre-web-automated && sudo /usr/local/bin/docker compose ps'`",
+      "http://192.168.10.4:8083 \u2014 complete first-run wizard (creates metadata.db in /volume1/books). LAN/Tailscale only.",
+      "Drop test EPUB into ingest; **Library Refresh** if polling hasn't picked it up; confirm in /volume1/books."
     ],
     "commands": [
-      "scp -r ~/Documents/Home/foss-setup/configs/nas/calibre-web-automated nas:/tmp/calibre-web-automated",
+      "cd ~/Documents/Home/foss-setup/configs/nas && tar czf - calibre-web-automated | ssh nas 'tar xzf - -C /tmp/'",
       "ssh -t nas 'sudo rsync -a /tmp/calibre-web-automated/ /volume1/docker/calibre-web-automated/'",
-      "ssh nas 'cd /volume1/docker/calibre-web-automated && docker compose up -d'",
-      "ssh nas 'cd /volume1/docker/calibre-web-automated && docker compose ps'"
+      "ssh -t nas 'cd /volume1/docker/calibre-web-automated && sudo /usr/local/bin/docker compose up -d'",
+      "ssh -t nas 'cd /volume1/docker/calibre-web-automated && sudo /usr/local/bin/docker compose ps'"
     ],
     "files": [
-      "configs/nas/calibre-web-automated/docker-compose.yml"
+      "configs/nas/calibre-web-automated/docker-compose.yml",
+      "configs/nas/calibre-web-automated/README.md"
     ],
-    "verify": "CWA UI loads; ingest works; not exposed publicly.",
+    "verify": "CWA UI loads; ingest auto-processes into /volume1/books; not exposed publicly.",
     "docs": [
       {
-        "title": "Calibre-Web-Automated",
+        "title": "Calibre-Web-NextGen (pinned image)",
+        "url": "https://github.com/new-usemame/Calibre-Web-NextGen"
+      },
+      {
+        "title": "Original CWA project",
         "url": "https://github.com/crocodilestick/Calibre-Web-Automated"
       }
+    ],
+    "summary": "Deploy **Calibre-Web-Automated** on the DS920+ via the **Calibre-Web-NextGen** fork (`ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7`). Auto-ingests into `/volume1/books`, serves OPDS + Kobo/KOSync. Upstream Docker Hub never shipped v4.0.7; the fork is the drop-in with the CVE-2026-7713 fix.",
+    "detail": [
+      {
+        "h": "Prerequisites",
+        "sub": [
+          "**nas-00c complete** (Vol 1 shares incl. `/volume1/books`).",
+          "DSM **Container Manager** installed. PUID/PGID from `id btabaska` (often 1026/100)."
+        ]
+      },
+      {
+        "h": "Step 1 \u2014 Transfer stack (tar pipe, not scp)",
+        "body": [
+          "Synology SSH often rejects `scp` (`subsystem request failed`). Use tar over SSH:"
+        ],
+        "cmds": [
+          "cd ~/Documents/Home/foss-setup/configs/nas && tar czf - calibre-web-automated | ssh nas 'tar xzf - -C /tmp/'",
+          "ssh -t nas 'sudo rsync -a /tmp/calibre-web-automated/ /volume1/docker/calibre-web-automated/'"
+        ]
+      },
+      {
+        "h": "Step 2 \u2014 Start CWA",
+        "cmds": [
+          "ssh -t nas 'cd /volume1/docker/calibre-web-automated && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'"
+        ],
+        "note": "Docker on DSM requires `sudo /usr/local/bin/docker` over `ssh -t`."
+      },
+      {
+        "h": "Step 3 \u2014 Verify ingest",
+        "sub": [
+          "Complete wizard at http://192.168.10.4:8083.",
+          "Drop EPUB in `/volume1/docker/calibre-web-automated/ingest` \u2192 appears in `/volume1/books`.",
+          "Use **Library Refresh** if the file sits in ingest more than ~30 s."
+        ]
+      }
+    ],
+    "pitfalls": [
+      "Using `crocodilestick/calibre-web-automated:v4.0.7` \u2014 manifest does not exist on Docker Hub; use NextGen GHCR image.",
+      "Running without sudo docker \u2014 permission denied on `/var/run/docker.sock`.",
+      "Using `scp` to NAS \u2014 often fails; use tar pipe.",
+      "PUID/PGID mismatch \u2014 ingest/convert fails silently; match `id btabaska`.",
+      "Expecting ingest without the container running \u2014 only the ingest folder exists until nas-09 completes.",
+      "Exposing :8083 publicly \u2014 keep LAN/Tailscale-only."
     ]
   },
   "doc-01": {
@@ -1609,7 +1892,7 @@
     "steps": [
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
       "Prerequisite: read-01, read-02, nas-09 complete.",
-      "CVE note: keep CWA LAN-only; disable Kobo sync until v4.0.7+",
+      "Security: keep CWA LAN/Tailscale-only (nas-09 pins NextGen v4.0.7 with CVE-2026-7713 fix).",
       "Syncthing on rig: share EPUB folder \u2192 NAS CWA ingest path",
       "Drop test EPUB into shared folder; refresh CWA library",
       "`ssh nas 'curl -sfI http://127.0.0.1:8083/ | head -1'`"
@@ -2074,7 +2357,7 @@
     "steps": [
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
       "Hardware key: Bitwarden, Proton, DSM, Tailscale, Forgejo",
-      "TOTP: Immich, Plex, Seerr, HA, seedbox panel",
+      "TOTP: Immich, Plex, Seerr, MusicSeerr, HA, seedbox panel",
       "Store backup codes offline",
       "From MacBook: confirm completion matches the verify block before checking this task done."
     ],

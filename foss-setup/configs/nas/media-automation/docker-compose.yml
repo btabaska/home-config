@@ -5,8 +5,9 @@
 # co-located with libraries split across three Basic volumes (Vol1 TV, Vol2
 # Movies, Vol3 Music + CWA ingest). Plex, the iPod pipeline, and CWA read from
 # those paths. The off-site seedbox "Betty" (Bytesized AppBox, 185.162.184.38)
-# runs ONLY Deluge + slskd (Soulseek) — P2P stays off-site. Nothing else is added
-# to the seedbox beyond those two download daemons.
+# runs ONLY Deluge + slskd (Soulseek, native binary — not rootless Docker) — P2P
+# stays off-site. Nothing else is added to the seedbox beyond those two download
+# daemons.
 #
 # HOW THE TWO HALVES CONNECT
 #   - Home apps reach remote Deluge over its API (host 185.162.184.38).
@@ -202,10 +203,10 @@ services:
   # ----------------------------------------------------------------------------
   # Readarr — Books (Phase B). DOWNLOAD-TOUCHING -> /seedbox:rslave.
   # Download client: remote Deluge (label `readarr` -> seedbox files/books).
-  # IMPORT TARGET = the Calibre-Web-Automated INGEST folder (mounted at
-  # /cwa-book-ingest). Readarr does NOT own the final library — it drops the
-  # imported file into CWA's ingest; CWA converts/organizes into the Calibre
-  # library. Set Readarr's ROOT FOLDER to /cwa-book-ingest (README §5).
+  # IMPORT TARGET = permanent inventory at /readarr-library (host: READARR_LIBRARY).
+  # A Connect custom script copies each import to /cwa-book-ingest for CWA; Readarr
+  # keeps its file for inventory tracking (ebook-mgmt workstream — README §5).
+  # Set Readarr's ROOT FOLDER to /readarr-library, NOT /cwa-book-ingest.
   #
   # METADATA: point Readarr's metadata provider at the SELF-HOSTED
   # rreading-glasses below (http://rreading-glasses:8788), NOT a public instance.
@@ -224,7 +225,9 @@ services:
     environment: *common-env
     volumes:
       - ${DOCKER_ROOT:-/volume1/docker}/readarr/config:/config
+      - ${READARR_LIBRARY:-/volume1/docker/readarr/library}:/readarr-library
       - ${CWA_INGEST:-/volume1/docker/calibre-web-automated/ingest}:/cwa-book-ingest
+      - ${DOCKER_ROOT:-/volume1/docker}/readarr/scripts:/scripts:ro
       - *seedbox-mount
     ports:
       - "8787:8787"

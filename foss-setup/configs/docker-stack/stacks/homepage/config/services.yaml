@@ -27,11 +27,16 @@
     - Seerr:
         icon: overseerr.png
         href: https://seerr.tabaska.us
-        description: Request movies & shows
+        description: Request movies & TV
         widget:
           type: overseerr
           url: http://seerr:5055
           key: "{{HOMEPAGE_VAR_SEERR_KEY}}"
+    - MusicSeerr:
+        icon: lidarr.png
+        href: https://musicseerr.tabaska.us
+        description: Request albums & discover music
+        ping: musicseerr.tabaska.us
 
 - Observability:
     - Beszel:

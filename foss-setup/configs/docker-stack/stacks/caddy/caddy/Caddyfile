@@ -28,10 +28,15 @@
 }
 # ---------------------------------------------------------------------------
 
-# Media request portal
+# Media request portals (movies/TV + music)
 seerr.{$DOMAIN} {
 	import cloudflare_tls
 	reverse_proxy seerr:5055
+}
+
+musicseerr.{$DOMAIN} {
+	import cloudflare_tls
+	reverse_proxy musicseerr:8688
 }
 
 # RSS reader

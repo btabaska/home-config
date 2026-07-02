@@ -64,12 +64,12 @@ Counts: **1 Critical, 9 High, ~20 Medium, ~20 Low/Nice-to-have.**
 - **M-mc2.** Navidrome `0.61.2` is behind `0.62.0`, which carries 6 security fixes (auth bypass, IDOR) relevant to multi-user/LAN-exposed installs. → Bump to `0.62.0`.
 
 **Media acquisition / seedbox (Sec 2 pt2)**
-- **M-ma1.** *Big one:* running slskd/Soularr/Unpackerr/Recyclarr via `docker compose` assumes root, but the chosen Bytesized plan is a **no-root managed seedbox** (your own `provider-comparison.md:46` + userspace-Tailscale scripts confirm this). The one-click catalog (line 173) doesn't list those tools. → Confirm the catalog one-clicks them, or move to a root-capable tier; reconcile "install from catalog" vs "`docker compose up -d`."
+- **M-ma1.** *Resolved (2026-06):* slskd runs as a **native binary** on Betty (`scripts/media/install-slskd-native.sh`); rootless Docker cannot expose Soulseek peer port 50300. Soularr/Unpackerr run on the NAS. See `configs/seedbox/music-pipeline.md` and seed-09 task.
 - **M-ma2.** Upload-cap number conflicts with Bytesized's own table (Stream +3 = 6 TB on `/plans` vs 10 TB on `/appbox`). → Verify at checkout; say "6–10 TB."
 - **M-ma3.** "3000 GB NVMe-class storage" (line 173) — the New Appbox tier is **HDD**. → Drop "NVMe-class."
 - **M-ma4.** `lidarr-slskd-soularr.md:60-65` tells you to override `REMOTE_MOVIES/LOCAL_MOVIES` to add music — but `seedbox-sync.sh` already syncs music natively (`SYNC_MUSIC=1` default). Following the doc breaks movie sync. → Replace with "music is automatic; `SYNC_MUSIC=0` to disable."
 - **M-ma5.** ~~Music dest path mismatch~~ **Resolved (2026-06):** three-volume layout — Vol 1 = music/books/docker, Vol 3 = TV; Lidarr → `/volume1/music`; Navidrome mounts `/volume1/music`.
-- **M-ma6.** `configs/seedbox/.env.example` is missing, but `lidarr-slskd-soularr.md:78` says `cp .env.example .env`. → Add the template (covers slskd/Soularr/Unpackerr vars).
+- **M-ma6.** ~~`.env.example` missing~~ **Resolved:** use `configs/seedbox/slskd-native.example.env` with `install-slskd-native.sh`.
 - **M-ma7.** Maintainerr pinned to the deprecated `jorenn92` image repo (comment even notes the move). → Switch to `ghcr.io/maintainerr/maintainerr`.
 - **M-ma8.** Unpackerr container path prefixes won't match the native *arrs' reported paths → never extracts (moot if Docker isn't available, see M-ma1). → Align mount/paths or run as a native binary.
 

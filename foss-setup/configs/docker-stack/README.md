@@ -7,7 +7,8 @@ This `stacks/` directory mirrors that layout 1:1 — copy it to `/opt/stacks` on
 
 ```
 stacks/
-  seerr/             # Phase 2 — media request portal (Overseerr/Jellyseerr successor)
+  seerr/             # Phase 2 — movie/TV request portal (Seerr)
+  musicseerr/        # Phase 2 — music request portal (Lidarr; Seerr has no Lidarr support)
   litellm/           # Phase 2 — AI gateway + always-on fallback (voice survives rig sleep)
   miniflux/          # Phase 3 — RSS reader + PostgreSQL
   navidrome/         # Phase 3 — music streaming
@@ -57,6 +58,7 @@ you bump tags deliberately after reading release notes.
 | Service      | Image (pinned)                      |
 |--------------|-------------------------------------|
 | Seerr        | `ghcr.io/seerr-team/seerr:v3.2.0`   |
+| MusicSeerr   | `ghcr.io/habirabbu/musicseerr:v1.4.2` |
 | Miniflux     | `miniflux/miniflux:2.3.0`           |
 | PostgreSQL   | `postgres:17-alpine`                |
 | Navidrome    | `deluan/navidrome:0.61.2`           |

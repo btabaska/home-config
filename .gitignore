@@ -5,6 +5,8 @@
 # Secrets — never commit
 .env
 **/.env
+.handoff-secrets.yaml
+**/.handoff-secrets.yaml
 
 # Runtime state / bind-mount data (back up separately, don't version)
 **/data/

@@ -79,17 +79,19 @@ Authoritative docs are linked inline — follow those for screenshots.
 ## D. CWA (NAS) auto-ingest + Kobo sync (cross-reference)
 
 > CWA itself is deployed by the NAS agent. Compose lives at
-> `foss-setup/configs/nas/calibre-web-automated/docker-compose.yml`. Project:
-> <https://github.com/crocodilestick/Calibre-Web-Automated>
+> `foss-setup/configs/nas/calibre-web-automated/docker-compose.yml`. Pinned image:
+> `ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7` (see README there — upstream
+> Docker Hub never shipped v4.0.7). Projects:
+> [NextGen fork](https://github.com/new-usemame/Calibre-Web-NextGen) ·
+> [original CWA](https://github.com/crocodilestick/Calibre-Web-Automated)
 
 1. Confirm CWA is up at `http://<nas-ip>:8083` and log in.
 2. **Auto-ingest:** drop `.epub/.mobi/etc.` into the ingest folder
    (`/cwa-book-ingest` inside the container); CWA converts + imports into the
    library, runs the EPUB-fixer, and enforces metadata/covers.
 3. **Native Kobo sync (stock Kobo reader):** enable Kobo sync in CWA, then set
-   the Kobo's sync endpoint to CWA per the CWA Kobo docs. (Security: a Kobo
-   auth-bypass issue, CVE-2026-7713, was reported — keep CWA patched and don't
-   expose it to the internet. See the NAS compose header.)
+   the Kobo's sync endpoint to CWA per the CWA Kobo docs. Requires **nas-09**
+   NextGen **v4.0.7+** (CVE-2026-7713 fixed). Keep CWA LAN/Tailscale-only.
 
 ---
 

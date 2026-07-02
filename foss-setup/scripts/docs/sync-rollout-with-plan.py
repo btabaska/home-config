@@ -78,8 +78,9 @@ by_id["read-11"]["verify"] = (
 if "Do not" not in " ".join(by_id["docker-03"].get("steps", [])):
     by_id["docker-03"]["steps"].insert(
         -1,
-        "Create admin and sign in with Plex. **Do not** add Sonarr/Radarr/Lidarr yet — that is seed-05 "
-        "after the NAS *arr stack (nas-22) and Recyclarr (nas-28) are ready.",
+        "Create admin and sign in with Plex. **Do not** add Sonarr/Radarr yet — that is seed-05 "
+        "after the NAS *arr stack (nas-22) and Recyclarr (nas-28) are ready. Album requests use "
+        "**MusicSeerr** (docker-16 / seed-06), not Seerr.",
     )
 
 # --- nas-21: explicit three-volume .env paths ----------------------------------
@@ -177,18 +178,20 @@ by_id["betty-01"]["files"] = [
 ]
 
 # --- seed-05 / seed-07: NAS *arr endpoints -------------------------------------
+by_id["seed-05"]["title"] = "Connect Seerr to NAS Sonarr/Radarr (movies/TV — not music)"
 by_id["seed-05"]["steps"] = [
     "Open Seerr at http://<mac-mini>:5055 → Settings → Services.",
     "Add **Radarr**: Hostname = NAS IP or MagicDNS (192.168.10.4 / nas.<tailnet>), Port **7878**, "
     "API key from Radarr → Settings → General. Default root folder **/movies**; quality profile = TRaSH from nas-28.",
     "Add **Sonarr**: same NAS host, Port **8989**, root folder **/tv**, same quality profile.",
-    "Add **Lidarr** (music requests): Port **8686**, root **/music**.",
+    "Do **not** add Lidarr in Seerr — Seerr v3.x has no Lidarr support. Album requests use **MusicSeerr** (docker-16 / seed-06).",
     "Settings → Plex: link the **NAS** Plex server (http://<nas>:32400 + token).",
     "Test each service → Save. A test request must appear in the **NAS** *arr UI — not on Betty.",
 ]
 by_id["seed-05"]["files"] = [
     "configs/docker-stack/stacks/seerr/compose.yaml",
     "configs/nas/media-automation/README.md",
+    "configs/seedbox/music-pipeline.md",
 ]
 
 by_id["seed-07"]["steps"] = [
@@ -344,11 +347,11 @@ by_id["ha-12"]["steps"] = [
 
 by_id["read-06"]["steps"] = [
     "Prerequisite: read-03, read-04 complete.",
-    "**Security (CVE-2026-7713):** keep CWA LAN-only; **disable Kobo sync/KOSync** until CWA v4.0.7+ ships on Docker Hub.",
-    "If on a patched CWA: enable KOSync in CWA admin + KOReader plugin; match username on Kobo.",
+    "CWA must be **nas-09** with `ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7+` (CVE-2026-7713 patched).",
+    "Enable KOSync in CWA admin + KOReader cwasync plugin; match username on Kobo.",
     "See scripts/reading/koreader-cwa-wallabag-wiring.md for OPDS/Wallabag wiring.",
 ]
-by_id["read-06"]["verify"] = "KOSync enabled only on patched CWA; otherwise OPDS-only reading works."
+by_id["read-06"]["verify"] = "KOSync works on patched CWA v4.0.7+; progress syncs across devices."
 
 # --- photos / apps -------------------------------------------------------------
 by_id["nas-08"]["depends_on"] = ["nas-01", "nas-00c", "nas-prep-01"]
@@ -531,8 +534,10 @@ by_id["nas-24"]["steps"] = [
     "Prerequisite: nas-22 and nas-09 (CWA) complete.",
     "Readarr → Settings → Development → metadata provider: `http://rreading-glasses:8788` (self-hosted, not public).",
     "Download client: remote Deluge label **readarr**; Remote Path Mapping as other *arrs.",
-    "Root folder: **/cwa-book-ingest** (host: /volume1/docker/calibre-web-automated/ingest). CWA owns final library at /volume1/books.",
+    "Bootstrap root folder: **/cwa-book-ingest** (works for first import test).",
+    "For production — permanent Readarr inventory, CWA copy-on-import, and Libreseerr requests — complete the **ebook-mgmt** workstream (ebook-01–ebook-06).",
     "Book automation is less reliable than video — expect occasional manual metadata fixes (Readarr is retired upstream).",
+    "Verify: file in ingest **and** processed into `/volume1/books` (CWA must be running — nas-09).",
 ]
 by_id["nas-25"]["steps"] = [
     "Prerequisite: nas-22 complete.",
@@ -661,19 +666,23 @@ HTML_PATCHES = [
     ),
     (
         "<tr><td>Automated music acquisition</td><td>Request an album in Seerr; Lidarr on the NAS searches indexers, Deluge downloads off-site, and the NAS imports into /music for Plex and Navidrome — no slskd or Soularr.</td><td>Lidarr + Deluge (seedbox)</td><td>NAS + seedbox</td></tr>",
-        "<tr><td>Automated music acquisition</td><td>Request an album in Seerr → Lidarr on the NAS. <b>Torrents:</b> Deluge on Betty → /seedbox/music/. <b>Soulseek:</b> Soularr on NAS → slskd on Betty → /seedbox/slskd/ → /music. Optional beets tag pass.</td><td>Lidarr + Soularr + slskd + beets</td><td>NAS + seedbox</td></tr>",
+        "<tr><td>Automated music acquisition</td><td>Request an album in <b>MusicSeerr</b> → Lidarr on the NAS. <b>Torrents:</b> Deluge on Betty → /seedbox/music/. <b>Soulseek:</b> Soularr on NAS → slskd on Betty → /seedbox/slskd/ → /music. Optional beets tag pass. (Seerr = movies/TV only.)</td><td>MusicSeerr + Lidarr + Soularr + slskd + beets</td><td>Mac mini + NAS + seedbox</td></tr>",
     ),
     (
         "Betty seedbox, NAS *arr import stack, Plex on the NAS, and Seerr requests — no P2P at home.",
-        "Betty (Deluge + slskd), NAS *arr + Soularr, optional beets, Plex, Seerr — no P2P at home.",
+        "Betty (Deluge + slskd), NAS *arr + Soularr, optional beets, Plex, Seerr + MusicSeerr — no P2P at home.",
     ),
     (
         "<tr><td>Deluge (download + seed ONLY)</td><td>Seedbox \"Betty\" (off-site)</td>",
         "<tr><td>Deluge (torrents)</td><td>Seedbox \"Betty\" (off-site)</td>",
     ),
     (
+        '<tr><td>slskd (Soulseek)</td><td>Seedbox "Betty" (off-site)</td><td class="num">5030 / 50300</td><td>TCP</td><td>P2P off-site; Soularr on NAS drives API over Tailscale</td></tr>',
+        '<tr><td>slskd (Soulseek)</td><td>Seedbox "Betty" (off-site, native binary)</td><td class="num">5030 / 50300</td><td>TCP</td><td>:50300 P2P (host-bound); :5030 API on tailnet or SSH tunnel; Soularr on NAS</td></tr>',
+    ),
+    (
         "Reached by *arr API; files pulled via rclone SFTP mount</td></tr>\n      </tbody>",
-        "Reached by *arr API; files via rclone SFTP mount</td></tr>\n        <tr><td>slskd (Soulseek)</td><td>Seedbox \"Betty\" (off-site)</td><td class=\"num\">5030 / 50300</td><td>TCP</td><td>P2P off-site; Soularr on NAS drives API over Tailscale</td></tr>\n      </tbody>",
+        "Reached by *arr API; files via rclone SFTP mount</td></tr>\n        <tr><td>slskd (Soulseek)</td><td>Seedbox \"Betty\" (off-site, native binary)</td><td class=\"num\">5030 / 50300</td><td>TCP</td><td>:50300 P2P (host-bound); :5030 API on tailnet or SSH tunnel; Soularr on NAS</td></tr>\n      </tbody>",
     ),
     (
         "Frigate (camera AI — iGPU, or Mac mini + Coral)",
@@ -718,6 +727,18 @@ HTML_PATCHES = [
     (
         "<td>Game servers</td><td>Rig / Mac mini</td>",
         "<td>Game servers</td><td>Rig (heavy) · one light server max on Mac mini</td>",
+    ),
+    (
+        "<tr><td>Seerr</td><td>Mac mini</td><td class=\"num\">5055</td><td>TCP</td><td>Media requests</td></tr>",
+        "<tr><td>Seerr</td><td>Mac mini</td><td class=\"num\">5055</td><td>TCP</td><td>Movie/TV requests (Radarr/Sonarr)</td></tr>\n        <tr><td>MusicSeerr</td><td>Mac mini</td><td class=\"num\">8688</td><td>TCP</td><td>Album requests (Lidarr)</td></tr>",
+    ),
+    (
+        "Light Docker host: Seerr, Miniflux, Navidrome, Mealie, Caddy, AdGuard + Unbound, monitoring, Forgejo.",
+        "Light Docker host: Seerr, MusicSeerr, Miniflux, Navidrome, Mealie, Caddy, AdGuard + Unbound, monitoring, Forgejo.",
+    ),
+    (
+        "<span class=\"sw\">Seerr</span>",
+        "<span class=\"sw\">Seerr</span>\n        <span class=\"sw\">MusicSeerr</span>",
     ),
 ]
 
@@ -797,9 +818,268 @@ by_id["glue-04b"] = {
     "required": False,
 }
 
+# --- MusicSeerr stack (Mac mini) + wiring + E2E --------------------------------
+MUSICSEERR_TASK_DEFS = {
+    "docker-16": {
+        "id": "docker-16",
+        "title": "Deploy MusicSeerr on Mac mini (album request portal)",
+        "host": "Ubuntu",
+        "type": "sync",
+        "depends_on": ["docker-02", "nas-00d", "nas-23"],
+        "estimate": "20-30 min",
+        "steps": [
+            "Prerequisite: docker-02, nas-00d (NFS export /volume1/music), nas-23 (Lidarr torrent path) complete.",
+            "On Mac mini mount NAS music: `sudo mkdir -p /mnt/nas/music` + fstab "
+            "`192.168.10.4:/volume1/music /mnt/nas/music nfs defaults,_netdev 0 0` (same as Navidrome docker-05).",
+            "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/musicseerr mini:/tmp/musicseerr`",
+            "`ssh mini 'sudo mkdir -p /opt/stacks/musicseerr && sudo rsync -a /tmp/musicseerr/ /opt/stacks/musicseerr/'`",
+            "`ssh mini 'cd /opt/stacks/musicseerr && cp -n .env.example .env'` — MUSIC_FOLDER=/mnt/nas/music",
+            "`ssh mini 'cd /opt/stacks/musicseerr && docker compose up -d'`",
+            "Browse http://macmini.<tailnet>:8688 — create admin on first launch.",
+        ],
+        "commands": [
+            "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/musicseerr mini:/tmp/musicseerr",
+            "ssh mini 'sudo rsync -a /tmp/musicseerr/ /opt/stacks/musicseerr/'",
+            "ssh mini 'cd /opt/stacks/musicseerr && cp -n .env.example .env && docker compose up -d'",
+            "ssh mini 'curl -sf http://127.0.0.1:8688/health'",
+        ],
+        "files": [
+            "configs/docker-stack/stacks/musicseerr/compose.yaml",
+            "configs/docker-stack/stacks/musicseerr/.env.example",
+            "configs/seedbox/music-pipeline.md",
+        ],
+        "docs": [{"title": "MusicSeerr", "url": "https://musicseerr.com/docs/getting-started/"}],
+        "verify": "MusicSeerr :8688 healthy; admin account created.",
+        "track": "media-pipeline",
+        "required": False,
+    },
+    "seed-06": {
+        "id": "seed-06",
+        "title": "Connect MusicSeerr to NAS Lidarr + Plex/Navidrome",
+        "host": "Ubuntu",
+        "type": "sync",
+        "depends_on": ["docker-16", "nas-23", "nas-10"],
+        "estimate": "20-30 min",
+        "steps": [
+            "Open MusicSeerr at http://<mac-mini>:8688 → Settings.",
+            "Connect **Lidarr**: http://192.168.10.4:8686 + API key (Lidarr → Settings → General); root folder **/music**.",
+            "Optional **Plex**: NAS http://<nas>:32400 + token — Plex Music availability badges.",
+            "Optional **Navidrome**: http://navidrome:4533 (docker-05; same edge network on Mac mini).",
+            "Optional local playback: Settings → Local Files → /music (NFS mount in compose).",
+            "Request a test album → confirm NAS Lidarr Activity (not Betty).",
+        ],
+        "commands": [
+            "LIDARR_KEY=$(ssh nas 'grep -oP \"(?<=<ApiKey>)[^<]+\" /volume1/docker/lidarr/config/config.xml')",
+            "curl -s 'http://192.168.10.4:8686/api/v1/system/status' -H \"X-Api-Key: $LIDARR_KEY\"",
+        ],
+        "files": ["configs/seedbox/music-pipeline.md", "configs/nas/media-automation/README.md"],
+        "docs": [{"title": "MusicSeerr", "url": "https://musicseerr.com/docs/getting-started/"}],
+        "verify": "MusicSeerr request appears in NAS Lidarr Activity.",
+        "track": "media-pipeline",
+        "required": False,
+    },
+    "seed-10": {
+        "id": "seed-10",
+        "title": "End-to-end music verification (MusicSeerr → Betty → NAS → Plex/Navidrome)",
+        "host": "NAS",
+        "type": "sync",
+        "depends_on": ["seed-06", "nas-29", "docker-05"],
+        "estimate": "30-45 min",
+        "steps": [
+            "Prerequisites: rclone mount (nas-20), Lidarr torrent path (nas-23), Soularr (nas-29), MusicSeerr (seed-06), Plex Music (nas-10) + Navidrome (docker-05).",
+            "**Torrent path:** Request small album in MusicSeerr → Lidarr Wanted → Deluge label lidarr on Betty → import from /seedbox/music/ → /volume1/music.",
+            "**Soulseek path:** Add album to Lidarr Wanted → Soularr searches slskd → files/slskd/ → Lidarr import from /seedbox/slskd/.",
+            "Confirm album in Plex Music and Navidrome; optional beet write (nas-30).",
+        ],
+        "commands": [
+            "ssh nas 'ls /volume1/mounts/seedbox-files/music /volume1/mounts/seedbox-files/slskd'",
+            "ssh seedbox 'ls ~/files/music ~/files/slskd'",
+        ],
+        "files": ["configs/seedbox/music-pipeline.md", "configs/nas/plex/README.md"],
+        "verify": "Album playable in Plex Music and Navidrome via torrent or Soulseek path.",
+        "track": "media-pipeline",
+        "required": False,
+    },
+}
+for tid, body in MUSICSEERR_TASK_DEFS.items():
+    by_id[tid] = body
+
+# --- Ebook Management Improvements (ebook-mgmt workstream) ---------------------
+EBOOK_TASK_DEFS = {
+    "ebook-01": {
+        "id": "ebook-01",
+        "title": "Add Readarr permanent library mount (compose + paths)",
+        "host": "NAS",
+        "type": "sync",
+        "depends_on": ["nas-24", "nas-09"],
+        "estimate": "20-30 min",
+        "steps": [
+            "Prerequisite: nas-24 (Readarr wired) and nas-09 (CWA running) complete.",
+            "On NAS: `sudo mkdir -p /volume1/docker/readarr/{library,scripts}`",
+            "Copy repo updates: media-automation compose adds `/readarr-library`, `/cwa-book-ingest`, and `/scripts` mounts.",
+            "Add `READARR_LIBRARY=/volume1/docker/readarr/library` to `/volume1/docker/media-automation/.env`.",
+            "Stage copy script: `scripts/media/readarr-copy-to-cwa-ingest.sh` → `/volume1/docker/readarr/scripts/` (chmod +x).",
+            "`docker compose up -d readarr` — confirm `docker inspect readarr` shows `/readarr-library` and `/cwa-book-ingest`.",
+        ],
+        "commands": [
+            "ssh -t nas 'sudo mkdir -p /volume1/docker/readarr/{library,scripts}'",
+            "cd ~/Documents/Home/foss-setup && scp scripts/media/readarr-copy-to-cwa-ingest.sh nas:/tmp/",
+            "ssh -t nas 'sudo install -m 755 /tmp/readarr-copy-to-cwa-ingest.sh /volume1/docker/readarr/scripts/'",
+            "ssh nas 'cd /volume1/docker/media-automation && sudo /usr/local/bin/docker compose up -d readarr'",
+        ],
+        "files": [
+            "configs/nas/media-automation/docker-compose.yml",
+            "configs/nas/media-automation/.env.example",
+            "scripts/media/readarr-copy-to-cwa-ingest.sh",
+        ],
+        "docs": [
+            {"title": "CWA + Readarr workflow", "url": "https://github.com/crocodilestick/Calibre-Web-Automated/discussions/248"},
+        ],
+        "verify": "Readarr container mounts /readarr-library, /cwa-book-ingest, and /scripts; host library dir exists.",
+        "track": "ebook-mgmt",
+        "required": False,
+    },
+    "ebook-02": {
+        "id": "ebook-02",
+        "title": "Wire Readarr Connect copy script (import → CWA ingest)",
+        "host": "NAS",
+        "type": "sync",
+        "depends_on": ["ebook-01"],
+        "estimate": "15-20 min",
+        "steps": [
+            "Prerequisite: ebook-01 complete.",
+            "Readarr → Settings → Connect → **+** → **Custom Script**.",
+            "Name: `Copy to CWA ingest`; Path: `/scripts/readarr-copy-to-cwa-ingest.sh`.",
+            "Triggers: **On Import** and **On Upgrade** only (not On Grab — file paths do not exist yet).",
+            "Click **Test** — check `/volume1/docker/readarr/config/logs/readarr-copy-to-cwa-ingest.log` for `Test event`.",
+            "Optional: trigger a small test import and confirm a copy appears in ingest while the original stays in `/readarr-library`.",
+        ],
+        "commands": [
+            "ssh nas 'tail -20 /volume1/docker/readarr/config/logs/readarr-copy-to-cwa-ingest.log 2>/dev/null || echo run Test in Readarr Connect first'",
+        ],
+        "files": ["scripts/media/readarr-copy-to-cwa-ingest.sh"],
+        "docs": [
+            {"title": "readarr_addedbookpaths script", "url": "https://github.com/crocodilestick/Calibre-Web-Automated/discussions/248"},
+        ],
+        "verify": "Connect Test succeeds; log shows Test event; import copies to ingest without removing Readarr's file.",
+        "track": "ebook-mgmt",
+        "required": False,
+    },
+    "ebook-03": {
+        "id": "ebook-03",
+        "title": "Migrate Readarr root folder to /readarr-library",
+        "host": "NAS",
+        "type": "sync",
+        "depends_on": ["ebook-02"],
+        "estimate": "20-30 min",
+        "steps": [
+            "Prerequisite: ebook-02 complete (copy script tested).",
+            "Readarr → Settings → Media Management → Root Folders: add **`/readarr-library`**, set as default.",
+            "Remove **`/cwa-book-ingest`** as a root folder (ingest is CWA-only; Readarr must not import directly there).",
+            "Existing books imported to ingest-as-root: either re-import under `/readarr-library` or add to Readarr manually — titles already in `/volume1/books` via CWA do not need re-downloading.",
+            "Request or import one test book — confirm file lands in `/volume1/docker/readarr/library` **and** a copy reaches ingest → CWA → `/volume1/books`.",
+            "Confirm Readarr still shows the book as **Downloaded** after CWA ingests (no Missing badge).",
+        ],
+        "commands": [
+            "ssh nas 'ls /volume1/docker/readarr/library /volume1/docker/calibre-web-automated/ingest /volume1/books'",
+        ],
+        "files": ["configs/nas/media-automation/README.md"],
+        "verify": "Readarr root is /readarr-library only; post-CWA ingest the title stays Downloaded in Readarr.",
+        "track": "ebook-mgmt",
+        "required": False,
+    },
+    "ebook-04": {
+        "id": "ebook-04",
+        "title": "Deploy Libreseerr on Mac mini (book request portal)",
+        "host": "Ubuntu",
+        "type": "sync",
+        "depends_on": ["docker-02", "ebook-03"],
+        "estimate": "20-30 min",
+        "steps": [
+            "Prerequisite: docker-02 and ebook-03 (Readarr on /readarr-library) complete.",
+            "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/libreseerr mini:/tmp/libreseerr`",
+            "`ssh mini 'sudo mkdir -p /opt/stacks/libreseerr && sudo rsync -a /tmp/libreseerr/ /opt/stacks/libreseerr/'`",
+            "`ssh mini 'cd /opt/stacks/libreseerr && cp -n .env.example .env'` — set SECRET_KEY (`openssl rand -hex 32`).",
+            "`ssh mini 'cd /opt/stacks/libreseerr && docker compose up -d'`",
+            "Browse http://macmini.<tailnet>:8789 — log in (default admin/admin) and **change the password immediately**.",
+        ],
+        "commands": [
+            "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/libreseerr mini:/tmp/libreseerr",
+            "ssh mini 'sudo rsync -a /tmp/libreseerr/ /opt/stacks/libreseerr/'",
+            "ssh mini 'cd /opt/stacks/libreseerr && cp -n .env.example .env && docker compose up -d'",
+            "ssh mini 'curl -sf http://127.0.0.1:8789/ || curl -sf http://127.0.0.1:5000/'",
+        ],
+        "files": [
+            "configs/docker-stack/stacks/libreseerr/compose.yaml",
+            "configs/docker-stack/stacks/libreseerr/.env.example",
+        ],
+        "docs": [{"title": "Libreseerr", "url": "https://github.com/zamnzim/Libreseerr"}],
+        "verify": "Libreseerr :8789 healthy; admin password changed from default.",
+        "track": "ebook-mgmt",
+        "required": False,
+    },
+    "ebook-05": {
+        "id": "ebook-05",
+        "title": "Connect Libreseerr to NAS Readarr (+ optional Plex Books)",
+        "host": "Ubuntu",
+        "type": "sync",
+        "depends_on": ["ebook-04", "nas-10"],
+        "estimate": "20-30 min",
+        "steps": [
+            "Open Libreseerr at http://<mac-mini>:8789 → Settings (admin).",
+            "Ebook server: **Readarr**, URL `http://192.168.10.4:8787`, API key from Readarr → Settings → General.",
+            "Root folder **`/readarr-library`**; pick a quality profile. Click **Test Connection** → Save.",
+            "Optional **Plex Books**: link NAS Plex (http://<nas>:32400 + token) if Libreseerr build supports availability badges.",
+            "Create a non-admin household user if others will request books.",
+            "Submit a test request → confirm it appears in Readarr Activity (not Betty directly).",
+        ],
+        "commands": [
+            "READARR_KEY=$(ssh nas 'grep -oP \"(?<=<ApiKey>)[^<]+\" /volume1/docker/readarr/config/config.xml')",
+            "curl -s 'http://192.168.10.4:8787/api/v1/system/status' -H \"X-Api-Key: $READARR_KEY\"",
+        ],
+        "files": [
+            "configs/nas/media-automation/README.md",
+            "configs/nas/calibre-web-automated/README.md",
+        ],
+        "docs": [{"title": "Libreseerr", "url": "https://github.com/zamnzim/Libreseerr"}],
+        "verify": "Libreseerr test request appears in NAS Readarr Activity.",
+        "track": "ebook-mgmt",
+        "required": False,
+    },
+    "ebook-06": {
+        "id": "ebook-06",
+        "title": "End-to-end ebook verification (Libreseerr → Betty → Readarr → CWA → Plex/Kobo)",
+        "host": "NAS",
+        "type": "sync",
+        "depends_on": ["ebook-05", "read-05"],
+        "estimate": "30-45 min",
+        "steps": [
+            "Prerequisites: rclone mount (nas-20), Readarr split pipeline (ebook-03), Libreseerr wired (ebook-05), CWA (nas-09), Plex Books library on /volume1/books (nas-10), KOReader OPDS (read-05).",
+            "Request a small known ebook in **Libreseerr** → Readarr Wanted → Deluge label **readarr** on Betty.",
+            "Watch import: `/seedbox/books/` → Readarr copies to **`/readarr-library`** → Connect script copies to **ingest** → CWA moves to **`/volume1/books`**.",
+            "Confirm Readarr still shows **Downloaded** after CWA ingest (inventory fix validated).",
+            "Confirm title in Plex Books and downloadable via CWA OPDS on the Kobo.",
+        ],
+        "commands": [
+            "ssh nas 'ls /volume1/docker/readarr/library /volume1/docker/calibre-web-automated/ingest /volume1/books'",
+            "ssh nas 'tail -30 /volume1/docker/readarr/config/logs/readarr-copy-to-cwa-ingest.log'",
+        ],
+        "files": [
+            "configs/nas/media-automation/README.md",
+            "configs/nas/calibre-web-automated/README.md",
+            "scripts/reading/koreader-cwa-wallabag-wiring.md",
+        ],
+        "verify": "Libreseerr request → playable in Plex Books + OPDS; Readarr stays Downloaded after CWA ingest.",
+        "track": "ebook-mgmt",
+        "required": False,
+    },
+}
+for tid, body in EBOOK_TASK_DEFS.items():
+    by_id[tid] = body
+
 # --- Soulseek music pipeline (late media-pipeline tasks) -----------------------
 for _tid, _title, _host, _type, _deps, _est in (
-    ("seed-09", "Deploy slskd on Betty (Soulseek P2P off-site)", "Seedbox", "async", ["seed-03", "betty-01"], "45-60 min"),
+    ("seed-09", "Deploy slskd on Betty (Soulseek P2P, native binary)", "Seedbox", "async", ["seed-03", "betty-01"], "45-60 min"),
     ("nas-29", "Deploy Soularr on NAS (Lidarr ↔ remote slskd bridge)", "NAS", "sync", ["nas-23", "seed-09"], "30-45 min"),
     ("nas-30", "Deploy beets tag layer on NAS (optional)", "NAS", "async", ["nas-29"], "20-30 min"),
 ):
@@ -827,16 +1107,47 @@ for t in tasks:
     if t["id"] == "glue-04" and not any(x["id"] == "glue-04b" for x in tasks):
         out.append(by_id["glue-04b"])
 
-# Insert Soulseek music tasks after seed-08 if missing
-SOULSEEK_TASKS = ("seed-09", "nas-29", "nas-30")
+# Insert Soulseek + MusicSeerr music tasks after seed-08 if missing
+LATE_MEDIA_TASKS = ("docker-16", "seed-06", "seed-09", "nas-29", "nas-30", "seed-10")
 if not any(x["id"] == "seed-09" for x in out):
     insert_at = next((i + 1 for i, x in enumerate(out) if x["id"] == "seed-08"), len(out))
-    for j, tid in enumerate(SOULSEEK_TASKS):
+    for j, tid in enumerate(LATE_MEDIA_TASKS):
+        if tid in by_id:
+            out.insert(insert_at + j, by_id[tid])
+elif not any(x["id"] == "docker-16" for x in out):
+    insert_at = next((i + 1 for i, x in enumerate(out) if x["id"] == "seed-08"), len(out))
+    for j, tid in enumerate(("docker-16", "seed-06", "seed-10")):
+        if tid in by_id:
+            out.insert(insert_at + j, by_id[tid])
+
+# Insert ebook-mgmt tasks after read-06 if missing
+EBOOK_TASKS = ("ebook-01", "ebook-02", "ebook-03", "ebook-04", "ebook-05", "ebook-06")
+if not any(x["id"] == "ebook-01" for x in out):
+    insert_at = next((i + 1 for i, x in enumerate(out) if x["id"] == "read-06"), len(out))
+    for j, tid in enumerate(EBOOK_TASKS):
         if tid in by_id:
             out.insert(insert_at + j, by_id[tid])
 
 new_json = json.dumps(out, separators=(",", ":"))
 text = text[: m.start(2)] + new_json + text[m.end(2) :]
+
+# --- trackMeta: add ebook-mgmt workstream --------------------------------------
+tm = re.search(
+    r'(<script type="application/json" id="trackMeta">\s*)(\{.*?\})(\s*</script>)',
+    text,
+    re.S,
+)
+if tm:
+    track_meta = json.loads(tm.group(2))
+    if "ebook-mgmt" not in track_meta:
+        track_meta["ebook-mgmt"] = {
+            "tier": "workstreams",
+            "order": 7,
+            "title": "Ebook Management Improvements",
+            "sub": "Readarr permanent library + CWA copy-on-import, Libreseerr request portal — fixes inventory tracking and household book requests.",
+        }
+        track_meta_json = json.dumps(track_meta, indent=2)
+        text = text[: tm.start(2)] + track_meta_json + text[tm.end(2) :]
 
 patched = 0
 for old, new in HTML_PATCHES:

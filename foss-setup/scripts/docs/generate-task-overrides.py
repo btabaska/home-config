@@ -18,31 +18,50 @@ def D(*pairs):
 
 MAC_OPEN = "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy."
 
-def nas_docker(app, src_subpath, dest=None, prereqs=(), extra_steps=None, extra_cmds=None, files=None, verify="", docs=None):
+def nas_docker(app, src_subpath, dest=None, prereqs=(), extra_steps=None, extra_cmds=None, files=None, verify="", docs=None, synology=True):
     """Standard NAS Container Manager deploy from MacBook."""
     if dest is None:
         dest = f"/volume1/docker/{app}"
     src = f"{REPO}/{src_subpath}"
+    parent, name = src_subpath.rsplit("/", 1) if "/" in src_subpath else ("", src_subpath)
+    tar_src = f"{REPO}/{parent}" if parent else REPO
     steps = [MAC_OPEN]
     if prereqs:
         steps.append(P(*prereqs))
-    steps.extend([
-        CM,
-        f"`ssh -t nas 'sudo mkdir -p {dest}'`",
-        f"`scp -r {src} nas:/tmp/{app}`",
-        f"`ssh -t nas 'sudo rsync -a /tmp/{app}/ {dest}/'`",
-        f"`ssh nas 'cd {dest} && cp -n .env.example .env 2>/dev/null || true'` — edit secrets before up",
-        f"`ssh nas 'cd {dest} && docker compose pull && docker compose up -d'`",
-        f"`ssh nas 'cd {dest} && docker compose ps'`",
-    ])
+    if synology:
+        steps.extend([
+            CM,
+            f"`ssh -t nas 'sudo mkdir -p {dest}'`",
+            f"`cd {tar_src} && tar czf - {name} | ssh nas 'tar xzf - -C /tmp/'`",
+            f"`ssh -t nas 'sudo rsync -a /tmp/{name}/ {dest}/'`",
+            f"`ssh nas 'cd {dest} && cp -n .env.example .env 2>/dev/null || true'` — edit secrets before up",
+            f"`ssh -t nas 'cd {dest} && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'`",
+            f"`ssh -t nas 'cd {dest} && sudo /usr/local/bin/docker compose ps'`",
+        ])
+        cmds = [
+            f"cd {tar_src} && tar czf - {name} | ssh nas 'tar xzf - -C /tmp/'",
+            f"ssh -t nas 'sudo rsync -a /tmp/{name}/ {dest}/'",
+            f"ssh -t nas 'cd {dest} && sudo /usr/local/bin/docker compose up -d'",
+            f"ssh -t nas 'cd {dest} && sudo /usr/local/bin/docker compose ps'",
+        ]
+    else:
+        steps.extend([
+            CM,
+            f"`ssh -t nas 'sudo mkdir -p {dest}'`",
+            f"`scp -r {src} nas:/tmp/{app}`",
+            f"`ssh -t nas 'sudo rsync -a /tmp/{app}/ {dest}/'`",
+            f"`ssh nas 'cd {dest} && cp -n .env.example .env 2>/dev/null || true'` — edit secrets before up",
+            f"`ssh nas 'cd {dest} && docker compose pull && docker compose up -d'`",
+            f"`ssh nas 'cd {dest} && docker compose ps'`",
+        ])
+        cmds = [
+            f"scp -r {src} nas:/tmp/{app}",
+            f"ssh -t nas 'sudo rsync -a /tmp/{app}/ {dest}/'",
+            f"ssh nas 'cd {dest} && docker compose up -d'",
+            f"ssh nas 'cd {dest} && docker compose ps'",
+        ]
     if extra_steps:
         steps.extend(extra_steps)
-    cmds = [
-        f"scp -r {src} nas:/tmp/{app}",
-        f"ssh -t nas 'sudo rsync -a /tmp/{app}/ {dest}/'",
-        f"ssh nas 'cd {dest} && docker compose up -d'",
-        f"ssh nas 'cd {dest} && docker compose ps'",
-    ]
     if extra_cmds:
         cmds.extend(extra_cmds)
     out = {"steps": steps, "commands": cmds, "files": files or [src_subpath], "verify": verify}
@@ -587,7 +606,7 @@ O["seed-01"] = {
         MAC_OPEN,
         "MacBook browser: sign up bytesized-hosting.com **Stream +3** (3000 GB, €16/mo EU)",
         "Record SFTP user, home /home/hd34/btabaska, IP **185.162.184.38** in Bitwarden",
-        "Architecture lock-in: Betty runs **Deluge + slskd** (P2P off-site) — do NOT install *arr apps, Soularr, or beets on Betty",
+        "Architecture lock-in: Betty runs **Deluge + slskd (native binary)** (P2P off-site) — do NOT install *arr apps, Soularr, or beets on Betty",
         "One-click install Deluge only; set ratio/seed-time limits for self-prune under 3 TB",
         "Record Deluge daemon port + password (needed by nas-22). slskd is added later in **seed-09**.",
     ],
@@ -735,14 +754,14 @@ O["nas-23"] = {
         "Do NOT change /music naming without checking Plex + iPod sync (read-11)",
     ],
     "commands": ["ssh nas 'curl -s http://127.0.0.1:8686/api/v1/system/status -H \"X-Api-Key: <KEY>\"'"],
-    "files": ["configs/nas/media-automation/README.md", "configs/seedbox/music-pipeline-soulseek.md"],
+    "files": ["configs/nas/media-automation/README.md", "configs/seedbox/music-pipeline.md"],
     "verify": "Torrent album imports to /volume1/music and appears in Plex Music.",
 }
 O["nas-24"] = {
-    "steps": [P("nas-22"), P("nas-09"), "Readarr metadata http://rreading-glasses:8788 via /settings/development", "Root /cwa-book-ingest", "Deluge label readarr"],
+    "steps": [P("nas-22"), P("nas-09"), "Readarr metadata http://rreading-glasses:8788 via /settings/development", "Bootstrap root /cwa-book-ingest — migrate to /readarr-library via ebook-mgmt (ebook-01–ebook-03)", "Deluge label readarr"],
     "commands": ["ssh nas 'docker compose -f /volume1/docker/media-automation/docker-compose.yml ps readarr'"],
     "files": ["configs/nas/media-automation/README.md", "configs/nas/calibre-web-automated/docker-compose.yml"],
-    "verify": "Book lands in CWA ingest.",
+    "verify": "Book lands in CWA ingest and CWA processes it into /volume1/books.",
 }
 O["nas-25"] = {
     "steps": [P("nas-22"), "Fill unpackerr.conf API keys", "`docker compose up -d unpackerr`", "Test RAR extract"],
@@ -786,16 +805,198 @@ O["nas-10"] = {
 O["seed-05"] = {
     "steps": [
         P("docker-03", "nas-22", "nas-28"),
-        "Seerr :5055 → Services → Radarr/Sonarr/Lidarr at 192.168.10.4",
-        "Root folders /movies /tv /music; TRaSH profiles",
-        "Link Plex NAS server + token",
+        "Seerr :5055 → Settings → Services — **Radarr + Sonarr only** (Seerr has no Lidarr support).",
+        "Radarr @ 192.168.10.4:7878, root /movies, TRaSH profile HD Bluray + WEB.",
+        "Sonarr @ 192.168.10.4:8989, root /tv, TRaSH profile WEB-1080p.",
+        "Settings → Plex: link NAS server http://192.168.10.4:32400 + token.",
+        "Music requests use **MusicSeerr** (docker-16 / seed-06) — not Seerr.",
     ],
     "commands": [
-        "curl -s http://192.168.10.4:7878/api/v3/system/status -H 'X-Api-Key: <KEY>'",
-        "curl -s http://192.168.10.4:8989/api/v3/system/status -H 'X-Api-Key: <KEY>'",
+        "curl -s http://192.168.10.4:7878/api/v3/system/status -H 'X-Api-Key: <RADARR_KEY>'",
+        "curl -s http://192.168.10.4:8989/api/v3/system/status -H 'X-Api-Key: <SONARR_KEY>'",
     ],
-    "files": ["configs/docker-stack/stacks/seerr/compose.yaml"],
-    "verify": "Seerr test passes; request hits NAS *arr.",
+    "files": ["configs/docker-stack/stacks/seerr/compose.yaml", "configs/nas/media-automation/README.md"],
+    "verify": "Seerr Test passes for Radarr/Sonarr; test movie/TV request hits NAS *arr.",
+}
+O["docker-16"] = {
+    "steps": [
+        P("docker-02", "nas-00d", "nas-23"),
+        "Mount NAS music library on Mac mini (same NFS path as Navidrome): "
+        "`ssh mini 'sudo mkdir -p /mnt/nas/music'` + fstab `192.168.10.4:/volume1/music /mnt/nas/music nfs defaults,_netdev 0 0`.",
+        f"`scp -r {REPO}/configs/docker-stack/stacks/musicseerr mini:/tmp/musicseerr`",
+        "`ssh mini 'sudo mkdir -p /opt/stacks/musicseerr && sudo rsync -a /tmp/musicseerr/ /opt/stacks/musicseerr/'`",
+        "`ssh mini 'cd /opt/stacks/musicseerr && cp -n .env.example .env'` — MUSIC_FOLDER=/mnt/nas/music",
+        "`ssh mini 'cd /opt/stacks/musicseerr && docker compose up -d'`",
+        "Browse http://macmini.<tailnet>:8688 — create admin on first launch.",
+    ],
+    "commands": [
+        f"scp -r {REPO}/configs/docker-stack/stacks/musicseerr mini:/tmp/musicseerr",
+        "ssh mini 'sudo rsync -a /tmp/musicseerr/ /opt/stacks/musicseerr/'",
+        "ssh mini 'cd /opt/stacks/musicseerr && cp -n .env.example .env && docker compose up -d'",
+        "ssh mini 'curl -sf http://127.0.0.1:8688/health'",
+    ],
+    "files": [
+        "configs/docker-stack/stacks/musicseerr/compose.yaml",
+        "configs/docker-stack/stacks/musicseerr/.env.example",
+        "configs/seedbox/music-pipeline.md",
+    ],
+    "docs": D(("MusicSeerr", "https://musicseerr.com/docs/getting-started/"),),
+    "verify": "MusicSeerr :8688 healthy; admin account created.",
+}
+O["seed-06"] = {
+    "steps": [
+        P("docker-16", "nas-23", "nas-10"),
+        "MusicSeerr → Settings → **Lidarr**: URL http://192.168.10.4:8686, API key from Lidarr → Settings → General.",
+        "Lidarr root folder **/music** (container path); quality profile = your FLAC-preferred profile from nas-23.",
+        "Optional: **Plex** http://192.168.10.4:32400 + token (availability badges for Plex Music).",
+        "Optional: **Navidrome** http://navidrome:4533 (same edge network; requires docker-05).",
+        "Optional: Local files → Music directory **/music** (matches compose NFS mount).",
+        "Request a test album → confirm it appears in **NAS Lidarr Activity** (not Betty).",
+    ],
+    "commands": [
+        "LIDARR_KEY=$(ssh nas 'grep -oP \"(?<=<ApiKey>)[^<]+\" /volume1/docker/lidarr/config/config.xml')",
+        "curl -s 'http://192.168.10.4:8686/api/v1/system/status' -H \"X-Api-Key: $LIDARR_KEY\"",
+    ],
+    "files": [
+        "configs/seedbox/music-pipeline.md",
+        "configs/nas/media-automation/README.md",
+    ],
+    "docs": D(("MusicSeerr Lidarr setup", "https://musicseerr.com/docs/getting-started/"),),
+    "verify": "MusicSeerr request appears in NAS Lidarr; Plex Music library linked.",
+}
+O["seed-10"] = {
+    "steps": [
+        P("seed-06", "nas-29", "docker-05"),
+        "Confirm prerequisites: rclone mount (nas-20), Lidarr torrent path (nas-23), Soularr (nas-29), MusicSeerr wired (seed-06), Plex Music + Navidrome (nas-10, docker-05).",
+        "**Torrent path:** Request small album in MusicSeerr → Lidarr Wanted → Deluge label lidarr on Betty → import from /seedbox/music/ → /volume1/music.",
+        "**Soulseek path:** Add album to Lidarr Wanted → Soularr searches slskd → files/slskd/ → Lidarr import from /seedbox/slskd/.",
+        "Confirm album in Plex Music and Navidrome; optional beet write (nas-30).",
+    ],
+    "commands": [
+        "ssh nas 'ls /volume1/mounts/seedbox-files/music /volume1/mounts/seedbox-files/slskd'",
+        "ssh seedbox 'ls ~/files/music ~/files/slskd'",
+    ],
+    "files": ["configs/seedbox/music-pipeline.md", "configs/nas/plex/README.md"],
+    "verify": "Album request playable in Plex Music and Navidrome via torrent or Soulseek path.",
+}
+O["ebook-01"] = {
+    "steps": [
+        MAC_OPEN,
+        P("nas-24", "nas-09"),
+        CM,
+        "`ssh -t nas 'sudo mkdir -p /volume1/docker/readarr/{library,scripts}'`",
+        f"`cd {REPO} && scp scripts/media/readarr-copy-to-cwa-ingest.sh nas:/tmp/`",
+        "`ssh -t nas 'sudo install -m 755 /tmp/readarr-copy-to-cwa-ingest.sh /volume1/docker/readarr/scripts/'`",
+        f"`cd {REPO}/configs/nas && tar czf - media-automation | ssh nas 'tar xzf - -C /tmp/'`",
+        "`ssh -t nas 'sudo rsync -a /tmp/media-automation/ /volume1/docker/media-automation/'`",
+        "Add `READARR_LIBRARY=/volume1/docker/readarr/library` to `/volume1/docker/media-automation/.env`.",
+        "`ssh -t nas 'cd /volume1/docker/media-automation && sudo /usr/local/bin/docker compose up -d readarr'`",
+        "`ssh nas \"docker inspect readarr --format '{{range .Mounts}}{{.Destination}} {{end}}'\"` — expect /readarr-library /cwa-book-ingest /scripts",
+    ],
+    "commands": [
+        "ssh -t nas 'sudo mkdir -p /volume1/docker/readarr/{library,scripts}'",
+        f"scp {REPO}/scripts/media/readarr-copy-to-cwa-ingest.sh nas:/tmp/",
+        "ssh -t nas 'sudo install -m 755 /tmp/readarr-copy-to-cwa-ingest.sh /volume1/docker/readarr/scripts/'",
+        "ssh -t nas 'cd /volume1/docker/media-automation && sudo /usr/local/bin/docker compose up -d readarr'",
+    ],
+    "files": [
+        "configs/nas/media-automation/docker-compose.yml",
+        "configs/nas/media-automation/.env.example",
+        "scripts/media/readarr-copy-to-cwa-ingest.sh",
+    ],
+    "docs": D(("CWA + Readarr workflow", "https://github.com/crocodilestick/Calibre-Web-Automated/discussions/248"),),
+    "verify": "Readarr container mounts /readarr-library, /cwa-book-ingest, and /scripts.",
+}
+O["ebook-02"] = {
+    "steps": [
+        MAC_OPEN,
+        P("ebook-01"),
+        "Readarr → Settings → Connect → + **Custom Script** → Name: `Copy to CWA ingest`",
+        "Path: `/scripts/readarr-copy-to-cwa-ingest.sh`",
+        "Triggers: **On Import** + **On Upgrade** (not On Grab)",
+        "Test → check `/volume1/docker/readarr/config/logs/readarr-copy-to-cwa-ingest.log`",
+    ],
+    "commands": [
+        "ssh nas 'tail -20 /volume1/docker/readarr/config/logs/readarr-copy-to-cwa-ingest.log 2>/dev/null || echo run Connect Test first'",
+    ],
+    "files": ["scripts/media/readarr-copy-to-cwa-ingest.sh"],
+    "docs": D(("readarr_addedbookpaths", "https://github.com/crocodilestick/Calibre-Web-Automated/discussions/248"),),
+    "verify": "Connect Test succeeds; import copies to ingest without removing Readarr's file.",
+}
+O["ebook-03"] = {
+    "steps": [
+        MAC_OPEN,
+        P("ebook-02"),
+        "Readarr → Root Folders: add `/readarr-library`, remove `/cwa-book-ingest`",
+        "Re-add or manual-import titles you want Readarr to track going forward",
+        "Test import: file in `/volume1/docker/readarr/library`; copy in ingest; final in `/volume1/books`",
+        "Readarr status stays **Downloaded** after CWA ingests",
+    ],
+    "commands": [
+        "ssh nas 'ls /volume1/docker/readarr/library /volume1/books'",
+    ],
+    "files": ["configs/nas/media-automation/README.md"],
+    "verify": "Readarr root is /readarr-library only; titles stay Downloaded after CWA ingest.",
+}
+O["ebook-04"] = {
+    "steps": [
+        MAC_OPEN,
+        P("docker-02", "ebook-03"),
+        f"`scp -r {REPO}/configs/docker-stack/stacks/libreseerr mini:/tmp/libreseerr`",
+        "`ssh mini 'sudo mkdir -p /opt/stacks/libreseerr && sudo rsync -a /tmp/libreseerr/ /opt/stacks/libreseerr/'`",
+        "`ssh mini 'cd /opt/stacks/libreseerr && cp -n .env.example .env'` — SECRET_KEY=`openssl rand -hex 32`",
+        "`ssh mini 'cd /opt/stacks/libreseerr && docker compose up -d'`",
+        "http://macmini.<tailnet>:8789 — default admin/admin → **change password immediately**",
+    ],
+    "commands": [
+        f"scp -r {REPO}/configs/docker-stack/stacks/libreseerr mini:/tmp/libreseerr",
+        "ssh mini 'sudo rsync -a /tmp/libreseerr/ /opt/stacks/libreseerr/'",
+        "ssh mini 'cd /opt/stacks/libreseerr && cp -n .env.example .env && docker compose up -d'",
+        "ssh mini 'curl -sf http://127.0.0.1:8789/'",
+    ],
+    "files": [
+        "configs/docker-stack/stacks/libreseerr/compose.yaml",
+        "configs/docker-stack/stacks/libreseerr/.env.example",
+    ],
+    "docs": D(("Libreseerr", "https://github.com/zamnzim/Libreseerr"),),
+    "verify": "Libreseerr :8789 healthy; admin password changed from default.",
+}
+O["ebook-05"] = {
+    "steps": [
+        MAC_OPEN,
+        P("ebook-04", "nas-10"),
+        "Libreseerr Settings → Ebook server: Readarr, http://192.168.10.4:8787 + API key",
+        "Root folder `/readarr-library`; Test Connection → Save",
+        "Optional Plex Books link; create household user accounts",
+        "Test request → NAS Readarr Activity",
+    ],
+    "commands": [
+        "READARR_KEY=$(ssh nas 'grep -oP \"(?<=<ApiKey>)[^<]+\" /volume1/docker/readarr/config/config.xml')",
+        "curl -s 'http://192.168.10.4:8787/api/v1/system/status' -H \"X-Api-Key: $READARR_KEY\"",
+    ],
+    "files": ["configs/nas/media-automation/README.md", "configs/nas/calibre-web-automated/README.md"],
+    "docs": D(("Libreseerr", "https://github.com/zamnzim/Libreseerr"),),
+    "verify": "Libreseerr test request appears in NAS Readarr Activity.",
+}
+O["ebook-06"] = {
+    "steps": [
+        MAC_OPEN,
+        P("ebook-05", "read-05"),
+        "Request small ebook in Libreseerr → Deluge readarr on Betty → Readarr import",
+        "Confirm `/readarr-library` + ingest copy + `/volume1/books`",
+        "Readarr stays Downloaded after CWA ingest",
+        "Plex Books + CWA OPDS on Kobo",
+    ],
+    "commands": [
+        "ssh nas 'ls /volume1/docker/readarr/library /volume1/books'",
+        "ssh nas 'tail -30 /volume1/docker/readarr/config/logs/readarr-copy-to-cwa-ingest.log'",
+    ],
+    "files": [
+        "configs/nas/media-automation/README.md",
+        "configs/nas/calibre-web-automated/README.md",
+        "scripts/reading/koreader-cwa-wallabag-wiring.md",
+    ],
+    "verify": "Libreseerr → Plex Books + OPDS; Readarr stays Downloaded after CWA ingest.",
 }
 O["seed-07"] = {
     "steps": [P("seed-05", "nas-25", "nas-10"), "Request small title in Seerr", "Watch Deluge → NAS import → Plex", "Seerr Available"],
@@ -812,27 +1013,35 @@ O["seed-08"] = {
 O["seed-09"] = {
     "steps": [
         P("seed-03", "betty-01"),
-        "SSH to Betty. Deploy **slskd** (Soulseek P2P stays off-site):",
-        f"`scp {REPO}/configs/seedbox/slskd-compose.example.yaml seedbox:~/slskd-stack/docker-compose.yml`",
-        f"`scp {REPO}/configs/seedbox/.env.example seedbox:~/slskd-stack/.env` — set SLSKD_SLSK_* creds, SLSKD_DOWNLOADS=/home/hd34/btabaska/files/slskd",
-        "`ssh seedbox 'cd ~/slskd-stack && docker compose up -d'`",
-        "In slskd web UI (via SSH tunnel or tailnet): create API key for Soularr (nas-29)",
+        "SSH to Betty. Deploy **slskd** as a **native binary** (Soulseek P2P stays off-site):",
+        "**Do NOT use rootless Docker** on Bytesized — peer port 50300 will not be reachable.",
+        f"`scp {REPO}/scripts/media/install-slskd-native.sh seedbox:~/install-slskd-native.sh`",
+        f"`scp {REPO}/configs/seedbox/slskd-native.example.env seedbox:~/slskd-native/.env`",
+        "Edit `~/slskd-native/.env`: `SLSKD_SLSK_*` (Soulseek account) + `SLSKD_WEB_*` (web UI login).",
+        "For Soularr: set `SLSKD_HTTP_IP` to Betty's Tailscale IP in `.env`.",
+        "`ssh seedbox 'chmod 600 ~/slskd-native/.env && bash ~/install-slskd-native.sh'`",
+        "Web UI: `ssh -L 5030:127.0.0.1:5030 seedbox` → http://localhost:5030",
+        "Verify port 50300 open (slsknet port test); create API key for Soularr (nas-29)",
         "Confirm test download lands in ~/files/slskd/ and is visible on NAS at /volume1/mounts/seedbox-files/slskd/",
     ],
     "commands": [
-        f"scp {REPO}/configs/seedbox/slskd-compose.example.yaml seedbox:~/slskd-stack/docker-compose.yml",
-        "ssh seedbox 'mkdir -p ~/slskd-stack ~/files/slskd && cd ~/slskd-stack && docker compose up -d'",
+        f"scp {REPO}/scripts/media/install-slskd-native.sh seedbox:~/install-slskd-native.sh",
+        f"scp {REPO}/configs/seedbox/slskd-native.example.env seedbox:~/slskd-native/.env",
+        "ssh seedbox 'chmod 600 ~/slskd-native/.env && bash ~/install-slskd-native.sh'",
+        "ssh seedbox 'systemctl --user status slskd'",
         "ssh seedbox 'ls ~/files/slskd'",
     ],
-    "files": ["configs/seedbox/slskd-compose.example.yaml", "configs/seedbox/.env.example", "configs/seedbox/music-pipeline-soulseek.md"],
+    "files": ["scripts/media/install-slskd-native.sh", "configs/seedbox/slskd-native.example.env", "configs/seedbox/music-pipeline.md"],
     "docs": D(("slskd", "https://github.com/slskd/slskd"), ("Soulseek", "https://www.slsknet.org/")),
-    "verify": "slskd running on Betty; API key created; ~/files/slskd visible via NAS rclone mount.",
+    "verify": "Native slskd running; port 50300 open; API key created; ~/files/slskd visible via NAS rclone mount.",
 }
 O["nas-29"] = {
     "steps": [
         P("nas-23", "seed-09"),
         "Copy soularr config: `cp soularr/config.ini.example soularr/config.ini` in media-automation/",
         "Edit config.ini: Lidarr API key, slskd API key, Slskd host_url = http://betty.<tailnet>:5030, Lidarr download_dir = /seedbox/slskd",
+        "Set Betty `SLSKD_HTTP_IP` in ~/slskd-native/.env to Tailscale IP so NAS can reach slskd API",
+        "Soularr Slskd download_dir = Betty host path to slskd downloads (see config.ini.example)",
         "`ssh nas 'cd /volume1/docker/media-automation && docker compose up -d soularr'`",
         "In Lidarr add a wanted album; watch Soularr logs search slskd and Lidarr import from /seedbox/slskd/",
         "Confirm album in Plex Music + Navidrome (docker-05)",
@@ -844,7 +1053,7 @@ O["nas-29"] = {
     "files": [
         "configs/nas/media-automation/docker-compose.yml",
         "configs/nas/media-automation/soularr/config.ini.example",
-        "configs/seedbox/music-pipeline-soulseek.md",
+        "configs/seedbox/music-pipeline.md",
     ],
     "docs": D(("Soularr", "https://github.com/mrusse/soularr"),),
     "verify": "Soulseek album imports to /volume1/music via Soularr → slskd → Lidarr.",
@@ -904,19 +1113,85 @@ O["nas-08b"] = {
     "verify": "RAW+JPEG from test SD copy appear stacked in Immich library.",
 }
 
-O["nas-09"] = nas_docker(
-    "calibre-web-automated",
-    "configs/nas/calibre-web-automated",
-    dest="/volume1/docker/calibre-web-automated",
-    prereqs=("nas-02", "nas-00c"),
-    extra_steps=[
-        "http://192.168.10.4:8083 — LAN/Tailscale only; **disable Kobo sync** until CWA v4.0.7+ (CVE-2026-7713)",
-        "Drop test EPUB into ingest folder; confirm appears in /volume1/books",
+O["nas-09"] = {
+    "steps": [
+        MAC_OPEN,
+        P("nas-02", "nas-00c"),
+        CM,
+        "**Image:** `ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7` — CVE-2026-7713 fix. `crocodilestick/...:v4.0.7` was never published on Docker Hub (stops at v4.0.6).",
+        "`ssh nas 'id btabaska'` — confirm PUID/PGID in docker-compose.yml match (1026/100).",
+        "`ssh -t nas 'sudo mkdir -p /volume1/docker/calibre-web-automated/{config,ingest} /volume1/books'`",
+        f"`cd {REPO}/configs/nas && tar czf - calibre-web-automated | ssh nas 'tar xzf - -C /tmp/'`",
+        "`ssh -t nas 'sudo rsync -a /tmp/calibre-web-automated/ /volume1/docker/calibre-web-automated/'`",
+        "`ssh -t nas 'cd /volume1/docker/calibre-web-automated && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'`",
+        "`ssh -t nas 'cd /volume1/docker/calibre-web-automated && sudo /usr/local/bin/docker compose ps'`",
+        "http://192.168.10.4:8083 — complete first-run wizard (creates metadata.db in /volume1/books). LAN/Tailscale only.",
+        "Drop test EPUB into ingest; **Library Refresh** if polling hasn't picked it up; confirm in /volume1/books.",
     ],
-    verify="CWA UI loads; ingest works; not exposed publicly.",
-    docs=D(("Calibre-Web-Automated", "https://github.com/crocodilestick/Calibre-Web-Automated"),),
-)
-O["nas-09"]["files"] = ["configs/nas/calibre-web-automated/docker-compose.yml"]
+    "commands": [
+        f"cd {REPO}/configs/nas && tar czf - calibre-web-automated | ssh nas 'tar xzf - -C /tmp/'",
+        "ssh -t nas 'sudo rsync -a /tmp/calibre-web-automated/ /volume1/docker/calibre-web-automated/'",
+        "ssh -t nas 'cd /volume1/docker/calibre-web-automated && sudo /usr/local/bin/docker compose up -d'",
+        "ssh -t nas 'cd /volume1/docker/calibre-web-automated && sudo /usr/local/bin/docker compose ps'",
+    ],
+    "files": [
+        "configs/nas/calibre-web-automated/docker-compose.yml",
+        "configs/nas/calibre-web-automated/README.md",
+    ],
+    "verify": "CWA UI loads; ingest auto-processes into /volume1/books; not exposed publicly.",
+    "docs": D(
+        ("Calibre-Web-NextGen (pinned image)", "https://github.com/new-usemame/Calibre-Web-NextGen"),
+        ("Original CWA project", "https://github.com/crocodilestick/Calibre-Web-Automated"),
+    ),
+    "summary": (
+        "Deploy **Calibre-Web-Automated** on the DS920+ via the **Calibre-Web-NextGen** fork "
+        "(`ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7`). Auto-ingests into `/volume1/books`, "
+        "serves OPDS + Kobo/KOSync. Upstream Docker Hub never shipped v4.0.7; the fork is the "
+        "drop-in with the CVE-2026-7713 fix."
+    ),
+    "detail": [
+        {
+            "h": "Prerequisites",
+            "sub": [
+                "**nas-00c complete** (Vol 1 shares incl. `/volume1/books`).",
+                "DSM **Container Manager** installed. PUID/PGID from `id btabaska` (often 1026/100).",
+            ],
+        },
+        {
+            "h": "Step 1 — Transfer stack (tar pipe, not scp)",
+            "body": [
+                "Synology SSH often rejects `scp` (`subsystem request failed`). Use tar over SSH:",
+            ],
+            "cmds": [
+                "cd ~/Documents/Home/foss-setup/configs/nas && tar czf - calibre-web-automated | ssh nas 'tar xzf - -C /tmp/'",
+                "ssh -t nas 'sudo rsync -a /tmp/calibre-web-automated/ /volume1/docker/calibre-web-automated/'",
+            ],
+        },
+        {
+            "h": "Step 2 — Start CWA",
+            "cmds": [
+                "ssh -t nas 'cd /volume1/docker/calibre-web-automated && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'",
+            ],
+            "note": "Docker on DSM requires `sudo /usr/local/bin/docker` over `ssh -t`.",
+        },
+        {
+            "h": "Step 3 — Verify ingest",
+            "sub": [
+                "Complete wizard at http://192.168.10.4:8083.",
+                "Drop EPUB in `/volume1/docker/calibre-web-automated/ingest` → appears in `/volume1/books`.",
+                "Use **Library Refresh** if the file sits in ingest more than ~30 s.",
+            ],
+        },
+    ],
+    "pitfalls": [
+        "Using `crocodilestick/calibre-web-automated:v4.0.7` — manifest does not exist on Docker Hub; use NextGen GHCR image.",
+        "Running without sudo docker — permission denied on `/var/run/docker.sock`.",
+        "Using `scp` to NAS — often fails; use tar pipe.",
+        "PUID/PGID mismatch — ingest/convert fails silently; match `id btabaska`.",
+        "Expecting ingest without the container running — only the ingest folder exists until nas-09 completes.",
+        "Exposing :8083 publicly — keep LAN/Tailscale-only.",
+    ],
+}
 
 O["doc-01"] = {
     "steps": [
@@ -949,7 +1224,7 @@ O["read-03"] = {
     "steps": [
         MAC_OPEN,
         P("read-01", "read-02", "nas-09"),
-        "CVE note: keep CWA LAN-only; disable Kobo sync until v4.0.7+",
+        "Security: keep CWA LAN/Tailscale-only (nas-09 pins NextGen v4.0.7 with CVE-2026-7713 fix).",
         "Syncthing on rig: share EPUB folder → NAS CWA ingest path",
         "Drop test EPUB into shared folder; refresh CWA library",
         "`ssh nas 'curl -sfI http://127.0.0.1:8083/ | head -1'`",
@@ -1182,7 +1457,7 @@ O["sbom-02"] = {"steps": [P("sbom-01"), f"Install sbom-nightly on each host from
 O["sbom-03"] = {"steps": [P("glue-05"), "etckeeper on mini/rig/nas"], "commands": [f"scp {REPO}/scripts/inventory/etckeeper-setup.sh mini:/tmp/"], "files": ["configs/inventory/etckeeper.conf"], "verify": "etc commits on apt change."}
 O["sbom-04"] = {"steps": [P("glue-05"), "export-manifests.sh cron"], "commands": [f"scp {REPO}/scripts/inventory/export-manifests.sh mini:/opt/scripts/"], "files": ["scripts/inventory/export-manifests.sh"], "verify": "Manifest in git."}
 O["sbom-05"] = {"steps": [P("sbom-02", "sbom-03", "sbom-04", "glue-06"), "Write restore runbooks per host", "Execute one full rebuild"], "commands": [], "files": ["configs/inventory/restore-runbook-template.md"], "verify": "Rebuild drill documented."}
-O["sec-01"] = {"steps": ["Hardware key: Bitwarden, Proton, DSM, Tailscale, Forgejo", "TOTP: Immich, Plex, Seerr, HA, seedbox panel", "Store backup codes offline"], "commands": [], "files": [], "verify": "2FA on all crown jewels."}
+O["sec-01"] = {"steps": ["Hardware key: Bitwarden, Proton, DSM, Tailscale, Forgejo", "TOTP: Immich, Plex, Seerr, MusicSeerr, HA, seedbox panel", "Store backup codes offline"], "commands": [], "files": [], "verify": "2FA on all crown jewels."}
 O["sec-02"] = {"steps": [P("docker-01"), "daemon.json log limits on mini/rig/nas docker", "Restart docker; recreate containers"], "commands": ["ssh mini 'cat /etc/docker/daemon.json'", "ssh rig 'cat /etc/docker/daemon.json'"], "files": [], "verify": "Log max-size 10m."}
 O["sec-05"] = {"steps": ["unattended-upgrades on mini", "pacman cadence on rig", "DSM auto security updates"], "commands": ["ssh mini 'sudo unattended-upgrade --dry-run -d'"], "files": [], "verify": "Security updates automatic."}
 O["sec-03"] = {"steps": [P("nas-02", "nas-06", "docker-09"), "B2 Object Lock", "Deploy healthchecks", "Wire backup pings to ntfy"], "commands": ["ssh mini 'cd /opt/stacks/healthchecks && docker compose up -d'"], "files": ["configs/docker-stack/stacks/healthchecks/compose.yaml"], "verify": "Skipped backup alerts."}

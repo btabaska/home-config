@@ -1,12 +1,12 @@
 > ## ⚠️ SUPERSEDED — use the split architecture instead
 >
-> **Current model:** slskd on Betty (seedbox), Soularr + Lidarr + beets on the NAS.
-> See **[`music-pipeline-soulseek.md`](music-pipeline-soulseek.md)** and
+> **Current model:** slskd runs as a **native binary** on Betty (seedbox), Soularr +
+> Lidarr + beets on the NAS. See **[`music-pipeline.md`](music-pipeline.md)** and
 > **[`../nas/media-automation/README.md` §4](../nas/media-automation/README.md)**.
 >
 > This file documents the old "everything on the seedbox" layout. Do not deploy
-> `slskd-soularr-compose.example.yaml` as-is — use `slskd-compose.example.yaml` on
-> Betty and Soularr in `media-automation/docker-compose.yml` on the NAS.
+> `slskd-soularr-compose.example.yaml` or `slskd-compose.example.yaml` on Betty —
+> use **`scripts/media/install-slskd-native.sh`** instead.
 
 # Lidarr + slskd + Soularr — music acquisition on the seedbox
 
@@ -80,13 +80,10 @@ Symfonium/Amperfy.
 ## 3. Deploy slskd + Soularr (on the seedbox)
 
 > **Deployment reality (read first).** Sonarr/Radarr/Prowlarr/Lidarr/Bazarr come
-> from Bytesized's one-click catalog (see `arr-suite-wiring.md`). **slskd, Soularr,
-> and Unpackerr are NOT in that catalog.** Our chosen plan (Bytesized "Stream +3",
-> a *no-root managed* AppBox) **does, however, include SSH + rootless Docker on
-> every plan**, so you deploy these three yourself with the compose template below —
-> `docker compose up -d` works **without root** under rootless Docker. (If you ever
-> move to a provider that offers *neither* a one-click for these tools *nor* Docker,
-> you'd need a root-capable/VPS seedbox tier instead.)
+> from Bytesized's one-click catalog (see `arr-suite-wiring.md`). **slskd** is NOT in
+> that catalog and must run as a **native binary** on Betty (rootless Docker cannot
+> expose Soulseek peer port 50300). **Soularr** runs on the NAS. See
+> `scripts/media/install-slskd-native.sh` and `music-pipeline.md`.
 
 Use the compose template `slskd-soularr-compose.example.yaml` in this folder:
 

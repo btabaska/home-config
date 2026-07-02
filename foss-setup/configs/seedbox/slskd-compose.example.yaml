@@ -1,16 +1,14 @@
+# DEPRECATED — do not use on Bytesized AppBoxes.
+#
+# Rootless Docker on Betty cannot expose Soulseek peer port 50300 to the internet
+# (P2P downloads fail). Use the native binary instead:
+#   scripts/media/install-slskd-native.sh
+#   configs/seedbox/slskd-native.example.env
+#
+# This compose file is kept only as a reference for non-rootless Docker hosts.
+#
 # slskd — Soulseek daemon on the seedbox (P2P off-site)
-# Phase 2 extension. Docs: https://github.com/slskd/slskd
-#
-# RUNS ON BETTY ONLY. Soulseek is P2P — keep it on the seedbox, not the NAS.
-# Soularr runs on the NAS (see configs/nas/media-automation/) and reaches slskd
-# over Tailscale. Finished downloads land under ~/files/slskd/ so the NAS Lidarr
-# container imports via the existing rclone mount at /seedbox/slskd/.
-#
-# DEPLOYMENT: slskd is NOT in Bytesized's one-click catalog. Deploy via rootless
-# Docker (no root needed). See configs/seedbox/music-pipeline-soulseek.md.
-#
-# Copy to docker-compose.yml on the seedbox, fill .env, then:
-#   docker compose up -d
+# Docs: https://github.com/slskd/slskd
 
 services:
   slskd:

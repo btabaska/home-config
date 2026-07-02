@@ -18,8 +18,8 @@ api_key = <slskd-api-key>
 # Betty's Tailscale hostname or 100.x address — NOT the public shared IP for API traffic
 host_url = http://betty.<tailnet>:5030
 url_base = /
-# Path INSIDE the slskd container on Betty (not the NAS path)
-download_dir = /downloads
+# Path INSIDE slskd on Betty (native install — matches SLSKD_DOWNLOADS in ~/slskd-native/.env)
+download_dir = /home/hd34/btabaska/files/slskd
 
 [Release Preferences]
 # Optional: prefer FLAC, etc. — see Soularr wiki for full options

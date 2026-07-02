@@ -27,11 +27,11 @@ sync agent copies them down.
 > **Deployment model (no-root managed box).** Bytesized "Stream +3" is a *managed,
 > no-root* AppBox. **qBittorrent + Sonarr/Radarr/Prowlarr/Bazarr/Lidarr** install
 > from its **one-click catalog** (this runbook). The extras that are NOT in the
-> catalog — **slskd, Soularr (`lidarr-slskd-soularr.md`) and Unpackerr
-> (`unpackerr-compose.example.yaml`)** — are deployed by you via the **rootless
-> Docker** that every Bytesized plan includes (SSH in, `docker compose up -d`, no
-> sudo). On a provider that offers neither a one-click nor Docker for those tools,
-> you'd need a root-capable/VPS tier instead.
+> catalog — **slskd** (`scripts/media/install-slskd-native.sh` — native binary, not
+> Docker) and **Soularr** (`lidarr-slskd-soularr.md`) run off the catalog path.
+> **Unpackerr** runs on the NAS (`configs/nas/media-automation/`). Bytesized includes
+> SSH + rootless Docker, but **slskd must not use rootless Docker** — peer port 50300
+> will not be reachable.
 
 ---
 

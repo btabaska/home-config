@@ -23,7 +23,7 @@ Before any app choice, settle this. It's the difference between a ~$160/year pow
 |---|---|---|
 | File storage, Immich, Plex, Calibre-Web-Automated, backups | DS920+ | Always on, low power, Quick Sync transcode |
 | **Heavy/always-on offload: Paperless-ngx, Dependency-Track, Frigate, Tdarr (server)** | DS920+ | Co-located with the data/media they touch; keeps RAM-hungry Java + live video detection off the small Mac mini (see capacity note below) |
-| Docker stack: Seerr (request portal), Miniflux, Navidrome, Pinchflat, Wallabag, Mealie, Tautulli/Kometa/Maintainerr, Homepage, Caddy, AdGuard+Unbound, monitoring (Beszel/Uptime-Kuma/ntfy), LiteLLM (small model), Forgejo | Mac mini (Ubuntu) | Flexible Docker host, ~12W, no DSM constraints — the *light* always-on services |
+| Docker stack: Seerr (movie/TV requests), **MusicSeerr** (album requests), Miniflux, Navidrome, Pinchflat, Wallabag, Mealie, Tautulli/Kometa/Maintainerr, Homepage, Caddy, AdGuard+Unbound, monitoring (Beszel/Uptime-Kuma/ntfy), LiteLLM (small model), Forgejo | Mac mini (Ubuntu) | Flexible Docker host, ~12W, no DSM constraints — the *light* always-on services |
 | qBittorrent + Sonarr/Radarr/Prowlarr/Bazarr + sync agent | Managed seedbox — **Bytesized "Stream +3"** (3000 GB, off-site) | Keeps all P2P off your home network; ISP never sees a swarm (see Media acquisition) |
 | Home Assistant | **HA Green (purchased)** | Isolated, always-on, low power (see Smart Home) |
 | One light game server (e.g. a single Minecraft or Terraria) | Mac mini (Ubuntu) | Always-on for friends — but the 8GB box only has room for *one small* server alongside the stack; all other/heavier servers run on the rig on-demand (see capacity note) |
@@ -135,7 +135,7 @@ Keep the creators you care about locally (and offline-able), instead of relying 
 
 ### Reading / eReader (Kindle + iBooks)
 - **Calibre** (desktop) — library master and conversion engine.
-- **Calibre-Web-Automated (CWA)** — the actively-developed fork. Auto-ingest folder, an EPUB-fixer that cleans files so Send-to-Kindle stops rejecting them, metadata/cover enforcement written into the files, OPDS server, native Kobo sync, and **built-in zero-config KOReader progress sync**. One Docker container on the NAS. **Security note (load-bearing until a patched image ships):** the pinned `v4.0.6`/`latest` Docker Hub builds are affected by CVE-2026-7713 (Kobo auth-token bypass, fixed upstream in 4.0.7 but not yet published as a stable image). Keep CWA LAN/VPN-only behind auth, and **disable Kobo sync** unless you actively use it — do not treat these mitigations as optional boilerplate.
+- **Calibre-Web-Automated (CWA)** — the actively-developed fork. Auto-ingest folder, an EPUB-fixer that cleans files so Send-to-Kindle stops rejecting them, metadata/cover enforcement written into the files, OPDS server, native Kobo sync, and **built-in zero-config KOReader progress sync**. One Docker container on the NAS. **Image decision (June 2026):** deploy via the community fork **`ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7`** — upstream `crocodilestick/calibre-web-automated` on Docker Hub stops at v4.0.6 and never published v4.0.7; the NextGen fork is a drop-in with CVE-2026-7713 (Kobo auth-token IDOR) fixed. Keep CWA LAN/VPN-only; do not expose `:8083` publicly.
 - **KOReader** — open reader for the device. Runs on Kobo, jailbroken Kindle, PocketBook, Boox, reMarkable, Android. Stores progress in accessible files; OPDS + Calibre wireless plugin.
 - **Syncthing** — peer-to-peer sync of books and progress files. No cloud.
 
@@ -165,7 +165,7 @@ Device notes: **Kobo** = smoothest (native CWA sync + optional KOReader). **Kind
 >
 > **Seedbox = Deluge + slskd.** The seedbox **"Betty"** (Bytesized AppBox, no root,
 > shared IP `185.162.184.38`, home `/home/hd34/btabaska`) runs **Deluge** (torrents)
-> and **slskd** (Soulseek) — both are P2P and stay off-site permanently. No *arr
+> and **slskd** (Soulseek, **native binary** — not rootless Docker) — both are P2P and stay off-site permanently. No *arr
 > apps, Soularr, beets, qBittorrent, or sync agents on Betty. Deluge sorts completed
 > torrents into label folders under `files/`: `tv`, `movies`, `music`, `books`, and
 > `manual`. slskd writes Soulseek downloads to `files/slskd/`.
@@ -190,11 +190,11 @@ Device notes: **Kobo** = smoothest (native CWA sync + optional KOReader). **Kind
 > `copy`, re-run-safe, never touching the \*arr label folders). \*arr media never
 > arrives via a scheduled copy — only via the live mount + import.
 >
-> - **Music = Lidarr + Soulseek (split) + optional beets.** Torrent music via
->   Deluge (label `lidarr` → `/seedbox/music/`). Soulseek via **slskd on Betty**
->   + **Soularr on NAS** (imports from `/seedbox/slskd/`). **beets** is tag-only
->   on `/music` — Lidarr owns layout. Needs a music-capable Prowlarr indexer for
->   the torrent half.
+> - **Music = MusicSeerr (Mac mini) → Lidarr + Soulseek (split) + optional beets.**
+>   **MusicSeerr** forwards album requests to Lidarr on the NAS (Seerr has no
+>   Lidarr support). Torrent music via Deluge (label `lidarr` → `/seedbox/music/`).
+>   Soulseek via **slskd on Betty** + **Soularr on NAS** (imports from `/seedbox/slskd/`).
+>   **beets** is tag-only on `/music` — Lidarr owns layout.
 > - **Books = Readarr + self-hosted rreading-glasses → CWA.** Readarr's metadata
 >   provider points at the **local** rreading-glasses (not a public instance);
 >   Readarr imports into the **CWA ingest** folder and CWA owns the final Calibre
@@ -215,6 +215,7 @@ Device notes: **Kobo** = smoothest (native CWA sync + optional KOReader). **Kind
 > - [ ] **Phase C (polish):** `unpackerr` — fill API keys in `unpackerr.conf`.
 > - [ ] **Phase D (Soulseek):** `slskd` on Betty (seed-09) → `soularr` on NAS (nas-29).
 > - [ ] **Phase E (optional):** `beets` tag layer on NAS (nas-30).
+> - [ ] **MusicSeerr:** deploy on Mac mini (docker-16) → wire to Lidarr (seed-06) → E2E (seed-10).
 > - [ ] Task Scheduler: every-15-min task = the single manual-lane `rclone copy`.
 > - [ ] Run the self-check in the stack README.
 >
@@ -234,15 +235,15 @@ context; where they conflict with the box above, **the box above wins.**
 Why this is the answer to "never visible to my ISP" *and* the network crashes: the old setup torrented on the NAS behind a home VPN, and thousands of simultaneous peer connections (DHT/uTP especially) exhausted the connection-state (conntrack) table until you rebooted — the classic torrent-kills-the-network failure. (VPN encapsulation adds its own MTU/fragmentation headaches on top, a separate reliability drag — though note a full tunnel can actually *reduce* the router's tracked-connection count by collapsing all peers into one encrypted flow.) The 5 Mbps cap was a band-aid. A seedbox eliminates the root cause: **the P2P happens on a rented server, so your home network only ever does one tidy encrypted download from a datacenter.** Your ISP never sees a swarm (or even an always-on VPN tunnel) — just a normal-looking transfer — which is the purest form of "invisible to my ISP."
 
 **The pipeline (fully automated: request -> auto-appears in Plex):**
-1. **Jellyseerr/Seerr** (request portal) — runs at home on the Mac mini; household members request a title from their phone or Apple TV. (Use **Seerr**, the 2026 unified successor of Overseerr + Jellyseerr — image `ghcr.io/seerr-team/seerr`. Overseerr's development had stalled since ~2023 and its repo was finally archived (read-only) on Feb 15, 2026 with an in-app migration notice pointing to Seerr. Jellyseerr is the fork most seedbox app stores still ship and is fine too — it's literally the codebase that became Seerr. All support Plex.)
-2. **Sonarr / Radarr / Lidarr** (on the seedbox) — receive the request, search via **Prowlarr** indexers, hand off to **qBittorrent** (on the seedbox). *(Sonarr = TV, Radarr = movies, **Lidarr = music** — same model, same seedbox.)*
+1. **Seerr** (movie/TV requests) and **MusicSeerr** (album requests) — both run at home on the Mac mini; household members request from phone or Apple TV. (Use **Seerr** `ghcr.io/seerr-team/seerr` for Radarr/Sonarr — it has **no Lidarr support**. Use **[MusicSeerr](https://musicseerr.com/)** `ghcr.io/habirabbu/musicseerr` for Lidarr album requests.)
+2. **Sonarr / Radarr / Lidarr** (on the **NAS**) — receive requests, search via **Prowlarr** indexers, hand off torrent grabs to **Deluge** on Betty. *(Sonarr = TV, Radarr = movies, **Lidarr = music**.)*
 3. **qBittorrent** downloads at full seedbox speed, then Sonarr/Radarr rename/organize; **Bazarr** grabs subtitles.
 4. **Sync agent** (Syncthing or rclone, on the seedbox) pushes the finished, named files into the NAS library folders.
 5. **Plex** (home) imports them; Seerr sees they're available and notifies the requester.
 
 **How the home and seedbox talk:** put the seedbox on your **Tailscale** tailnet, so Seerr (home) reaches Sonarr/Radarr (seedbox) and the sync runs privately, with nothing exposed to the internet. Use SFTP/Syncthing (encrypted) for the file transfer — never plain FTP.
 
-**Yes, it includes music — with one twist.** **Lidarr** slots into the exact same pipeline for albums, and **Navidrome** then serves whatever it grabs (alongside your CD rips). The twist: torrent trackers are thin for music compared to TV/movies, so the community-standard addition is **Soulseek** via **slskd** (a self-hosted Soulseek daemon) glued to Lidarr by **Soularr** — Soularr reads Lidarr's "wanted" list, finds the albums on Soulseek, downloads them, and tells Lidarr to import, fully hands-off (it even keeps a deny-list so failed imports don't pile up). Because Soulseek is also P2P, **run slskd + Soularr on the seedbox**, not at home — the same logic that keeps every swarm off your network. Net result: requested albums land in Navidrome's library (and become the reproducible master that syncs to the iPod) the same way movies land in Plex. *(Podcasts and YouTube channels are handled separately — gPodder and Pinchflat via RSS — not the \*arr stack.)*
+**Yes, it includes music — with two twists.** **Lidarr** on the NAS handles albums. **MusicSeerr** (not Seerr) is the request portal for music. Torrent trackers are thin for music, so the standard add is **Soulseek** via **slskd on Betty** + **Soularr on the NAS** — Soularr reads Lidarr's "wanted" list, finds albums on Soulseek, downloads to `files/slskd/`, and triggers Lidarr import. Because Soulseek is P2P, **slskd stays on Betty** — same logic as Deluge. Net result: requested albums land in Navidrome's library (and become the reproducible master that syncs to the iPod) the same way movies land in Plex.
 
 **Provider — decided: [Bytesized "Stream +3"](https://bytesized-hosting.com)** (their *New Appbox* tier) — **3000 GB HDD storage, a 6-10 TB/month upload cap (verify the exact Stream +3 SKU at checkout), €16/mo (~$18)**, on a 10 Gbit network in Europe (LUX/FR/NL) with the slickest one-click panel (qBittorrent + the full *arr suite + Seerr/Bazarr/Tautulli + rclone/Syncthing, 67+ apps). It won on ease-of-setup and the breadth of the one-click catalog. *(Runners-up were Seedboxes.cc and DediSeedbox for genuinely uncapped upload, and Whatbox for SSH freedom/reputation — see `configs/seedbox/provider-comparison.md`.)*
 - **The upload cap, addressed:** earlier drafts said "prioritize *unlimited* upload," and Stream +3 is *capped* — at **6-10 TB/month depending on the exact SKU (verify at checkout)**, still a generous ceiling, well above what normal private-tracker seeding burns, so it's a non-issue for typical use. If you ever seed *very* hard for ratio and approach the cap in a month, qBittorrent's per-torrent share-ratio / seeding-time limits keep you under it; only a ratio-grinder would need to move up a tier or to an uncapped provider. The cap is **upload only** — downloads are unmetered.
@@ -776,7 +777,7 @@ Do a phase before starting the next; each leaves you better off.
 
 4. **Home Assistant** (HA Green — purchased): add Hue (local), Midea (local via `midea_ac_lan` or an ESPHome dongle), Nest (SDM API). Move smart devices onto the IoT VLAN. Then build the local backbone: **Zigbee coordinator + Zigbee2MQTT + Mosquitto** for cheap local sensors (see shopping list), the **HA Companion app** + presence, the **UniFi Protect integration** for your cameras, the **HomeKit Bridge** so iPhones keep Siri/Home, scheduled **HA backups to the NAS** (key in Bitwarden), and **Node-RED** if automations get complex. Point local voice at **LiteLLM** (small always-on model on the Mac mini, falling back to the rig's Ollama).
 5. **Seedbox pipeline:** sign up for the **Bytesized "Stream +3"** seedbox (3000 GB, 6-10 TB/mo upload cap, €16), install qBittorrent + Sonarr/Radarr/**Lidarr**/Prowlarr/Bazarr + **Recyclarr** (TRaSH profiles) + **Unpackerr** + a sync agent on it, run **Seerr/Jellyseerr** at home, put the seedbox on Tailscale, and point the sync at your NAS library (set qBittorrent ratio/seed-time limits so the 3 TB box self-prunes and stays under the upload cap). Then **decommission the NAS dual-LAN/Gluetun setup** and drop the 5 Mbps cap.
-   - **Music, specifically:** yes, automated acquisition includes it — **Lidarr** drops into this same seedbox pipeline. The one twist: torrent trackers are weak for music, so the standard add is **slskd (Soulseek) + Soularr** for hands-off album fetching — **run both on the seedbox** too, since Soulseek is also P2P. Results land in your NAS library and serve through **Navidrome**.
+   - **Music, specifically:** yes, automated acquisition includes it — **Lidarr** on the NAS. Torrent music via Deluge on Betty; Soulseek via **slskd (native on Betty) + Soularr (NAS)**. slskd must not run in rootless Docker on Bytesized — peer port 50300 will not be reachable. Results land in your NAS library and serve through **Navidrome**.
 6. **Immich** with phone auto-backup; import your mirrorless camera's SD card via **immich-go** / **pbak**. Start leaving iCloud Photos.
 
 **Phase 3 — The analogue media stack**
@@ -850,8 +851,8 @@ Grounded picks for the Zigbee backbone in Section 3 — all pair cleanly with **
 | Library pruning | **Maintainerr** | Mac mini |
 | Pre-transcode automation | **Tdarr** (node on rig) / FileFlows | NAS + rig |
 | YouTube / web video archive | **Pinchflat** (Tube Archivist / MeTube alt) | NAS / Ubuntu |
-| Private media acquisition | **Managed seedbox** (qBit + *arr) + **Seerr** | off-site + Mac mini |
-| Automated music acquisition | **Lidarr** + **slskd** (seedbox) + **Soularr** (NAS) + **beets** (optional) | Betty + NAS |
+| Private media acquisition | **Managed seedbox** (Deluge + slskd) + **Seerr** + **MusicSeerr** | off-site + Mac mini + NAS |
+| Automated music acquisition | **MusicSeerr** + **Lidarr** + **Soularr** + **slskd** (Betty) + **beets** (optional) | Mac mini + NAS + seedbox |
 | Documents (scan/OCR/search) | **Paperless-ngx** | NAS |
 | Recipes & meal planning | **Mealie** | Mac mini |
 | Passwords | **Bitwarden** (Vaultwarden if self-hosting) | cloud / optional self-host |

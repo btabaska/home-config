@@ -1,5 +1,11 @@
-# DEPRECATED — use slskd-compose.example.yaml on Betty + Soularr on the NAS.
-# See music-pipeline-soulseek.md for the current split architecture.
+# DEPRECATED — use native slskd on Betty + Soularr on the NAS.
+#
+# Rootless Docker on Bytesized cannot expose Soulseek peer port 50300.
+# Use instead:
+#   scripts/media/install-slskd-native.sh
+#   configs/seedbox/slskd-native.example.env
+#   configs/nas/media-automation/ (Soularr)
+# See music-pipeline.md for the current split architecture.
 #
 # slskd + Soularr — legacy combined seedbox stack (pre-2026 split)
 # Docs: slskd    https://github.com/slskd/slskd

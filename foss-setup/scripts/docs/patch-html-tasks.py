@@ -12,7 +12,7 @@ if not m:
 tasks = json.loads(m.group(2))
 by_id = {t["id"]: t for t in tasks}
 
-REMOVE = {"seed-02", "seed-04", "seed-06", "seed-10"}
+REMOVE = {"seed-02", "seed-04"}
 
 # --- rewritten / new tasks ---------------------------------------------------
 by_id["seed-01"] = {
@@ -71,7 +71,7 @@ by_id["seed-03"] = {
 by_id["seed-05"] = {
     "id": "seed-05",
     "phase": 2,
-    "title": "Connect Seerr to NAS Sonarr/Radarr/Lidarr (not the seedbox)",
+    "title": "Connect Seerr to NAS Sonarr/Radarr (movies/TV — not music)",
     "host": "Ubuntu",
     "type": "sync",
     "depends_on": ["docker-03", "nas-22", "nas-28"],
@@ -80,7 +80,7 @@ by_id["seed-05"] = {
         "Open Seerr at http://<mac-mini>:5055 → Settings → Services.",
         "Add **Radarr**: Hostname = NAS IP or MagicDNS (192.168.10.4 / nas.<tailnet>), Port **7878**, API key from Radarr → Settings → General. Default root folder **/movies**; quality profile = TRaSH profile from nas-28.",
         "Add **Sonarr**: same host, Port **8989**, API key, root folder **/tv**, same quality profile.",
-        "Add **Lidarr** (optional music requests): Port **8686**, root **/music**.",
+        "Do **not** add Lidarr — Seerr has no Lidarr support. Music uses **MusicSeerr** (docker-16 / seed-06).",
         "Settings → Plex: link this NAS Plex server (URL http://<nas>:32400 + token from Plex account settings).",
         "Test each service → Save. A test request should appear in the NAS *arr, not on Betty.",
     ],
@@ -88,9 +88,85 @@ by_id["seed-05"] = {
         "curl -s http://192.168.10.4:7878/api/v3/system/status -H 'X-Api-Key: <RADARR_API_KEY>'",
         "curl -s http://192.168.10.4:8989/api/v3/system/status -H 'X-Api-Key: <SONARR_API_KEY>'",
     ],
-    "files": ["configs/docker-stack/stacks/seerr/compose.yaml", "configs/nas/media-automation/README.md"],
+    "files": ["configs/docker-stack/stacks/seerr/compose.yaml", "configs/seedbox/music-pipeline.md", "configs/nas/media-automation/README.md"],
     "docs": [{"title": "Seerr services setup", "url": "https://docs.seerr.dev/using-seerr/settings/services/"}],
-    "verify": "Seerr Test passes for Radarr/Sonarr; a test request shows in the NAS *arr UI; Plex link succeeds.",
+    "verify": "Seerr Test passes for Radarr/Sonarr; a test movie/TV request shows in the NAS *arr UI; Plex link succeeds.",
+}
+
+by_id["docker-16"] = {
+    "id": "docker-16",
+    "phase": 2,
+    "title": "Deploy MusicSeerr on Mac mini (album request portal)",
+    "host": "Ubuntu",
+    "type": "sync",
+    "depends_on": ["docker-02", "nas-00d", "nas-23"],
+    "estimate": "20-30 min",
+    "steps": [
+        "Prerequisite: docker-02, nas-00d (NFS), nas-23 (Lidarr torrent path) complete.",
+        "Mount NAS music on Mac mini: `/mnt/nas/music` via NFS (same as Navidrome docker-05).",
+        "Copy stack to /opt/stacks/musicseerr; cp .env.example .env — MUSIC_FOLDER=/mnt/nas/music.",
+        "docker compose up -d && confirm http://<mac-mini>:8688/health.",
+        "Create admin account on first launch.",
+    ],
+    "commands": [
+        "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/musicseerr mini:/tmp/musicseerr",
+        "ssh mini 'sudo rsync -a /tmp/musicseerr/ /opt/stacks/musicseerr/'",
+        "ssh mini 'cd /opt/stacks/musicseerr && cp -n .env.example .env && docker compose up -d'",
+        "ssh mini 'curl -sf http://127.0.0.1:8688/health'",
+    ],
+    "files": [
+        "configs/docker-stack/stacks/musicseerr/compose.yaml",
+        "configs/docker-stack/stacks/musicseerr/.env.example",
+        "configs/seedbox/music-pipeline.md",
+    ],
+    "docs": [{"title": "MusicSeerr", "url": "https://musicseerr.com/docs/getting-started/"}],
+    "verify": "MusicSeerr :8688 healthy; admin account created.",
+    "track": "media-pipeline",
+}
+
+by_id["seed-06"] = {
+    "id": "seed-06",
+    "phase": 2,
+    "title": "Connect MusicSeerr to NAS Lidarr + Plex/Navidrome",
+    "host": "Ubuntu",
+    "type": "sync",
+    "depends_on": ["docker-16", "nas-23", "nas-10"],
+    "estimate": "20-30 min",
+    "steps": [
+        "Open MusicSeerr at http://<mac-mini>:8688 → Settings.",
+        "Connect **Lidarr**: http://192.168.10.4:8686 + API key; root folder **/music**.",
+        "Optional **Plex**: NAS http://<nas>:32400 + token (Plex Music availability).",
+        "Optional **Navidrome**: http://navidrome:4533 (requires docker-05 on same edge network).",
+        "Optional local playback: Settings → Local Files → /music (NFS mount in compose).",
+        "Request test album → confirm NAS Lidarr Activity (not Betty).",
+    ],
+    "commands": [],
+    "files": ["configs/seedbox/music-pipeline.md"],
+    "docs": [{"title": "MusicSeerr", "url": "https://musicseerr.com/docs/getting-started/"}],
+    "verify": "MusicSeerr request appears in NAS Lidarr Activity.",
+    "track": "media-pipeline",
+}
+
+by_id["seed-10"] = {
+    "id": "seed-10",
+    "phase": 2,
+    "title": "End-to-end music verification (MusicSeerr → Betty → NAS → Plex/Navidrome)",
+    "host": "NAS",
+    "type": "sync",
+    "depends_on": ["seed-06", "nas-29", "docker-05"],
+    "estimate": "30-45 min",
+    "steps": [
+        "Prerequisites: rclone mount (nas-20), Lidarr+Soularr (nas-23/29), MusicSeerr (seed-06), Plex Music + Navidrome.",
+        "**Torrent path:** Request album in MusicSeerr → Deluge files/music/ → NAS import → Plex + Navidrome.",
+        "**Soulseek path:** Lidarr Wanted → Soularr → slskd files/slskd/ → Lidarr import from /seedbox/slskd/.",
+        "Optional: beet write (nas-30) refreshes tags without moving files.",
+    ],
+    "commands": [
+        "ssh nas 'ls /volume1/mounts/seedbox-files/music /volume1/mounts/seedbox-files/slskd'",
+    ],
+    "files": ["configs/seedbox/music-pipeline.md", "configs/nas/plex/README.md"],
+    "verify": "Album playable in Plex Music and Navidrome via torrent or Soulseek path.",
+    "track": "media-pipeline",
 }
 
 by_id["seed-07"] = {
@@ -298,7 +374,7 @@ by_id["seed-08"]["verify"] = "No P2P/VPN sockets on NAS (slskd on Betty is expec
 by_id["seed-09"] = {
     "id": "seed-09",
     "phase": 2,
-    "title": "Deploy slskd on Betty (Soulseek P2P off-site)",
+    "title": "Deploy slskd on Betty (Soulseek P2P off-site, native binary)",
     "host": "Seedbox",
     "type": "async",
     "depends_on": ["seed-03", "betty-01"],
@@ -306,15 +382,15 @@ by_id["seed-09"] = {
     "steps": [],
     "commands": [],
     "files": [
-        "configs/seedbox/slskd-compose.example.yaml",
-        "configs/seedbox/.env.example",
-        "configs/seedbox/music-pipeline-soulseek.md",
+        "scripts/media/install-slskd-native.sh",
+        "configs/seedbox/slskd-native.example.env",
+        "configs/seedbox/music-pipeline.md",
     ],
     "docs": [
         {"title": "slskd", "url": "https://github.com/slskd/slskd"},
         {"title": "Soulseek", "url": "https://www.slsknet.org/"},
     ],
-    "verify": "slskd running on Betty; downloads land in ~/files/slskd/; visible on NAS rclone mount.",
+    "verify": "Native slskd running; port 50300 open; downloads land in ~/files/slskd/; visible on NAS rclone mount.",
     "track": "media-pipeline",
 }
 
@@ -331,7 +407,7 @@ by_id["nas-29"] = {
     "files": [
         "configs/nas/media-automation/docker-compose.yml",
         "configs/nas/media-automation/soularr/config.ini.example",
-        "configs/seedbox/music-pipeline-soulseek.md",
+        "configs/seedbox/music-pipeline.md",
     ],
     "docs": [{"title": "Soularr", "url": "https://github.com/mrusse/soularr"}],
     "verify": "Soulseek album imports to /volume1/music via Soularr → slskd → Lidarr.",
@@ -379,7 +455,8 @@ PHASE2_MEDIA = [
     "nas-20", "nas-21", "nas-22", "nas-28", "nas-23", "nas-24", "nas-25", "nas-26", "nas-27",
     "nas-10",
     "docker-03", "seed-05", "seed-07", "seed-08",
-    "seed-09", "nas-29", "nas-30",
+    "docker-16", "seed-06",
+    "seed-09", "nas-29", "nas-30", "seed-10",
 ]
 
 def reorder_block(all_ids, block, after_id):
@@ -397,7 +474,7 @@ if "nas-28" not in [t["id"] for t in tasks]:
     tasks.append(by_id["nas-28"])
 
 # insert new tasks into by_id tasks list
-for new_id in ("seed-09", "nas-29", "nas-30"):
+for new_id in ("seed-09", "nas-29", "nas-30", "docker-16", "seed-06", "seed-10"):
     if new_id not in [t["id"] for t in tasks]:
         tasks.append(by_id[new_id])
 
@@ -408,7 +485,7 @@ for k, v in by_id.items():
         if "track" in id_to_task[k]:
             v["track"] = id_to_task[k]["track"]
         id_to_task[k] = v
-    elif k in ("nas-28", "seed-09", "nas-29", "nas-30"):
+    elif k in ("nas-28", "seed-09", "nas-29", "nas-30", "docker-16", "seed-06", "seed-10"):
         id_to_task[k] = v
 
 ids = list(id_to_task.keys())

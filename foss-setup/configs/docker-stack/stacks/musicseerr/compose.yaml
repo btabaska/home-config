@@ -1,0 +1,36 @@
+# MusicSeerr — music request & discovery portal (Lidarr integration)
+# Phase 2 (media-pipeline). Seerr handles movies/TV; MusicSeerr handles albums.
+# Docs: https://musicseerr.com/docs/getting-started/
+#
+# Runs on the Mac mini alongside Seerr. Talks to Lidarr on the NAS (192.168.10.4:8686).
+# Optional playback: Plex (NAS), Navidrome (same host, edge network), or /music NFS mount.
+
+services:
+  musicseerr:
+    image: ghcr.io/habirabbu/musicseerr:v1.4.2
+    container_name: musicseerr
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - PORT=8688
+      - TZ=${TZ:-America/New_York}
+    ports:
+      - "8688:8688" # direct LAN access; also fronted by Caddy via the edge network
+    volumes:
+      - ./config:/app/config
+      - ./cache:/app/cache
+      # Optional: local playback + library browser (match Navidrome mount path)
+      - ${MUSIC_FOLDER:-/mnt/nas/music}:/music:ro
+    networks:
+      - edge
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8688/health || exit 1"]
+      start_period: 20s
+      timeout: 10s
+      interval: 30s
+      retries: 3
+
+networks:
+  edge:
+    external: true

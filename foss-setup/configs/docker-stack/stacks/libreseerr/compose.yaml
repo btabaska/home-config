@@ -1,0 +1,25 @@
+# Libreseerr — book request portal (Readarr / Bookshelf / LazyLibrarian)
+# Phase 2 (ebook-mgmt workstream). Seerr = movies/TV; MusicSeerr = music; Libreseerr = books.
+# Docs: https://github.com/zamnzim/Libreseerr
+#
+# Runs on the Mac mini alongside Seerr + MusicSeerr. Talks to Readarr on the NAS (:8787).
+
+services:
+  libreseerr:
+    image: ghcr.io/zamnzim/libreseerr:latest
+    container_name: libreseerr
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - SECRET_KEY=${SECRET_KEY:?set SECRET_KEY in .env — openssl rand -hex 32}
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8789:5000" # LAN/Tailscale; front with Caddy on the edge network if desired
+    volumes:
+      - ./data:/app/data
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true

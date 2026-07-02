@@ -60,7 +60,7 @@ TRACK_META = {
         "tier": "workstreams",
         "order": 2,
         "title": "Media pipeline (seedbox → Plex)",
-        "sub": "Betty (Deluge + slskd), NAS *arr + Soularr, optional beets, Plex, Seerr — no P2P at home.",
+        "sub": "Betty (Deluge + slskd), NAS *arr + Soularr, optional beets, Plex, Seerr + MusicSeerr — no P2P at home.",
     },
     "photos": {
         "tier": "workstreams",
@@ -85,6 +85,12 @@ TRACK_META = {
         "order": 6,
         "title": "Off-site backup (recommended)",
         "sub": "Backblaze B2, rotated HDD, restic, and Borg — plus a tested restore. Valuable but not a prerequisite for Immich, media, or HA.",
+    },
+    "ebook-mgmt": {
+        "tier": "workstreams",
+        "order": 7,
+        "title": "Ebook Management Improvements",
+        "sub": "Readarr permanent library + CWA copy-on-import, Libreseerr request portal — fixes inventory tracking and household book requests.",
     },
     "ops": {
         "tier": "operations",
@@ -145,6 +151,7 @@ TRACK_BY_ID = {
     "nas-25": "media-pipeline", "nas-26": "media-pipeline", "nas-27": "media-pipeline",
     "nas-10": "media-pipeline", "docker-03": "media-pipeline", "seed-05": "media-pipeline",
     "seed-07": "media-pipeline", "seed-08": "media-pipeline",
+    "docker-16": "media-pipeline", "seed-06": "media-pipeline", "seed-10": "media-pipeline",
     "seed-09": "media-pipeline", "nas-29": "media-pipeline", "nas-30": "media-pipeline",
     # photos
     "nas-08": "photos", "nas-08b": "photos",
@@ -153,6 +160,9 @@ TRACK_BY_ID = {
     "read-04": "reading", "read-05": "reading", "read-06": "reading", "read-08": "reading",
     "read-09": "reading", "read-10": "reading", "read-11": "reading", "read-12": "reading",
     "read-13": "reading", "read-14": "reading",
+    # ebook-mgmt
+    "ebook-01": "ebook-mgmt", "ebook-02": "ebook-mgmt", "ebook-03": "ebook-mgmt",
+    "ebook-04": "ebook-mgmt", "ebook-05": "ebook-mgmt", "ebook-06": "ebook-mgmt",
     # apps
     "docker-04": "apps", "docker-05": "apps", "read-07": "apps", "doc-01": "apps", "doc-02": "apps",
     # ops
@@ -181,7 +191,7 @@ DEP_FIXES = {
     "nas-24": ["nas-22"],  # was nas-22,nas-09 — CWA can be wired later
 }
 
-REMOVE = {"seed-02", "seed-04", "seed-06", "seed-10"}
+REMOVE = {"seed-02", "seed-04"}
 
 TIER_ORDER = ["backbone", "workstreams", "operations", "enhancements"]
 
