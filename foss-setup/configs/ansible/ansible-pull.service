@@ -15,37 +15,21 @@ After=network-online.target
 
 [Service]
 Type=oneshot
+User=btabaska
+Group=btabaska
+Environment=PATH=/home/btabaska/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 Environment=CONTROL_REPO_URL=git@forgejo:home/homelab.git
+Environment=ANSIBLE_CONFIG=/home/btabaska/.ansible-pull/configs/ansible/ansible.cfg
 
-# IMPORTANT — group membership (H7): we run against the REPO inventory and
-# --limit to THIS host, instead of the old `--inventory 'localhost,'`. With a
-# bare localhost inventory `group_names` is empty, so the `docker` role, the
-# on_demand wake-gating, and the per-host pkglist convergence all silently
-# no-op. Using inventory.ini means group_names (fleet/debian/arch/always_on/
-# on_demand/docker_hosts) resolves correctly even over `--connection local`
-# (the local connection only changes WHERE tasks run, not which inventory
-# entry — and thus which groups — apply to this host).
-#
-# REQUIREMENT: this host's short hostname (`hostname -s`) MUST equal its
-# inventory ALIAS in configs/ansible/inventory.ini — i.e. `macmini`, `seedbox`,
-# or `cachyos` (NOT the ssh-config ansible_host of mini/seedbox/rig). Set it
-# once with e.g. `sudo hostnamectl set-hostname macmini`. The `ansible_host`
-# ssh alias is irrelevant under --connection local, so this is safe.
-#
-# --check = report-only convergence: it shows drift and (via the role handlers)
-# pings ntfy. Under --check Ansible changes NOTHING by default; the ONE thing we
-# deliberately let through is enabling unattended-upgrades (base role tasks carry
-# `check_mode: false`), so OS security patching is actually set up even on a
-# report-only pull. Everything else stays preview-only. Same "no blind updates"
-# rule as Diun (docker-12) / sec-05. Drop --check once you trust a run to self-heal.
-ExecStart=/usr/bin/ansible-pull \
-    --url ${CONTROL_REPO_URL} \
-    --directory %h/.ansible-pull \
-    --inventory configs/ansible/inventory.ini \
+ExecStart=/bin/bash -c '/home/btabaska/.local/bin/ansible-pull \
+    -U "${CONTROL_REPO_URL}" \
+    -d /home/btabaska/.ansible-pull \
+    --accept-host-key \
+    -i configs/ansible/inventory.ini \
     --limit "$(hostname -s)" \
     --connection local \
     --diff --check \
-    configs/ansible/site.yml
+    configs/ansible/site.yml'
 
 # Don't let a transient pull failure mark the box permanently failed.
 SuccessExitStatus=0

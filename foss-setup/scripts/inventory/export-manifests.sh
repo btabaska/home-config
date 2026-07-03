@@ -103,7 +103,8 @@ ls -1 /etc/cron.d 2>/dev/null > "${OUT_DIR}/cron.d-listing.txt" || true
 log "Collecting systemd timers."
 systemctl list-timers --all --no-pager > "${OUT_DIR}/systemd-timers.txt" 2>/dev/null || true
 # User-level units for the invoking (non-root) user, if any.
-USER_HOME="$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f6)"
+_lookup_user="${SUDO_USER:-${USER:-root}}"
+USER_HOME="$(getent passwd "${_lookup_user}" | cut -d: -f6)"
 if [[ -n "${USER_HOME}" && -d "${USER_HOME}/.config/systemd/user" ]]; then
   ls -1 "${USER_HOME}/.config/systemd/user" > "${OUT_DIR}/systemd-user-units.txt" 2>/dev/null || true
 fi
