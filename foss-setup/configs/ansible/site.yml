@@ -24,7 +24,7 @@
   become: true
   # PULL runs against localhost so serial is irrelevant; for PUSH, never
   # reconfigure the whole fleet in lockstep.
-  serial: "{{ '100%' if ansible_connection == 'local' else 1 }}"
+  serial: "{{ '100%' if (ansible_connection | default('ssh')) == 'local' else 1 }}"
   roles:
     - role: base        # admin user + ed25519 key, unattended-upgrades, sysctl, package convergence
     - role: docker      # engine, daemon.json log caps (sec-04), shared 'edge' network
