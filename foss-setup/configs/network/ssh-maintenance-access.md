@@ -29,7 +29,9 @@ from [`tailscale-acl-ssh.hujson`](tailscale-acl-ssh.hujson):
 - Admin devices (laptop, phone) get `tag:admin`.
 - Hosts get `tag:server`.
 - The `ssh` rule allows **only `tag:admin` -> `tag:server`**, as a chosen Unix
-  user, with a `checkPeriod` re-auth window.
+  user (`action: accept`). Tailscale does not allow `check` when `src` is a
+  tag — there is no human identity to re-authenticate as. Revoke a lost admin
+  device by removing `tag:admin` in the console.
 
 Why this first:
 
@@ -91,7 +93,11 @@ There is no normal user shell:
 It's asleep most of the time, so **wake, then SSH**:
 
 ```bash
-RIG_MAC=aa:bb:cc:dd:ee:ff ./scripts/gaming/wake-rig.sh && ssh rig
+# On Trusted VLAN (MacBook, etc.) — MAC in configs/gaming/rig-wol.env, bcast auto-detected
+./scripts/gaming/wake-rig.sh && ssh rig
+
+# From anywhere on the tailnet — mini relays the magic packet (same L2 segment)
+./scripts/gaming/wake-rig-via-mini.sh && ssh rig
 ```
 
 This reuses the Wake-on-LAN setup from game-08. The rig's own backup (nas-05)

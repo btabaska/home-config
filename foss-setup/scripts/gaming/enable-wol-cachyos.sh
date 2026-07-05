@@ -91,7 +91,7 @@ systemctl start "wol@${WOL_NIC}.service" || true
 # ---- report MAC + verification --------------------------------------------
 mac="$(cat "/sys/class/net/${WOL_NIC}/address" 2>/dev/null || echo unknown)"
 log "Done. NIC ${WOL_NIC} MAC = ${mac}"
-log "Record this MAC for wake-rig.sh:  export RIG_MAC=${mac}"
+log "Update fleet config:  configs/gaming/rig-wol.env  ->  RIG_MAC=\"${mac}\""
 log "Verify after reboot:  ethtool ${WOL_NIC} | grep -i 'Wake-on'   (want: Wake-on: g)"
 
 # NOTE: If you use NetworkManager and it manages this NIC, it can override the

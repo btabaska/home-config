@@ -1,47 +1,37 @@
 // tailscale-acl-ssh.hujson
 //
-// Minimal tailnet ACL policy that turns on Tailscale SSH safely:
-//   - admin devices (your laptop + phone) carry tag:admin
-//   - every host you maintain carries tag:server
-//   - ONLY tag:admin may SSH tag:server, as a chosen Unix user
+// Tailscale SSH for a tagged homelab tailnet:
+//   - Admin devices (laptop, phone)     -> tag:admin
+//   - Fleet hosts (mini, nas, rig, etc.) -> tag:server
+//   - SSH allowed ONLY tag:admin -> tag:server, as btabaska
 //
-// Paste/merge this into the Tailscale admin console:
-//   Access Controls -> edit policy file (HuJSON).
-// Adjust the owner email and the Unix login names to your own.
+// Design note: when src is a tag, Tailscale forbids "check" (no SSO re-auth for
+// service-account identities). action "accept" is required. You still get:
+//   - no authorized_keys sprawl on fleet hosts
+//   - central revocation (remove tag:admin from a lost device in the console)
+//   - break-glass ed25519 keys in ~/.ssh/config as fallback (net-14)
+//
+// Paste into Tailscale admin console -> Access Controls.
 //
 // Refs:
-//   - ACL syntax (incl. ssh rules): https://tailscale.com/kb/1337/acl-syntax
-//   - Tailscale SSH:                https://tailscale.com/kb/1193/tailscale-ssh
+//   - ACL syntax:     https://tailscale.com/kb/1337/acl-syntax
+//   - Tailscale SSH:  https://tailscale.com/kb/1193/tailscale-ssh
 {
-  // Who is allowed to own/assign each tag.
   "tagOwners": {
     "tag:admin":  ["autogroup:owner"],
     "tag:server": ["autogroup:owner"],
   },
 
-  // Normal tailnet connectivity. Tighten later if you want; SSH is gated below
-  // regardless of this.
   "acls": [
     { "action": "accept", "src": ["*"], "dst": ["*:*"] },
   ],
 
-  // The SSH policy. Only tag:admin -> tag:server, logging in as the listed
-  // Unix users. "check" forces periodic re-authentication (re-auth window),
-  // which is what makes a lost admin device safe to revoke centrally.
   "ssh": [
     {
-      "action": "check",
+      "action": "accept",
       "src":    ["tag:admin"],
       "dst":    ["tag:server"],
-      "users":  ["admin", "root"],
-      // How long a verified session stays valid before re-auth is required.
-      "checkPeriod": "12h",
+      "users":  ["btabaska"],
     },
   ],
-
-  // Apply the tags to devices in the admin console (Machines -> Edit ACL tags),
-  // or pass them at `tailscale up --advertise-tags=tag:server`. Example:
-  //   laptop / phone        -> tag:admin
-  //   macmini, nas, rig,    -> tag:server
-  //   seedbox
 }

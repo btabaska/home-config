@@ -17,7 +17,7 @@ services:
   stash:
     image: stashapp/stash:v0.31.1
     container_name: stash
-    restart: unless-stopped
+    restart: always
     ports:
       - "${STASH_PORT:-9999}:9999"
     environment:

@@ -30,7 +30,7 @@
 #      rejects shared/slave on fuse.rclone). Use a plain bind here; after a
 #      watchdog remount, restart download-touching containers (watchdog does this).
 #   3. Identical PUID/PGID across all services (TODO: fill from `id <user>` on
-#      the NAS), TZ=America/New_York, restart: unless-stopped, and /config on
+#      the NAS), TZ=America/New_York, restart: always, and /config on
 #      ${DOCKER_ROOT}/<app> (default /volume1/docker/<app>).
 #
 # ------------------------------------------------------------------------------
@@ -96,7 +96,7 @@ services:
       - ${DOCKER_ROOT:-/volume1/docker}/prowlarr/config:/config
     ports:
       - "9696:9696"
-    restart: unless-stopped
+    restart: always
 
   # ----------------------------------------------------------------------------
   # FlareSolverr — Cloudflare solver for Prowlarr (Phase A). Stateless, no mounts.
@@ -109,7 +109,7 @@ services:
       TZ: ${TZ:-America/New_York}
     ports:
       - "8191:8191"   # add to Prowlarr as a FlareSolverr proxy: http://flaresolverr:8191
-    restart: unless-stopped
+    restart: always
 
   # ----------------------------------------------------------------------------
   # Sonarr — TV (Phase A). DOWNLOAD-TOUCHING -> /seedbox:rslave.
@@ -125,7 +125,7 @@ services:
       - *seedbox-mount
     ports:
       - "8989:8989"
-    restart: unless-stopped
+    restart: always
 
   # ----------------------------------------------------------------------------
   # Radarr — Movies (Phase A). DOWNLOAD-TOUCHING -> /seedbox:rslave.
@@ -141,7 +141,7 @@ services:
       - *seedbox-mount
     ports:
       - "7878:7878"
-    restart: unless-stopped
+    restart: always
 
   # ----------------------------------------------------------------------------
   # Lidarr — Music (Phase B). Root folder: /music (Volume 1).
@@ -159,7 +159,7 @@ services:
       - *seedbox-mount
     ports:
       - "8686:8686"
-    restart: unless-stopped
+    restart: always
 
   # ----------------------------------------------------------------------------
   # Soularr — Soulseek bridge (Phase D). Reads Lidarr Wanted; drives remote slskd
@@ -169,7 +169,7 @@ services:
   soularr:
     image: ghcr.io/mrusse/soularr:1.2.2
     container_name: soularr
-    restart: unless-stopped
+    restart: always
     depends_on:
       - lidarr
     user: ${PUID:?set PUID in .env}:${PGID:?set PGID in .env}
@@ -198,7 +198,7 @@ services:
       - "8337:8337"
     profiles:
       - music-tags
-    restart: unless-stopped
+    restart: always
 
   # ----------------------------------------------------------------------------
   # Readarr — Books (Phase B). DOWNLOAD-TOUCHING -> /seedbox:rslave.
@@ -231,7 +231,7 @@ services:
       - *seedbox-mount
     ports:
       - "8787:8787"
-    restart: unless-stopped
+    restart: always
     depends_on:
       - rreading-glasses
 
@@ -263,7 +263,7 @@ services:
     mem_limit: 128m   # uses all available RAM for cache; cap it (upstream guidance)
     ports:
       - "8788:8788"
-    restart: unless-stopped
+    restart: always
     depends_on:
       rreading-glasses-db:
         condition: service_healthy
@@ -283,7 +283,7 @@ services:
       timeout: 5s
       retries: 12
       start_period: 30s
-    restart: unless-stopped
+    restart: always
     # No host port published — only rreading-glasses needs it, on the compose net.
 
   # ----------------------------------------------------------------------------
@@ -303,7 +303,7 @@ services:
     volumes:
       - ./unpackerr/unpackerr.conf:/etc/unpackerr/unpackerr.conf:ro
       - *seedbox-mount                 # /seedbox (rslave) — MUST match the *arrs exactly
-    restart: unless-stopped
+    restart: always
     depends_on:
       - sonarr
       - radarr

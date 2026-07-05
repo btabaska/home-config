@@ -59,7 +59,7 @@ if systemctl list-unit-files 2>/dev/null | grep -q '^nvidia-persistenced'; then
   systemctl enable --now nvidia-persistenced.service || true
 else
   log "Setting persistence mode via nvidia-smi -pm 1 (resets on reboot)."
-  nvidia-smi -i "${GPU_ID}" -pm 1
+  nvidia-smi -i "${GPU_ID}" -pm 1 || true
 fi
 
 # ---- 2. power limit (clamped) ---------------------------------------------
@@ -68,9 +68,14 @@ read -r MIN_PL MAX_PL < <(
     | awk -F': ' '
         /Min Power Limit/ {gsub(/[^0-9.]/,"",$2); min=$2}
         /Max Power Limit/ {gsub(/[^0-9.]/,"",$2); max=$2}
-        END {printf "%d %d", min, max}'
+        END {printf "%d %d", min+0, max+0}'
 )
-[[ -n "${MIN_PL}" && -n "${MAX_PL}" ]] || die "Could not read power limit range."
+# Some driver builds omit Min/Max in -q -d POWER; fall back to current limit.
+if [[ "${MIN_PL}" -eq 0 && "${MAX_PL}" -eq 0 ]]; then
+  MAX_PL="$(nvidia-smi -i "${GPU_ID}" --query-gpu=power.max_limit --format=csv,noheader,nounits | tr -d ' ')"
+  MIN_PL=100
+  log "Power range not reported; using fallback Min=${MIN_PL}W Max=${MAX_PL}W."
+fi
 log "Card power-limit range: ${MIN_PL}W .. ${MAX_PL}W. Requested: ${GPU_POWER_LIMIT}W."
 
 target="${GPU_POWER_LIMIT}"

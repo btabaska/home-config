@@ -12,8 +12,9 @@
 - name: Install the break-glass ed25519 key (net-14)
   ansible.posix.authorized_key:
     user: "{{ admin_user }}"
-    key: "{{ lookup('file', 'files/id_ed25519.pub') }}"
+    key: "{{ lookup('file', role_path + '/../../files/id_ed25519.pub') }}"
     state: present
+  check_mode: false
 
 # --- security patching (matches sec-05). check_mode: false (H8) makes these the
 #     ONE thing a report-only `ansible-pull --check` actually applies: it ensures
@@ -64,7 +65,7 @@
 # absent manifest on a brand-new box just skips the converge below.
 - name: Load the explicit-package manifest if present
   ansible.builtin.set_fact:
-    base_pkglist: "{{ lookup('file', base_pkglist_path, errors='warn').splitlines() | reject('match', '^#') | reject('equalto', '') | list }}"
+    base_pkglist: "{{ (lookup('file', base_pkglist_path, errors='warn') | default('', true)).splitlines() | reject('match', '^#') | reject('equalto', '') | list }}"
 
 - name: Converge explicit packages (Debian/Ubuntu)
   when:

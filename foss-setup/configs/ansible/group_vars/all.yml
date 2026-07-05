@@ -10,7 +10,7 @@
 #
 # so the only secret store is the age key already in Proton Pass + a printed copy.
 
-admin_user: admin
+admin_user: btabaska
 
 # Where SOPS finds the age private key on the controller / each pull host.
 # This is the SAME key chezmoi/SOPS already need on the box (glue-06).

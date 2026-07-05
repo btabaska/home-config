@@ -18,7 +18,7 @@ services:
     # dependencytrack/* repos (the old 5.6.0 tags only existed in pre-GA hyades repos).
     image: dependencytrack/apiserver:5.0.2
     container_name: dtrack-apiserver
-    restart: unless-stopped
+    restart: always
     depends_on:
       postgres:
         condition: service_healthy
@@ -54,7 +54,7 @@ services:
     # Verified current GA tag (frontend never published a 5.6.0).
     image: dependencytrack/frontend:5.0.1
     container_name: dtrack-frontend
-    restart: unless-stopped
+    restart: always
     depends_on:
       - dtrack-apiserver
     environment:
@@ -69,7 +69,7 @@ services:
   postgres:
     image: postgres:17-alpine
     container_name: dtrack_db
-    restart: unless-stopped
+    restart: always
     environment:
       - POSTGRES_USER=${DTRACK_DB_USER:-dtrack}
       - POSTGRES_PASSWORD=${DTRACK_DB_PASSWORD}

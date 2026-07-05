@@ -34,12 +34,18 @@
     state: started
     enabled: true
 
+- name: Check if Tailscale is already connected
+  ansible.builtin.command: tailscale status --peers=false
+  register: ts_status
+  changed_when: false
+  failed_when: false
+
 - name: Bring the node up with Tailscale SSH (net-13)
+  when: ts_status.rc != 0
   ansible.builtin.command:
     cmd: >-
       tailscale up --ssh --accept-routes
       --authkey {{ lookup('community.sops.sops', 'secrets/tailscale-authkey.sops', age_keyfile=sops_age_keyfile) }}
   register: ts_up
   changed_when: "'Success' in ts_up.stdout or ts_up.rc == 0"
-  # Already-up nodes return non-zero with a benign message; don't fail the run.
   failed_when: false
