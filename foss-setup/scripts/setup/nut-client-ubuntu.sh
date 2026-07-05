@@ -93,10 +93,14 @@ configure_upsmon() {
   # POWERDOWNFLAG/killpower is intentionally omitted: it only matters for the PRIMARY
   # that physically cuts UPS power at the end of a shutdown. A pure netclient just halts
   # itself, so it doesn't need it.
+  local upsmon_type="secondary"
+  if upsc -V 2>/dev/null | grep -qE '^Network UPS Tools upsc 2\.7\.'; then
+    upsmon_type="slave"
+  fi
   local block
   block="$(cat <<EOF
 ${begin}
-MONITOR ${UPS_NAME}@${NAS_IP} 1 ${UPS_USER} ${UPS_PASS} secondary
+MONITOR ${UPS_NAME}@${NAS_IP} 1 ${UPS_USER} ${UPS_PASS} ${upsmon_type}
 MINSUPPLIES ${MINSUPPLIES}
 SHUTDOWNCMD "/sbin/shutdown -h +0"
 ${end}

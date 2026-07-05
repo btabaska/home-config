@@ -30,15 +30,13 @@ services:
         limits:
           memory: 4g
     environment:
-      # Use external PostgreSQL instead of the bundled embedded H2 (H2 is dev-only).
-      - ALPINE_DATABASE_MODE=external
-      - ALPINE_DATABASE_URL=jdbc:postgresql://postgres:5432/dtrack
-      - ALPINE_DATABASE_DRIVER=org.postgresql.Driver
-      - ALPINE_DATABASE_USERNAME=${DTRACK_DB_USER:-dtrack}
-      - ALPINE_DATABASE_PASSWORD=${DTRACK_DB_PASSWORD}
-      # Leave the startup resource check ENABLED: it fails fast if the host can't
-      # give the apiserver enough RAM (rather than silently OOM-killing later).
-      - SYSTEM_REQUIREMENT_CHECK_ENABLED=true
+      # v5 config — ALPINE_* / alpine.* properties are rejected (see v5.0.0-rc.2 upgrade guide).
+      - DT_DATABASE_MODE=external
+      - DT_DATASOURCE_URL=jdbc:postgresql://postgres:5432/dtrack
+      - DT_DATASOURCE_DRIVER=org.postgresql.Driver
+      - DT_DATASOURCE_USERNAME=${DTRACK_DB_USER:-dtrack}
+      - DT_DATASOURCE_PASSWORD=${DTRACK_DB_PASSWORD}
+      - DT_SYSTEM_REQUIREMENT_CHECK_ENABLED=true
       - TZ=${TZ:-America/New_York}
     volumes:
       - ./apiserver_data:/data

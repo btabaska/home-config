@@ -1,0 +1,24 @@
+# AdGuard Home — SECONDARY network DNS (NAS)
+#
+# Purpose: DHCP DNS #2 — survives Mac mini reboots. Must NOT depend on mini Unbound.
+# Upstream: public DoT. Mirror *.tabaska.us rewrites from mini (dns-02 / dns-03).
+#
+# Deploy on Synology Container Manager from /volume1/docker/adguard-nas/
+# LAN IP: 192.168.10.4 (NAS eth1 on Trusted VLAN)
+#
+# First run: complete setup wizard at http://192.168.10.4:3000
+# After setup: Settings → DNS → upstream tls://1.1.1.1 tls://9.9.9.9
+# Copy DNS rewrites from mini AdGuard (Settings → DNS rewrites → export/import).
+
+services:
+  adguardhome:
+    image: adguard/adguardhome:v0.107.77
+    container_name: adguardhome-nas
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "3000:3000/tcp"   # wizard / break-glass admin until Caddy fronts it
+    volumes:
+      - ./work:/opt/adguardhome/work
+      - ./conf:/opt/adguardhome/conf

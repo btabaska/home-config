@@ -296,7 +296,9 @@ by_id["net-01"]["steps"] = [
 by_id["net-12"]["steps"] = [
     "Settings → Security → Threat Management: enable IDS/IPS on the Dream Wall.",
     "Use WPA3 (or WPA2/WPA3 transition) where devices support it; map one SSID each to Trusted, IoT, Guest, and Work.",
-    "Network-wide DNS filtering lands in **docker-07 (AdGuard Home — chosen)** + **dns-01 (Unbound recursive)**; point each VLAN's DHCP DNS there once up.",
+    "Network-wide DNS filtering lands in **docker-07 (AdGuard Home — chosen)** + **dns-01 (Unbound core on mini)**. "
+    "Resilience (**dns-02 → dns-05**) adds NAS secondary AdGuard + fail-open DHCP chain (mini → NAS → gateway) "
+    "before pointing client VLANs at AdGuard-only DNS — see configs/network/dns-resilience-plan.md.",
     "Once Hue is fully local in HA, block the Hue bridge from the internet on the IoT VLAN.",
 ]
 
@@ -409,12 +411,14 @@ by_id["docker-14"]["verify"] = "A test app is reachable via Caddy HTTPS without 
 
 by_id["dns-01"]["steps"] = [
     "Prerequisite: docker-07 (AdGuard) complete.",
-    "`ssh mini 'cd /opt/stacks/unbound && docker compose up -d'`",
-    "AdGuard UI → DNS → upstream: `unbound:5335` (container name on edge network). Restart AdGuard.",
-    "Dream Wall: NAT-redirect outbound UDP/TCP 53 to mini; block known DoH endpoints (force filtered path).",
-    "Optional NAS redundancy: second AdGuard on NAS as DHCP secondary DNS.",
-    "Test: `dig @192.168.10.2 cloudflare.com +dnssec` from MacBook; confirm bypass attempts fail.",
+    "**Core (done):** Unbound on mini; AdGuard upstream `unbound:5335`; `*.tabaska.us` rewrites.",
+    "Verify: `dig @192.168.10.2 google.com +short` and `dig @192.168.10.2 home.tabaska.us +short`.",
+    "**Do not** point UniFi DHCP at AdGuard-only DNS until **dns-03** (fail-open chain) is live.",
+    "Resilience: **dns-02 → dns-05** — see configs/network/dns-resilience-plan.md.",
 ]
+by_id["dns-01"]["verify"] = (
+    "Mini AdGuard resolves public + internal names. dns-02–dns-05 required before AdGuard-only DHCP."
+)
 
 by_id["glue-07"]["steps"] = [
     "MacBook: `pipx install ansible` or `brew install ansible`.",

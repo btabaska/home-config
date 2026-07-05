@@ -18,12 +18,18 @@ services:
     restart: unless-stopped
     ports:
       - "3010:3000" # direct LAN access; also fronted by Caddy at home.<domain>
+    env_file:
+      - .env # passes HOMEPAGE_VAR_* secrets into the container for {{HOMEPAGE_VAR_*}} in config
     environment:
       - PUID=${PUID:-1000}
       - PGID=${PGID:-1000}
       - TZ=${TZ:-America/New_York}
       # Comma-separated allow-list of host headers Homepage will serve.
       - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_ALLOWED_HOSTS:-localhost:3010}
+    # Docker's 127.0.0.11 resolver only knows edge-network containers — not AdGuard's
+    # *.tabaska.us rewrites. Point at AdGuard so ping/widgets using tabaska.us resolve.
+    dns:
+      - 192.168.10.2
     volumes:
       - ./config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro # container auto-discovery (read-only)

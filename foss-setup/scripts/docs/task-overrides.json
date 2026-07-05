@@ -2083,22 +2083,22 @@
     "steps": [
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
       "Prerequisite: docker-07 complete.",
-      "`ssh mini 'cd /opt/stacks/unbound && docker compose up -d'`",
-      "AdGuard UI \u2192 DNS \u2192 upstream: `unbound:5335` (container name on edge network, not 127.0.0.1)",
-      "`ssh mini 'cd /opt/stacks/adguard && docker compose restart'`",
-      "Dream Wall: NAT redirect outbound UDP/TCP 53 to mini; block known DoH endpoints",
-      "Optional NAS redundancy: CM on NAS \u2192 second AdGuard; DHCP secondary DNS = nas IP",
-      "Test from MacBook: `dig @192.168.10.2 cloudflare.com` + DNSSEC; attempt client bypass (should fail)"
+      "**Core (done):** Unbound on mini; AdGuard upstream `unbound:5335`; `*.tabaska.us` rewrites.",
+      "Verify: `dig @192.168.10.2 google.com +short` and `dig @192.168.10.2 home.tabaska.us +short`.",
+      "**Do not** point UniFi DHCP at AdGuard-only DNS until **dns-03** (fail-open chain) is live.",
+      "Resilience: **dns-02 → dns-05** — see configs/network/dns-resilience-plan.md.",
+      "Incident 2026-07-03: single-DNS DHCP took house offline when mini rebooted."
     ],
     "commands": [
-      "ssh mini 'cd /opt/stacks/unbound && docker compose up -d'",
-      "ssh mini 'docker inspect unbound --format \"{{.State.Health.Status}}\"'",
-      "ssh mini 'cd /opt/stacks/adguard && docker compose restart'"
+      "dig @192.168.10.2 google.com +short",
+      "dig @192.168.10.2 home.tabaska.us +short",
+      "ssh mini 'docker ps --filter name=adguardhome --filter name=unbound --format \"{{.Names}}: {{.Status}}\"'"
     ],
     "files": [
       "configs/docker-stack/stacks/unbound/compose.yaml",
       "configs/docker-stack/stacks/unbound/unbound/unbound.conf",
-      "configs/docker-stack/stacks/adguard/compose.yaml"
+      "configs/docker-stack/stacks/adguard/compose.yaml",
+      "configs/network/dns-resilience-plan.md"
     ],
     "docs": [
       {
@@ -2110,7 +2110,79 @@
         "url": "https://github.com/AdguardTeam/AdGuardHome/wiki/Configuration"
       }
     ],
-    "verify": "DNSSEC validates via mini resolver; bypass blocked; AdGuard shows unbound upstream."
+    "verify": "Mini AdGuard resolves public + internal names. dns-02–dns-05 required before AdGuard-only DHCP."
+  },
+  "dns-02": {
+    "steps": [
+      "Read configs/network/dns-resilience-plan.md — NAS secondary must not depend on mini Unbound.",
+      "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/adguard-nas nas:/tmp/adguard-nas`",
+      "`ssh nas 'sudo mkdir -p /volume1/docker/adguard-nas && sudo rsync -a /tmp/adguard-nas/ /volume1/docker/adguard-nas/'`",
+      "Container Manager → create project from /volume1/docker/adguard-nas/compose.yaml → Start.",
+      "Wizard at http://192.168.10.4:3000 — upstream tls://1.1.1.1 tls://9.9.9.9.",
+      "Export mini AdGuard settings; import rewrites/blocklists; mirror *.tabaska.us → 192.168.10.2.",
+      "Test: `dig @192.168.10.4 google.com +short` with mini AdGuard stopped."
+    ],
+    "commands": [
+      "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/adguard-nas nas:/tmp/adguard-nas",
+      "dig @192.168.10.4 google.com +short",
+      "dig @192.168.10.4 home.tabaska.us +short"
+    ],
+    "files": [
+      "configs/docker-stack/stacks/adguard-nas/compose.yaml",
+      "configs/network/dns-resilience-plan.md"
+    ],
+    "docs": [
+      {
+        "title": "AdGuard Home Docker",
+        "url": "https://github.com/AdguardTeam/AdGuardHome/wiki/Docker"
+      }
+    ],
+    "verify": "NAS AdGuard on 192.168.10.4 resolves public + tabaska.us rewrites with mini stopped."
+  },
+  "dns-03": {
+    "steps": [
+      "Prerequisite: dns-02 verified.",
+      "Dream Wall → Settings → Networks → Trusted, IoT, Guest, Work — each client VLAN.",
+      "DHCP DNS #1 192.168.10.2 (mini), #2 192.168.10.4 (NAS), #3 192.168.10.1 (gateway).",
+      "Save; optionally 1 h lease once to speed migration.",
+      "`./scripts/network/dns-resilience-verify.sh`"
+    ],
+    "commands": ["./scripts/network/dns-resilience-verify.sh"],
+    "files": ["configs/network/dns-resilience-plan.md"],
+    "docs": [],
+    "verify": "All client VLANs list three DNS servers; verify script passes."
+  },
+  "dns-04": {
+    "steps": [
+      "Script: scripts/network/dns-resilience-verify.sh",
+      "Runbook: configs/network/dns-resilience-plan.md § Outage runbook",
+      "Drill: stop mini AdGuard → NAS + gateway still resolve → restart AdGuard",
+      "Optional: Uptime Kuma monitor or weekly cron for verify script"
+    ],
+    "commands": [
+      "./scripts/network/dns-resilience-verify.sh",
+      "ssh mini 'cd /opt/stacks/adguard && docker compose stop'",
+      "./scripts/network/dns-resilience-verify.sh",
+      "ssh mini 'cd /opt/stacks/adguard && docker compose start'"
+    ],
+    "files": [
+      "scripts/network/dns-resilience-verify.sh",
+      "configs/network/dns-resilience-plan.md"
+    ],
+    "docs": [],
+    "verify": "Verify script passes; mini-stop drill confirms NAS + gateway still resolve."
+  },
+  "dns-05": {
+    "steps": [
+      "Gate: dns-04 drill passed. Do not enable if fail-open chain is unstable.",
+      "Dream Wall: NAT redirect outbound UDP/TCP 53 to mini AdGuard.",
+      "Block known DoH endpoints.",
+      "Re-run dns-resilience-verify.sh; mini-stop drill with redirect enabled."
+    ],
+    "commands": ["./scripts/network/dns-resilience-verify.sh"],
+    "files": ["configs/network/dns-resilience-plan.md"],
+    "docs": [],
+    "verify": "Redirect + DoH block active; fail-open chain still passes with mini stopped."
   },
   "docker-06": {
     "steps": [

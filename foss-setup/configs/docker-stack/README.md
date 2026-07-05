@@ -16,7 +16,8 @@ stacks/
   mealie/            # Phase 3 — recipes / meal planning
   pinchflat/         # Phase 3 — "Sonarr for YouTube" (yt-dlp → Plex / podcast RSS)
   caddy/             # Phase 4 — reverse proxy + automatic HTTPS
-  adguard/           # Phase 4 — network DNS filtering (PRIMARY)
+  adguard/           # Phase 4 — network DNS filtering (PRIMARY, Mac mini)
+  adguard-nas/       # Phase 4 — secondary DNS on NAS (fail-open chain, dns-02)
   unbound/           # Phase 4 — recursive DNSSEC resolver (AdGuard upstream)
   homepage/          # Phase 4 — dashboard + household front door
   dockge/            # Phase 4 — container management (SIMPLE DEFAULT)
@@ -91,6 +92,9 @@ you bump tags deliberately after reading release notes.
   DoT/DoH/DoQ, per-client rules, cleaner first-run wizard. **Pi-hole** is the
   equally-valid alternative (`alternatives/pihole/`) if you prefer its ecosystem
   or already know it — don't run both as the LAN resolver at once.
+  **Resilience:** deploy `adguard-nas/` as DHCP DNS #2 and set UniFi to a
+  three-tier chain (mini → NAS → gateway) before pointing clients at AdGuard-only DNS.
+  See `configs/network/dns-resilience-plan.md` and rollout tasks dns-02–dns-05.
 - **Container management → Dockge (simple default).** Compose-native, dead
   simple, single-host — perfect for this one box. **Dockhand**
   (`alternatives/dockhand/`) is the power option: logs, metrics history, vuln

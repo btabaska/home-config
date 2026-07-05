@@ -22,7 +22,9 @@ services:
     ports:
       - "53:53/tcp" # DNS
       - "53:53/udp" # DNS
-      - "3000:3000/tcp" # initial setup wizard (only needed once)
+      # Admin UI: reach via Caddy at dns.<domain> (adguardhome:80 on edge). Do NOT
+      # bind host :80 — it collides with Caddy. Break-glass: publish 3000 only if
+      # the wizard is not yet complete.
       - "853:853/tcp" # DNS-over-TLS (optional)
     volumes:
       - ./work:/opt/adguardhome/work

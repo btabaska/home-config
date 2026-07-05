@@ -1281,28 +1281,80 @@ O["dns-01"] = {
     "steps": [
         MAC_OPEN,
         P("docker-07"),
-        "`ssh mini 'cd /opt/stacks/unbound && docker compose up -d'`",
-        "AdGuard UI → DNS → upstream: `unbound:5335` (container name on edge network, not 127.0.0.1)",
-        "`ssh mini 'cd /opt/stacks/adguard && docker compose restart'`",
-        "Dream Wall: NAT redirect outbound UDP/TCP 53 to mini; block known DoH endpoints",
-        "Optional NAS redundancy: CM on NAS → second AdGuard; DHCP secondary DNS = nas IP",
-        "Test from MacBook: `dig @192.168.10.2 cloudflare.com` + DNSSEC; attempt client bypass (should fail)",
+        "**Core (done):** Unbound on mini; AdGuard upstream `unbound:5335`; `*.tabaska.us` rewrites.",
+        "Verify: `dig @192.168.10.2 google.com +short` and `dig @192.168.10.2 home.tabaska.us +short`.",
+        "**Do not** point UniFi DHCP at AdGuard-only DNS until **dns-03** (fail-open chain) is live.",
+        "Resilience: **dns-02 → dns-05** — see configs/network/dns-resilience-plan.md.",
     ],
     "commands": [
-        "ssh mini 'cd /opt/stacks/unbound && docker compose up -d'",
-        "ssh mini 'docker inspect unbound --format \"{{.State.Health.Status}}\"'",
-        "ssh mini 'cd /opt/stacks/adguard && docker compose restart'",
+        "dig @192.168.10.2 google.com +short",
+        "dig @192.168.10.2 home.tabaska.us +short",
     ],
     "files": [
         "configs/docker-stack/stacks/unbound/compose.yaml",
-        "configs/docker-stack/stacks/unbound/unbound/unbound.conf",
         "configs/docker-stack/stacks/adguard/compose.yaml",
+        "configs/network/dns-resilience-plan.md",
     ],
     "docs": D(
         ("Unbound", "https://docs.pi-hole.net/guides/dns/unbound/"),
         ("AdGuard upstream", "https://github.com/AdguardTeam/AdGuardHome/wiki/Configuration"),
     ),
-    "verify": "DNSSEC validates via mini resolver; bypass blocked; AdGuard shows unbound upstream.",
+    "verify": "Mini AdGuard resolves public + internal names. dns-02–dns-05 required before AdGuard-only DHCP.",
+}
+O["dns-02"] = {
+    "steps": [
+        MAC_OPEN,
+        P("dns-01", "docker-07"),
+        "Read configs/network/dns-resilience-plan.md",
+        f"`scp -r {REPO}/configs/docker-stack/stacks/adguard-nas nas:/tmp/adguard-nas`",
+        "`ssh nas 'sudo rsync -a /tmp/adguard-nas/ /volume1/docker/adguard-nas/'`",
+        "Container Manager → compose up; wizard upstream tls://1.1.1.1 tls://9.9.9.9",
+        "Mirror *.tabaska.us rewrites from mini AdGuard",
+        "Test with mini AdGuard stopped: `dig @192.168.10.4 google.com +short`",
+    ],
+    "commands": [
+        f"scp -r {REPO}/configs/docker-stack/stacks/adguard-nas nas:/tmp/adguard-nas",
+        "dig @192.168.10.4 google.com +short",
+        "dig @192.168.10.4 home.tabaska.us +short",
+    ],
+    "files": [
+        "configs/docker-stack/stacks/adguard-nas/compose.yaml",
+        "configs/network/dns-resilience-plan.md",
+    ],
+    "docs": D(("AdGuard Docker", "https://github.com/AdguardTeam/AdGuardHome/wiki/Docker")),
+    "verify": "NAS AdGuard resolves public + tabaska.us rewrites with mini stopped.",
+}
+O["dns-03"] = {
+    "steps": [
+        P("dns-02"),
+        "UniFi GUI: Trusted, IoT, Guest, Work — DHCP DNS #1 mini, #2 NAS, #3 gateway",
+        "./scripts/network/dns-resilience-verify.sh",
+    ],
+    "commands": ["./scripts/network/dns-resilience-verify.sh"],
+    "files": ["configs/network/dns-resilience-plan.md"],
+    "docs": [],
+    "verify": "Three-tier DHCP DNS on all client VLANs; verify script passes.",
+}
+O["dns-04"] = {
+    "steps": [
+        P("dns-03"),
+        "Runbook: configs/network/dns-resilience-plan.md",
+        "Drill: stop mini AdGuard → verify NAS + gateway → restart",
+    ],
+    "commands": ["./scripts/network/dns-resilience-verify.sh"],
+    "files": ["scripts/network/dns-resilience-verify.sh", "configs/network/dns-resilience-plan.md"],
+    "docs": [],
+    "verify": "Mini-stop drill passes.",
+}
+O["dns-05"] = {
+    "steps": [
+        P("dns-04"),
+        "Gate: fail-open chain proven. UniFi: NAT :53 redirect + DoH block.",
+    ],
+    "commands": ["./scripts/network/dns-resilience-verify.sh"],
+    "files": ["configs/network/dns-resilience-plan.md"],
+    "docs": [],
+    "verify": "Redirect active; fail-open chain still passes with mini stopped.",
 }
 O["docker-06"] = {
     "steps": [

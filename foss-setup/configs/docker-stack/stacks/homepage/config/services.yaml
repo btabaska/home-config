@@ -19,11 +19,11 @@
           type: immich
           url: http://192.168.10.4:2283
           key: "{{HOMEPAGE_VAR_IMMICH_KEY}}"
-    - Calibre-Web:
-        icon: calibre-web.png
-        href: https://books.tabaska.us
-        description: Ebooks (LAN/VPN only)
-        ping: books.tabaska.us
+    - Navidrome:
+        icon: navidrome.png
+        href: https://music.tabaska.us
+        description: Music streaming
+        ping: http://navidrome:4533
     - Seerr:
         icon: overseerr.png
         href: https://seerr.tabaska.us
@@ -36,29 +36,114 @@
         icon: lidarr.png
         href: https://musicseerr.tabaska.us
         description: Request albums & discover music
-        ping: musicseerr.tabaska.us
+        ping: http://musicseerr:8688
+    - Mealie:
+        icon: mealie.png
+        href: https://recipes.tabaska.us
+        description: Recipes & meal planning
+        ping: http://mealie:9000
+    - Miniflux:
+        icon: miniflux.png
+        href: https://rss.tabaska.us
+        description: RSS reader
+        ping: http://miniflux:8080
+    - MeTube:
+        icon: youtube.png
+        href: https://metube.tabaska.us
+        description: YouTube downloads
+        ping: http://192.168.10.2:8081
+    - Calibre-Web:
+        icon: calibre-web.png
+        href: https://books.tabaska.us
+        description: Ebooks (LAN/VPN only)
+        ping: http://192.168.10.4:8083
+
+- Media automation:
+    - Sonarr:
+        icon: sonarr.png
+        href: https://sonarr.tabaska.us
+        description: TV
+        widget:
+          type: sonarr
+          url: http://192.168.10.4:8989
+          key: "{{HOMEPAGE_VAR_SONARR_KEY}}"
+    - Radarr:
+        icon: radarr.png
+        href: https://radarr.tabaska.us
+        description: Movies
+        widget:
+          type: radarr
+          url: http://192.168.10.4:7878
+          key: "{{HOMEPAGE_VAR_RADARR_KEY}}"
+    - Lidarr:
+        icon: lidarr.png
+        href: https://lidarr.tabaska.us
+        description: Music library
+        widget:
+          type: lidarr
+          url: http://192.168.10.4:8686
+          key: "{{HOMEPAGE_VAR_LIDARR_KEY}}"
+    - Readarr:
+        icon: readarr.png
+        href: https://readarr.tabaska.us
+        description: Books
+        widget:
+          type: readarr
+          url: http://192.168.10.4:8787
+          key: "{{HOMEPAGE_VAR_READARR_KEY}}"
+    - Prowlarr:
+        icon: prowlarr.png
+        href: https://prowlarr.tabaska.us
+        description: Indexers
+        widget:
+          type: prowlarr
+          url: http://192.168.10.4:9696
+          key: "{{HOMEPAGE_VAR_PROWLARR_KEY}}"
+    - Tautulli:
+        icon: tautulli.png
+        href: https://tautulli.tabaska.us
+        description: Plex stats
+        widget:
+          type: tautulli
+          url: http://tautulli:8181
+          key: "{{HOMEPAGE_VAR_TAUTULLI_KEY}}"
+    - Deluge:
+        icon: deluge.png
+        href: https://deluge.tabaska.us
+        description: Off-site torrents (seedbox)
+        ping: http://100.119.134.94:8112
+    - slskd:
+        icon: soulseek.png
+        href: https://slskd.tabaska.us
+        description: Soulseek (seedbox)
+        ping: http://100.119.134.94:5030
 
 - Observability:
     - Beszel:
         icon: beszel.png
         href: https://status.tabaska.us
         description: Host & container monitoring
-        ping: status.tabaska.us
+        ping: http://beszel:8090
     - Uptime Kuma:
         icon: uptime-kuma.png
         href: https://uptime.tabaska.us
         description: Uptime checks
         widget:
           type: uptimekuma
-          url: https://uptime.tabaska.us
+          url: http://uptime-kuma:3001
           slug: "{{HOMEPAGE_VAR_UPTIMEKUMA_SLUG}}"
+    - Healthchecks:
+        icon: healthchecks.png
+        href: https://health.tabaska.us
+        description: Backup dead-man's-switch
+        ping: http://healthchecks:8000
     - Dependency-Track:
         icon: dependency-track.png
         href: https://deptrack.tabaska.us
         description: SBOM & vulnerability dashboard
         widget:
           type: customapi
-          url: https://deptrack.tabaska.us/api/v1/metrics/portfolio/current
+          url: http://192.168.10.4:9011/api/v1/metrics/portfolio/current
           method: GET
           headers:
             X-Api-Key: "{{HOMEPAGE_VAR_DEPTRACK_KEY}}"
@@ -79,45 +164,34 @@
         description: DNS filtering
         widget:
           type: adguard
-          url: http://adguard:80
+          url: http://adguardhome:80
           username: "{{HOMEPAGE_VAR_ADGUARD_USER}}"
           password: "{{HOMEPAGE_VAR_ADGUARD_PASS}}"
-    - Home Assistant:
-        icon: home-assistant.png
-        href: https://ha.tabaska.us
-        description: Smart home
-        widget:
-          type: homeassistant
-          url: http://192.168.10.13:8123
-          key: "{{HOMEPAGE_VAR_HA_TOKEN}}"
 
-- Media stack:
-    - Sonarr:
-        icon: sonarr.png
-        href: https://sonarr.tabaska.us
+- Operations:
+    - Dockge:
+        icon: dockge.png
+        href: https://dockge.tabaska.us
+        description: Compose stack manager
+        ping: http://dockge:5001
+    - Forgejo:
+        icon: forgejo.png
+        href: https://git.tabaska.us
+        description: Git forge & control repo
+        ping: http://forgejo:3000
+    - ntfy:
+        icon: ntfy.png
+        href: https://ntfy.tabaska.us
+        description: Push notifications
+        ping: http://ntfy:80
+
+- Private:
+    - Stash:
+        icon: stash.png
+        href: https://stash.tabaska.us
+        description: Media organizer (LAN/VPN only)
         widget:
-          type: sonarr
-          url: http://sonarr:8989
-          key: "{{HOMEPAGE_VAR_SONARR_KEY}}"
-    - Radarr:
-        icon: radarr.png
-        href: https://radarr.tabaska.us
-        widget:
-          type: radarr
-          url: http://radarr:7878
-          key: "{{HOMEPAGE_VAR_RADARR_KEY}}"
-    - Lidarr:
-        icon: lidarr.png
-        href: https://lidarr.tabaska.us
-        widget:
-          type: lidarr
-          url: http://lidarr:8686
-          key: "{{HOMEPAGE_VAR_LIDARR_KEY}}"
-    - qBittorrent:
-        icon: qbittorrent.png
-        href: https://qbit.tabaska.us
-        widget:
-          type: qbittorrent
-          url: http://qbittorrent:8080
-          username: "{{HOMEPAGE_VAR_QBITTORRENT_USER}}"
-          password: "{{HOMEPAGE_VAR_QBITTORRENT_PASS}}"
+          type: stash
+          url: http://192.168.10.4:9999
+          key: "{{HOMEPAGE_VAR_STASH_KEY}}"
+          fields: ["scenes", "images", "performers", "studios"]

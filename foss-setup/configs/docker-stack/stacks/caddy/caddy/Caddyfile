@@ -15,12 +15,13 @@
 #
 # (A) DNS-01 wildcard via Cloudflare (recommended for internal-only services).
 #     Requires the custom image built from ./Dockerfile and a CLOUDFLARE_API_TOKEN.
-(cloudflare_tls) {
-	tls {
-		dns cloudflare {$CLOUDFLARE_API_TOKEN}
-		resolvers 1.1.1.1
-	}
-}
+#     Uncomment and use `import cloudflare_tls` on sites when CLOUDFLARE_API_TOKEN is set.
+# (cloudflare_tls) {
+# 	tls {
+# 		dns cloudflare {$CLOUDFLARE_API_TOKEN}
+# 		resolvers 1.1.1.1
+# 	}
+# }
 #
 # (B) Caddy internal CA (no public DNS needed; clients must trust Caddy's root).
 (local_tls) {
@@ -30,54 +31,54 @@
 
 # Media request portals (movies/TV + music)
 seerr.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy seerr:5055
 }
 
 musicseerr.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy musicseerr:8688
 }
 
 # RSS reader
 rss.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy miniflux:8080
 }
 
 # Music streaming
 music.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy navidrome:4533
 }
 
 # Container management
 dockge.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy dockge:5001
 }
 
 # Monitoring hub
 status.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy beszel:8090
 }
 
 # Uptime monitoring
 uptime.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy uptime-kuma:3001
 }
 
 # Push notifications
 ntfy.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy ntfy:80
 }
 
 # AdGuard Home admin UI (DNS itself is served directly on port 53, not via Caddy)
 dns.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy adguardhome:80
 }
 
@@ -87,25 +88,25 @@ dns.{$DOMAIN} {
 
 # Plex analytics
 tautulli.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy tautulli:8181
 }
 
 # Library pruning (rule-based)
 maintainerr.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy maintainerr:6246
 }
 
 # Pre-transcode automation (server UI; the heavy node runs on the rig)
 tdarr.{$DOMAIN} {
-	import cloudflare_tls
-	reverse_proxy tdarr:8265
+	import local_tls
+	reverse_proxy {$NAS_IP}:8265
 }
 
 # "Sonarr for YouTube"
 pinchflat.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy pinchflat:8945
 }
 
@@ -115,25 +116,25 @@ pinchflat.{$DOMAIN} {
 
 # Dashboard + household front door
 home.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy homepage:3000
 }
 
 # Recipes / meal planning
 recipes.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy mealie:9000
 }
 
-# Documents — OCR archive
+# Documents — OCR archive (NAS)
 paperless.{$DOMAIN} {
-	import cloudflare_tls
-	reverse_proxy paperless:8000
+	import local_tls
+	reverse_proxy {$NAS_IP}:8000
 }
 
 # Read-it-later (Pocket replacement)
 wallabag.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy wallabag:80
 }
 
@@ -143,32 +144,117 @@ wallabag.{$DOMAIN} {
 
 # Self-hosted Git forge (control repo). Git-over-SSH stays on host port 2222.
 git.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy forgejo:3000
 }
 
 # Local AI gateway / fallback (OpenAI-compatible API)
 llm.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy litellm:4000
 }
 
 # Backup dead-man's-switch
 health.{$DOMAIN} {
-	import cloudflare_tls
+	import local_tls
 	reverse_proxy healthchecks:8000
 }
 
-# SBOM / vulnerability dashboard (the static SPA; set API_BASE_URL to https://deptrack.<domain>)
+# SBOM / vulnerability dashboard (runs on NAS — frontend :9010, API :9011)
 deptrack.{$DOMAIN} {
-	import cloudflare_tls
-	reverse_proxy dtrack-frontend:8080
+	import local_tls
+	handle /api/* {
+		reverse_proxy {$NAS_IP}:9011
+	}
+	reverse_proxy {$NAS_IP}:9010
 }
 
-# Local camera AI (authenticated UI on 8971)
+# Photo library (runs on NAS — :2283)
+immich.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:2283
+}
+
+# Local camera AI (authenticated UI on 8971 — NAS)
 frigate.{$DOMAIN} {
-	import cloudflare_tls
-	reverse_proxy frigate:8971
+	import local_tls
+	reverse_proxy {$NAS_IP}:8971
+}
+
+# ---------------------------------------------------------------------------
+# NAS media stack (*arr + Plex + ebooks)
+# ---------------------------------------------------------------------------
+
+plex.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:32400 {
+		flush_interval -1
+	}
+}
+
+sonarr.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:8989
+}
+
+radarr.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:7878
+}
+
+lidarr.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:8686
+}
+
+readarr.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:8787
+}
+
+prowlarr.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:9696
+}
+
+books.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:8083
+}
+
+# Adult media organizer (NAS — :9999; LAN/Tailscale only)
+stash.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:9999 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Port {server_port}
+	}
+}
+
+# ---------------------------------------------------------------------------
+# Seedbox download daemons (Tailscale — Betty)
+# ---------------------------------------------------------------------------
+
+deluge.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$SEEDBOX_IP}:8112
+}
+
+slskd.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$SEEDBOX_IP}:5030
+}
+
+# ---------------------------------------------------------------------------
+# Host-network services (not on the edge Docker network)
+# ---------------------------------------------------------------------------
+
+metube.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$HOST_IP}:8081
 }
 
 # ---------------------------------------------------------------------------

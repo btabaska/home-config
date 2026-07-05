@@ -16,6 +16,7 @@ After=network-online.target docker.service
 
 [Service]
 Type=oneshot
+Environment=PATH=/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 EnvironmentFile=/etc/inventory/sbom.env
 ExecStart=/opt/scripts/inventory/sbom-nightly.sh
 # Scanning the whole filesystem + pulling image layers is heavy; be patient/nice.

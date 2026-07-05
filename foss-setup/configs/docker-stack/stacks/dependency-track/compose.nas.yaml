@@ -1,0 +1,19 @@
+# NAS overlay — Synology has no shared `edge` network with the Mac mini Caddy host.
+# Use: docker compose -f compose.yaml -f compose.nas.yaml up -d
+# Caddy on mini: deptrack.<domain> → NAS :9010 (frontend), /api/* → :9011 (apiserver).
+
+services:
+  dtrack-apiserver:
+    networks: [dtrack]
+    ports:
+      - "9011:8080"
+
+  dtrack-frontend:
+    networks: [dtrack]
+    ports:
+      - "9010:8080"
+
+networks:
+  edge:
+    name: edge-unused
+    external: false

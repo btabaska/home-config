@@ -1,0 +1,44 @@
+# Stash on Synology DS920+ (Container Manager / Docker Compose)
+#
+# Reuses an existing library at /volume1/stash from a prior install:
+#   root/      — media files (~collection)
+#   generated/ — screenshots, thumbnails, previews
+#   blobs/     — cover art and image blobs
+#   cache/     — transcode / temp cache
+#   metadata/  — SQLite DB (created on first run if missing)
+#
+# Upstream: https://github.com/stashapp/stash
+# Docs:     https://docs.stashapp.cc/installation/docker/
+# Compose:   https://github.com/stashapp/stash/blob/develop/docker/production/docker-compose.yml
+
+name: stash
+
+services:
+  stash:
+    image: stashapp/stash:v0.31.1
+    container_name: stash
+    restart: unless-stopped
+    ports:
+      - "${STASH_PORT:-9999}:9999"
+    environment:
+      - STASH_STASH=/data/
+      - STASH_GENERATED=/generated/
+      - STASH_METADATA=/metadata/
+      - STASH_CACHE=/cache/
+      - STASH_PORT=9999
+      - TZ=${TZ:-America/New_York}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      # Config, scrapers, plugins (new docker-side config dir)
+      - ${CONFIG_DIR}:/root/.stash
+      # Existing library from the prior install
+      - ${STASH_ROOT}/root:/data
+      - ${STASH_ROOT}/metadata:/metadata
+      - ${STASH_ROOT}/cache:/cache
+      - ${STASH_ROOT}/blobs:/blobs
+      - ${STASH_ROOT}/generated:/generated
+    logging:
+      driver: json-file
+      options:
+        max-file: "5"
+        max-size: "10m"
