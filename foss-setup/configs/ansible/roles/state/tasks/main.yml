@@ -3,14 +3,22 @@
 # Installs + bootstraps etckeeper (sbom-03) and chezmoi (glue-04) so even the
 # tools that capture your state are present on a fresh box without hand-steps.
 
-- name: Install etckeeper + chezmoi (Debian/Ubuntu)
+# chezmoi is NOT in the Ubuntu jammy archive (it is in Arch's) — apt-installing
+# it hard-fails every pull run (Run 0 fix-06). Use the official installer with
+# a `creates:` guard instead; etckeeper stays on apt.
+- name: Install etckeeper (Debian/Ubuntu)
   when: ansible_os_family == 'Debian'
   ansible.builtin.apt:
     name:
       - etckeeper
-      - chezmoi
     state: present
     update_cache: true
+
+- name: Install chezmoi via official installer (Debian/Ubuntu)
+  when: ansible_os_family == 'Debian'
+  ansible.builtin.shell:
+    cmd: sh -c "$(curl -fsLS get.chezmoi.io)" -- -b /usr/local/bin
+    creates: /usr/local/bin/chezmoi
 
 - name: Install etckeeper + chezmoi (Arch/CachyOS)
   when: ansible_os_family == 'Archlinux'
