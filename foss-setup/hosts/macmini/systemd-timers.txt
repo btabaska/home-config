@@ -1,0 +1,23 @@
+NEXT                        LEFT          LAST                        PASSED        UNIT                           ACTIVATES
+Fri 2026-07-03 00:39:00 UTC 21min left    Fri 2026-07-03 00:09:01 UTC 8min ago      phpsessionclean.timer          phpsessionclean.service
+Fri 2026-07-03 04:24:25 UTC 4h 6min left  n/a                         n/a           ansible-pull.timer             ansible-pull.service
+Fri 2026-07-03 05:25:21 UTC 5h 7min left  Thu 2026-07-02 17:48:30 UTC 6h ago        motd-news.timer                motd-news.service
+Fri 2026-07-03 06:08:37 UTC 5h 50min left Thu 2026-07-02 06:57:42 UTC 17h ago       apt-daily-upgrade.timer        apt-daily-upgrade.service
+Fri 2026-07-03 06:20:31 UTC 6h left       Thu 2026-07-02 21:28:49 UTC 2h 48min ago  fwupd-refresh.timer            fwupd-refresh.service
+Fri 2026-07-03 08:52:52 UTC 8h left       Thu 2026-07-02 03:26:39 UTC 20h ago       man-db.timer                   man-db.service
+Fri 2026-07-03 10:51:48 UTC 10h left      Thu 2026-07-02 23:30:14 UTC 47min ago     certbot.timer                  certbot.service
+Fri 2026-07-03 17:16:34 UTC 16h left      Thu 2026-07-02 22:15:32 UTC 2h 2min ago   apt-daily.timer                apt-daily.service
+Fri 2026-07-03 19:45:12 UTC 19h left      Thu 2026-07-02 19:45:12 UTC 4h 32min ago  update-notifier-download.timer update-notifier-download.service
+Fri 2026-07-03 19:55:13 UTC 19h left      Thu 2026-07-02 19:55:13 UTC 4h 22min ago  systemd-tmpfiles-clean.timer   systemd-tmpfiles-clean.service
+Sat 2026-07-04 00:00:00 UTC 23h left      Fri 2026-07-03 00:00:01 UTC 17min ago     dpkg-db-backup.timer           dpkg-db-backup.service
+Sat 2026-07-04 00:00:00 UTC 23h left      Fri 2026-07-03 00:00:01 UTC 17min ago     logrotate.timer                logrotate.service
+Sat 2026-07-04 00:13:46 UTC 23h left      Fri 2026-07-03 00:13:46 UTC 4min 1s ago   etckeeper.timer                etckeeper.service
+Sun 2026-07-05 03:10:49 UTC 2 days left   Sun 2026-06-28 03:10:59 UTC 4 days ago    e2scrub_all.timer              e2scrub_all.service
+Sun 2026-07-05 12:13:53 UTC 2 days left   Wed 2026-07-01 14:07:29 UTC 1 day 10h ago update-notifier-motd.timer     update-notifier-motd.service
+Mon 2026-07-06 01:29:27 UTC 3 days left   Mon 2026-06-29 00:32:44 UTC 3 days ago    fstrim.timer                   fstrim.service
+Mon 2026-07-06 04:05:15 UTC 3 days left   n/a                         n/a           export-manifests.timer         export-manifests.service
+n/a                         n/a           n/a                         n/a           apport-autoreport.timer        apport-autoreport.service
+n/a                         n/a           n/a                         n/a           snapd.snap-repair.timer        snapd.snap-repair.service
+n/a                         n/a           n/a                         n/a           ua-timer.timer                 ua-timer.service
+
+20 timers listed.
