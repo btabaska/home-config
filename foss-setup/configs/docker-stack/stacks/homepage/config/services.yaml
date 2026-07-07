@@ -47,6 +47,26 @@
         href: https://rss.tabaska.us
         description: RSS reader
         ping: http://miniflux:8080
+    - Wallabag:
+        icon: wallabag.png
+        href: https://wallabag.tabaska.us
+        description: Read-it-later
+        ping: http://wallabag:80
+    - Paperless:
+        icon: paperless.png
+        href: https://paperless.tabaska.us
+        description: Document archive & OCR
+        ping: http://paperless:8000
+    - Pinchflat:
+        icon: youtube.png
+        href: https://pinchflat.tabaska.us
+        description: YouTube archiving
+        ping: http://pinchflat:8945
+    - Libreseerr:
+        icon: readarr.png
+        href: https://libreseerr.tabaska.us
+        description: Book requests
+        ping: http://libreseerr:5000
     - MeTube:
         icon: youtube.png
         href: https://metube.tabaska.us
@@ -107,6 +127,11 @@
           type: tautulli
           url: http://tautulli:8181
           key: "{{HOMEPAGE_VAR_TAUTULLI_KEY}}"
+    - Maintainerr:
+        icon: maintainerr.png
+        href: https://maintainerr.tabaska.us
+        description: Library cleanup rules
+        ping: http://maintainerr:6246
     - Deluge:
         icon: deluge.png
         href: https://deluge.tabaska.us

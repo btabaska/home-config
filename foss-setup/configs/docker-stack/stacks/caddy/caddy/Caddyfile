@@ -40,6 +40,12 @@ musicseerr.{$DOMAIN} {
 	reverse_proxy musicseerr:8688
 }
 
+# Book request portal (Readarr)
+libreseerr.{$DOMAIN} {
+	import local_tls
+	reverse_proxy libreseerr:5000
+}
+
 # RSS reader
 rss.{$DOMAIN} {
 	import local_tls
@@ -126,10 +132,10 @@ recipes.{$DOMAIN} {
 	reverse_proxy mealie:9000
 }
 
-# Documents — OCR archive (NAS)
+# Documents — OCR archive (mini)
 paperless.{$DOMAIN} {
 	import local_tls
-	reverse_proxy {$NAS_IP}:8000
+	reverse_proxy paperless:8000
 }
 
 # Read-it-later (Pocket replacement)
@@ -148,10 +154,31 @@ git.{$DOMAIN} {
 	reverse_proxy forgejo:3000
 }
 
-# Local AI gateway / fallback (OpenAI-compatible API)
+# Rig AI stack (CachyOS — on-demand). HTTPS terminates on Mac mini Caddy, not the rig.
+# Set RIG_IP in .env (default homelab: 192.168.10.12).
+
+# Open WebUI chat UI
+ai.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$RIG_IP}:3000
+}
+
+# LiteLLM gateway (OpenAI-compatible API + /ui admin)
 llm.{$DOMAIN} {
 	import local_tls
-	reverse_proxy litellm:4000
+	reverse_proxy {$RIG_IP}:4000
+}
+
+# Ollama native API (direct /v1 for OpenCode, Obsidian, scripts)
+ollama.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$RIG_IP}:11434
+}
+
+# mcpo tool bridge (OpenAPI docs at /docs)
+mcpo.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$RIG_IP}:8000
 }
 
 # Backup dead-man's-switch

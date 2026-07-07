@@ -35,6 +35,7 @@ services:
       - ACME_EMAIL=${ACME_EMAIL}
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
       - NAS_IP=${NAS_IP:-} # optional: only for upstreams you offload to the NAS
+      - RIG_IP=${RIG_IP:-} # CachyOS rig LAN IP (ai/llm/ollama/mcpo subdomains)
       - SEEDBOX_IP=${SEEDBOX_IP:-} # Betty Tailscale IP (Deluge + slskd)
       - HOST_IP=${HOST_IP:-} # Mac mini LAN IP for host-network stacks (e.g. MeTube)
     volumes:
