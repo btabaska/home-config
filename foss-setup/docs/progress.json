@@ -1,8 +1,8 @@
 {
  "_meta": {
-  "updated": "2026-07-07",
+  "updated": "2026-07-07T20:05:00-04:00",
   "source": "foss-analogue-progress-v1",
-  "plan": "v3 — staged autonomous runs",
+  "plan": "v3 \u2014 staged autonomous runs",
   "task_count": 194,
   "completed_count": 77,
   "note": "Canonical progress-as-code (fix-16). Auto-loaded and additively merged by docs/index.html when served over HTTP; use Import progress on file://. Reopened ids are intentionally absent from done. Supersedes progress-backup-2026-07-05.json."
@@ -84,7 +84,22 @@
   "seed-06": true,
   "seed-07": true,
   "seed-08": true,
-  "seed-09": true
+  "seed-09": true,
+  "fix-01": true,
+  "fix-02": true,
+  "fix-03": true,
+  "fix-04": true,
+  "fix-05": true,
+  "fix-06": true,
+  "fix-07": true,
+  "fix-08": true,
+  "fix-09": true,
+  "fix-10": true,
+  "fix-11": true,
+  "fix-12": true,
+  "fix-15": true,
+  "fix-16": true,
+  "fix-17": true
  },
  "reopened": {
   "dns-02": "NAS secondary AdGuard container is down (nothing on :53/:3000 as of 2026-07-07 live scan)",

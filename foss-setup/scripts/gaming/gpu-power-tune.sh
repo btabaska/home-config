@@ -68,7 +68,7 @@ read -r MIN_PL MAX_PL < <(
     | awk -F': ' '
         /Min Power Limit/ {gsub(/[^0-9.]/,"",$2); min=$2}
         /Max Power Limit/ {gsub(/[^0-9.]/,"",$2); max=$2}
-        END {printf "%d %d", min+0, max+0}'
+        END {printf "%d %d\n", min+0, max+0}'   # \n required: read returns 1 at EOF without it, killing the script under set -e (game-10 boot failure)
 )
 # Some driver builds omit Min/Max in -q -d POWER; fall back to current limit.
 if [[ "${MIN_PL}" -eq 0 && "${MAX_PL}" -eq 0 ]]; then

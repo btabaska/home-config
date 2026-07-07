@@ -1,5 +1,16 @@
 # Rollout handoff state
 
+### Run 0 results (2026-07-07 evening)
+
+- **ansible-pull converges GREEN on mini** (first success ever): ok=34 failed=0, apply mode. Fixes: SOPS gates on backup+sbom roles, un-ignored break-glass pubkey, removed conflicting docker apt source on mini, chezmoi via installer on Debian.
+- Repo topology fixed: forgejo `home/homelab` = foss-setup/ subtree, published via `scripts/docs/publish-deploy.sh` (fast-forwards).
+- mini: /opt/stacks drift committed+pushed; etckeeper repaired; 3 dead CIFS mounts disabled (systemctl --failed = 0); maintainerr healthy; duplicate mini Immich stopped (Caddy->NAS verified).
+- Secrets: leaked ntfy diun token REVOKED + rotated (vault: ntfy.diun_token); wallabag admin rotated (vault: wallabag.*). NAS AdGuard password rotation still blocked on container being up.
+- migration-snapshot archived to nas:/volume1/backups/migration-snapshot-2026-07-07 (92,128/92,128 files verified).
+- gpu-power-tune awk/read bug fixed in repo (deployed copy on rig pending sudo).
+- Rig BLOCKED on two gates: btabaska sudo needs password (vault sudo slots empty; NOPASSWD or password needed) and rig forgejo deploy key unregistered (rig pubkey staged; register in Forgejo web or provide forgejo admin creds). Units staged at rig:~/staging/.
+- HA discovered live at 192.168.10.50:8123 (creds in vault); not on tailnet yet.
+
 ## Session 4 — 2026-07-07 (Plan v3)
 
 - **Full repo + fleet audit** performed (every host inspected against the guide and configs).
