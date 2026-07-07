@@ -1,3 +1,5 @@
+> **2026-07-07: partially superseded** — live status now tracked as the audit-fixes track in `foss-setup/docs/index.html` (Plan v3). Kept for the detailed per-edit specs.
+
 # Agent Fix Tasks — Homelab Repo Audit Remediation
 
 Source: 5-agent audit of this repo on 2026-07-06. Repo root: `/Users/brandontabaska/Documents/Home/foss-setup/` (paths below are relative to it unless they start with `/`).

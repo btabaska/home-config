@@ -60,9 +60,9 @@ you bump tags deliberately after reading release notes.
 |--------------|-------------------------------------|
 | Seerr        | `ghcr.io/seerr-team/seerr:v3.2.0`   |
 | MusicSeerr   | `ghcr.io/habirabbu/musicseerr:v1.4.2` |
-| Miniflux     | `miniflux/miniflux:2.3.0`           |
+| Miniflux     | `miniflux/miniflux:2.3.1`           |
 | PostgreSQL   | `postgres:17-alpine`                |
-| Navidrome    | `deluan/navidrome:0.61.2`           |
+| Navidrome    | `deluan/navidrome:0.62.0`           |
 | Caddy        | `caddy:2.11.4-alpine`               |
 | AdGuard Home | `adguard/adguardhome:v0.107.77`     |
 | Dockge       | `louislam/dockge:1.5.0`             |
@@ -73,14 +73,15 @@ you bump tags deliberately after reading release notes.
 | LiteLLM      | `ghcr.io/berriai/litellm:v1.88.2`   |
 | Paperless-ngx| `ghcr.io/paperless-ngx/paperless-ngx:2.20.11` |
 | Mealie       | `ghcr.io/mealie-recipes/mealie:v3.4.0` |
-| Pinchflat    | `ghcr.io/kieraneglin/pinchflat:v2026.3.1` |
+| Pinchflat    | `ghcr.io/kieraneglin/pinchflat:v2025.9.26` |
 | Unbound      | `mvance/unbound:1.22.0`             |
 | Homepage     | `ghcr.io/gethomepage/homepage:v1.13.2` |
 | Healthchecks | `healthchecks/healthchecks:v3.10`   |
-| Dependency-Track | `dependencytrack/apiserver:5.6.0` + `frontend:5.6.0` |
+| Dependency-Track | `dependencytrack/apiserver:5.0.2` + `frontend:5.0.1` |
 | Tautulli     | `ghcr.io/tautulli/tautulli:v2.17.2` |
 | Kometa       | `kometateam/kometa:v2.3.1`          |
-| Maintainerr  | `ghcr.io/jorenn92/maintainerr:v3.15.2` |
+| Maintainerr  | `ghcr.io/maintainerr/maintainerr:3.15.3` |
+| Libreseerr   | `ghcr.io/zamnzim/libreseerr@sha256:820134…` (digest-pinned; no version tags upstream) |
 | Tdarr        | `ghcr.io/haveagitgat/tdarr:2.78.01` (+node) |
 | Frigate      | `ghcr.io/blakeblackshear/frigate:0.17.1` |
 | _alt:_ Pi-hole  | `pihole/pihole:2026.06.0`        |

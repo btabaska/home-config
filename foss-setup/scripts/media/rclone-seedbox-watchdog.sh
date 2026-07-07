@@ -22,7 +22,7 @@
 #   User-defined script, User = root, repeat every 5 minutes,
 #   Command = /volume1/scripts/media/rclone-seedbox-watchdog.sh
 # ==============================================================================
-set -uo pipefail
+set -euo pipefail
 
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
 
@@ -75,7 +75,8 @@ ls_ok() {
 get_fail_count() {
   if [[ -f "$FAIL_COUNT_FILE" ]]; then
     local n
-    n=$(cat "$FAIL_COUNT_FILE" 2>/dev/null)
+    # cat may race with clear_fail_count; a read failure just means "no count".
+    n=$(cat "$FAIL_COUNT_FILE" 2>/dev/null || true)
     if [[ "$n" =~ ^[0-9]+$ ]]; then
       echo "$n"
       return

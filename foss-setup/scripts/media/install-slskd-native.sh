@@ -14,7 +14,21 @@ SLSKD_VERSION="${SLSKD_VERSION:-0.25.1}"
 APP_DIR="${HOME}/slskd-native"
 BIN_DIR="${HOME}/bin/slskd"
 ENV_FILE="${APP_DIR}/.env"
-REPO_EXAMPLE="${REPO_EXAMPLE:-$HOME/Documents/Home/foss-setup/configs/seedbox/slskd-native.example.env}"
+# Locate the example env template. Honors an explicit REPO_EXAMPLE override,
+# otherwise tries (1) the repo-relative path next to this script (works when run
+# from a repo checkout) then (2) ~/foss-setup (works on the seedbox after scp).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -z "${REPO_EXAMPLE:-}" ]]; then
+  for candidate in \
+    "${SCRIPT_DIR}/../../configs/seedbox/slskd-native.example.env" \
+    "${HOME}/foss-setup/configs/seedbox/slskd-native.example.env"; do
+    if [[ -f "$candidate" ]]; then
+      REPO_EXAMPLE="$candidate"
+      break
+    fi
+  done
+fi
+REPO_EXAMPLE="${REPO_EXAMPLE:-${HOME}/foss-setup/configs/seedbox/slskd-native.example.env}"
 
 log() { printf '[install-slskd] %s\n' "$*"; }
 

@@ -18,7 +18,8 @@ name: immich
 services:
   immich-server:
     container_name: immich_server
-    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    # IMMICH_VERSION is REQUIRED (no `release` fallback — that would float).
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:?set IMMICH_VERSION in .env}
     # Quick Sync (Intel) transcoding, inlined instead of using `extends:` so this
     # works in Synology Container Manager (single-file deploys). After deploy, set
     # Admin > Settings > Video Transcoding > Hardware Acceleration = Quick Sync.
@@ -44,7 +45,7 @@ services:
   immich-machine-learning:
     container_name: immich_machine_learning
     # OpenVINO image variant enables Intel iGPU inference on the J4125 Quick Sync GPU.
-    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}-openvino
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:?set IMMICH_VERSION in .env}-openvino
     devices:
       - /dev/dri:/dev/dri
     volumes:

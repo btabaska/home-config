@@ -1,3 +1,5 @@
+> **Status: APPROVED 2026-07-07** — being implemented as wiki.tabaska.us; see tasks wiki-01..05 in docs/index.html.
+
 # Wiki Proposal — *Going Analogue* Operations Manual
 
 A single, locally-hosted source of truth for **running and maintaining** the
@@ -187,11 +189,11 @@ from scratch.
 | `scripts/**/*.sh` header comments (you already write rich `# What it does` blocks) | The **Scripts reference** man-pages — NAME/SYNOPSIS/DESC/ENV/EXAMPLES extracted from the comment header + `set` flags. |
 | `scripts/**/*.md` (quickstarts: chezmoi, koreader, linuxgsm, ipod, immich-go) | Folded into the matching Service/Operations page or kept as-is. |
 | `configs/network/*.md` (firewall, VLAN, mDNS, SSH) | The **Dream Wall** host page + Networking services. |
-| `configs/nas/*`, `nas-storage-schema.md` | The **NAS** host page (volume schema, the three-Basic-volume layout). |
+| `configs/nas/*` (incl. `configs/nas/SCHEMA.md`) | The **NAS** host page (volume schema, the three-Basic-volume layout). |
 | `configs/inventory/*`, `restore-runbook-template.md` | **Operations → Inventory/SBOM** and the restore runbook. |
-| `game-servers-guide.md` (4.7k words) | **Services → Gaming** + CachyOS host page. |
+| `configs/gaming/server-guide.md` (4.7k words) | **Services → Gaming** + CachyOS host page. |
 | `foss-setup-plan-2.md` (18k words) | Mined for DESCRIPTION prose and architecture; **not** copied wholesale — it's the planning narrative. |
-| `foss-setup-validation-report.md` | Seeds **Troubleshooting** + known-gaps notes. |
+| `docs/archive/validation-report-2026-07-05.md` | Seeds **Troubleshooting** + known-gaps notes. |
 | `docs/index.html` taskData (134 tasks, links/`docs[]`) | Cross-links: each task's `docs[]` URLs and `verify` blocks feed SEE-ALSO and health checks. The wiki **links to** the tracker, doesn't absorb it. |
 
 **Auto-generation:** extend the pattern you already use in

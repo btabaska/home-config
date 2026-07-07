@@ -6,12 +6,14 @@
 # Optional ntfy alert when services stay down after recovery (see health.env).
 #
 # Install: sudo bash /volume1/scripts/nas/install-nas-docker-health-task.sh
-set -uo pipefail
+set -euo pipefail
 
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
 
 DOCKER="${DOCKER:-/usr/local/bin/docker}"
-COMPOSE="${COMPOSE:-/usr/local/bin/docker compose}"
+# COMPOSE may be overridden via env as a space-separated command; split into an
+# array so the command word and subcommand are passed as separate argv entries.
+read -r -a COMPOSE <<< "${COMPOSE:-/usr/local/bin/docker compose}"
 LOG="${LOG:-/var/log/nas-docker-health.log}"
 ENV_FILE="${ENV_FILE:-/volume1/scripts/nas/health.env}"
 START_SCRIPT="/var/packages/ContainerManager/scripts/start-stop-status"
@@ -35,18 +37,24 @@ ts() { date -Is; }
 log() { printf '[%s] %s\n' "$(ts)" "$*" | tee -a "$LOG"; }
 
 load_env() {
-  [[ -f "$ENV_FILE" ]] && set -a && # shellcheck disable=SC1090
-    source "$ENV_FILE" && set +a
+  # Missing env file is fine (alerts just stay disabled) — must not trip set -e.
+  if [[ -f "$ENV_FILE" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$ENV_FILE"
+    set +a
+  fi
 }
 
 start_container_manager() {
   if [[ -x "$START_SCRIPT" ]]; then
     log "Starting Container Manager..."
-    "$START_SCRIPT" start
+    # A failed start is handled by wait_for_docker below — don't trip set -e here.
+    "$START_SCRIPT" start || log "WARN: start-stop-status start returned non-zero"
     return
   fi
   log "Starting Container Manager via synopkg..."
-  /usr/syno/bin/synopkg start ContainerManager
+  /usr/syno/bin/synopkg start ContainerManager || log "WARN: synopkg start returned non-zero"
 }
 
 wait_for_docker() {
@@ -66,7 +74,7 @@ compose_up_dir() {
 
   if [[ -f "$dir/docker-compose.yml" ]]; then
     log "compose up -d: $dir"
-    $COMPOSE -f "$dir/docker-compose.yml" up -d --no-recreate >>"$LOG" 2>&1 \
+    "${COMPOSE[@]}" -f "$dir/docker-compose.yml" up -d --no-recreate >>"$LOG" 2>&1 \
       || log "WARN: compose up failed for $dir"
     return
   fi
@@ -75,7 +83,7 @@ compose_up_dir() {
     local files=(-f "$dir/compose.yaml")
     [[ -f "$dir/compose.nas.yaml" ]] && files+=(-f "$dir/compose.nas.yaml")
     log "compose up -d: $dir"
-    $COMPOSE "${files[@]}" up -d --no-recreate >>"$LOG" 2>&1 \
+    "${COMPOSE[@]}" "${files[@]}" up -d --no-recreate >>"$LOG" 2>&1 \
       || log "WARN: compose up failed for $dir"
   fi
 }

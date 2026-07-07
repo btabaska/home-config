@@ -1,6 +1,8 @@
+> Companion to [foss-setup-plan-2.md](../../../foss-setup-plan-2.md) §4 (Play — game servers): per-title feasibility and host assignment.
+
 # Game Server Research Guide
 
-A per-title feasibility reference for hosting private servers on the hardware defined in [foss-setup-plan-2.md](foss-setup-plan-2.md) Section 4. Use this during **Phase 5 — Play** before committing to a host or uptime model.
+A per-title feasibility reference for hosting private servers on the hardware defined in [foss-setup-plan-2.md](../../../foss-setup-plan-2.md) Section 4. Use this during **Phase 5 — Play** before committing to a host or uptime model.
 
 **Scope:** Can you run a server for you and your friends? Each entry answers that with a verdict, network reach, uptime model, host assignment, and resource budget benchmarked against what is already running on that box.
 
@@ -16,7 +18,7 @@ A per-title feasibility reference for hosting private servers on the hardware de
 
 ## Hardware reference
 
-Grounded in [foss-setup-plan-2.md](foss-setup-plan-2.md) Sections 0, 4, and 5.
+Grounded in [foss-setup-plan-2.md](../../../foss-setup-plan-2.md) Sections 0, 4, and 5.
 
 | Host | Specs | Role (per plan) | Game-server fit |
 |---|---|---|---|
@@ -75,7 +77,7 @@ The 3090 Ti serves Sunshine streaming, optional Ollama inference, and games that
 
 ## Network reference
 
-From [foss-setup-plan-2.md](foss-setup-plan-2.md) Sections 1, 4, and 7.
+From [foss-setup-plan-2.md](../../../foss-setup-plan-2.md) Sections 1, 4, and 7.
 
 | Method | Label in this guide | When to use |
 |---|---|---|
@@ -394,7 +396,7 @@ Battle.net emulator for WC3 ≤1.28. Requires **W3L** client patch to disable se
 
 ## Implementation roadmap
 
-Aligned with [foss-setup-plan-2.md](foss-setup-plan-2.md) Phase 5.
+Aligned with [foss-setup-plan-2.md](../../../foss-setup-plan-2.md) Phase 5.
 
 ### Step 1 — Smoke test (Tier 1)
 
@@ -425,7 +427,7 @@ Aligned with [foss-setup-plan-2.md](foss-setup-plan-2.md) Phase 5.
 
 ## Shared tooling
 
-From [foss-setup-plan-2.md](foss-setup-plan-2.md) Section 4.
+From [foss-setup-plan-2.md](../../../foss-setup-plan-2.md) Section 4.
 
 | Tool | Use case |
 |---|---|
@@ -483,4 +485,4 @@ From [foss-setup-plan-2.md](foss-setup-plan-2.md) Section 4.
 
 ---
 
-*Cross-reference: [foss-setup-plan-2.md](foss-setup-plan-2.md) Section 4 (Game servers and game streaming) and Phase 5 item 18.*
+*Cross-reference: [foss-setup-plan-2.md](../../../foss-setup-plan-2.md) Section 4 (Game servers and game streaming) and Phase 5 item 18.*

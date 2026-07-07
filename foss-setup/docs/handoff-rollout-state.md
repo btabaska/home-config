@@ -1,3 +1,13 @@
+# Rollout handoff state
+
+## Session 4 — 2026-07-07 (Plan v3)
+
+- **Full repo + fleet audit** performed (every host inspected against the guide and configs).
+- **Guide refactored into 8 staged runs** (Plan v3 in `docs/index.html`) — **194 tasks** total.
+- **Regressions found and reopened:** `dns-02`, `game-10`, `nas-08` — previously marked done but no longer true on the fleet.
+- **Run 0 execution started** (docs/repo reorganization, hygiene, tracker groundwork).
+- Docs reorganized: validation report archived, wiki/home-hub designs moved under `docs/`, NAS schema and game-server guide moved next to their configs, root `README.md` added.
+
 # Rollout handoff state — 2026-07-05 (session 3)
 
 Import this into the tracker (`docs/index.html`) so checkmarks match reality for the next agent.
@@ -103,6 +113,6 @@ DNS: **Still gateway-only DHCP** until dns-03. Target chain: `#1` mini `192.168.
 ## Secrets / hygiene
 
 - NAS AdGuard temp admin password set during API install — **rotate immediately**
-- ntfy Diun token: `tk_kxcw25uo2lok7u1yzr1dpxmt5iawx` (store in vault, rotate if exposed)
+- ntfy Diun token: (rotated — see vault: `ntfy.diun_token` in `.handoff-secrets.yaml`; never store literal tokens in this doc)
 - Wallabag/Paperless secrets generated on mini `.env` files — not in vault yet
 - Seedbox SSH blocked by Tailscale ACL — add SSH policy for operator MacBook → betty

@@ -73,7 +73,7 @@ x-common-env: &common-env
   PGID: ${PGID:?run 'id <user>' on the NAS and set PGID in .env}
   TZ: ${TZ:-America/New_York}
 
-# Host paths — set in .env (see nas-storage-schema.md three-volume layout).
+# Host paths — set in .env (see ../SCHEMA.md three-volume layout).
 
 x-seedbox-mount: &seedbox-mount
   type: bind

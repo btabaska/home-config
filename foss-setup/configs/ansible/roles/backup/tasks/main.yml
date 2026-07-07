@@ -4,62 +4,83 @@
 # timer is WAKE-GATED (wake_gated in group_vars/on_demand.yml) so a sleeping box
 # doesn't miss every window.
 
-- name: Install restic (Debian/Ubuntu)
-  when: ansible_os_family == 'Debian'
-  ansible.builtin.apt:
-    name: restic
-    state: present
-    update_cache: true
+# Gate: the SOPS-encrypted restic env is seeded by glue-06 and may not exist in
+# the control repo yet. The sops lookup hard-fails on a missing file, which used
+# to abort the whole play — so locate it first (lookup runs on the controller;
+# under ansible-pull that IS this host) and skip the role cleanly if absent.
+- name: Locate the restic SOPS secret (may be absent until glue-06 seeds it)
+  ansible.builtin.set_fact:
+    restic_sops_env_file: >-
+      {{ lookup('ansible.builtin.first_found',
+                dict(files=[playbook_dir ~ '/secrets/restic.sops.env'], skip=true)) }}
 
-- name: Install restic (Arch/CachyOS)
-  when: ansible_os_family == 'Archlinux'
-  community.general.pacman:
-    name: restic
-    state: present
+- name: Skip backup role — restic secret not seeded yet
+  ansible.builtin.debug:
+    msg: >-
+      secrets/restic.sops.env not found in the control repo — skipping the backup
+      role. Seed it per glue-06 (SOPS-encrypted RESTIC_REPOSITORY + RESTIC_PASSWORD)
+      to enable restic backups on this host.
+  when: restic_sops_env_file | length == 0
 
-- name: Drop the restic environment (repo + password from SOPS)
-  ansible.builtin.copy:
-    dest: /etc/restic/backup.env
-    mode: "0600"
-    content: "{{ lookup('community.sops.sops', 'secrets/restic.sops.env', age_keyfile=sops_age_keyfile) }}"
+- name: Configure restic backups (sec-06)
+  when: restic_sops_env_file | length > 0
+  block:
+    - name: Install restic (Debian/Ubuntu)
+      when: ansible_os_family == 'Debian'
+      ansible.builtin.apt:
+        name: restic
+        state: present
+        update_cache: true
 
-- name: Install the restic-backup service
-  ansible.builtin.copy:
-    dest: /etc/systemd/system/restic-backup.service
-    mode: "0644"
-    content: |
-      [Unit]
-      Description=Restic backup (sec-06)
-      [Service]
-      Type=oneshot
-      EnvironmentFile=/etc/restic/backup.env
-      # M-an4: extra_backup_paths defaults (group_vars/all.yml) to
-      # "/opt/stacks /var/lib/docker/volumes" so this set matches the restore runbook.
-      ExecStart=/usr/bin/restic backup --verbose --exclude-caches /home {{ extra_backup_paths | default('') }}
+    - name: Install restic (Arch/CachyOS)
+      when: ansible_os_family == 'Archlinux'
+      community.general.pacman:
+        name: restic
+        state: present
 
-- name: Install the restic-backup timer
-  ansible.builtin.copy:
-    dest: /etc/systemd/system/restic-backup.timer
-    mode: "0644"
-    content: |
-      [Unit]
-      Description=Schedule restic backup (sec-06)
-      [Timer]
-      {% if wake_gated | default(false) %}
-      # On-demand rig: run shortly after wake, not on a clock it sleeps through.
-      OnBootSec=5min
-      Persistent=true
-      {% else %}
-      OnCalendar=*-*-* {{ restic_timer_oncalendar }}:00
-      RandomizedDelaySec=20m
-      Persistent=true
-      {% endif %}
-      [Install]
-      WantedBy=timers.target
+    - name: Drop the restic environment (repo + password from SOPS)
+      ansible.builtin.copy:
+        dest: /etc/restic/backup.env
+        mode: "0600"
+        content: "{{ lookup('community.sops.sops', restic_sops_env_file, age_keyfile=sops_age_keyfile) }}"
 
-- name: Enable the restic-backup timer
-  ansible.builtin.systemd_service:
-    name: restic-backup.timer
-    enabled: true
-    state: started
-    daemon_reload: true
+    - name: Install the restic-backup service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/restic-backup.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Restic backup (sec-06)
+          [Service]
+          Type=oneshot
+          EnvironmentFile=/etc/restic/backup.env
+          # M-an4: extra_backup_paths defaults (group_vars/all.yml) to
+          # "/opt/stacks /var/lib/docker/volumes" so this set matches the restore runbook.
+          ExecStart=/usr/bin/restic backup --verbose --exclude-caches /home {{ extra_backup_paths | default('') }}
+
+    - name: Install the restic-backup timer
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/restic-backup.timer
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Schedule restic backup (sec-06)
+          [Timer]
+          {% if wake_gated | default(false) %}
+          # On-demand rig: run shortly after wake, not on a clock it sleeps through.
+          OnBootSec=5min
+          Persistent=true
+          {% else %}
+          OnCalendar=*-*-* {{ restic_timer_oncalendar }}:00
+          RandomizedDelaySec=20m
+          Persistent=true
+          {% endif %}
+          [Install]
+          WantedBy=timers.target
+
+    - name: Enable the restic-backup timer
+      ansible.builtin.systemd_service:
+        name: restic-backup.timer
+        enabled: true
+        state: started
+        daemon_reload: true

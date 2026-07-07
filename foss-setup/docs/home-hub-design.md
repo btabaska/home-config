@@ -1,3 +1,5 @@
+> **Status: design parked** — home.tabaska.us is currently served by Homepage; see home-01..04.
+
 # Home Hub — Site Build Plan ("It just works" front door)
 
 > **Hand-off doc for Claude Code.** This is the complete spec for a static website

@@ -1,3 +1,5 @@
+> **Historical document (2026-07-05)** — findings have since been reconciled into the plan; kept for the record.
+
 # FOSS Setup — End-to-End Validation Report
 
 > **Re-validation status (after fixes applied):** All Critical/High/Medium findings below have been implemented across the markdown, HTML, configs, and scripts. Image tags re-verified to exist (Dependency-Track `apiserver:5.0.2`/`frontend:5.0.1`, Navidrome `0.62.0`, Pinchflat `v2025.9.26`, Maintainerr `maintainerr/maintainerr:v3.15.3`, Miniflux `2.3.1`; Frigate kept at `0.17.1` because `0.17.2` does not exist). Cross-file consistency re-checked: Syft `1.45.1` / Grype `0.114.0` agree across all three files; the markdown number changes (RAM `~$40-110`, seedbox `6-10 TB`/HDD, always-on `~82-113 W`/`~$150-200`, LiteLLM fallback `llama3.2:1b`) were mirrored into the HTML so the two guides stay in sync. Both HTML JSON data blocks still parse; all shell scripts pass `bash -n`; changed YAML parses. See the "Re-validation outcome" section at the bottom.

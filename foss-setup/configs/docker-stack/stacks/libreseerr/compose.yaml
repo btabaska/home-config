@@ -6,7 +6,9 @@
 
 services:
   libreseerr:
-    image: ghcr.io/zamnzim/libreseerr:latest
+    # Upstream publishes no version tags — pinned by digest to the image running
+    # on the mini as of 2026-07-07 (was :latest). Bump the digest deliberately.
+    image: ghcr.io/zamnzim/libreseerr@sha256:820134e44279c964ddf54090ab45b444a28e7f562256baaadf20fffaf36911f3
     container_name: libreseerr
     restart: unless-stopped
     environment:

@@ -97,7 +97,8 @@ if ! command -v fusermount3 >/dev/null 2>&1; then
 fi
 
 # ---- Ensure user_allow_other in /etc/fuse.conf (for PUID containers) --------
-if [[ -f /etc/fuse.conf ]] && ! grep -q '^user_allow_other' /etc/fuse.conf 2>/dev/null; then
+# Append ONLY if not already present (idempotent — allow leading whitespace).
+if [[ -f /etc/fuse.conf ]] && ! grep -qE '^[[:space:]]*user_allow_other' /etc/fuse.conf 2>/dev/null; then
   echo 'user_allow_other' >> /etc/fuse.conf
   echo "$(date -Is) INFO: added user_allow_other to /etc/fuse.conf" >>"$LOG"
 fi

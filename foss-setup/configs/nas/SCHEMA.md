@@ -1,6 +1,8 @@
+> **Status: proposal, partially reflects reality as of 2026-07-07** — volumes match (Vol1 music/books/docker, Vol2 movies, Vol3 tv), but there is no "Tier1" share and ~10 additional shares exist (photo, frigate, games, docs, cache, manual, scripts, staging, stash, vault, youtube, mounts).
+
 # NAS Storage Schema (DS920+)
 
-A drive / file / storage / network-drive schema for the Synology DS920+, designed to be implemented by hand in DSM. It **retains three independent single-disk Basic storage pools** (one volume per drive, no parity) to maximize usable capacity (~42 TB raw), then lays a shared-folder, network-drive, snapshot, and backup schema on top that maps 1:1 to the services and the Tier 1 / Tier 2 data model in [foss-setup-plan-2.md](foss-setup-plan-2.md) Section 6.
+A drive / file / storage / network-drive schema for the Synology DS920+, designed to be implemented by hand in DSM. It **retains three independent single-disk Basic storage pools** (one volume per drive, no parity) to maximize usable capacity (~42 TB raw), then lays a shared-folder, network-drive, snapshot, and backup schema on top that maps 1:1 to the services and the Tier 1 / Tier 2 data model in [foss-setup-plan-2.md](../../../foss-setup-plan-2.md) Section 6.
 
 This is the implementable spec; DSM itself is configured by following the [reorganization runbook](#5-reorganization-runbook) at the end.
 

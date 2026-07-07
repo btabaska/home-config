@@ -6,7 +6,9 @@ set -euo pipefail
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
 
 DOCKER="${DOCKER:-/usr/local/bin/docker}"
-COMPOSE="${COMPOSE:-/usr/local/bin/docker compose}"
+# COMPOSE may be overridden via env as a space-separated command; split into an
+# array so the command word and subcommand are passed as separate argv entries.
+read -r -a COMPOSE <<< "${COMPOSE:-/usr/local/bin/docker compose}"
 
 log() { printf '[%s] %s\n' "$(date -Is)" "$*"; }
 
@@ -17,7 +19,7 @@ compose_up() {
 
   if [[ -f "$dir/docker-compose.yml" ]]; then
     log "compose up (no-recreate): $dir"
-    $COMPOSE -f "$dir/docker-compose.yml" up -d --no-recreate "$@"
+    "${COMPOSE[@]}" -f "$dir/docker-compose.yml" up -d --no-recreate "$@"
     return
   fi
 
@@ -25,7 +27,7 @@ compose_up() {
     log "compose up (no-recreate): $dir"
     local files=(-f "$dir/compose.yaml")
     [[ -f "$dir/compose.nas.yaml" ]] && files+=(-f "$dir/compose.nas.yaml")
-    $COMPOSE "${files[@]}" up -d --no-recreate "$@"
+    "${COMPOSE[@]}" "${files[@]}" up -d --no-recreate "$@"
   fi
 }
 
