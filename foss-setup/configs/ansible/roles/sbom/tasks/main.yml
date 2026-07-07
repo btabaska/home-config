@@ -34,13 +34,29 @@
     - { dest: "sbom-nightly.timer" }
   notify: reload systemd
 
+# Gate on the SOPS secret existing in the checkout — same pattern as the backup
+# role. Without it the whole pull run hard-fails on every host (Run 0 fix-06);
+# with it the endpoint drop just skips until glue-06 seeds secrets/.
+- name: Check for the Dependency-Track SOPS secret
+  ansible.builtin.stat:
+    path: "{{ playbook_dir }}/secrets/dtrack-apikey.sops"
+  delegate_to: localhost
+  become: false
+  register: dtrack_sops_stat
+
+- name: Note skipped Dependency-Track endpoint (no SOPS secret in checkout)
+  ansible.builtin.debug:
+    msg: "secrets/dtrack-apikey.sops not present — skipping /etc/sbom-nightly.env; seed per glue-06."
+  when: not dtrack_sops_stat.stat.exists
+
 - name: Drop the Dependency-Track endpoint (API key from SOPS)
   ansible.builtin.copy:
     dest: /etc/sbom-nightly.env
     mode: "0600"
     content: |
       DTRACK_URL={{ dtrack_url }}
-      DTRACK_API_KEY={{ lookup('community.sops.sops', 'secrets/dtrack-apikey.sops', age_keyfile=sops_age_keyfile) }}
+      DTRACK_API_KEY={{ lookup('community.sops.sops', dtrack_sops_stat.stat.path, age_keyfile=sops_age_keyfile) }}
+  when: dtrack_sops_stat.stat.exists
 
 - name: Enable the sbom-nightly timer
   ansible.builtin.systemd_service:
