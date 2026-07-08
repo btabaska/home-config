@@ -70,7 +70,7 @@
   <h1>Good morning — here's the night.</h1>
   <p class="lede">Nine research agents swept <b>every service you have running</b>, plus the game-hosting spec, the WoL/YouTube questions, and an ethos-aligned stack plan tuned to your devices. Two pre-approved fixes shipped (security hardening); everything else is <b>findings and options only</b> — no changes, no decisions, as you asked. The single most important thing I found: your monitoring exists but <b>no alert has ever reached your phone</b>. Details in §1.</p>
   <nav class="toc">
-    <a href="#status">Overnight status</a><a href="#alerting">1 · Alerting (urgent)</a><a href="#answers">2 · Your questions</a><a href="#services">3 · Service audit</a><a href="#games">4 · Game hosting</a><a href="#ethos">5 · Ethos &amp; stack</a><a href="#queue">6 · Your queue</a>
+    <a href="#status">Overnight status</a><a href="#alerting">1 · Alerting (urgent)</a><a href="#answers">2 · Your questions</a><a href="#services">3 · Service audit</a><a href="#deep">3b · Deep audit</a><a href="#games">4 · Game hosting</a><a href="#ethos">5 · Ethos &amp; stack</a><a href="#queue">6 · Your queue</a>
   </nav>
 </header>
 
@@ -190,6 +190,39 @@ AUDIO -> music (recommended start):
 </div>
 
 <p><b>D6 decision — settled by evidence:</b> the mystery <code>qbittorrent-nox</code> on the seedbox has <b>0 torrents loaded</b> and has been idle 11 days; Deluge is the real workhorse (~250 active torrents). My recommendation stands: kill it. Your call.</p>
+
+<h2 id="deep"><span class="n">3b</span>Deep audit — second pass (every remaining service)</h2>
+<p class="sub">Five read-only agents individually inspected the ~20 services the first sweep didn't cover. Full detail: <span class="mono">research/10-deep-audit.md</span></p>
+
+<div class="card good">
+  <h3>Fixed the same night (reversible, verified)</h3>
+  <ul class="tight">
+    <li><b>musicseerr</b> — Lidarr key was dead (468×401, circuit breaker OPEN, all music syncs dead) → re-keyed from vault, all calls 200.</li>
+    <li><b>paperless</b> — admin was live with the literal default password → rotated (vault: <code>paperless.admin_password</code>), bootstrap envs scrubbed.</li>
+    <li><b>wallabag</b> — data dirs unwritable by php-fpm (error on every page view, site-credentials broken) → chowned.</li>
+    <li><b>navidrome</b> — DB backups were OFF → nightly 02:00 keep-7; telemetry to navidrome.org → off.</li>
+    <li><b>backups</b> — mealie + vaultwarden sqlite were never dumped → online-backup dumps added + verified; vaultwarden admin token now argon2 at rest.</li>
+    <li><b>Dependency-Track</b> — mini SBOM script was stale → excludes deployed, nightly run passing its old OOM point.</li>
+    <li><b>seedbox/NAS pipeline</b> — 6 secret files o+r → 600; rclone watchdog: double container restart, no lock, empty-listing-as-healthy, unbounded find → all fixed + deployed.</li>
+    <li><b>verification</b> — 9 new regression checks guard the entire alerting remediation (incl. a "DSM wiped the cron line again" tripwire). Sweep now 52 checks.</li>
+  </ul>
+</div>
+
+<div class="card hi">
+  <h3>Top decisions for you (ranked)</h3>
+  <ol class="opts">
+    <li><b>Stash has no authentication at all</b> — full GraphQL (browse/delete/plugin-exec) to any LAN or tailnet device. Enable credentials in Settings→Security or put Caddy basic_auth on the vhost. <span class="chip crit">high</span></li>
+    <li><b>Rig is in partial-upgrade state</b> — last full <code>-Syu</code> Jun 15; <b>441 packages pending</b> on a rolling distro. Needs a maintenance window with reboot. <span class="chip crit">high</span></li>
+    <li><b>Sunshine cannot stream</b> — firewall blocks the Moonlight ports (47984, 48010, 47998-48000/udp), nothing paired, web creds unset. One approval away; Moonlight then wakes the rig natively. <span class="chip warn">med</span></li>
+    <li><b>litellm</b> — literal <code>CHANGE-ME</code> DB password, salt key shared with open-webui, unpinned <code>main-latest</code>, and no clients actually route through it. Cheapest to fix before data accumulates. <span class="chip warn">med</span></li>
+    <li><b>Rig firewall</b> — ollama's unauthenticated API (11434) + open-webui (3000) open to <i>Anywhere</i>; stale 3030 rule. <span class="chip warn">med</span></li>
+    <li><b>Plex</b> — 2 versions behind, transcoder core-dumped Jul 7, transcode temp on system volume, relay fallback armed. Update the DSM package. <span class="chip warn">med</span></li>
+    <li><b>tdarr</b> was never deployed (blocked on a NAS media mount that doesn't exist) and <b>maintainerr</b> has zero integrations — deploy-or-delete decisions. <span class="chip info">low</span></li>
+    <li><b>AdGuard-NAS answers only on .4</b> — the .3 interface times out; verify DHCP references .4. Wizard :3000 still exposed. <span class="chip info">low</span></li>
+  </ol>
+</div>
+
+<p>Also in the full note: unbound tuning options, gpu-power-cap lost on resume (+ KDE never idle-suspends, plasmashell at 41% CPU), deluge has no seed-cleanup policy, wiki build is a manual MacBook push, remote-path mappings keyed to the seedbox IP, ~40GB duplicate ollama models, and the adoption gaps (paperless 0 docs, mealie 0 recipes). Healthy list: tautulli, seerr, recyclarr/TRaSH, miniflux, dockge, homepage, unbound, the whole seedbox→NAS→arr chain (verified to the database level).</p>
 
 <h2 id="games"><span class="n">4</span>Game hosting — the tech spec</h2>
 <p class="sub">Minecraft Java + Palworld first; designed to scale to many games with friends. Full "it just works" for you and for them.</p>

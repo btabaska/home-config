@@ -65,10 +65,26 @@ dump_mariadb() { # dump_mariadb <container> <db> <outname> — creds from contai
   finish "${out}.tmp" "${out}" 512
 }
 
+dump_sqlite() { # dump_sqlite <db-path-on-host> <outname> — consistent online snapshot
+  local db="$1" out="${OUT_DIR}/$2"
+  log "sqlite backup ${db} ..."
+  python3 - "$db" "${out}.tmp" <<'SQPY'
+import sqlite3, sys, gzip
+src = sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True)
+dst = sqlite3.connect(":memory:")
+src.backup(dst)
+data = "\n".join(dst.iterdump()).encode()
+with gzip.open(sys.argv[2], "wb") as f: f.write(data)
+SQPY
+  finish "${out}.tmp" "${out}" 512
+}
+
 dump_pg      paperless_db    paperless    paperless    paperless.sql.gz
 dump_mariadb wallabag_db     wallabag     wallabag.sql.gz
 dump_pg      miniflux_db     miniflux     miniflux     miniflux.sql.gz
 dump_pg      healthchecks_db healthchecks healthchecks healthchecks.sql.gz
 dump_pg      forgejo_db      forgejo      forgejo      forgejo.sql.gz
+dump_sqlite  /opt/stacks/mealie/data/mealie.db          mealie.sqlite.sql.gz
+dump_sqlite  /opt/stacks/vaultwarden/data/db.sqlite3    vaultwarden.sqlite.sql.gz
 
 log "All DB dumps complete in ${OUT_DIR}."

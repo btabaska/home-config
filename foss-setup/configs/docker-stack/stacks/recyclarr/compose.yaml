@@ -8,4 +8,4 @@ services:
       TZ: ${TZ:-America/New_York}
     volumes:
       - ./config:/config
-    restart: unless-stopped
+    restart: "no" # one-shot sync; a stray compose up must not loop it

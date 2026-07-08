@@ -41,6 +41,15 @@ LS_TIMEOUT=20
 
 ts() { date -Is; }
 
+# Single-instance guard: a hung SFTP probe can outlive the 5-min scheduler
+# interval and stack watchdogs (each then tearing down the other's remount).
+LOCK_FILE="${LOCK_FILE:-/var/run/seedbox-watchdog.lock}"
+exec 9>"$LOCK_FILE"
+if command -v flock >/dev/null 2>&1 && ! flock -n 9; then
+  echo "$(ts) INFO: watchdog already running — skipping this cycle" >>"$LOG"
+  exit 0
+fi
+
 is_mountpoint() {
   local mp="${1%/}"
   if awk -v mp="$mp" '$5 == mp { found=1 } END { exit !found }' /proc/self/mountinfo 2>/dev/null; then
@@ -66,13 +75,16 @@ ls_ok() {
   fi
   local count
   count=$(echo "$out" | grep -c .) || count=0
+  # The remote is never legitimately empty — an empty listing IS the silent
+  # stall this watchdog exists to catch (a dead VFS returns 0 entries + rc 0).
+  (( count > 0 )) || { echo "$(ts) WARN: watchdog listing EMPTY — treating as stall" >>"$LOG"; return 1; }
 
   # READ probe, not just a listing: on 2026-07-05..07 the SFTP session served
   # corrupted reads (rardecode checksum failures broke unpackerr for 2 days)
   # while `ls` kept succeeding — a listing-only check can't see a bad session.
   # Reading real bytes through the VFS exercises the data path.
   local probe
-  probe=$(find "$MOUNTPOINT" -type f -size +1M 2>/dev/null | head -1) || true
+  probe=$(timeout "${FIND_TIMEOUT:-60}" find "$MOUNTPOINT" -type f -size +1M 2>/dev/null | head -1) || true
   if [[ -n "$probe" ]]; then
     if ! timeout "${READ_TIMEOUT:-30}" head -c 262144 "$probe" >/dev/null 2>&1; then
       echo "$(ts) WARN: watchdog read-probe FAILED on $probe — listing ok but data path is bad" >>"$LOG"
@@ -116,7 +128,9 @@ if ! is_mountpoint "$MOUNTPOINT"; then
   rm -f "$HEALTH_FILE"
   clear_fail_count
   # No FUSE handle to tear down; mount script will handle ghost cleanup.
-  "$MOUNT_SCRIPT" && restart_download_containers || true
+  # mount script restarts the download containers itself; calling it again
+  # here doubled arr downtime after every remount (observed 2026-07-05).
+  "$MOUNT_SCRIPT" || true
   exit 0
 fi
 

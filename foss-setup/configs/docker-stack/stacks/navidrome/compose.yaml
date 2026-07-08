@@ -13,6 +13,9 @@ services:
     ports:
       - "4533:4533" # direct LAN access for Symfonium/Amperfy; also fronted by Caddy
     environment:
+      ND_BACKUP_SCHEDULE: "${ND_BACKUP_SCHEDULE:-}"
+      ND_BACKUP_COUNT: "${ND_BACKUP_COUNT:-0}"
+      ND_ENABLEINSIGHTSCOLLECTOR: "${ND_ENABLEINSIGHTSCOLLECTOR:-true}"
       ND_SCANSCHEDULE: 1h
       ND_LOGLEVEL: info
       ND_SESSIONTIMEOUT: 24h

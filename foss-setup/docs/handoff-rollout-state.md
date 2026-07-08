@@ -1,5 +1,11 @@
 # Rollout handoff state
 
+### Deep-audit second pass (2026-07-08, later the same night)
+
+- **5 read-only agents audited the ~20 services the first sweep missed** → `docs/research/10-deep-audit.md` + report §3b. Report converted to light theme + proper HTML skeleton (was white-on-white in some viewers).
+- **Fixed (all verified)**: musicseerr Lidarr key (was 401-dead) · paperless default admin password rotated (vault: paperless.*) · wallabag data-dir perms (65534) · navidrome nightly DB backup on + telemetry off · mealie+vaultwarden sqlite added to pre-backup dumps · vaultwarden ADMIN_TOKEN → argon2 PHC (login verified; compose .env needs single-quoted single-$) · mini sbom stale script → SCAN_EXCLUDES deployed (run passed old OOM point; one HTTP 415 on metube:latest image upload — watch) · seedbox 6 secret files chmod 600 · NAS rclone watchdog (flock, empty-ls=stall, find timeout, deduped container restart) fixed in repo + deployed · recyclarr restart=no + cron log off /tmp · 9 new verification checks (alerting.yaml; sweep now 52; scoped sudoers /etc/sudoers.d/verification-diun on NAS).
+- **Top new decisions** (see report §3b): Stash NO AUTH · rig partial-upgrade (441 pending) · Sunshine firewall/pairing · litellm CHANGE-ME password + shared salt key · rig UFW Anywhere rules · Plex update + transcoder core dump · tdarr never-deployed / maintainerr inert · AdGuard-NAS .3 interface dead.
+
 ### Overnight remediation run (2026-07-08, post-audit)
 
 - **Verification sweep**: 41/43 pass, 0 crit (2 fails = intentional git drift, cleared by this session's commits); rig checks 5/5.

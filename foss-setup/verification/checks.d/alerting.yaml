@@ -1,0 +1,95 @@
+# Alerting-chain checks — guard the 2026-07-08 overnight remediation against
+# regression (audit found the whole chain dead-ended: 0 subscribers, dead
+# transports, empty Healthchecks, DSM-wiped schedules).
+checks:
+  - id: alert-ntfy-healthy
+    name: "ntfy serving and healthy via vhost"
+    host: url
+    cmd: curl -sk -m 8 https://ntfy.tabaska.us/v1/health
+    expect: '"healthy"\s*:\s*true'
+    severity: crit
+    task_id: docker-09
+    runbook: wiki/runbooks/alerting.md
+    enabled: true
+
+  - id: alert-ntfy-upstream-relay
+    name: "ntfy iOS upstream relay configured (NTFY_UPSTREAM_BASE_URL)"
+    host: mini
+    cmd: docker exec ntfy sh -c 'printenv NTFY_UPSTREAM_BASE_URL' | grep -x 'https://ntfy.sh'
+    expect: 'ntfy\.sh'
+    severity: warn
+    task_id: docker-09
+    runbook: wiki/runbooks/alerting.md
+    enabled: true
+
+  - id: alert-diun-mini-up
+    name: "Diun (mini) container healthy"
+    host: mini
+    cmd: docker inspect -f '{{.State.Health.Status}}' diun
+    expect: '^healthy$'
+    severity: warn
+    task_id: docker-12
+    runbook: wiki/runbooks/alerting.md
+    enabled: true
+
+  - id: alert-diun-nas-up
+    name: "Diun (NAS) container running"
+    host: nas
+    # scoped NOPASSWD sudoers (/etc/sudoers.d/verification-diun) permits exactly
+    # this inspect; DSM ps hides other users' processes from non-root.
+    cmd: sudo -n /usr/local/bin/docker inspect -f '{{.State.Status}}' diun
+    expect: '^running$'
+    severity: warn
+    task_id: docker-12
+    runbook: wiki/runbooks/alerting.md
+    enabled: true
+
+  - id: alert-healthchecks-checks-defined
+    name: "Healthchecks has the 6 dead-man checks and ntfy channel"
+    host: mini
+    cmd: docker exec healthchecks python3 /opt/healthchecks/manage.py shell -c "from hc.api.models import Check, Channel; print('checks='+str(Check.objects.count()), 'ntfy='+str(Channel.objects.filter(kind='ntfy').count()))"
+    expect: 'checks=[6-9].* ntfy=[1-9]'
+    severity: warn
+    task_id: sec-03
+    runbook: wiki/runbooks/alerting.md
+    enabled: true
+
+  - id: alert-healthchecks-none-down
+    name: "no Healthchecks check is in 'down' state"
+    host: mini
+    cmd: docker exec healthchecks python3 /opt/healthchecks/manage.py shell -c "from hc.api.models import Check; print('down='+str(sum(1 for c in Check.objects.all() if c.get_status()=='down')))"
+    expect: '^down=0$'
+    severity: crit
+    task_id: sec-03
+    runbook: wiki/runbooks/alerting.md
+    enabled: true
+
+  - id: alert-dsm-immich-task-scheduled
+    name: "DSM crontab still carries the immich dump task (DSM wipes raw cron lines)"
+    host: nas
+    cmd: grep -c 'synoschedtask --run id=9' /etc/crontab
+    expect: '^1$'
+    severity: crit
+    task_id: nas-08
+    runbook: wiki/runbooks/backups.md
+    enabled: true
+
+  - id: alert-dsm-health-task-allday
+    name: "DSM docker-health task runs all day (last-work-hour regression guard)"
+    host: nas
+    cmd: grep 'synoschedtask --run id=5' /etc/crontab | grep -c '0,1,2'
+    expect: '^1$'
+    severity: warn
+    task_id: nas-08
+    runbook: wiki/runbooks/alerting.md
+    enabled: true
+
+  - id: media-youtube-mounts-rw
+    name: "YouTube pipeline mounts writable (pinchflat + metube + audio)"
+    host: mini
+    cmd: touch /mnt/nas-youtube/.verif-probe /mnt/nas-music-rw/YouTube/.verif-probe && rm /mnt/nas-youtube/.verif-probe /mnt/nas-music-rw/YouTube/.verif-probe && echo RW_OK
+    expect: '^RW_OK$'
+    severity: warn
+    task_id: read-14
+    runbook: wiki/runbooks/media.md
+    enabled: true
