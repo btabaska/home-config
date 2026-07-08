@@ -16,6 +16,7 @@ services:
     environment:
       - TZ=${TZ:-America/New_York}
       - NTFY_BASE_URL=${NTFY_BASE_URL}
+      - NTFY_UPSTREAM_BASE_URL=${NTFY_UPSTREAM_BASE_URL:-}
       - NTFY_CACHE_FILE=/var/cache/ntfy/cache.db
       - NTFY_AUTH_FILE=/var/lib/ntfy/auth.db
       - NTFY_AUTH_DEFAULT_ACCESS=${NTFY_AUTH_DEFAULT_ACCESS:-deny-all}

@@ -1,5 +1,19 @@
 # Rollout handoff state
 
+### Overnight remediation run (2026-07-08, post-audit)
+
+- **Verification sweep**: 41/43 pass, 0 crit (2 fails = intentional git drift, cleared by this session's commits); rig checks 5/5.
+- **restic mystery solved**: mini timer deployed 01:29 UTC, first backup succeeded 01:30:50 UTC (B2); rig backup ran 21:32 EDT; next fires Jul 9 01:30 UTC / 01:33 EDT. Dead-man pings now wired (see below).
+- **Fixed on mini**: etckeeper stale index.lock (0 failed units now); healthchecks+mealie healthchecks (images dropped curl → python3 urllib); unbound root.key gitignored; zombie Immich stopped + restart=no (125 restarts; teardown still needs approval); generated inventory manifests folded into repo.
+- **ntfy**: NTFY_BASE_URL=https://ntfy.tabaska.us, NTFY_UPSTREAM_BASE_URL=https://ntfy.sh (iOS push ready); read-only `phone` user created (vault: ntfy.phone_password, admin_password also vaulted). Verified publish/read/403.
+- **Diun**: mini instance now publishes via http://ntfy:80 on edge network (was https vhost Go would reject; test notif verified); second Diun deployed on NAS watching 21 containers (test verified; vault: ntfy.diun_nas_token).
+- **Healthchecks LIVE**: superuser bootstrapped (creds = HC_SUPERUSER_* in mini:/opt/stacks/healthchecks/.env), HC_SITE_ROOT=https://health.tabaska.us, ntfy integration + 6 dead-man checks (restic mini/rig, immich-dump-nas, ansible-pull mini/rig, verification); pings wired via systemd drop-ins on mini+rig and NAS dump script; all seeded green. Ping URLs in vault (healthchecks.*).
+- **NAS DSM scheduler**: root-cause of "every 15 min" tasks only running 00:00-00:45 = `last work hour=0` in .task files; fixed tasks 4+5 + crond restart (crontab regenerated, verified). **DSM had wiped the immich-dump crontab line** — replaced with proper DSM task id=9 (02:30 daily) + new /volume1/scripts/nas/immich-db-dump.sh (pg_dumpall, size guard, 14-day retention, healthchecks ping; test run OK 16.7MB). health.env created (ntfy token). Installer script bug fixed on NAS + repo.
+- **YouTube pipeline**: Plex "YouTube" library created (section 4, /volume1/youtube, Personal Media agent, scan verified); MeTube → /mnt/nas-youtube/metube + AUDIO_DOWNLOAD_DIR → /volume1/music/YouTube (end-to-end test download verified, then removed); Pinchflat → NAS confirmed + "YouTube (Plex)" media profile seeded (visible in UI). Human still adds sources/channels.
+- **Security**: HSTS + access logs on all vhosts (local_tls snippet); vaultwarden /admin gated to LAN+tailnet at Caddy; fstab plaintext passwords scrubbed (all CIFS mounts → /etc/samba/cred-nas; new rw music mount /mnt/nas-music-rw). Vaultwarden signups left OPEN — 0 users, human must register first. Forgejo offsite backup confirmed already working (restic B2: repos as files + nightly pg_dump).
+- **Reopened**: media-02 (Kometa) — was marked done but config was untouched template; plex url/token fixed from vault, runs still blocked on human TMDb key.
+- **Blocked on creds** (not in vault, nowhere on disk): Uptime Kuma admin (0 notification channels, 34/45 services unmonitored) and Beszel hub admin (only MacBook monitored) — need creds dropped in vault or approval to reset.
+
 ### Run 0 results (2026-07-07 evening)
 
 - **ansible-pull converges GREEN on mini** (first success ever): ok=34 failed=0, apply mode. Fixes: SOPS gates on backup+sbom roles, un-ignored break-glass pubkey, removed conflicting docker apt source on mini, chezmoi via installer on Debian.

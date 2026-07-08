@@ -1,10 +1,10 @@
 {
  "_meta": {
-  "updated": "2026-07-08T03:30:00-04:00",
+  "updated": "2026-07-08T04:15:00-04:00",
   "source": "foss-analogue-progress-v1",
   "plan": "v3 \u2014 staged autonomous runs",
   "task_count": 194,
-  "completed_count": 77,
+  "completed_count": 121,
   "note": "Canonical progress-as-code (fix-16). Auto-loaded and additively merged by docs/index.html when served over HTTP; use Import progress on file://. Reopened ids are intentionally absent from done. Supersedes progress-backup-2026-07-05.json."
  },
  "done": {
@@ -36,7 +36,6 @@
   "glue-07": true,
   "glue-08": true,
   "media-01": true,
-  "media-02": true,
   "media-03": true,
   "nas-00a": true,
   "nas-00b": true,
@@ -132,8 +131,6 @@
   "sec-05": true
  },
  "reopened": {
-  "dns-02": "NAS secondary AdGuard container is down (nothing on :53/:3000 as of 2026-07-07 live scan)",
-  "game-10": "gpu-power-tune.service fails at boot on rig; GPU at stock 450W (deployed script stale; repo copy fixed)",
-  "nas-08": "Immich pg_dump never scheduled in DSM (single manual dump 2026-07-02); duplicate mini Immich crash-looping"
+  "media-02": "Kometa config was untouched template (wrong plex subnet, blank token+TMDb key); daily runs failing since deploy. Fixed plex url/token from vault 2026-07-08; still blocked on human TMDb API key."
  }
 }

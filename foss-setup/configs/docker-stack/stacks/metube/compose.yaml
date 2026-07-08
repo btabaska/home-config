@@ -18,9 +18,11 @@ services:
     environment:
       - TZ=${TZ:-America/New_York}
       - STATE_DIR=/state
+      - AUDIO_DOWNLOAD_DIR=/audio # audio-only grabs land in the music library (Plex/Navidrome scan it)
     volumes:
       - ${METUBE_DOWNLOADS:-./downloads}:/downloads
       - ./state:/state
+      - /mnt/nas-music-rw/YouTube:/audio
     networks:
       - edge
 

@@ -39,5 +39,11 @@ services:
       start_period: 60s
     labels:
       - "diun.enable=true"
+    networks:
+      - edge
 
-# Diun only needs the Docker socket; no shared network required.
+# Joins the edge network solely to reach ntfy at http://ntfy:80 — the https
+# vhost serves an internal-CA cert that Diun's Go client rejects.
+networks:
+  edge:
+    external: true

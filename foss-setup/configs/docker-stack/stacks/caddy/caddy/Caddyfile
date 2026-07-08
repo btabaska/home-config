@@ -26,6 +26,10 @@
 # (B) Caddy internal CA (no public DNS needed; clients must trust Caddy's root).
 (local_tls) {
 	tls internal
+	# HSTS: browsers pin HTTPS for a year (sec audit 2026-07-08)
+	header Strict-Transport-Security "max-age=31536000"
+	# access logs to stdout; docker log caps (10m x3) bound growth
+	log
 }
 # ---------------------------------------------------------------------------
 
@@ -159,6 +163,12 @@ git.{$DOMAIN} {
 # live sync; modern Caddy proxies them automatically, no extra config needed.
 vault.{$DOMAIN} {
 	import local_tls
+	# /admin only from LAN + tailnet (sec audit 2026-07-08); page was public before
+	@adminExternal {
+		path /admin*
+		not remote_ip private_ranges 100.64.0.0/10
+	}
+	respond @adminExternal 403
 	reverse_proxy vaultwarden:80
 }
 
