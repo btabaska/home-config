@@ -1,0 +1,23 @@
+# Backup freshness checks.
+checks:
+  # Guards reopened task nas-08. FAILS today (last dump 2026-07-02) — correct and desired
+  # until the immich dump cron on the NAS is fixed.
+  - id: backup-immich-dump-fresh
+    name: "immich DB dump on NAS newer than 26h"
+    host: nas
+    cmd: find /volume1/docker/immich/backups -name '*.sql.gz' -mmin -1560 | grep .
+    expect: '\.sql\.gz'
+    severity: crit
+    task_id: nas-08
+    runbook: wiki/runbooks/backups.md
+    enabled: true
+
+  - id: backup-immich-dump-nonempty
+    name: "newest immich DB dump is >1MB (not a truncated/empty dump)"
+    host: nas
+    cmd: find /volume1/docker/immich/backups -name '*.sql.gz' -size +1M | grep .
+    expect: '\.sql\.gz'
+    severity: warn
+    task_id: nas-08
+    runbook: wiki/runbooks/backups.md
+    enabled: true

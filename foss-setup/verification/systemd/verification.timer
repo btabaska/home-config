@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily homelab verification run
+
+[Timer]
+# mini's system clock is UTC — pin to local wall time
+OnCalendar=*-*-* 07:15:00 America/Los_Angeles
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

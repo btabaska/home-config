@@ -1,0 +1,16 @@
+[Unit]
+Description=Homelab continuous verification (checks + LLM triage)
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+# Runs as btabaska: needs the user's ssh keys (nas), docker group, passwordless sudo.
+User=btabaska
+EnvironmentFile=-/etc/verification/env
+ExecStart=/opt/verification/bin/verify-cycle.sh
+TimeoutStartSec=30min
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

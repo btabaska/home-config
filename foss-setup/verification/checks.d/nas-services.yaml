@@ -1,0 +1,93 @@
+# Services on the NAS (Synology, NO sudo). HTTP probes run FROM mini (curl to nas),
+# ssh checks use the mini->nas key (btabaska@nas, installed 2026-07-07).
+# Expected codes captured live: plex 401 = up-but-unauthenticated (normal); *arr 302 = login redirect.
+checks:
+  - id: nas-ssh
+    name: "NAS reachable over SSH from mini"
+    host: nas
+    cmd: echo nas-ssh-ok
+    expect: '^nas-ssh-ok$'
+    severity: crit
+    task_id: nas-01
+    runbook: wiki/runbooks/nas.md
+    enabled: true
+
+  - id: nas-immich
+    name: "immich API ping on nas:2283"
+    host: mini
+    cmd: curl -s -m 8 http://nas:2283/api/server/ping
+    expect: 'pong'
+    severity: crit
+    task_id: nas-09
+    runbook: wiki/runbooks/nas.md
+    enabled: true
+
+  - id: nas-plex
+    name: "plex answers on nas:32400 (401 unauthenticated = up)"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:32400/
+    expect: '^401$'
+    severity: crit
+    task_id: media-01
+    runbook: wiki/runbooks/nas.md
+    enabled: true
+
+  - id: nas-cwa
+    name: "calibre-web-automated answers on nas:8083"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:8083/
+    expect: '^302$'
+    severity: warn
+    task_id: ebook-04
+    runbook: wiki/runbooks/nas.md
+    enabled: true
+
+  - id: nas-sonarr
+    name: "sonarr answers on nas:8989"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:8989/
+    expect: '^302$'
+    severity: warn
+    task_id: media-02
+    runbook: wiki/runbooks/nas.md
+    enabled: true
+
+  - id: nas-radarr
+    name: "radarr answers on nas:7878"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:7878/
+    expect: '^302$'
+    severity: warn
+    task_id: media-02
+    runbook: wiki/runbooks/nas.md
+    enabled: true
+
+  - id: nas-lidarr
+    name: "lidarr answers on nas:8686"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:8686/
+    expect: '^302$'
+    severity: warn
+    task_id: media-03
+    runbook: wiki/runbooks/nas.md
+    enabled: true
+
+  - id: nas-prowlarr
+    name: "prowlarr answers on nas:9696"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:9696/
+    expect: '^302$'
+    severity: warn
+    task_id: media-02
+    runbook: wiki/runbooks/nas.md
+    enabled: true
+
+  - id: nas-readarr
+    name: "readarr answers on nas:8787"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:8787/
+    expect: '^302$'
+    severity: warn
+    task_id: ebook-02
+    runbook: wiki/runbooks/nas.md
+    enabled: true

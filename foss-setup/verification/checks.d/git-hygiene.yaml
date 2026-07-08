@@ -1,0 +1,33 @@
+# Git hygiene on mini: config-managed dirs must be committed.
+# btabaska has passwordless sudo on mini; sudo is needed to stat root-owned volume dirs.
+checks:
+  - id: git-stacks-clean
+    name: "/opt/stacks working tree is clean"
+    host: mini
+    cmd: sudo git -C /opt/stacks status --porcelain | wc -l
+    expect: '^0$'
+    severity: warn
+    task_id: docker-12
+    runbook: wiki/runbooks/git-hygiene.md
+    enabled: true
+
+  - id: git-foss-setup-clean
+    name: "/opt/foss-setup working tree is clean"
+    host: mini
+    cmd: sudo git -C /opt/foss-setup status --porcelain | wc -l
+    expect: '^0$'
+    severity: warn
+    task_id: glue-08
+    runbook: wiki/runbooks/git-hygiene.md
+    enabled: true
+
+  # `etckeeper unclean` exits 0 when /etc is DIRTY, 1 when clean — so we expect exit 1.
+  - id: git-etckeeper-clean
+    name: "/etc committed in etckeeper (no uncommitted drift)"
+    host: mini
+    cmd: sudo etckeeper unclean
+    expect_exit: 1
+    severity: warn
+    task_id: glue-01
+    runbook: wiki/runbooks/git-hygiene.md
+    enabled: true

@@ -1,0 +1,46 @@
+# rig (CachyOS gaming/AI box, 3090 Ti 24GB, NO sudo).
+# on-demand host — run via --host rig only when awake.
+# All checks are HTTP probes executed from mini: mini->rig SSH is blocked by
+# tailnet ACL policy ("tailnet policy does not permit you to SSH to this node"),
+# so host: url (curl from mini) is used instead of host: rig.
+# Wake first: wakeonlan -i 192.168.10.255 50:eb:f6:b5:82:c6 (llm-triage.sh does this automatically).
+checks:
+  - id: rig-ollama
+    name: "ollama API answers on rig:11434"
+    host: url
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:11434/api/tags
+    expect: '^200$'
+    severity: warn
+    task_id: game-10
+    runbook: wiki/runbooks/rig.md
+    enabled: false   # on-demand host — run via --host rig only when awake
+
+  - id: rig-litellm
+    name: "litellm proxy answers on rig:4000 (401 without key = up)"
+    host: url
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:4000/v1/models
+    expect: '^(200|401)$'
+    severity: warn
+    task_id: game-10
+    runbook: wiki/runbooks/rig.md
+    enabled: false   # on-demand host — run via --host rig only when awake
+
+  - id: rig-open-webui
+    name: "open-webui answers on rig:3000"
+    host: url
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:3000/
+    expect: '^200$'
+    severity: warn
+    task_id: game-10
+    runbook: wiki/runbooks/rig.md
+    enabled: false   # on-demand host — run via --host rig only when awake
+
+  - id: rig-ollama-models
+    name: "ollama has the triage model pulled (qwen3-coder:30b)"
+    host: url
+    cmd: curl -s -m 8 http://cachyos.tailb31641.ts.net:11434/api/tags
+    expect: 'qwen3-coder:30b'
+    severity: warn
+    task_id: game-10
+    runbook: wiki/runbooks/rig.md
+    enabled: false   # on-demand host — run via --host rig only when awake

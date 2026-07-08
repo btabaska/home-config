@@ -1,0 +1,73 @@
+# System health on mini + network-level checks.
+checks:
+  - id: sys-ansible-pull
+    name: "ansible-pull last run succeeded"
+    host: mini
+    cmd: systemctl show ansible-pull.service -p ExecMainStatus
+    expect: '^ExecMainStatus=0$'
+    severity: crit
+    task_id: glue-03
+    runbook: wiki/runbooks/ansible-pull.md
+    enabled: true
+
+  - id: sys-failed-units
+    name: "no failed systemd units on mini"
+    host: mini
+    cmd: systemctl --failed --no-legend | wc -l
+    expect: '^0$'
+    severity: warn
+    task_id: glue-03
+    runbook: wiki/runbooks/system.md
+    enabled: true
+
+  - id: sys-disk-root
+    name: "root filesystem below 85% used"
+    host: mini
+    cmd: df --output=pcent / | tail -1 | tr -dc '0-9'
+    expect: '^([0-7]?[0-9]|8[0-5])$'
+    severity: crit
+    task_id: glue-04
+    runbook: wiki/runbooks/system.md
+    enabled: true
+
+  - id: sys-docker-restart-loops
+    name: "no container with RestartCount > 3"
+    host: mini
+    cmd: docker ps -q | xargs -r docker inspect --format '{{.Name}} {{.RestartCount}}' | awk '$2>3' | wc -l
+    expect: '^0$'
+    severity: warn
+    task_id: docker-12
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: sys-tailscale-peers
+    name: "tailscale up with at least 1 online peer"
+    host: mini
+    cmd: tailscale status --json | python3 -c 'import json,sys;d=json.load(sys.stdin);print(sum(1 for p in d.get("Peer",{}).values() if p.get("Online")))'
+    expect: '^[1-9][0-9]*$'
+    severity: crit
+    task_id: net-05
+    runbook: wiki/runbooks/network.md
+    enabled: true
+
+  - id: sys-home-assistant
+    name: "Home Assistant answers on 192.168.10.50:8123"
+    host: url
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://192.168.10.50:8123/
+    expect: '^200$'
+    severity: crit
+    task_id: ha-01
+    runbook: wiki/runbooks/home-assistant.md
+    enabled: true
+
+  # seedbox: SSH blocked by provider network ACL — no probe path from the LAN.
+  # Re-enable if/when an API or SSH route exists.
+  - id: sys-seedbox-ssh
+    name: "seedbox reachable over SSH (disabled: SSH blocked by ACL)"
+    host: local
+    cmd: ssh -o BatchMode=yes -o ConnectTimeout=8 seedbox 'echo seedbox-ok'
+    expect: '^seedbox-ok$'
+    severity: info
+    task_id: seed-01
+    runbook: wiki/runbooks/seedbox.md
+    enabled: false   # SSH blocked by ACL — skip until a probe path exists

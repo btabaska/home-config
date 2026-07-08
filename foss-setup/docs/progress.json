@@ -1,6 +1,6 @@
 {
  "_meta": {
-  "updated": "2026-07-07T20:05:00-04:00",
+  "updated": "2026-07-07T21:20:00-04:00",
   "source": "foss-analogue-progress-v1",
   "plan": "v3 \u2014 staged autonomous runs",
   "task_count": 194,
@@ -99,7 +99,20 @@
   "fix-12": true,
   "fix-15": true,
   "fix-16": true,
-  "fix-17": true
+  "fix-17": true,
+  "verify-01": true,
+  "verify-02": true,
+  "verify-03": true,
+  "verify-04": true,
+  "verify-05": true,
+  "home-01": true,
+  "home-02": true,
+  "home-03": true,
+  "home-04": true,
+  "wiki-01": true,
+  "wiki-02": true,
+  "wiki-03": true,
+  "wiki-04": true
  },
  "reopened": {
   "dns-02": "NAS secondary AdGuard container is down (nothing on :53/:3000 as of 2026-07-07 live scan)",

@@ -1,0 +1,57 @@
+# DNS resolution chain checks.
+# Primary resolver: AdGuard Home on mini (192.168.10.2:53) -> unbound upstream (127.0.0.1:5335).
+# Secondary resolver expected on NAS (192.168.10.4:53) — currently DOWN, guards reopened dns-02.
+checks:
+  - id: dns-mini-internal
+    name: "AdGuard (mini) resolves internal name home.tabaska.us"
+    host: mini
+    cmd: dig +short +time=3 +tries=1 @192.168.10.2 home.tabaska.us
+    expect: '^192\.168\.10\.[0-9]+$'
+    severity: crit
+    task_id: dns-01
+    runbook: wiki/runbooks/dns.md
+    enabled: true
+
+  - id: dns-mini-external
+    name: "AdGuard (mini) resolves external name example.com"
+    host: mini
+    cmd: dig +short +time=3 +tries=1 @192.168.10.2 example.com
+    expect: '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+'
+    severity: crit
+    task_id: dns-01
+    runbook: wiki/runbooks/dns.md
+    enabled: true
+
+  - id: dns-mini-unbound-upstream
+    name: "unbound upstream on mini answers directly (127.0.0.1:5335)"
+    host: mini
+    cmd: dig +short +time=3 +tries=1 @127.0.0.1 -p 5335 example.com
+    expect: '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+'
+    severity: warn
+    task_id: dns-01
+    runbook: wiki/runbooks/dns.md
+    enabled: true
+
+  # The two checks below guard reopened task dns-02 (secondary resolver on the NAS).
+  # They FAIL today (connection refused) — that is correct and desired until dns-02 is redone.
+  - id: dns-nas-internal
+    name: "Secondary resolver (NAS 192.168.10.4) resolves home.tabaska.us"
+    host: mini
+    # anchored: dig prints ";; communications error to 192.168.10.4#53" on stdout,
+    # which a loose '192\.168\.10\.' regex would false-match
+    cmd: dig +short +time=3 +tries=1 @192.168.10.4 home.tabaska.us
+    expect: '^192\.168\.10\.[0-9]+$'
+    severity: crit
+    task_id: dns-02
+    runbook: wiki/runbooks/dns.md
+    enabled: true
+
+  - id: dns-nas-external
+    name: "Secondary resolver (NAS 192.168.10.4) resolves example.com"
+    host: mini
+    cmd: dig +short +time=3 +tries=1 @192.168.10.4 example.com
+    expect: '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+'
+    severity: crit
+    task_id: dns-02
+    runbook: wiki/runbooks/dns.md
+    enabled: true

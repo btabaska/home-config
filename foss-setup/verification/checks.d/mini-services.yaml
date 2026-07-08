@@ -1,0 +1,162 @@
+# Services on mini (always-on Ubuntu host, docker stacks under /opt/stacks).
+# Expected HTTP codes were captured live 2026-07-07 (302/303/307 = login redirects, normal).
+checks:
+  - id: mini-caddy-running
+    name: "caddy reverse proxy container running"
+    host: mini
+    cmd: docker inspect -f '{{.State.Status}}' caddy
+    expect: '^running$'
+    severity: crit
+    task_id: docker-02
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: mini-adguard-running
+    name: "adguardhome container running"
+    host: mini
+    cmd: docker inspect -f '{{.State.Status}}' adguardhome
+    expect: '^running$'
+    severity: crit
+    task_id: dns-01
+    runbook: wiki/runbooks/dns.md
+    enabled: true
+
+  - id: mini-paperless
+    name: "paperless-ngx answers on :8000"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8000/
+    expect: '^302$'
+    severity: crit
+    task_id: docker-05
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: mini-forgejo
+    name: "forgejo answers on :3030"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:3030/
+    expect: '^200$'
+    severity: crit
+    task_id: docker-09
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: mini-ntfy
+    name: "ntfy answers on :8080"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8080/
+    expect: '^200$'
+    severity: crit
+    task_id: docker-10
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: mini-homepage
+    name: "homepage dashboard answers on :3010"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:3010/
+    expect: '^200$'
+    severity: warn
+    task_id: docker-06
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: mini-healthchecks
+    name: "healthchecks answers on :8001"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8001/
+    expect: '^302$'
+    severity: warn
+    task_id: docker-07
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: mini-uptime-kuma
+    name: "uptime-kuma answers on :3001"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:3001/
+    expect: '^302$'
+    severity: warn
+    task_id: docker-08
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: mini-wallabag
+    name: "wallabag answers on :8085"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8085/
+    expect: '^302$'
+    severity: warn
+    task_id: read-07
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: mini-miniflux
+    name: "miniflux answers on :8082"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8082/
+    expect: '^200$'
+    severity: warn
+    task_id: read-14
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: mini-mealie
+    name: "mealie answers on :9000"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:9000/
+    expect: '^200$'
+    severity: warn
+    task_id: docker-11
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: mini-navidrome
+    name: "navidrome answers on :4533"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:4533/
+    expect: '^302$'
+    severity: warn
+    task_id: media-03
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: mini-seerr
+    name: "jellyseerr/overseerr answers on :5055"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:5055/
+    expect: '^307$'
+    severity: warn
+    task_id: media-02
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: mini-tautulli
+    name: "tautulli answers on :8181"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8181/
+    expect: '^303$'
+    severity: warn
+    task_id: media-02
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: mini-beszel
+    name: "beszel monitoring answers on :8090"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8090/
+    expect: '^200$'
+    severity: warn
+    task_id: docker-13
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: mini-dockge
+    name: "dockge answers on :5001"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:5001/
+    expect: '^200$'
+    severity: warn
+    task_id: docker-01
+    runbook: wiki/runbooks/docker.md
+    enabled: true

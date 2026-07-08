@@ -11,6 +11,13 @@
 - Rig BLOCKED on two gates: btabaska sudo needs password (vault sudo slots empty; NOPASSWD or password needed) and rig forgejo deploy key unregistered (rig pubkey staged; register in Forgejo web or provide forgejo admin creds). Units staged at rig:~/staging/.
 - HA discovered live at 192.168.10.50:8123 (creds in vault); not on tailnet yet.
 
+### Runs 1-2 autonomous results (2026-07-07 night)
+
+- **Verification framework LIVE** (verify-01..05): 41 checks across 7 domains; daily timer 07:15 on mini; ntfy topic `verification` (dedicated token); LLM triage on rig via ollama qwen3-coder:30b — first cycle: 35 pass, 6 fail (all expected: dns-02 x2, nas-08 dump, 3 git-drift), 6/6 valid triage verdicts; reopen-suggestions.json feeds session starts.
+- **home.tabaska.us rebuilt** (home-01..04): 40-service catalog (service-catalog.yaml), 39 verified Caddy vhosts incl. ha + wiki + NAS/rig services; categorized Homepage with live widgets (vault keys, values only on mini).
+- **wiki.tabaska.us LIVE** (wiki-01..04): 51 pages — hosts, 7 runbooks, operations, network + 32 generated service pages (gen-wiki-services.py); build via build-wiki.sh (pinned mkdocs-material 9.5).
+- Notes: mini->rig SSH denied by tailnet ACL (rig checks are HTTP); mini->nas SSH key added; Sunshine down on rig (502 expected); all *.tabaska.us certs are Caddy-internal CA by design (Cloudflare token would enable real certs).
+
 ## Session 4 — 2026-07-07 (Plan v3)
 
 - **Full repo + fleet audit** performed (every host inspected against the guide and configs).

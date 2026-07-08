@@ -1,0 +1,133 @@
+# Continuous Verification (verify-01..05)
+
+Daily automated checks of the homelab, with local-LLM triage of failures and
+reopen suggestions for the task tracker. Runs on **mini** (always-on), deployed
+to `/opt/verification`, state in `/var/lib/verification`.
+
+## How it works
+
+```
+verification.timer (daily 07:15)
+  └─ verification.service (oneshot, User=btabaska)
+       └─ bin/verify-cycle.sh
+            ├─ bin/run-checks.sh  → bin/checks_runner.py   (verify-01/02/05)
+            │    • loads checks.d/*.yaml (PyYAML 5.4.1, stock on mini)
+            │    • runs enabled checks: local/url/mini = on mini,
+            │      nas = ssh nas (dedicated mini→nas key), rig = ssh rig
+            │      (currently blocked by tailnet ACL → rig checks are HTTP probes)
+            │    • writes results.json, last-summary.md, reopen-suggestions.json
+            │    • ONE ntfy summary to topic `verification` ONLY when failures
+            │      exist or a previous failure recovered (diff vs prior results.json)
+            │    • exit 1 if any crit check failed
+            └─ bin/llm-triage.sh → bin/llm_triage.py        (verify-03/04)
+                 • only when failures exist
+                 • wakes the rig via WoL (50:eb:f6:b5:82:c6) if the LLM endpoint
+                   is down; waits ≤90s, else records "rig unavailable" and exits 0
+                 • ONE FRESH single-turn completion per failed check, using the
+                   matching skills/*.md prompt; appends verdicts to
+                   triage-<date>.md; malformed JSON → 1 retry → escalate:true
+```
+
+Manual runs:
+
+```bash
+sudo systemctl start verification.service      # full cycle
+/opt/verification/bin/run-checks.sh            # checks only
+/opt/verification/bin/run-checks.sh --json     # machine-readable
+/opt/verification/bin/run-checks.sh --host rig # on-demand host: also runs its
+                                               # disabled checks (wake the rig first)
+/opt/verification/bin/llm-triage.sh            # triage last results.json
+```
+
+`--host X` matches a check's `host` field **or its domain (file stem)** — that's
+how `--host rig` picks up the `enabled: false` rig checks. Filtered runs are
+on-demand: they write `results-<host>.json` and never touch the daily state
+(`results.json`, `reopen-suggestions.json`, `last-summary.md`) or send ntfy.
+
+## Adding a check
+
+Append to the matching `checks.d/<domain>.yaml` (or add a new file — the domain
+maps to a triage skill in `bin/llm_triage.py:DOMAIN_SKILL`):
+
+```yaml
+  - id: mini-newthing            # unique, stable
+    name: "newthing answers on :1234"
+    host: mini                   # local | mini | nas | rig | url
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:1234/
+    expect: '^200$'              # regex on stdout — OR use expect_exit: 0
+    severity: warn               # crit (fails the run) | warn | info
+    task_id: docker-14           # tracker task this check guards
+    runbook: wiki/runbooks/docker.md   # may not exist yet
+    enabled: true
+```
+
+Rules of thumb: **run the probe by hand first** and encode the code/output you
+actually saw (many healthy apps answer 302/303/307/401, not 200). Then deploy:
+rsync this dir to `mini:/opt/verification` (see Deploy below).
+
+## LLM endpoint + model
+
+- Default: **ollama on the rig**, `http://cachyos.tailb31641.ts.net:11434/v1`
+  (OpenAI-compatible, no auth). litellm on `:4000` also answers but requires an
+  API key (`401` without) — set `LLM_BASE_URL` + `LLM_API_KEY` in
+  `/etc/verification/env` to use it instead.
+- Model: `qwen3-coder:30b` (already pulled, ~18 GB).
+
+### Model sizing on the 3090 Ti (24 GB VRAM)
+
+| model | VRAM | notes |
+|---|---|---|
+| qwen2.5-coder:32b-q4 | ~19 GB | tight — little headroom for KV cache/long outputs |
+| qwen3-coder:30b / 14b-class | ~14–18 GB | comfortable, best quality/speed balance for triage |
+| llama3.1:8b / llama3.2:3b | ~2–5 GB | fast; fine for these small structured prompts |
+
+### Fresh-context-per-check design
+
+Each failed check gets its **own single-turn completion** — no shared
+conversation. Rationale: (1) 8–32B models degrade fast with long mixed
+contexts; one check + one scoped skill prompt keeps them accurate; (2) no
+cross-contamination — a DNS failure can't bias the diagnosis of a backup
+failure; (3) verdicts are independently retryable and cacheable; (4) prompt
+size stays bounded regardless of how many checks fail. The skills in
+`skills/*.md` are written self-contained (environment facts + one few-shot
+example + strict JSON contract) for exactly this reason.
+
+## Reopen-suggestions flow (verify-05)
+
+Every run writes `/var/lib/verification/reopen-suggestions.json`:
+
+```json
+{"generated": "...", "task_ids": ["dns-02", "nas-08"],
+ "failed_checks": [{"id": "...", "task_id": "...", "severity": "..."}]}
+```
+
+The **AI session-start protocol** consumes this file: at the start of a session
+it reads the list and proposes reopening those tasks in
+`foss-setup/docs/progress.json`. The runner itself **never commits to git by
+design** — reopening a task is a judgment call (flaky check vs. real
+regression) that stays with the human/AI session.
+
+## Deploy
+
+```bash
+rsync -a --delete foss-setup/verification/ mini:/tmp/verification-deploy/
+ssh mini '
+  sudo rsync -a --delete /tmp/verification-deploy/ /opt/verification/ &&
+  sudo chown -R root:root /opt/verification &&
+  sudo chmod 755 /opt/verification/bin/*.sh /opt/verification/bin/*.py &&
+  sudo install -d -o btabaska -g btabaska /var/lib/verification &&
+  sudo install -m 644 /opt/verification/systemd/verification.service /etc/systemd/system/ &&
+  sudo install -m 644 /opt/verification/systemd/verification.timer /etc/systemd/system/ &&
+  sudo systemctl daemon-reload && sudo systemctl enable --now verification.timer'
+# once: create /etc/verification/env from systemd/env.example with a real token:
+#   docker exec ntfy ntfy token add --label verification admin
+```
+
+## Known state (2026-07-07)
+
+- `dns-nas-*` FAIL (secondary resolver down) — guards reopened **dns-02**. Desired.
+- `backup-immich-dump-fresh` FAIL (last dump 2026-07-02) — guards reopened **nas-08**. Desired.
+- `git-*` may FAIL on drift (etckeeper dirty, 1 file in /opt/stacks) — real drift to review.
+- seedbox: SSH blocked by ACL → its check is `enabled: false`.
+- rig: mini→rig SSH denied by tailnet ACL → rig checks are HTTP-only, `enabled: false`
+  (on-demand host — run via `--host rig` only when awake).
