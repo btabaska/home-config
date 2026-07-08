@@ -99,7 +99,7 @@ upload_bom() {
   log "Uploading BOM for project '${project_name}' (v=${version})."
   local code
   code="$(curl -sS -o "${WORKDIR}/upload.out" -w '%{http_code}' \
-    -X PUT "${DTRACK_URL}/api/v1/bom" \
+    -X POST "${DTRACK_URL}/api/v1/bom" \
     -H "X-Api-Key: ${DTRACK_API_KEY}" \
     -F "autoCreate=true" \
     -F "projectName=${project_name}" \

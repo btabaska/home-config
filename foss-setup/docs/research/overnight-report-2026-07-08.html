@@ -202,7 +202,7 @@ AUDIO -> music (recommended start):
     <li><b>wallabag</b> — data dirs unwritable by php-fpm (error on every page view, site-credentials broken) → chowned.</li>
     <li><b>navidrome</b> — DB backups were OFF → nightly 02:00 keep-7; telemetry to navidrome.org → off.</li>
     <li><b>backups</b> — mealie + vaultwarden sqlite were never dumped → online-backup dumps added + verified; vaultwarden admin token now argon2 at rest.</li>
-    <li><b>Dependency-Track</b> — mini SBOM script was stale → excludes deployed, nightly run passing its old OOM point.</li>
+    <li><b>Dependency-Track</b> — three stacked bugs fixed (OOM excludes, bogus multipart header → 415, PUT-vs-POST). One gate left: the API key needs the <code>PROJECT_CREATION_UPLOAD</code> permission — a 30-second grant in the D-Track admin UI (admin creds not in vault; defaults already rejected).</li>
     <li><b>seedbox/NAS pipeline</b> — 6 secret files o+r → 600; rclone watchdog: double container restart, no lock, empty-listing-as-healthy, unbounded find → all fixed + deployed.</li>
     <li><b>verification</b> — 9 new regression checks guard the entire alerting remediation (incl. a "DSM wiped the cron line again" tripwire). Sweep now 52 checks.</li>
   </ul>
