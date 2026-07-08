@@ -16,20 +16,21 @@ here for the "why". Keep this updated as devices are added.
 - **Internet:** Greenlight fiber, ISP-controlled modem → **UDM Dream Wall** (GUI-only for
   agents), 2 UniFi APs, 1 switch, 2 UniFi Protect cameras on the UDM.
 - **Network:** VLANs/zones already built (net-00..06 done): Trusted / IoT / Guest / Work +
-  mDNS reflection. **IoT devices have NOT yet been moved** onto the IoT SSID/VLAN — that
-  migration is ha-19.
+  mDNS reflection. IoT SSID = **BillWi-IoT** (VLAN 20, 192.168.20.0/24). Hue bridge already on it;
+  the WiFi devices move in ha-19 (see docs/ha-action-guide.html §3).
 
 ## Rooms (canonical) vs HA areas
 
 Floors + areas were created/renamed in HA on 2026-07-08 (registry work, reversible).
-HA state: 4 floors, areas below. **Bold = needs the human's answer** (which physical room is it?).
+HA state: 4 floors; all 19 canonical areas exist (user schema = source of truth, 2026-07-08). Five
+"Legacy — …" areas hold unsorted lights until the user re-homes them.
 
 | Floor | Canonical room | HA area today | Notes |
 |---|---|---|---|
 | Basement | Laundry Room | Laundry Room (new, empty) | "Basement" area still holds 11 lights to redistribute |
 | Basement | Gym | Gym (new, empty) | |
 | Basement | Storage Room | Storage Room (new, empty) | |
-| Basement | — | Basement (11 lights) | dissolve after lights are sorted into the 3 rooms above |
+| Basement | — | Legacy — Basement (11 lights) | dissolve after user sorts lights into the 3 rooms above |
 | First | Bathroom | Bathroom (renamed from First Floor Bathroom) | bathtub light moved back here from Kitchen (was misassigned) |
 | First | Kitchen | Kitchen | |
 | First | Entertainment Room | Entertainment Room (renamed from Living Room) | |
@@ -40,10 +41,10 @@ HA state: 4 floors, areas below. **Bold = needs the human's answer** (which phys
 | First | First Floor Hallway | First Floor Hallway (renamed from Downstairs Hallway) | |
 | First | Back Porch | Back Porch | |
 | Second | Master Bedroom | Master Bedroom (renamed from Bedroom) | |
-| Second | Kaelyn Lounge | **Lounge or Guest Bedroom?** | human answer → rename |
-| Second | Brandon Lounge | **Lounge or Guest Bedroom?** | human answer → rename |
-| Second | Kaelyn Bathroom | **Master Bathroom or Upstairs Bathroom?** | human answer → rename |
-| Second | Cats Bathroom | **Master Bathroom or Upstairs Bathroom?** | human answer → rename |
+| Second | Kaelyn Lounge | Kaelyn Lounge (created 2026-07-08) | old "Lounge"/"Guest Bedroom" kept as Legacy — user re-homes lights |
+| Second | Brandon Lounge | Brandon Lounge (created 2026-07-08) | |
+| Second | Kaelyn Bathroom | Kaelyn Bathroom (created 2026-07-08) | old bathrooms kept as Legacy |
+| Second | Cats Bathroom | Cats Bathroom (created 2026-07-08) | |
 | Second | Upstairs Hallway | Upstairs Hallway | |
 | Attic | Attic | Attic | 9 lights |
 
@@ -55,7 +56,7 @@ VLAN once migrated (**block** = add to the no-internet group; **allow** = needs 
 | Device | Model | HA integration | Local? | WAN | VLAN | Task |
 |---|---|---|---|---|---|---|
 | Hue Bridge + 45+ lights | Hue Bridge v2 (id ecb5fa99b37d) | `hue` — **already integrated** | yes | block (lose out-of-home Hue app; HA remote access replaces it) | IoT (wired) | ha-05 |
-| Door locks ×2 (front/back) | Level Lock+ (C-L18U, 2023) | **none — stays Apple-native** (HomeKit BLE + Home Key). Pairing to HA would steal them from Apple Home and kill Apple Wallet Home Key. Revisit if Level ships Matter for this model. | n/a (BLE) | n/a | n/a | ha-20 |
+| Door locks ×2 (front/back) | Level Lock+ (C-L18U, 2023) | Apple Home now; **HA pairing trial approved** (user does not use Home Key — only app/Apple Home/keypad). One lock via `homekit_controller` over ESP32 BLE proxy once ha-30 hardware lands; re-exposed to Apple Home via HomeKit Bridge. Keypad unaffected. | BLE | n/a | n/a | ha-20 |
 | Thermostat (installed) | Nest Learning 3rd gen (T3016US) | none — **being replaced**; SDM cloud path (old ha-06) dropped | no | — | — | ha-06 |
 | Thermostat (new in box) | **ecobee Smart Thermostat Premium** | `homekit_controller` — **fully local**, plus built-in air quality + occupancy + works natively with Siri | **yes** | block after setup (optional: allow for ecobee app/updates) | IoT | ha-06 |
 | Dehumidifier | Midea cube (B0866XLRTX) | `midea_ac_lan` (HACS) now; ESPHome SLWF-01Pro dongle = cloud-free end-state | mostly | allow until dongle swap, then block | IoT | ha-07/08 |
@@ -78,14 +79,13 @@ VLAN once migrated (**block** = add to the no-internet group; **allow** = needs 
 
 **Architecture for Siri (the household keeps iPhones/HomePods):** HA is the single hub; the
 **HomeKit Bridge** (ha-16) exposes a *curated* set of HA entities to Apple Home, where the
-HomePods act as Apple Home hubs. Siri keeps working for everything HA owns. The one exception:
-the Level locks stay paired directly to Apple Home (Home Key tap-to-unlock requires it) — HA
-does not manage them in v1.
+HomePods act as Apple Home hubs. Siri keeps working for everything HA owns. Locks start Apple-native;
+ha-20 trials moving one into HA (user does not use Home Key, so nothing sacred blocks it).
 
 ## IoT network policy (ha-19)
 
 VLANs and zone firewall already exist. Migration = re-provisioning each WiFi device onto the
-IoT SSID (human, per-device app work) + wiring the Hue bridge to an IoT-tagged port. Then, in
+IoT SSID (human, per-device app work; Hue bridge already migrated). Then, in
 UniFi, two device groups inside IoT:
 
 1. **iot-local (no WAN):** Hue bridge, Midea units (after ESPHome swap), LG TVs, Elgato,
@@ -119,7 +119,7 @@ Everything below is Zigbee (or ESPHome/WiFi-local) — zero cloud, works during 
 | 4 | ESP32 dev boards (ESPHome Bluetooth proxies) | $6 ea | extends BLE coverage: RadonEye, future BLE sensors, Bermuda room-presence |
 | 2 | Tuya Zigbee soil-moisture sensors | $10 ea | houseplants now; grow tent later |
 
-≈ **$550 total.** Deliberately excluded: WiFi Tuya gear (cloud-locked), Aqara-only-hub gear,
+≈ **$865 all-in / $505 core** (the AIR-1 ×2 + RadonEye are the premium $360). Deliberately excluded: WiFi Tuya gear (cloud-locked), Aqara-only-hub gear,
 anything needing a vendor app to function.
 
 **Smart shades (pitched, optional):** Zemismart Zigbee roller-shade motors (~$70/window) or
