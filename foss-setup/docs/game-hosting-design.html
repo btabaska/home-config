@@ -1,0 +1,183 @@
+<title>Game hosting — rig stack design</title>
+<meta name="description" content="How Minecraft, Palworld, and future game servers fit the 24/7 rig alongside the AI stack — architecture, monitoring, access, and what's autonomous vs. yours.">
+<style>
+  :root{
+    --paper:#F4F6F6; --card:#FFFFFF; --ink:#141C19; --dim:#5A6B63; --faint:#8A9A91;
+    --line:#DDE4E1; --line2:#EAEFEC;
+    --green:#0E7D5B; --green-bg:#E6F2EC; --green-line:#B9DCCB;
+    --amber:#9A6B00; --amber-bg:#FBF2DA; --amber-line:#E9D08A;
+    --violet:#5B4B8A; --violet-bg:#EEEAF6;
+    --blue:#0B6BA8; --blue-bg:#E8F1F8;
+    --mono:ui-monospace,"SF Mono",Menlo,"Cascadia Mono",Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{background:var(--paper);color-scheme:light;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.62;}
+  .wrap{max-width:860px;margin:0 auto;padding:44px 22px 120px;}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:600;}
+  h1{font-weight:800;font-size:33px;line-height:1.1;letter-spacing:-.02em;margin:10px 0 8px;text-wrap:balance;}
+  .sub{color:var(--dim);font-size:17px;max-width:66ch;margin:0 0 8px;}
+  .meta{font-family:var(--mono);font-size:12.5px;color:var(--faint);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 0;margin:22px 0 34px;display:flex;flex-wrap:wrap;gap:6px 22px;}
+  .meta b{color:var(--dim);font-weight:600;}
+  h2{font-size:15px;letter-spacing:.02em;text-transform:uppercase;color:var(--dim);font-weight:700;margin:46px 0 8px;}
+  h2::before{content:"";display:inline-block;width:22px;height:2px;background:var(--green);vertical-align:middle;margin-right:10px;transform:translateY(-3px);}
+  p{margin:12px 0;max-width:68ch;} strong{font-weight:700;}
+  code{font-family:var(--mono);font-size:.85em;background:var(--line2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:#0A5C44;}
+  .callout{border-radius:10px;padding:14px 18px;margin:20px 0;border:1px solid;}
+  .callout p{margin:6px 0;max-width:none;}
+  .callout .tag{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px;}
+  .good{background:var(--green-bg);border-color:var(--green-line);} .good .tag{color:var(--green);}
+  .warn{background:var(--amber-bg);border-color:var(--amber-line);} .warn .tag{color:var(--amber);}
+
+  /* resource bar */
+  .res{margin:18px 0;}
+  .res .track{display:flex;height:38px;border-radius:8px;overflow:hidden;border:1px solid var(--line);font-family:var(--mono);font-size:11.5px;font-weight:600;}
+  .res .seg{display:flex;align-items:center;justify-content:center;color:#fff;white-space:nowrap;padding:0 8px;}
+  .res .ai{background:var(--violet);} .res .mc{background:var(--green);} .res .pal{background:var(--blue);} .res .free{background:var(--line2);color:var(--dim);}
+  .res .legend{font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:8px;display:flex;flex-wrap:wrap;gap:4px 16px;}
+  .res .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:0px;}
+
+  /* topology */
+  .topo{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:6px 18px;margin:18px 0;}
+  .node{border-left:2px solid var(--green);padding:10px 0 10px 16px;margin:12px 0;}
+  .node .h{font-family:var(--mono);font-size:13px;font-weight:700;}
+  .node .d{font-size:14px;color:var(--dim);margin-top:2px;}
+  .node.sub{border-left-color:var(--line);margin-left:18px;}
+
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;margin:16px 0;}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:600px;}
+  th{background:var(--line2);font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);}
+  td{padding:9px 13px;border-bottom:1px solid var(--line2);vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .who{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:3px;white-space:nowrap;}
+  .who.me{background:var(--green-bg);color:var(--green);} .who.you{background:var(--amber-bg);color:var(--amber);}
+  ol.phase{list-style:none;counter-reset:p;padding:0;margin:18px 0;}
+  ol.phase>li{counter-increment:p;position:relative;padding:2px 0 20px 50px;border-left:2px solid var(--line);margin-left:15px;}
+  ol.phase>li:last-child{border-left-color:transparent;}
+  ol.phase>li::before{content:"P"counter(p);position:absolute;left:-16px;top:-2px;width:30px;height:30px;border-radius:50%;background:var(--card);border:2px solid var(--green);color:var(--green);font-family:var(--mono);font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;}
+  ol.phase h3{margin:0 0 3px;font-size:16px;} ol.phase p{margin:4px 0;font-size:14.5px;}
+  .footer{margin-top:54px;padding-top:16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:12px;color:var(--faint);}
+</style>
+<div class="wrap">
+<div class="eyebrow">Going Analogue · Architecture</div>
+<h1>Game hosting on the 24/7 rig</h1>
+<p class="sub">How Minecraft Java and Palworld — and the games that follow — slot into the rig alongside the AI stack, wired into the same dashboard, monitoring, and backups you already run. Written after the 24/7 decision, which simplifies this substantially.</p>
+<div class="meta">
+  <span><b>Host</b> CachyOS rig · 24/7</span>
+  <span><b>RAM</b> 62 GB</span>
+  <span><b>CPU</b> 20 threads</span>
+  <span><b>GPU</b> RTX 3090 Ti</span>
+  <span><b>Disk free</b> 854 GB</span>
+</div>
+
+<div class="callout good">
+  <span class="tag">What 24/7 changed</span>
+  <p>The original spec spent most of its complexity on the rig being <em>asleep</em>: waking it for game night, a friend-wake dashboard (UPSnap), sleep/resume save-hooks, an idle-suspend guard that mustn't kill a live session. <strong>All of that is now deleted.</strong> The servers simply run. A friend connects any time; the box is already up. What remains is the actual game-hosting stack — smaller and more reliable than the on-demand version would have been.</p>
+</div>
+
+<h2>Does it fit alongside the AI stack?</h2>
+<p>Comfortably. The AI stack idles at ~3 GB resident (it only balloons during inference, which is bursty and rarely concurrent with game sessions). Minecraft Paper wants ~10 GB, a Palworld dedicated server ~16–24 GB under a full lobby. Even with both games full <em>and</em> a model loaded, you stay inside 62 GB with real headroom.</p>
+<div class="res">
+  <div class="track">
+    <div class="seg ai" style="width:15%">AI ~8G</div>
+    <div class="seg mc" style="width:17%">MC 10G</div>
+    <div class="seg pal" style="width:32%">Palworld 20G</div>
+    <div class="seg free" style="width:36%">~24G headroom</div>
+  </div>
+  <div class="legend">
+    <span><span class="dot" style="background:var(--violet)"></span>AI stack (idle→loaded)</span>
+    <span><span class="dot" style="background:var(--green)"></span>Minecraft Paper</span>
+    <span><span class="dot" style="background:var(--blue)"></span>Palworld dedicated</span>
+    <span><span class="dot" style="background:var(--line2);border:1px solid var(--line)"></span>free</span>
+  </div>
+</div>
+<p>The GPU is untouched by either game server — dedicated servers are CPU/RAM/network workloads, so the 3090 Ti stays fully available for AI and for Sunshine game <em>streaming</em>. The 300 W power cap and the new suspend-masking mean the box behaves predictably under mixed load.</p>
+
+<h2>The stack</h2>
+<p>One new Compose project at <code>/opt/stacks/games/</code> on the rig, following the same pinned-image, one-service-per-game pattern as the rest of the fleet. Nothing bespoke — both images are the community-standard, actively-maintained choices.</p>
+<div class="topo">
+  <div class="node">
+    <div class="h">rig · /opt/stacks/games/ (Compose)</div>
+    <div class="d">Pinned images, restart: unless-stopped, per-game data volumes under the restic backup path.</div>
+  </div>
+  <div class="node sub">
+    <div class="h">minecraft · itzg/minecraft-server (Paper)</div>
+    <div class="d">10 GB Aikar-tuned heap · Geyser + Floodgate so your Switch 2 / Bedrock devices join the same world · <code>mc-backup</code> sidecar for world snapshots · container auto-pause (freezes when empty, wakes on connect — saves CPU, not power).</div>
+  </div>
+  <div class="node sub">
+    <div class="h">palworld · thijsvanloef/palworld-server-docker</div>
+    <div class="d">Performance flags on · scheduled nightly restart (works around the known Palworld memory leak) · RCON for graceful saves · password-gated (Palworld has no real auth — RCON/REST never exposed publicly).</div>
+  </div>
+  <div class="node sub">
+    <div class="h">managed in Dockge · surfaced on home.tabaska.us</div>
+    <div class="d">The games stack shows up in the Dockge UI you already use (start/stop/logs, no new panel to learn) and gets Homepage tiles with live status.</div>
+  </div>
+</div>
+<div class="callout warn">
+  <span class="tag">On control panels (Pelican / Pterodactyl)</span>
+  <p>I recommend <strong>not</strong> running a dedicated game panel yet. Pelican is still pre-1.0, and a panel's main value — provisioning servers on demand — duplicates what Compose + Dockge already give you for two servers. It adds a database, a daemon, and its own auth surface for little gain at this scale. Revisit when you're running 5+ servers or want friends to self-provision. For now, Dockge is the panel.</p>
+</div>
+
+<h2>Wired into what you already run</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Concern</th><th>How games plug in</th></tr></thead>
+<tbody>
+<tr><td>Dashboard</td><td>Dockge (manage) + Homepage tiles on <code>home.tabaska.us</code> (status at a glance) — same as every other service.</td></tr>
+<tr><td>Uptime</td><td>Uptime Kuma gets a TCP-port monitor per server (25565 MC, 8211 Palworld). Down = ntfy alert, same channel as the rest.</td></tr>
+<tr><td>Metrics</td><td>Beszel already reports rig CPU/RAM/GPU; game load shows up there with no extra config.</td></tr>
+<tr><td>Alerts</td><td>ntfy — server down, backup failed, or (Palworld) the nightly-restart didn't come back.</td></tr>
+<tr><td>Backups</td><td>World data lives under <code>/opt</code>, which restic already ships to Backblaze B2 nightly. Minecraft additionally gets the <code>mc-backup</code> sidecar for fast local rollbacks. Both covered by the dead-man Healthchecks pings.</td></tr>
+<tr><td>Config-as-code</td><td>The Compose + server configs live in the repo and deploy via the same ansible-pull path; game worlds are data, not config, so they're backed up, not version-controlled.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>Getting friends in</h2>
+<p>This is the one area that still needs you, because it crosses account and console boundaries I can't touch from here.</p>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Player</th><th>Path</th><th>Who sets it up</th></tr></thead>
+<tbody>
+<tr><td>You, any device</td><td>Already on the LAN / Tailscale — connect directly.</td><td><span class="who me">automated</span></td></tr>
+<tr><td>PC friends</td><td>Tailscale node-sharing: I lock the shared node down to just the game ports; you send the share invite from the Tailscale admin console. UDP works, doesn't burn your user cap.</td><td><span class="who you">you: invite</span></td></tr>
+<tr><td>Your Switch 2 / consoles</td><td>Join over LAN (Geyser handles Bedrock↔Java). For off-LAN, a console DNS entry.</td><td><span class="who you">you: console DNS</span></td></tr>
+<tr><td>Friends' consoles</td><td>Need a public UDP path — <code>playit.gg</code> tunnel (≈$3/mo premium for good routing). Consoles can't run Tailscale.</td><td><span class="who you">you: playit claim</span></td></tr>
+</tbody>
+</table>
+</div>
+<div class="callout warn">
+  <span class="tag">Security line I won't cross without you</span>
+  <p>Palworld has no authentication beyond a server password, and its RCON/REST admin ports are unauthenticated-adjacent. Those <strong>never</strong> get exposed publicly — friend access is Tailscale (private mesh) or playit (game port only). Exposing a game port to the open internet is a deliberate, separate decision, not something I'll do as part of the build.</p>
+</div>
+
+<h2>What I can build autonomously vs. what needs you</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Autonomous (≈90% of it)</th><th>Needs you (one sitting)</th></tr></thead>
+<tbody>
+<tr><td>Compose + pinned images, tuned configs, data volumes</td><td>Tailscale ACL paste + friend share-invites</td></tr>
+<tr><td>Geyser/Floodgate, RCON save hooks, nightly restart</td><td><code>playit.gg</code> account claim (only if friends' consoles)</td></tr>
+<tr><td>Uptime Kuma monitors, Beszel, ntfy alerts</td><td>Switch 2 console DNS entry</td></tr>
+<tr><td>Backups + restore smoke-test</td><td>The actual playtest — you + a friend connecting</td></tr>
+<tr><td>Homepage tiles, Dockge integration, repo commit</td><td>Server name / MOTD / rules preferences</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>Proposed rollout</h2>
+<ol class="phase">
+  <li><h3>Substrate</h3><p>Create <code>/opt/stacks/games/</code>, the Compose scaffold, backup wiring, and monitoring hooks. No game running yet — just the frame, committed and verified. (fully autonomous)</p></li>
+  <li><h3>Minecraft first</h3><p>Paper + Geyser + mc-backup. I bring it up, smoke-test a local connect and a backup/restore, add the Uptime monitor + Homepage tile. You then connect from your Switch to confirm cross-play.</p></li>
+  <li><h3>Palworld second</h3><p>Dedicated server with the leak-restart schedule and RCON saves, monitored the same way. Validated the same way.</p></li>
+  <li><h3>Friends + future games</h3><p>Tailscale sharing / playit for external players (your steps), then the pattern repeats for each new game — same Compose shape, same monitoring, same backups.</p></li>
+</ol>
+
+<div class="callout good">
+  <span class="tag">What I need from you to start</span>
+  <p><strong>A yes to this shape</strong>, plus your preferences for server names / whether these start whitelisted. Phase 1 and the Minecraft half of Phase 2 need nothing else from you — I can have a running, monitored, backed-up Minecraft server before the friend-access step. Say go and I'll build Phase 1.</p>
+</div>
+
+<div class="footer">Supersedes the on-demand game-server spec in research/05-gameservers.md · grounded in live rig capacity 2026-07-08</div>
+</div>

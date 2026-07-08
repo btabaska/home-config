@@ -190,6 +190,10 @@
         description: MCP tool bridge (rig runs 24/7)
 
 - Gaming (rig, always-on):
+    - Wake rig (recovery):
+        icon: mdi-power
+        href: https://ntfy.tabaska.us/wake-rig
+        description: Publish here only if the rig is off (power outage) — sends Wake-on-LAN
     - Sunshine:
         icon: sunshine.png
         href: https://sunshine.tabaska.us

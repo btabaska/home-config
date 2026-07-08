@@ -1,0 +1,11 @@
+[Unit]
+Description=ntfy subscriber: wake the rig on demand (recovery topic wake-rig)
+After=network-online.target docker.service
+Wants=network-online.target
+[Service]
+Restart=always
+RestartSec=10
+EnvironmentFile=/etc/wake-rig.env
+ExecStart=/opt/scripts/wake-rig-listener.sh
+[Install]
+WantedBy=multi-user.target
