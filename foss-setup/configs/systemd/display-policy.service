@@ -1,0 +1,11 @@
+[Unit]
+Description=Single-display policy: dummy plug when headless, real monitor when present
+After=graphical-session.target
+PartOf=graphical-session.target
+[Service]
+Type=simple
+ExecStart=/bin/sh -c 'stdbuf -oL udevadm monitor -u -s drm | while read -r line; do case "$line" in *"(drm)"*) sleep 1; %h/display-policy.sh ;; esac; done'
+Restart=always
+RestartSec=5
+[Install]
+WantedBy=graphical-session.target
