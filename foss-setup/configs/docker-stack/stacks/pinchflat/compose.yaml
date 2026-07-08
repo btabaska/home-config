@@ -8,13 +8,13 @@
 # library path (a "YouTube" library) so Plex indexes the saved videos like a show.
 #
 # CalVer image tags (vYYYY.M.D). Bump deliberately after reading release notes.
-# Pinchflat releases are infrequent; v2025.9.26 is the latest release on ghcr as
-# of mid-2026 (verify the current tag on the releases page before deploying).
-# If you'd rather auto-track use :latest. Keep yt-dlp/MeTube as a fallback.
+# Pinchflat releases are infrequent (development has been quiet); v2025.6.6 is the
+# latest verified release on ghcr as of mid-2026. If you'd rather auto-track, use :latest.
+# Keep yt-dlp/MeTube as a fallback in case the project stays dormant.
 
 services:
   pinchflat:
-    image: ghcr.io/kieraneglin/pinchflat:v2025.9.26
+    image: ghcr.io/kieraneglin/pinchflat:v2025.6.6
     container_name: pinchflat
     restart: unless-stopped
     ports:

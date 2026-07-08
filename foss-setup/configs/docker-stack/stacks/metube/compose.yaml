@@ -1,0 +1,29 @@
+# MeTube — web UI for yt-dlp: paste a URL, get the video/audio
+# Docs: https://github.com/alexta69/metube
+#
+# One-off downloads companion to Pinchflat (which handles subscriptions).
+# Downloads land on the NAS youtube share (CIFS mount /mnt/nas-youtube,
+# see /etc/fstab) so they are indexed alongside Pinchflat archives.
+#
+# STATE_DIR must stay on local disk: MeTube keeps its queue in a Python
+# dbm/shelve database, which does not work on CIFS mounts.
+
+services:
+  metube:
+    image: ghcr.io/alexta69/metube:latest
+    container_name: metube
+    restart: unless-stopped
+    ports:
+      - "8081:8081" # direct LAN access; also fronted by Caddy at metube.<domain>
+    environment:
+      - TZ=${TZ:-America/New_York}
+      - STATE_DIR=/state
+    volumes:
+      - ${METUBE_DOWNLOADS:-./downloads}:/downloads
+      - ./state:/state
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true
