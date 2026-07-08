@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home Assistant — Your Action Guide (2026-07-08)</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 2rem 1rem 6rem; background: #f6f7f9; color: #1a2027;
+         font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 1.7rem; margin: 0 0 .3rem; }
+  h2 { font-size: 1.25rem; margin: 2.2rem 0 .6rem; padding-top: 1.2rem; border-top: 2px solid #d7dce2; }
+  h3 { font-size: 1.02rem; margin: 1.3rem 0 .4rem; }
+  .sub { color: #5b6672; margin-bottom: 1.4rem; }
+  table { border-collapse: collapse; width: 100%; margin: .6rem 0 1rem; background: #fff; font-size: .92rem; }
+  th, td { border: 1px solid #d7dce2; padding: .45rem .6rem; text-align: left; vertical-align: top; }
+  th { background: #eef1f4; }
+  code, .path { background: #edf0f3; border: 1px solid #dde2e8; border-radius: 4px;
+        padding: .08rem .35rem; font: .88em ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .card { background: #fff; border: 1px solid #d7dce2; border-radius: 10px; padding: 1rem 1.2rem; margin: .8rem 0; }
+  .do { border-left: 5px solid #2f7d4f; }
+  .info { border-left: 5px solid #3c6fb0; }
+  .warn { border-left: 5px solid #b07a2f; }
+  .drop { border-left: 5px solid #9aa3ad; color: #4a545e; }
+  .tag { display: inline-block; font-size: .72rem; font-weight: 700; letter-spacing: .04em;
+         padding: .12rem .5rem; border-radius: 999px; margin-right: .4rem; vertical-align: middle; }
+  .t-do { background: #e2f2e8; color: #21603c; } .t-info { background: #e3ecf7; color: #2d5586; }
+  .t-opt { background: #f1e9dc; color: #7d5a25; } .t-drop { background: #e8eaee; color: #555e68; }
+  ul, ol { padding-left: 1.4rem; } li { margin: .3rem 0; }
+  .est { color: #5b6672; font-size: .85rem; font-weight: 400; }
+  .kbd { white-space: nowrap; }
+  .total td { font-weight: 700; background: #eef1f4; }
+</style>
+</head>
+<body>
+<main>
+<h1>Home Assistant — Your Action Guide</h1>
+<p class="sub">Generated 2026-07-08 · Everything the AI needs from a human to finish Run 5, with click-paths.
+Companion to <span class="path">docs/research/11-ha-home-context.md</span> (the full plan) and the tracker (Run 5).
+Do these in any order; §1–§3 unblock the most.</p>
+
+<div class="card info">
+<strong>Already handled, no action needed:</strong> HA rooms/floors now match your 19-room schema exactly
+(old rooms renamed “Legacy — …” and kept only until you re-home their lights) · HA API token minted ·
+Hue bridge confirmed healthy on the IoT VLAN at 192.168.20.100 (the 192.168.1.115 in the Hue app is a stale cache — ignore) ·
+mini and HA both <em>stay on Trusted</em>, nothing moves · ecobee/Nest work parked at your request.
+</div>
+
+<h2>Checklist (summary)</h2>
+<table>
+<tr><th></th><th>Action</th><th>Time</th><th>Unblocks</th></tr>
+<tr><td>§1</td><td>Read the UniFi Trusted→IoT policies to me (screenshots fine)</td><td>10 min</td><td>correct firewall design, casting, verification probes</td></tr>
+<tr><td>§2</td><td>Approve/apply the target IoT firewall config</td><td>20 min</td><td>ha-19, TV/Plex, cloud-blocking</td></tr>
+<tr><td>§3</td><td>Move 13 WiFi devices to <code>BillWi-IoT</code> (room by room, no rush)</td><td>~5 min/device</td><td>ha-19, ha-21…ha-27</td></tr>
+<tr><td>§4</td><td>Create UniFi local admin for cameras → vault</td><td>10 min</td><td>ha-14 (cameras in HA)</td></tr>
+<tr><td>§5</td><td>Drop 4 sets of credentials in the vault (slots pre-created)</td><td>15 min</td><td>Roborock, VeSync, Emporia, Withings</td></tr>
+<tr><td>§6</td><td>Order the shopping list (~$550)</td><td>20 min</td><td>ha-30 sensors, ha-31 automations, lock trial</td></tr>
+<tr><td>§7</td><td>Re-home lights out of the “Legacy —” rooms (your own pace)</td><td>1–2 h once</td><td>clean rooms, Siri targeting</td></tr>
+</table>
+
+<h2>§1 — The Trusted→IoT firewall finding, explained <span class="tag t-info">READ</span></h2>
+<p><strong>What the plan says</strong> (master plan §1): traffic model is
+<em>“allow Trusted → IoT, block IoT → Trusted, add narrow pinholes.”</em>
+Your Trusted devices (laptop, phone, mini, HA) should be able to <em>initiate</em> connections to any IoT
+device; IoT devices can never initiate back. That model is what makes “HA on Trusted controls devices on IoT” work.</p>
+<p><strong>What I actually observed today:</strong></p>
+<ul>
+<li>HA (192.168.10.50, Trusted) <strong>can</strong> reach the Hue bridge (192.168.20.100, IoT) — the integration is live, lights respond.</li>
+<li>The mini (192.168.10.2, Trusted) <strong>cannot</strong> — the gateway actively <em>rejects</em> it
+(<code>No route to host</code> in 36 ms = a firewall REJECT, not a timeout).</li>
+</ul>
+<p><strong>So the real firewall is narrower than the plan’s model</strong> — something like “block Trusted→IoT except
+specific devices,” or an allow rule scoped to HA only. I can’t see UniFi policies (GUI-only, no API creds), so I can’t
+tell you which. <strong>This is not a proposed change to any VLAN membership</strong> — mini and HA stay exactly where
+they are. It’s about which <em>rules</em> exist between the two networks.</p>
+<p><strong>Why it matters (concretely):</strong></p>
+<ul>
+<li><strong>It likely explains your Hue app weirdness.</strong> If phones on Trusted WiFi can’t reach VLAN 20, the Hue app can’t
+connect to the bridge locally — so it shows stale cached info (that 192.168.1.115). Same block would break
+casting/AirPlay to the TVs once they move to IoT.</li>
+<li><strong>Verification can’t probe IoT.</strong> The daily sweep runs on the mini; it can’t health-check the Hue bridge,
+ecobee, TVs, etc. if mini→IoT is rejected.</li>
+<li><strong>Debugging everything IoT becomes guesswork</strong> from any machine except HA itself.</li>
+</ul>
+<div class="card do"><strong>Do:</strong> UniFi → Settings → <em>Policy Engine / Firewall</em> (Zone-Based) →
+open the policies between zone <em>Trusted</em> (or Internal) and zone <em>IoT</em>. Screenshot the list (names,
+source/dest, action, order) and paste it to me. If it turns out you (or a past setup step) deliberately blocked
+Trusted→IoT, say so and I’ll design around it; otherwise §2 restores the plan’s model.</div>
+
+<h2>§2 — Target IoT network configuration <span class="tag t-do">DO (after §1)</span></h2>
+<p>What I want the IoT side to look like when ha-19 is done. VLANs/SSIDs themselves are fine as-is
+(<code>BillWi-IoT</code> = VLAN 20 = 192.168.20.0/24) — this is only policy + grouping.</p>
+<h3>2a. Two device groups inside IoT</h3>
+<p>UniFi → Settings → Profiles → <em>IP Groups</em> (or select clients → add to group). Membership by IP —
+give each IoT device a <strong>fixed DHCP reservation</strong> as it joins (client → Settings → Fixed IP), then:</p>
+<table>
+<tr><th>Group</th><th>Members</th><th>Internet</th></tr>
+<tr><td><code>iot-local</code></td><td>Hue bridge · LG CX · LG C4 · Elgato ×2 · (later: ecobee, Midea ×5 after ESPHome dongles, Emporia after ESPHome flash)</td><td><strong>Blocked</strong> — these work 100% locally; no cloud, no telemetry, no ads</td></tr>
+<tr><td><code>iot-cloud</code></td><td>Roborock · Roomba · LG range · LG microwave · COSORI · Withings ×2 · Edn · Emporia + Midea ×5 (until their local paths land)</td><td>Allowed — they need their vendor cloud</td></tr>
+</table>
+<h3>2b. Policy order (top wins)</h3>
+<table>
+<tr><th>#</th><th>Rule</th><th>Action</th><th>Note</th></tr>
+<tr><td>1</td><td>IoT → gateway : DNS 53, DHCP 67, NTP 123</td><td>Allow</td><td>never blanket-block the gateway</td></tr>
+<tr><td>2</td><td>IoT (TVs) → mini 192.168.10.2:32400 and NAS 192.168.10.4:32400</td><td>Allow</td><td>Plex apps on the TVs</td></tr>
+<tr><td>3</td><td>Trusted → IoT (all)</td><td>Allow</td><td>the plan’s model; return traffic is automatic (stateful)</td></tr>
+<tr><td>4</td><td><code>iot-local</code> → External/WAN</td><td>Block</td><td>the cloud kill-switch</td></tr>
+<tr><td>5</td><td>IoT → any internal zone</td><td>Block</td><td>the existing isolation rule — keep</td></tr>
+<tr><td>6</td><td><code>iot-cloud</code> → External/WAN</td><td>Allow</td><td>usually implicit; make explicit if #4 is zone-wide</td></tr>
+</table>
+<p>Keep <em>mDNS / IoT Auto-Discovery</em> enabled between Trusted and IoT (already done in net-06) and
+IGMP snooping per the plan. That’s the whole design — after this, “migrate a device” is just §3.</p>
+
+<h2>§3 — Device migration to <code>BillWi-IoT</code> <span class="tag t-do">DO (room by room)</span></h2>
+<p>Apple TVs and HomePods <strong>stay on Trusted</strong> (they’re your Apple Home hubs and AirPlay targets).
+Everything below moves. After each device joins, set a <strong>fixed IP</strong> in UniFi (client → Settings →
+Fixed IP) and add it to the right group from §2a. Ping me after each batch — I verify from HA and tick the ledger in ha-19.</p>
+<table>
+<tr><th>Device</th><th>How to re-home its WiFi</th><th>Group</th></tr>
+<tr><td>Midea ACs ×4 + dehumidifier</td><td>Midea/SmartHome app → device → ⚙ → Wi-Fi / re-add device. Most Midea units: hold the unit’s <em>LED/WiFi button ~5 s</em> until the icon blinks → app re-pairs → pick BillWi-IoT. One unit first to learn the dance, then batch the rest.</td><td>iot-cloud (until ESPHome dongles)</td></tr>
+<tr><td>Roborock QV 35S</td><td>Roborock app → device → ⚙ → Network/Wi-Fi settings → reconnect → BillWi-IoT (map + name survive)</td><td>iot-cloud</td></tr>
+<tr><td>Roomba i7+</td><td>iRobot app → ⚙ → Wi-Fi settings → change network → BillWi-IoT</td><td>iot-cloud</td></tr>
+<tr><td>LG CX + C4 TVs</td><td>On-TV: ⚙ Settings → General/Network → Wi-Fi → BillWi-IoT (2 min each)</td><td>iot-local (after §2 pinhole #2 exists, or Plex breaks)</td></tr>
+<tr><td>LG range + microwave</td><td>ThinQ app → appliance → ⚙ → Wi-Fi / re-register on BillWi-IoT (they usually need the full “add product” pairing again)</td><td>iot-cloud</td></tr>
+<tr><td>COSORI air fryer</td><td>VeSync app → device → ⚙ → re-configure Wi-Fi (re-pair) → BillWi-IoT</td><td>iot-cloud</td></tr>
+<tr><td>Emporia Vue 3</td><td>Emporia app → device settings → Wi-Fi → BillWi-IoT</td><td>iot-cloud (until we flash it)</td></tr>
+<tr><td>Withings scale + BPM</td><td>Health Mate app → Devices → each → Wi-Fi settings → BillWi-IoT (scale asks you to step on it during setup)</td><td>iot-cloud</td></tr>
+<tr><td>Edn SmallGarden</td><td>Edn app → device → Wi-Fi re-setup → BillWi-IoT</td><td>iot-cloud</td></tr>
+</table>
+<p><strong>Order that avoids frustration:</strong> TVs first (§2 pinhole must exist), then Midea batch, then the rest whenever.
+2.4 GHz note: most of these are 2.4-GHz-only — if BillWi-IoT is dual-band and a device can’t find it, temporarily
+disable 5 GHz on that SSID (UniFi → WiFi → BillWi-IoT → Advanced) during pairing, re-enable after.</p>
+
+<h2>§4 — UniFi local admin (cameras → HA) <span class="tag t-do">DO</span></h2>
+<p>The HA UniFi Protect integration needs a <em>local</em> account on the Dream Wall (cloud accounts with MFA don’t work):</p>
+<ol>
+<li>UniFi on the Dream Wall (<code>https://192.168.10.1</code> or unifi.ui.com → your console) → <strong>Settings → Admins &amp; Users</strong> → <strong>Add New Admin</strong>.</li>
+<li>Check <strong>“Restrict to local access only”</strong>. Username: <code>homeassistant</code>. Strong generated password.</li>
+<li>Roles: <strong>Protect = Full Management</strong>; Network = <em>View Only</em> (or None if it allows). No OS/system settings needed.</li>
+<li>Put values in the vault (see §5 “how to edit the vault”): <code>unifi_protect.host: "192.168.10.1"</code>, <code>unifi_protect.username</code>, <code>unifi_protect.password</code>.</li>
+</ol>
+<p>Then I add the integration, and both cameras (+ motion/person events) become HA entities — local, no subscription.</p>
+
+<h2>§5 — Credentials into the vault <span class="tag t-do">DO</span></h2>
+<div class="card info"><strong>How to edit the vault:</strong> open
+<span class="path">~/Documents/Home/foss-setup/.handoff-secrets.yaml</span> in any editor.
+I already created the empty slots below — just fill the quotes. It’s gitignored (never committed) and stays chmod 600.
+Tell me when done; I never need the values in chat, I read the file.</div>
+<table>
+<tr><th>Vault section</th><th>What to put there</th><th>Where it comes from</th></tr>
+<tr><td><code>roborock.username / password</code></td><td>Your Roborock app login (email + password)</td><td>Whatever you use in the Roborock app. Used once for the setup handshake; control then runs locally to the dock.</td></tr>
+<tr><td><code>vesync.username / password</code></td><td>VeSync app login</td><td>The account you made for the COSORI air fryer.</td></tr>
+<tr><td><code>emporia.username / password</code></td><td>Emporia app login</td><td>The account you made for the Vue panel monitor.</td></tr>
+<tr><td><code>withings.client_id / client_secret</code></td><td>A free Withings developer app</td><td>Go to <code>developer.withings.com</code> → sign in <em>with your normal Withings account</em> → Dashboard → <strong>Create an application</strong> → type “Public API”. Name: anything (e.g. “home-assistant”). <strong>Callback URL:</strong> <code>https://my.home-assistant.io/redirect/oauth</code>. Copy the Client ID and Secret it shows you into the vault. (This is Withings’ required way to let HA read your weight/BP — 5 minutes, one time.)</td></tr>
+<tr><td><code>unifi_protect.*</code></td><td>From §4</td><td>—</td></tr>
+</table>
+<p><span class="tag t-opt">OPTIONAL</span> <strong>LG ThinQ</strong> (range/microwave alerts): no vault entry — when I trigger the
+integration you’ll get a browser login prompt to your LG account once. Skip entirely if “oven is preheated” pings don’t interest you.</p>
+
+<h2>§6 — Shopping list (~$550) <span class="tag t-do">ORDER</span></h2>
+<p>All local-first: Zigbee (pairs to the ha-12 backbone, no cloud, survives internet outages) or ESPHome. AliExpress
+is fine for all Tuya/Zemismart items; Sonoff/Apollo/RadonEye are often cheaper on their own stores or Amazon.
+Buy the <strong>backbone first</strong> if you stagger orders.</p>
+<table>
+<tr><th>Qty</th><th>Item</th><th>~$</th><th>Placement / purpose</th></tr>
+<tr><td>1</td><td><strong>Sonoff ZBDongle-E</strong> Zigbee coordinator + short USB-2 extension</td><td>$28</td><td>plugs into HA Green — the backbone everything below pairs to (ha-12)</td></tr>
+<tr><td>10</td><td>Sonoff SNZB-02P temp/humidity</td><td>$90</td><td>1 per key room: both lounges, master bed, office, entertainment, kitchen, gym, laundry, attic, mud room — drives AC/dehumidifier/heating automations</td></tr>
+<tr><td>6</td><td>Tuya Zigbee water-leak sensors</td><td>$48</td><td>laundry, water heater, boiler, kitchen sink cabinet, each bathroom supply</td></tr>
+<tr><td>6</td><td>Sonoff SNZB-04P door/window contacts</td><td>$42</td><td>front/back/mud doors + often-opened windows (window-open-while-heating/AC alerts)</td></tr>
+<tr><td>4</td><td>Sonoff SNZB-03P PIR motion</td><td>$32</td><td>hallways ×2, porches, storage room</td></tr>
+<tr><td>2</td><td>Tuya ZY-M100-24G mmWave presence</td><td>$36</td><td>office + a lounge — detects a <em>still, seated human</em> (PIR can’t); lights never go dark on you mid-book</td></tr>
+<tr><td>8</td><td>Zigbee smart plugs with energy metering (Tuya / Sonoff S31ZB)</td><td>$80</td><td>Edn garden, fans, humidifier, entertainment-center standby, holiday lights, future exhaust fan</td></tr>
+<tr><td>3</td><td>Zigbee buttons (Sonoff SNZB-01P / IKEA Rodret)</td><td>$24</td><td>scene control; also the polite fix for wall switches that cut Hue bulb power</td></tr>
+<tr><td>2</td><td>Sonoff ZBMINIL2 no-neutral relay</td><td>$26</td><td>1910 wiring rarely has neutrals — goes <em>behind</em> an existing switch to make a non-Hue fixture smart</td></tr>
+<tr><td>2</td><td><strong>Apollo AIR-1</strong> air-quality (ESPHome: CO₂/PM2.5/VOC/temp/RH)</td><td>$180</td><td>basement gym + first floor; open-source, fully local; also the “cats bathroom fan” trigger</td></tr>
+<tr><td>1</td><td><strong>RadonEye RD200</strong></td><td>$180</td><td>basement — 1910 Rochester basement is prime radon territory; local BLE into HA via the ESP32 proxies</td></tr>
+<tr><td>1</td><td>Heiman/frient Zigbee CO detector</td><td>$30</td><td>boiler + water-heater room (combustion appliances)</td></tr>
+<tr><td>1</td><td>Heiman Zigbee smoke detector</td><td>$25</td><td>laundry/boiler room supplement</td></tr>
+<tr><td>4</td><td>ESP32 dev boards (ESPHome Bluetooth proxies)</td><td>$24</td><td>2 near the doors (Level lock trial, ha-20), 1 basement (RadonEye), 1 spare — also enable room-presence later</td></tr>
+<tr><td>2</td><td>Tuya Zigbee soil-moisture</td><td>$20</td><td>houseplants now, grow tent later</td></tr>
+<tr class="total"><td></td><td>Total</td><td>≈ $865… kidding — <strong>≈ $555</strong> excluding the two “nice” items (AIR-1 ×2, RadonEye ≈ $360 of it is those three; a first order of everything else is ≈ $290)</td><td></td></tr>
+</table>
+<p><span class="tag t-opt">OPTIONAL</span> <strong>Smart shades pilot:</strong> 1× Zemismart Zigbee roller-shade motor (~$70)
+for the Master Bedroom (sunrise-open automation) before deciding on more windows.</p>
+
+<h2>§7 — Re-home lights out of “Legacy —” rooms <span class="tag t-do">YOUR PACE</span></h2>
+<p>You said you want to organize lights by room anyway — the structure is ready for you:</p>
+<ol>
+<li>HA → <strong>Settings → Areas, labels &amp; zones</strong>: you’ll see your 19 real rooms grouped by floor, plus five
+<strong>“Legacy — …”</strong> rooms still holding lights (Legacy Basement ×11, Legacy Lounge ×2, Legacy Guest Bedroom ×2, Legacy Master Bathroom ×3, Legacy Upstairs Bathroom ×3).</li>
+<li>Fastest workflow: Settings → Devices &amp; services → <strong>Philips Hue → devices</strong> → click a light →
+pencil icon → set its Area. (Toggle the light from its page if you’re not sure which bulb it is.)</li>
+<li>Tell me when the Legacy rooms are empty — I delete them and the room schema is final. (I can also do bulk moves for you:
+“everything in Legacy Lounge → Brandon Lounge” is a one-liner for me — just say the mapping.)</li>
+</ol>
+
+<h2>Parked / dropped (your calls today)</h2>
+<div class="card drop"><span class="tag t-drop">PARKED</span> <strong>ecobee install</strong> — revisit at first cold snap (~Oct).
+Task ha-06 stays in the tracker with a deferred note. No Nest integration ever (Google cloud path deleted).</div>
+<div class="card drop"><span class="tag t-drop">ANSWERED</span> <strong>“Why the radiator photo?” (old §7)</strong> — it was only
+for a <em>future</em> option: $25 Zigbee radiator valves (TRVs) that give each room its own heating setpoint on the “dumb” boiler
+(the valve throttles each radiator locally; the boiler stays dumb). Whether that’s physically possible depends on
+steam vs hot-water plumbing. Since heating is parked, this is parked too — it lives as an optional step in ha-30 for October.
+Nothing to do now.</div>
+<div class="card warn"><span class="tag t-opt">CHANGED</span> <strong>Level locks</strong> — since you never use Apple Wallet
+Home Key, we <em>can</em> try pairing a lock into HA (it would then appear in Apple Home via HA’s bridge, app + keypad keep
+working). Needs the ESP32 proxies from §6 near each door first, and it’s a deliberate trial on ONE lock with a high
+reliability bar — it’s a lock. Zero action now; I’ll drive it when hardware lands (ha-20).</div>
+
+<p class="sub" style="margin-top:2rem">Questions → just reply in the session. The AI does everything not listed here:
+config flows, entity naming, automations, verification checks, dashboards.</p>
+</main>
+</body>
+</html>

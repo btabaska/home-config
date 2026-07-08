@@ -1,0 +1,251 @@
+<title>Going Analogue — your TODO list</title>
+<meta name="description" content="Verbose step-by-step instructions for every task that unblocks the homelab rollout, in priority order.">
+<style>
+  :root{
+    --paper:#F4F6F6; --card:#FFFFFF; --ink:#141C19; --dim:#55655C; --faint:#8A9A91;
+    --line:#DDE4E1; --line2:#EAEFEC;
+    --green:#0E7D5B; --green-bg:#E6F2EC; --green-line:#B9DCCB;
+    --amber:#8A6100; --amber-bg:#FBF2DA; --amber-line:#E9D08A;
+    --red:#B3261E; --red-bg:#FBECEA;
+    --blue:#0B6BA8; --blue-bg:#E8F1F8;
+    --violet:#5B4B8A; --violet-bg:#EEEAF6;
+    --mono:ui-monospace,"SF Mono",Menlo,"Cascadia Mono",Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{background:var(--paper);color-scheme:light;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;}
+  .wrap{max-width:840px;margin:0 auto;padding:44px 22px 120px;}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:600;}
+  h1{font-weight:800;font-size:32px;line-height:1.1;letter-spacing:-.02em;margin:10px 0 8px;text-wrap:balance;}
+  .lede{color:var(--dim);font-size:17px;max-width:66ch;margin:0 0 6px;}
+  .bar{font-family:var(--mono);font-size:12.5px;color:var(--faint);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:10px 0;margin:22px 0 30px;display:flex;flex-wrap:wrap;gap:6px 22px;}
+  .bar b{color:var(--dim);}
+  .tier{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:700;margin:38px 0 10px;display:flex;align-items:center;gap:10px;}
+  .tier::after{content:"";flex:1;height:1px;background:var(--line);}
+  .task{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px 16px;margin:14px 0;position:relative;transition:opacity .2s;}
+  .task.done{opacity:.5;}
+  .thead{display:flex;align-items:flex-start;gap:12px;}
+  .chk{flex:none;width:26px;height:26px;border:2px solid var(--green);border-radius:7px;background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:transparent;transition:all .15s;user-select:none;margin-top:1px;}
+  .task.done .chk{background:var(--green);color:#fff;}
+  .tnum{font-family:var(--mono);font-size:12px;color:var(--faint);font-weight:700;}
+  .ttitle{font-size:18px;font-weight:700;margin:0;line-height:1.25;flex:1;}
+  .task.done .ttitle{text-decoration:line-through;text-decoration-color:var(--faint);}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 6px 38px;}
+  .chip{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:4px;}
+  .chip.eff{background:var(--line2);color:var(--dim);}
+  .chip.unb{background:var(--green-bg);color:var(--green);}
+  .chip.blk{background:var(--amber-bg);color:var(--amber);}
+  .body{margin:6px 0 0 38px;}
+  .body p{margin:8px 0;max-width:64ch;} .body p.why{color:var(--dim);font-size:14.5px;}
+  ol.steps{margin:10px 0;padding-left:20px;} ol.steps li{margin:7px 0;max-width:62ch;}
+  ul.plain{margin:8px 0;padding-left:18px;} ul.plain li{margin:5px 0;}
+  code{font-family:var(--mono);font-size:.85em;background:var(--line2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:#0A5C44;word-break:break-word;}
+  .vault{font-family:var(--mono);font-size:12px;background:var(--violet-bg);border:1px solid #d9d0ee;border-radius:6px;padding:6px 10px;margin:8px 0;color:var(--violet);display:inline-block;}
+  .ping{font-family:var(--sans);font-size:13.5px;background:var(--green-bg);border-left:3px solid var(--green);border-radius:0 6px 6px 0;padding:8px 12px;margin:12px 0 2px;color:#0a5c44;}
+  .note{background:var(--amber-bg);border:1px solid var(--amber-line);border-radius:8px;padding:10px 14px;margin:10px 0;font-size:14px;}
+  .note .t{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);display:block;margin-bottom:3px;}
+  a{color:var(--blue);text-decoration:none;border-bottom:1px solid transparent;} a:hover{border-color:var(--blue);}
+  .footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:12px;color:var(--faint);}
+  .prog{position:sticky;top:0;background:var(--paper);padding:10px 0;font-family:var(--mono);font-size:12px;color:var(--dim);z-index:5;border-bottom:1px solid var(--line);margin:-10px 0 0;}
+  .prog b{color:var(--green);}
+</style>
+<div class="wrap">
+<div class="eyebrow">Going Analogue · What I need from you</div>
+<h1>Your TODO list</h1>
+<p class="lede">Every task that unblocks the rollout, in priority order, with exact steps. Check them off as you go — progress saves in this browser. When a task says <b>“then ping Claude,”</b> that's your cue to hand it back for the automated half.</p>
+<div class="bar">
+  <span><b>Fleet</b> 60/60 checks green</span>
+  <span><b>TLS</b> real certs, all 42 services</span>
+  <span><b>Rig</b> Apollo + AMP + AI, 24/7</span>
+  <span><b>Blocking me</b> the tasks below</span>
+</div>
+<div class="prog" id="prog">Progress: <b><span id="pdone">0</span>/<span id="ptot">0</span></b> done</div>
+
+<div class="tier">Do first — unblocks the most</div>
+
+<div class="task">
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 01</div><h2 class="ttitle">Confirm the ntfy phone alert arrived</h2></div></div>
+  <div class="chips"><span class="chip eff">2 min</span><span class="chip unb">closes: alerting</span></div>
+  <div class="body">
+    <p class="why">I sent a test notification titled <b>“Homelab alerts are working” ✅</b> to the <code>verification</code> topic. The whole monitoring stack has never reached your phone until now — this confirms it does.</p>
+    <ol class="steps">
+      <li>Check your phone for the test notification.</li>
+      <li><b>If it arrived</b> — you're done; every verification sweep, backup result, and dead-man alert now reaches you. Check this off.</li>
+      <li><b>If it didn't</b> — open the ntfy app → make sure your server is added as <code>https://ntfy.tabaska.us</code> (not the default ntfy.sh), the topics <code>verification, backups, diun, healthchecks, homelab-alerts, wake-rig</code> are subscribed under <em>that</em> server, and iOS Settings → ntfy → Notifications is allowed. The server side is confirmed working, so it's a client nudge.</li>
+    </ol>
+    <div class="ping">Then ping Claude only if it didn't arrive — otherwise nothing needed.</div>
+  </div>
+</div>
+
+<div class="task">
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 02</div><h2 class="ttitle">Finish the Minecraft server in AMP</h2></div></div>
+  <div class="chips"><span class="chip eff">~5 min UI</span><span class="chip unb">unblocks: crossplay + monitoring</span></div>
+  <div class="body">
+    <p class="why">AMP is deployed and licensed, but this minimal container can't create the <em>first</em> game instance from the API/CLI — it has to be born through AMP's web UI. Everything else (firewall, licence, runbook) is prepared. Full runbook: <code>configs/gaming/minecraft-crossplay-finish.md</code>.</p>
+    <ol class="steps">
+      <li>Open <a href="https://amp.tabaska.us">amp.tabaska.us</a> and log in (user <code>brandon</code>, password in the vault).</li>
+      <li>Go to <b>Configuration → Instance Deployment → Deployment Defaults → Licence Key</b>, paste your AMP licence, and Save. <em>(This one field is the only reason the automated create failed — AMP needs it to license child instances.)</em></li>
+      <li>Back on the AMP home, click <b>Create Instance</b> → Application <b>Minecraft Java Edition</b> → Name <code>MinecraftCross</code> → Port <code>25565</code> → Create.</li>
+      <li><b>Manage</b> the new instance → in its Configuration set the server type to <b>Paper</b> (Geyser/Floodgate are Spigot plugins — they need Paper, not Vanilla) → Update/Install → Start.</li>
+      <li>In the instance's <b>Plugins</b> browser, install <b>Geyser-Spigot</b> and <b>Floodgate</b>, then restart the instance.</li>
+    </ol>
+    <div class="vault">vault: cubecoders_amp.admin_password · cubecoders_amp.license_key</div>
+    <div class="ping">Then ping Claude — I'll verify the Bedrock↔Java handshake, tune the Geyser/Floodgate configs, wire player-count monitoring into ntfy + Uptime Kuma, and set up the Switch 2 connection (BedrockConnect).</div>
+  </div>
+</div>
+
+<div class="task">
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 03</div><h2 class="ttitle">Pair Apollo with a Moonlight client</h2></div></div>
+  <div class="chips"><span class="chip eff">3 min</span><span class="chip unb">unblocks: game streaming</span></div>
+  <div class="body">
+    <p class="why">Apollo is running on the rig with NVENC hardware encoding and captures the dummy display when your monitor's off. Pairing is a one-time PIN exchange.</p>
+    <ol class="steps">
+      <li>Install/open <b>Moonlight</b> on the client (Steam Deck, iPhone, Apple TV, laptop). It should auto-discover the rig on your LAN, or add <code>192.168.10.12</code> manually.</li>
+      <li>Select the rig — Moonlight shows a <b>4-digit PIN</b>.</li>
+      <li>Open <a href="https://apollo.tabaska.us">apollo.tabaska.us</a> (user <code>brandon</code>, vault password), go to <b>PIN</b>, and enter it.</li>
+      <li>Set the client's resolution/fps: <b>Steam Deck → 1280×800, 90fps</b>; <b>4K TV → 3840×2160, 30fps</b>. Apollo switches the display to match per session and reverts after.</li>
+    </ol>
+    <div class="vault">vault: apollo.web_password</div>
+    <div class="note"><span class="t">Heads up</span>1280×800@90 isn't in the current dummy plug's EDID, so the Deck may negotiate down to 60fps until your 4K120 dummy arrives. 1080p and 4K@30 work now.</div>
+    <div class="ping">No ping needed — once paired, Moonlight's “Wake PC” also works. Tell me if you want per-game launch shortcuts.</div>
+  </div>
+</div>
+
+<div class="tier">API keys — one sitting</div>
+
+<div class="task">
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 04</div><h2 class="ttitle">Get a TMDb API key</h2></div></div>
+  <div class="chips"><span class="chip eff">5 min</span><span class="chip unb">finishes: Kometa</span></div>
+  <div class="body">
+    <p class="why">Kometa builds Plex collections/overlays but every run fails without a (free) TMDb key. It's the only thing left on it.</p>
+    <ol class="steps">
+      <li>Sign up at <a href="https://www.themoviedb.org">themoviedb.org</a> (free).</li>
+      <li>Profile → <b>Settings → API</b> → request an API key (Developer, personal use). Approval is instant.</li>
+      <li>Copy the <b>API Read Access Token</b> (v4) or the API Key (v3) — Kometa uses the v3 key.</li>
+    </ol>
+    <div class="vault">drop into vault: tmdb.apikey</div>
+    <div class="ping">Then ping Claude — I'll wire it into Kometa's config and kick a run.</div>
+  </div>
+</div>
+
+<div class="task">
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 05</div><h2 class="ttitle">Get a Twitch/IGDB client ID + secret</h2></div></div>
+  <div class="chips"><span class="chip eff">5 min</span><span class="chip unb">unblocks: RomM / retro</span></div>
+  <div class="body">
+    <p class="why">RomM (your retro game library) pulls box art and metadata from IGDB, which authenticates via a free Twitch developer app.</p>
+    <ol class="steps">
+      <li>Go to <a href="https://dev.twitch.tv/console">dev.twitch.tv/console</a> → <b>Register Your Application</b>.</li>
+      <li>Name it anything (e.g. “romm”), OAuth Redirect URL <code>http://localhost</code>, Category “Application Integration”.</li>
+      <li>Copy the <b>Client ID</b>, then <b>New Secret</b> and copy the <b>Client Secret</b>.</li>
+    </ol>
+    <div class="vault">drop into vault: igdb.client_id · igdb.client_secret</div>
+    <div class="ping">Then ping Claude — I'll wire RomM and stand up the retro library.</div>
+  </div>
+</div>
+
+<div class="tier">Green-lights &amp; credential drops</div>
+
+<div class="task">
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 06</div><h2 class="ttitle">Migrate Bitwarden → Vaultwarden</h2></div></div>
+  <div class="chips"><span class="chip eff">15 min</span><span class="chip unb">self-hosts your passwords</span></div>
+  <div class="body">
+    <p class="why">Vaultwarden is live at <a href="https://vault.tabaska.us">vault.tabaska.us</a> with a real cert now, and your account is registered. It's a separate server from bitwarden.com — no auto-sync, so this is a one-time export/import.</p>
+    <ol class="steps">
+      <li>On <b>bitwarden.com</b> → Tools → <b>Export vault</b> → format <code>.json</code> (save it somewhere safe; it's plaintext).</li>
+      <li>On <b>vault.tabaska.us</b> → Tools → <b>Import data</b> → “Bitwarden (json)” → upload the export.</li>
+      <li>Point your Bitwarden apps/extensions at the self-hosted server: Settings → <b>Server URL</b> → <code>https://vault.tabaska.us</code> → log out/in.</li>
+      <li>Verify a few entries came across, then <b>delete the export file</b>. Decide which server is canonical (running both invites drift — I'd retire the bitwarden.com side).</li>
+    </ol>
+    <div class="ping">No ping needed — but tell me if you want the /admin panel further locked down or 2FA enforced.</div>
+  </div>
+</div>
+
+<div class="task">
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 07</div><h2 class="ttitle">Green-light the two monitoring integrations</h2></div></div>
+  <div class="chips"><span class="chip eff">just say go</span><span class="chip blk">creds already in vault</span></div>
+  <div class="body">
+    <p class="why">Uptime Kuma (up/down monitoring) and Beszel (host metrics) both need a focused scripted pass I didn't want to start blind at the tail of a long session. Their admin creds are already in the vault from earlier.</p>
+    <ul class="plain">
+      <li><b>Uptime Kuma</b> — add the ntfy notification channel + monitors for the ~34 unmonitored services (it only watches the NAS today). Needs its socket.io API scripted.</li>
+      <li><b>Beszel</b> — register the mini + NAS + rig agents (only your MacBook shows now) with down/disk alerts. The mini agent is socket-mode and needs its “Add System” done right.</li>
+    </ul>
+    <div class="vault">vault: uptime_kuma.admin_* · beszel.admin_*</div>
+    <div class="ping">Then ping Claude with “do the Kuma + Beszel pass” — no other input needed.</div>
+  </div>
+</div>
+
+<div class="tier">Decisions — quick yes/no</div>
+
+<div class="task">
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 08</div><h2 class="ttitle">Kobo wireless sync — enable it?</h2></div></div>
+  <div class="chips"><span class="chip eff">decision</span><span class="chip unb">wireless book sync</span></div>
+  <div class="body">
+    <p class="why">Your Calibre-Web-Automated has a Kobo sync endpoint that's installed but off. Real TLS (just landed) unblocks it — Kobo rejects self-signed certs. Server side is ready to flip; device side is a quick settings change on the Kobo afterward.</p>
+    <div class="ping">Ping Claude with “enable Kobo sync” — I'll turn it on, generate the sync token, and give you the exact Kobo device steps.</div>
+  </div>
+</div>
+
+<div class="task">
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 09</div><h2 class="ttitle">Self-host BedrockConnect for the Switch?</h2></div></div>
+  <div class="chips"><span class="chip eff">decision</span><span class="chip unb">Switch 2 → your MC server</span></div>
+  <div class="body">
+    <p class="why">The Switch can't type a server IP, so it joins your Minecraft world via BedrockConnect (a DNS trick that adds a “connect to server” tile). I can self-host it on the mini so no third-party DNS is involved.</p>
+    <div class="ping">Ping Claude with “stand up BedrockConnect” (do Task 02 first).</div>
+  </div>
+</div>
+
+<div class="task">
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 10</div><h2 class="ttitle">Friendly DNS name for the Minecraft server?</h2></div></div>
+  <div class="chips"><span class="chip eff">decision</span><span class="chip unb">mc.tabaska.us</span></div>
+  <div class="body">
+    <p class="why">Instead of handing friends <code>192.168.10.12:25565</code>, I can add <code>mc.tabaska.us</code> in Cloudflare pointing at the rig (internal split-horizon via AdGuard, or public if you ever expose it).</p>
+    <div class="ping">Ping Claude with “add mc.tabaska.us”.</div>
+  </div>
+</div>
+
+<div class="tier">Hygiene — recommended, low urgency</div>
+
+<div class="task">
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 11</div><h2 class="ttitle">Rotate the Cloudflare API token</h2></div></div>
+  <div class="chips"><span class="chip eff">5 min</span><span class="chip unb">security hygiene</span></div>
+  <div class="body">
+    <p class="why">The token passed through chat twice, so best practice is to roll it. It's DNS-edit-only scoped to one zone, so the blast radius is small — but clean is clean.</p>
+    <ol class="steps">
+      <li>Cloudflare → My Profile → <b>API Tokens</b> → find the caddy token → <b>Roll</b> (regenerates the value).</li>
+      <li>Copy the new token.</li>
+    </ol>
+    <div class="vault">update vault: cloudflare.api_token</div>
+    <div class="ping">Then ping Claude — I'll update Caddy's env on the mini, restart it, and verify a cert renewal still works.</div>
+  </div>
+</div>
+
+<div class="footer">Generated 2026-07-08 · check-offs persist in this browser only · full detail lives in the repo handoff + wiki</div>
+
+<script>
+  (function(){
+    var KEY='going-analogue-todo-v1';
+    var saved={};
+    try{saved=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
+    var tasks=document.querySelectorAll('.task');
+    var total=tasks.length; document.getElementById('ptot').textContent=total;
+    function refresh(){
+      var d=0; tasks.forEach(function(t){if(t.classList.contains('done'))d++;});
+      document.getElementById('pdone').textContent=d;
+    }
+    tasks.forEach(function(t,i){
+      var id='t'+i, chk=t.querySelector('.chk');
+      if(saved[id]){t.classList.add('done');chk.textContent='✓';}
+      function toggle(){
+        t.classList.toggle('done');
+        var on=t.classList.contains('done');
+        chk.textContent=on?'✓':'';
+        saved[id]=on; try{localStorage.setItem(KEY,JSON.stringify(saved));}catch(e){}
+        refresh();
+      }
+      chk.addEventListener('click',toggle);
+      chk.addEventListener('keydown',function(e){if(e.key===' '||e.key==='Enter'){e.preventDefault();toggle();}});
+    });
+    refresh();
+  })();
+</script>
