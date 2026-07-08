@@ -18,6 +18,16 @@
 - **wiki.tabaska.us LIVE** (wiki-01..04): 51 pages — hosts, 7 runbooks, operations, network + 32 generated service pages (gen-wiki-services.py); build via build-wiki.sh (pinned mkdocs-material 9.5).
 - Notes: mini->rig SSH denied by tailnet ACL (rig checks are HTTP); mini->nas SSH key added; Sunshine down on rig (502 expected); all *.tabaska.us certs are Caddy-internal CA by design (Cloudflare token would enable real certs).
 
+### Gates cleared wave (2026-07-07 late)
+
+- **dns-02 CLOSED (verified)**: NAS AdGuard up; missing *.tabaska.us rewrite added + enabled; admin password rotated (vault: adguard_nas). Verification cycle: ALL crit checks green fleet-wide (exit 0).
+- **nas-08 CLOSED**: immich pg_dump in root crontab (02:30) + run once, fresh 16.7MB dump verified. Caveat: DSM Task Scheduler edits may rewrite /etc/crontab; freshness check is backstop.
+- **game-10 CLOSED**: fixed gpu-power-tune deployed, GPU capped 300W.
+- **fix-13 CLOSED**: rig ansible-pull green (ok=21 changed=9 failed=0), timer enabled; sbom-nightly timer live; NOPASSWD sudoers on rig; rig deploy key (read-only) in Forgejo.
+- mini->rig SSH via LAN enabled (sshd + key). Sunshine 502 fixed (ufw allow 47990 from LAN); Moonlight stream ports 47984-48010 still closed (open when game streaming starts).
+- Discovery: Dependency-Track runs on the NAS (healthy) — docs said mini; corrected. Overseerr on NAS Exited(1) 2mo ago (retire candidate, fix-18/D-list).
+- Human leftovers: delete two Forgejo API tokens (Settings -> Applications: rig-setup-1783471946, token-cleanup-1783471996); tag seedbox tag:server in Tailscale; optional Cloudflare NS move for real TLS.
+
 ## Session 4 — 2026-07-07 (Plan v3)
 
 - **Full repo + fleet audit** performed (every host inspected against the guide and configs).
