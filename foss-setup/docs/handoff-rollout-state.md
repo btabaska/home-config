@@ -1,5 +1,20 @@
 # Rollout handoff state
 
+### Interactive session (2026-07-08 daytime — rig→24/7 + big batch)
+
+- **DECISION: rig runs 24/7** (~130W idle accepted for availability). Repo-wide contradiction sweep applied across 63 files (plans, tracker, wiki, verification, ansible, gaming docs). sleep.target/suspend.target MASKED on rig (it kept entering s2idle despite logind — KDE/PowerDevil); WoL kept only as recovery. Rig verification checks re-enabled → sweep now **57/57 green**.
+- **Rig maintenance done**: pacman -Syu (441 pending → 0; corrupt proton-cachyos-native pkg + stale keyring fixed), kernel 7.1.3, reboot, containers recreated (log caps now apply), GPU 300W verified + resume hook, dead CIFS mounts (pointed at old //192.168.1.3 shares that no longer exist) cleaned.
+- **Plex updated** 1.41.5 → 1.43.3 (DSM package).
+- **Dependency-Track unblocked end-to-end**: admin pw reset via DB (v5 uses sha512+bcrypt-14; vault dtrack.admin_*), granted Automation team PROJECT_CREATION_UPLOAD, SBOM uploads now 200. Three root-cause bugs fixed (OOM excludes, bogus multipart Content-Type→415, PUT→POST).
+- **AdGuard**: HaGeZi Multi Normal + OISD Big added to both instances (verified).
+- **Mini Immich fully removed** (real compose was at ~/server/compose/immich-app, not /opt/stacks — that's why it kept resurrecting; data preserved). Maintainerr removed (no auto-deletion wanted). tdarr removed from plan (re-encode conflicts with TRaSH).
+- **YouTube pipeline now actually works**: root-caused the 403s — stale/blind yt-dlp failing YouTube's JS n-signature challenge. Fix = nightly yt-dlp + bgutil PO-token provider container baked into custom metube & pinchflat images. MeTube verified end-to-end (download → /volume1/music/YouTube). beets deployed (youtube-ingest config: tag strong matches in place, quarantine weak by skip; daily DSM task id=10). bgutil-pot container on edge net.
+- **litellm secrets rotated** (was CHANGE-ME pg pw + salt==webui secret): unique pg pw (role ALTERd live), salt, webui secret — all vaulted (litellm.*, open_webui.*). Sunshine web creds set + streaming ports opened (vault sunshine.*); switched to KMS capture; **awaiting your Moonlight PIN pairing**. Rig UFW scoped to LAN+tailnet (dropped Anywhere rules for 11434/3000, stale 3030); tailnet AI access re-verified.
+- **wake-rig recovery**: ntfy topic `wake-rig` + host listener service on mini + homepage tile (publish → WoL). Verified.
+- **Vaultwarden signups closed** (you registered). Vault additions: dtrack.*, litellm.*, open_webui.*, sunshine.*, uptime_kuma.*, beszel.* (you added the last two).
+- **Handed back (creds ready, method fiddly — NOT done)**: Uptime Kuma monitors (socket.io API needs uptime-kuma-api client) and Beszel agent registration (mini agent is socket-mode; API-created rows show down; needs UI Add-System or agent→TCP + NAS/rig agent deploy).
+- **Docs delivered**: docs/cloudflare-cutover.html (+ .md) and docs/game-hosting-design.html (incl. panel comparison: AMP vs Pterodactyl/Pelican/Crafty — AMP is the only one with in-game player-state tracking).
+
 ### Deep-audit second pass (2026-07-08, later the same night)
 
 - **5 read-only agents audited the ~20 services the first sweep missed** → `docs/research/10-deep-audit.md` + report §3b. Report converted to light theme + proper HTML skeleton (was white-on-white in some viewers).
