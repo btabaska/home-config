@@ -39,6 +39,19 @@
           APT::Periodic::Update-Package-Lists "1";
           APT::Periodic::Unattended-Upgrade "1";
       check_mode: false
+    # sec-05: security-only is already the stock 50unattended-upgrades posture
+    # (only the -security/ESM origins are enabled). Pin the reboot policy
+    # explicitly in a local drop-in so a package upgrade of the stock file can
+    # never flip us into unattended reboots.
+    - name: Pin unattended-upgrades reboot policy off (sec-05)
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/52unattended-upgrades-local
+        mode: "0644"
+        content: |
+          // Managed by ansible (roles/base, sec-05). Security patches apply
+          // automatically; reboots stay a human decision (playbooks/reboot.yml).
+          Unattended-Upgrade::Automatic-Reboot "false";
+      check_mode: false
 
 # --- conntrack tuning (only matters if you ever fall back to home torrenting,
 #     Section 2 of the plan; harmless otherwise)
