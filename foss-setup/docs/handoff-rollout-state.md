@@ -1,5 +1,12 @@
 # Rollout handoff state
 
+### TLS cutover + Apollo (2026-07-08 late)
+
+- **REAL TLS LIVE**: NS delegated to Cloudflare (courtney/ryan.ns.cloudflare.com), zone active, email verified safe (MX/SPF/verification intact + Cloudflare added Proton DKIM ×3 + DMARC the old zone lacked). Flipped Caddy `local_tls` snippet from `tls internal` → Cloudflare DNS-01; **42 vhosts obtained Lets Encrypt certs** (valid→Oct 6, auto-renew). Unblocks ntfy iOS push, Kobo sync, Bitwarden repoint. Token in vault cloudflare.api_token (came via chat — user may rotate).
+- **Sunshine → Apollo**: sunshine pkg removed; apollo 0.4.8 (AUR, NVENC) installed, creds vault apollo.*, KMS capture, autostart enabled, all ports listening, web UI auths, caddy apollo.tabaska.us (sunshine alias kept) w/ real cert. Docs migrated (19 files). **Display note**: rig is NOT headless — it's the user's daily workstation with a real monitor, just off when they're away. Apollo captures fine when monitor is on. For monitor-off remote streaming → HDMI/DP dummy plug (~$8, recommended) or leave monitor on. Finish test: `~/apollo-enable.sh` on rig + Moonlight pairing (needs monitor on / dummy plug).
+- **AMP purchased** — license in vault cubecoders_amp.license_key. INSTALL METHOD PENDING USER DECISION: rig is their daily-driver workstation + Arch (AMP bare-metal officially supports Debian/Ubuntu/CentOS only). Options: Docker (least invasive, fits fleet) / Debian VM-LXC (official support, isolated) / bare-metal (intrusive on daily driver, unofficial distro). Recommend Docker. Not installed yet — don't install a big service on their personal machine without the method call.
+- Sweep: 57/57 green.
+
 ### Interactive session (2026-07-08 daytime — rig→24/7 + big batch)
 
 - **DECISION: rig runs 24/7** (~130W idle accepted for availability). Repo-wide contradiction sweep applied across 63 files (plans, tracker, wiki, verification, ansible, gaming docs). sleep.target/suspend.target MASKED on rig (it kept entering s2idle despite logind — KDE/PowerDevil); WoL kept only as recovery. Rig verification checks re-enabled → sweep now **57/57 green**.
