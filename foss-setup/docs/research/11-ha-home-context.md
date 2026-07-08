@@ -64,7 +64,7 @@ VLAN once migrated (**block** = add to the no-internet group; **allow** = needs 
 | Robot vacuum | Roborock QV 35S | `roborock` (core) — cloud account for setup/maps, local MQTT for control | partial | allow | IoT | ha-21 |
 | Robot vacuum | iRobot Roomba i7+ | `roomba` (core) — local after BLID/password capture | yes | allow initially (app/firmware), then try block | IoT | ha-22 |
 | TVs | LG CX + C4 (webOS) | `webostv` + `wake_on_lan` — local | yes | block (kills ads/telemetry; allow temporarily for firmware/app updates; pinhole to Plex on mini/NAS needed) | IoT | ha-23 |
-| Soundbar + rears | Samsung HW-Q80R + SWA-9000S | optional `smartthings` (cloud); works fine dumb over HDMI-ARC | no | off-network preferred | — | ha-23 (note) |
+| Soundbar + rears | Samsung HW-Q80R + SWA-9000S | none in v1 (SmartThings adds little); audio is HDMI-ARC | yes (HDMI) | **block** (iot-local) or leave off WiFi | IoT | ha-23 (note) |
 | Range + microwave | LG ThinQ | `lg_thinq` (core, cloud) — status/alerts only, low value | no | allow | IoT | ha-24 |
 | Apple TVs ×2 | Apple TV | `apple_tv` — local (media control, automation triggers) | yes | allow (it's an Apple box; also Apple Home hub) | **Trusted** | ha-25 |
 | HomePods ×3 | HomePod | `apple_tv` (AirPlay targets for TTS/announcements); Apple Home hubs for HomeKit Bridge | yes | allow | **Trusted** | ha-25 |
@@ -75,6 +75,8 @@ VLAN once migrated (**block** = add to the no-internet group; **allow** = needs 
 | Key lights ×2 | Elgato Key Light | `elgato` — **already integrated**, fully local | yes | block | IoT (or Trusted w/ Mac) | done |
 | Indoor garden | Edn SmallGarden | none exists (cloud app only). Treat as dumb; optional smart plug for energy/schedule visibility | no | allow (its app) or leave | IoT | ha-29 |
 | Cameras ×2 | UniFi Protect (on UDM) | `unifiprotect` — local; needs a **local-access admin** user on the UDM (vault: unifi_protect.*, currently empty) | yes | n/a (UDM) | existing | ha-14 |
+| Smart monitor | Samsung Odyssey OLED G9 (G95SC, Tizen) | none in v1 (SmartThings/Tizen cloud adds little); user call: on IoT with broader access blocked | yes as dumb display | **block** (iot-local) | IoT | ha-19 |
+| Car | Tesla Model 3 (garage) | optional later: Tessie/Tesla Fleet API (cloud) — presence, charging, preconditioning | no | allow (Tesla cloud) | IoT | ha-19 |
 | Phones | iPhones | `mobile_app` — Brandon's already connected ("Btiphone"); add Kaelyn's | yes | — | Trusted | ha-13 |
 
 **Architecture for Siri (the household keeps iPhones/HomePods):** HA is the single hub; the
@@ -88,11 +90,15 @@ VLANs and zone firewall already exist. Migration = re-provisioning each WiFi dev
 IoT SSID (human, per-device app work; Hue bridge already migrated). Then, in
 UniFi, two device groups inside IoT:
 
-1. **iot-local (no WAN):** Hue bridge, Midea units (after ESPHome swap), LG TVs, Elgato,
-   ecobee (optional), Roomba (trial), Emporia (after flash) — traffic to internet dropped;
-   only DNS/DHCP/NTP to gateway + established return traffic.
-2. **iot-cloud (WAN allowed):** Roborock, ThinQ, VeSync, Withings, Edn, Emporia+Midea until
-   their local paths land.
+1. **iot-local (no WAN, IP Group referenced by a Block→External policy):** Hue bridge, LG TVs,
+   Samsung G9 monitor, Samsung soundbar, Elgato; later ecobee, Midea (after ESPHome swap),
+   Roomba (trial), Emporia (after flash).
+2. **iot-cloud (WAN allowed — no group needed, it's the IoT default):** Roborock, ThinQ, VeSync,
+   Withings, Edn, Tesla Model 3, Emporia+Midea until their local paths land.
+
+Confirmed from UniFi (2026-07-08 screenshots): IoT→Internal/Work/Cameras blocks + IoT→Gateway-admin
+block already exist. Only two new policies needed: Block iot-local→External, Allow iot-tvs→plex-servers
+:32400 TCP (recipes in docs/ha-action-guide.html §2b).
 
 Pinholes: IoT → mini:32400 + NAS:32400 (Plex for TVs) — NEEDED (IoT→Trusted is return-only);
 mDNS reflection already on (net-06). HA stays single-homed on Trusted and reaches IoT via the

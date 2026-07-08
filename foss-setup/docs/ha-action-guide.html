@@ -99,26 +99,73 @@ Trusted→IoT, say so and I’ll design around it; otherwise §2 restores the pl
 <h2>§2 — Target IoT network configuration <span class="tag t-do">DO</span></h2>
 <p>§1 confirmed the zone skeleton is already right — what remains is only grouping + two rules. VLANs/SSIDs stay as-is
 (<code>BillWi-IoT</code> = VLAN 20 = 192.168.20.0/24).</p>
-<h3>2a. Two device groups inside IoT</h3>
-<p>UniFi → Settings → Profiles → <em>IP Groups</em> (or select clients → add to group). Membership by IP —
-give each IoT device a <strong>fixed DHCP reservation</strong> as it joins (client → Settings → Fixed IP), then:</p>
+<h3>2a. Fixed IPs + one IP Group (the “iot-local” list)</h3>
+<p>Good news from your policy screenshots: <code>Block IoT to Internal / Work / Cameras / Gateway-admin</code>
+all already exist — the isolation layer is done. Only two new policies are needed (§2b), and they reference
+IP groups, so do this first:</p>
+<ol>
+<li><strong>Fixed IP per IoT device</strong> (as each one joins BillWi-IoT): UniFi → Client list → click the device →
+Settings (gear) → <em>Fixed IP Address</em> → keep the current 192.168.20.x it got → Apply. 30 seconds per device.</li>
+<li><strong>Create the groups</strong>: Settings → <em>Profiles → IP Groups</em> (on some versions: Objects) → Create New:
+<ul>
+<li><code>iot-local</code> — IPv4 Address/Subnet type; add the fixed IPs of every cloud-blocked device (table below).</li>
+<li><code>iot-tvs</code> — just the LG CX + LG C4 IPs (used by the Plex pinhole).</li>
+<li><code>plex-servers</code> — <code>192.168.10.2</code> and <code>192.168.10.4</code>.</li>
+</ul></li>
+</ol>
 <table>
-<tr><th>Group</th><th>Members</th><th>Internet</th></tr>
-<tr><td><code>iot-local</code></td><td>Hue bridge · LG CX · LG C4 · Elgato ×2 · (later: ecobee, Midea ×5 after ESPHome dongles, Emporia after ESPHome flash)</td><td><strong>Blocked</strong> — these work 100% locally; no cloud, no telemetry, no ads</td></tr>
-<tr><td><code>iot-cloud</code></td><td>Roborock · Roomba · LG range · LG microwave · COSORI · Withings ×2 · Edn · Emporia + Midea ×5 (until their local paths land)</td><td>Allowed — they need their vendor cloud</td></tr>
+<tr><th>Bucket</th><th>Devices</th><th>Internet</th></tr>
+<tr><td><code>iot-local</code> (IP Group — WAN gets blocked in §2b)</td><td>Hue bridge (192.168.20.100) · LG CX · LG C4 · <strong>Samsung Odyssey G9 G95SC monitor</strong> (Tizen smart display — per your call: network access beyond the basics blocked) · <strong>Samsung HW-Q80R soundbar + SWA-9000S rears</strong> (works fully over HDMI-ARC; WiFi only feeds SmartThings/telemetry) · Elgato ×2 · <em>later:</em> ecobee, Midea ×5 (after ESPHome dongles), Emporia (after flash)</td><td><strong>Blocked</strong></td></tr>
+<tr><td>“iot-cloud” (no group needed — just don’t add them to iot-local)</td><td>Roborock · Roomba · LG range · LG microwave · COSORI · Withings ×2 · Edn · <strong>Tesla Model 3</strong> (needs Tesla cloud for the app/updates; garage WiFi) · Emporia + Midea ×5 until their local paths land</td><td>Allowed (IoT→External Allow is already your default)</td></tr>
 </table>
-<h3>2b. Policy order (top wins)</h3>
+<p><em>Note on the soundbar:</em> if you never use the SmartThings app with it, the even simpler option is to just
+not give it WiFi at all — HDMI-ARC audio is unaffected. Putting it in iot-local achieves the same with it networked.</p>
+
+<h3>2b. The two new policies — exact Create Policy recipes</h3>
+<p>Both are made at Settings → Firewall (Policy Engine) → <strong>Create Policy</strong>, matching the panel you
+screenshotted, top to bottom. Anything not mentioned stays at its default.</p>
+
+<p><strong>Policy 1 — “Block iot-local to Internet”</strong></p>
 <table>
-<tr><th>#</th><th>Rule</th><th>Action</th><th>Note</th></tr>
-<tr><td>1</td><td>IoT → gateway : DNS 53, DHCP 67, NTP 123</td><td>Allow</td><td>never blanket-block the gateway</td></tr>
-<tr><td>2</td><td>IoT (TVs) → mini 192.168.10.2:32400 and NAS 192.168.10.4:32400</td><td>Allow</td><td>Plex apps on the TVs</td></tr>
-<tr><td>3</td><td>Trusted → IoT (all)</td><td>Allow</td><td>✅ already exists (your rules 10000/10001) — nothing to do</td></tr>
-<tr><td>4</td><td><code>iot-local</code> → External/WAN</td><td>Block</td><td>the cloud kill-switch</td></tr>
-<tr><td>5</td><td>IoT → any internal zone</td><td>Block</td><td>the existing isolation rule — keep</td></tr>
-<tr><td>6</td><td><code>iot-cloud</code> → External/WAN</td><td>Allow</td><td>usually implicit; make explicit if #4 is zone-wide</td></tr>
+<tr><th>Panel field</th><th>Set to</th></tr>
+<tr><td>Type (top radios)</td><td><strong>Firewall</strong></td></tr>
+<tr><td>Name</td><td><code>Block iot-local to Internet</code></td></tr>
+<tr><td>Source Zone</td><td><strong>IoT</strong></td></tr>
+<tr><td>Source (radio under zone)</td><td><strong>IP</strong> → pick the <code>iot-local</code> IP Group (if your version only offers manual IP entry here, use the <em>Device</em> radio instead and multi-select the same clients)</td></tr>
+<tr><td>Source Port</td><td>Any</td></tr>
+<tr><td>Action</td><td><strong>Block</strong></td></tr>
+<tr><td>Destination Zone</td><td><strong>External</strong></td></tr>
+<tr><td>Destination / Port</td><td>Any / Any</td></tr>
+<tr><td>IP Version / Protocol</td><td>Both / All</td></tr>
+<tr><td>Connection State</td><td>All</td></tr>
+<tr><td>Schedule</td><td>Always → <strong>Add / Apply</strong></td></tr>
 </table>
-<p>Keep <em>mDNS / IoT Auto-Discovery</em> enabled between Trusted and IoT (already done in net-06) and
-IGMP snooping per the plan. That’s the whole design — after this, “migrate a device” is just §3.</p>
+<p>Then click <strong>Reorder</strong> on the policy list and confirm this Block sits <em>above</em> your existing
+IoT→External Allow policies (top wins). Test: the Hue bridge’s client page should show its 24-h internet
+traffic stay at ~0 B (it already does — it becomes enforced instead of incidental).</p>
+
+<p><strong>Policy 2 — “Allow IoT TVs to Plex”</strong></p>
+<table>
+<tr><th>Panel field</th><th>Set to</th></tr>
+<tr><td>Type</td><td><strong>Firewall</strong></td></tr>
+<tr><td>Name</td><td><code>Allow IoT TVs to Plex</code></td></tr>
+<tr><td>Source Zone</td><td><strong>IoT</strong></td></tr>
+<tr><td>Source</td><td><strong>IP</strong> → <code>iot-tvs</code> group (or Device multi-select: LG CX, LG C4)</td></tr>
+<tr><td>Source Port</td><td>Any</td></tr>
+<tr><td>Action</td><td><strong>Allow</strong></td></tr>
+<tr><td>Destination Zone</td><td><strong>Trusted</strong></td></tr>
+<tr><td>Destination</td><td><strong>IP</strong> → <code>plex-servers</code> group (192.168.10.2 + 192.168.10.4)</td></tr>
+<tr><td>Destination Port</td><td><strong>Specific</strong> → <code>32400</code></td></tr>
+<tr><td>IP Version / Protocol</td><td>Both / <strong>TCP</strong></td></tr>
+<tr><td>Connection State</td><td>All</td></tr>
+<tr><td>Schedule</td><td>Always → <strong>Add / Apply</strong></td></tr>
+</table>
+<p>Reorder check: it must sit <em>above</em> the IoT→Trusted “Block All Traffic” (UniFi usually places custom
+policies above built-ins automatically — verify once). Test after a TV migrates: open the Plex app on it.</p>
+
+<p><strong>Already correct, don’t touch:</strong> IoT→Internal/Work/Cameras blocks, IoT→Gateway-admin block,
+Trusted→IoT Allow (10000/10001), the auto “(Return)” rules, and IoT→Gateway DNS/DHCP/NTP (implicit in your
+Gateway-zone allows).</p>
 
 <h2>§3 — Device migration to <code>BillWi-IoT</code> <span class="tag t-do">DO (room by room)</span></h2>
 <p>Apple TVs and HomePods <strong>stay on Trusted</strong> (they’re your Apple Home hubs and AirPlay targets).
@@ -134,6 +181,9 @@ Fixed IP) and add it to the right group from §2a. Ping me after each batch — 
 <tr><td>COSORI air fryer</td><td>VeSync app → device → ⚙ → re-configure Wi-Fi (re-pair) → BillWi-IoT</td><td>iot-cloud</td></tr>
 <tr><td>Emporia Vue 3</td><td>Emporia app → device settings → Wi-Fi → BillWi-IoT</td><td>iot-cloud (until we flash it)</td></tr>
 <tr><td>Withings scale + BPM</td><td>Health Mate app → Devices → each → Wi-Fi settings → BillWi-IoT (scale asks you to step on it during setup)</td><td>iot-cloud</td></tr>
+<tr><td>Samsung HW-Q80R soundbar</td><td>SmartThings app → device → Edit Wi-Fi (or on-bar WiFi setup). Or skip WiFi entirely — HDMI-ARC audio doesn’t need it.</td><td>iot-local</td></tr>
+<tr><td>Samsung Odyssey G9 (G95SC)</td><td>On-screen: Menu → Settings → Connection → Network → Open Network Settings → Wireless → BillWi-IoT</td><td>iot-local</td></tr>
+<tr><td>Tesla Model 3</td><td>In the car: Controls → Wi-Fi icon (top of screen) → select BillWi-IoT → password. Check the garage has AP signal; if weak, tell me — we’ll note it for AP placement.</td><td>iot-cloud</td></tr>
 <tr><td>Edn SmallGarden</td><td>Edn app → device → Wi-Fi re-setup → BillWi-IoT</td><td>iot-cloud</td></tr>
 </table>
 <p><strong>Order that avoids frustration:</strong> TVs first (§2 pinhole must exist), then Midea batch, then the rest whenever.
