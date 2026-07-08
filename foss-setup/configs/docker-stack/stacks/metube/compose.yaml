@@ -10,7 +10,8 @@
 
 services:
   metube:
-    image: ghcr.io/alexta69/metube:latest
+    build: .
+    image: metube-bgutil:local
     container_name: metube
     restart: unless-stopped
     ports:
@@ -18,7 +19,9 @@ services:
     environment:
       - TZ=${TZ:-America/New_York}
       - STATE_DIR=/state
-      - AUDIO_DOWNLOAD_DIR=/audio # audio-only grabs land in the music library (Plex/Navidrome scan it)
+      - AUDIO_DOWNLOAD_DIR=/audio
+      # YouTube JS-challenge 403 workaround (2026-07-08): ios/tv clients bypass it
+      - 'YTDL_OPTIONS={"extractor_args": {"youtube": {"player_client": ["default", "tv", "web_safari"]}, "youtubepot-bgutilhttp": {"base_url": ["http://bgutil-pot:4416"]}}}'
     volumes:
       - ${METUBE_DOWNLOADS:-./downloads}:/downloads
       - ./state:/state

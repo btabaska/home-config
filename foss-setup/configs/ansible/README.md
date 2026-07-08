@@ -56,8 +56,9 @@ ansible-playbook -i inventory.ini playbooks/audit.yml
 
 ## Notes
 
-- **Wake the on-demand rig first** (`scripts/gaming/wake-rig.sh`, game-08) or
-  exclude it: `--limit '!cachyos'`.
+- The **rig is 24/7** (decision 2026-07-08) and always reachable. If it's down,
+  that's an incident — recover with `scripts/gaming/wake-rig.sh` (game-08).
+  Exclude any host with `--limit '!<host>'`.
 - The **NAS (DSM)** and **Home Assistant (HAOS)** are intentionally out of scope
   — patch them via their own UIs (see `../network/ssh-maintenance-access.md`).
 - Commit this folder to the Forgejo control repo (glue-05). The `audit/` output

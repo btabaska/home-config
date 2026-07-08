@@ -1,0 +1,31 @@
+# beets config — YouTube-audio tagging layer (approved 2026-07-08).
+# MeTube writes audio to /music/YouTube; beets tags strong MusicBrainz matches
+# IN PLACE and SKIPS weak ones (they stay untagged in /music/YouTube = quarantine).
+# It must NEVER move/copy/reorganize — Lidarr owns the rest of /music, and
+# Plex/Navidrome/iPod sync depend on stable paths.
+directory: /music
+library: /config/beets-youtube.db
+
+import:
+    copy: no
+    move: no
+    write: yes
+    autotag: yes
+    quiet: yes                 # non-interactive (cron): auto-accept strong, skip rest
+    quiet_fallback: skip       # weak/no match -> leave file untouched in place
+    none_rec_action: skip
+    log: /config/import.log
+
+# Only auto-tag when MusicBrainz is confident; everything else is quarantined-by-skip.
+match:
+    strong_rec_thresh: 0.10    # (lower = stricter; 0.10 ≈ default "strong")
+    max_rec:
+        unmatched_tracks: medium
+
+plugins: fromfilename
+
+# Keep beets from ever rewriting paths — tag metadata only, files stay where MeTube put them.
+paths:
+    default: YouTube/$artist - $title
+    singleton: YouTube/$artist - $title
+    comp: YouTube/$artist - $title

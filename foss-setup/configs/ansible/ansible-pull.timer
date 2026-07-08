@@ -1,12 +1,10 @@
 # ansible-pull.timer — schedule for the convergence run (glue-08).
 #
-# Always-on hosts (Mac mini, seedbox): converge a few times a day, with jitter
-# so the fleet doesn't all hammer Forgejo at once.
-#
-# On-demand rig (cachyos): it sleeps through any wall-clock schedule, so DROP
-# OnCalendar there and use the wake hook instead — set Persistent=true (run the
-# missed job on next wake) AND add an OnBootSec so it converges shortly after
-# Wake-on-LAN (game-08), matching wake_gated in group_vars/on_demand.yml.
+# All hosts (Mac mini, seedbox, rig): converge a few times a day, with jitter
+# so the fleet doesn't all hammer Forgejo at once. The rig runs 24/7 as of
+# 2026-07-08, so it uses the same OnCalendar schedule as everyone else.
+# Persistent=true is generic catch-up (run a missed job after downtime) — it is
+# not a wake-gating mechanism.
 [Unit]
 Description=Run ansible-pull fleet convergence on a schedule (glue-08)
 
@@ -14,7 +12,8 @@ Description=Run ansible-pull fleet convergence on a schedule (glue-08)
 OnCalendar=*-*-* 04:20:00
 RandomizedDelaySec=30m
 Persistent=true
-# Rig only: uncomment to converge ~3 min after each wake instead of by clock.
+# Optional: converge ~3 min after boot too — useful after a recovery boot
+# (power outage / accidental shutdown), harmless otherwise.
 # OnBootSec=3min
 
 [Install]

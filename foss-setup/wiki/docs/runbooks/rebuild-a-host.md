@@ -45,7 +45,7 @@ sudo tailscale up --ssh
 | Host | Differences |
 |---|---|
 | **mini** | Steps above verbatim. Also: etckeeper init, verify Caddy has certs (volume `caddy_data` restore avoids LE rate limits) |
-| **rig** | No `/opt/stacks`; chezmoi + pacman manifests via ansible-pull; `gpu-power-tune.service`; ansible-pull timer is wake-gated (`OnBootSec`, `Persistent=true`) |
+| **rig** | No `/opt/stacks`; chezmoi + pacman manifests via ansible-pull; `gpu-power-tune.service`; ansible-pull timer runs the standard daily schedule (`OnCalendar` + `Persistent=true`, same as every host — the rig is 24/7) |
 | **nas** | **Not this runbook** — DSM Configuration Backup restore + Container Manager projects from `configs/nas/` + data from Hyper Backup |
 | **HA** | Restore its own backup archive (key in Bitwarden) |
 | **gateway** | Restore the `.unf` export in the UniFi GUI |

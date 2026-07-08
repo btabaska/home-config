@@ -1,3 +1,5 @@
+# REMOVED FROM PLAN 2026-07-08 — kept for reference. Re-encoding conflicts with TRaSH quality automation; storage not scarce.
+#
 # Tdarr — distributed audio/video transcoding automation (server + local node)
 # Phase 4. Docs: https://docs.tdarr.io/
 #
@@ -8,14 +10,15 @@
 # TRANSCODE_CACHE should be fast local scratch on the node doing the work.
 #
 # ── NVENC NODE (CachyOS rig) ────────────────────────────────────────────────
-# Heavy/bulk transcodes offload to the CachyOS gaming rig using NVENC. Only run
-# when the rig is awake — start manually / on Wake-on-LAN, not restart: unless-stopped.
+# Heavy/bulk transcodes would offload to the CachyOS gaming rig using NVENC.
+# (The rig runs 24/7 now, so scheduling around sleep is no longer a concern —
+# moot anyway since Tdarr is removed from the plan.)
 #
 #   services:
 #     tdarr-node-nvenc:
 #       image: ghcr.io/haveagitgat/tdarr_node:2.78.01   # keep in lockstep with the server tag
 #       container_name: tdarr-node-nvenc
-#       restart: "no"            # only up while the rig is awake
+#       restart: "no"            # start manually if ever revived
 #       network_mode: host
 #       environment:
 #         - TZ=America/New_York

@@ -11,7 +11,7 @@ mode) → Dream Wall → devices.
 | gateway (Dream Wall) | 192.168.10.1 | — | GUI-only management |
 | mini | 192.168.10.2 | `macmini.tailb31641.ts.net` | Caddy 80/443, DNS :53, Forgejo :3030 (HTTP) |
 | nas (DS920+) | 192.168.10.4 | `nas.*.ts.net` | DSM, Immich :2283, AdGuard secondary :53/:3000 |
-| rig (CachyOS) | 192.168.10.12 | `cachyos.*.ts.net` | On-demand — wake first ([runbook](runbooks/wake-the-rig.md)) |
+| rig (CachyOS) | 192.168.10.12 | `cachyos.*.ts.net` | 24/7 — if unreachable, recover via WoL ([runbook](runbooks/wake-the-rig.md)) |
 | Home Assistant | 192.168.10.50 | not on tailnet yet (pending: ha-01) | :8123 |
 | seedbox (Betty) | off-site (shared IP 185.162.184.38) | `seedbox` via Tailscale SSH | No LAN presence |
 

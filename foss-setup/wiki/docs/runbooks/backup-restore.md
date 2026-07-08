@@ -21,7 +21,7 @@ Tier 2 (re-acquirable media) gets local redundancy only.
 | `/etc` on mini | etckeeper (auto-commit on apt ops) | Live |
 | Dotfiles | chezmoi | Live |
 | NAS Tier 1 → B2 | Hyper Backup (S3 API) + Object Lock | pending: nas-02…07 |
-| mini/rig → B2 | restic (systemd timers; rig wake-gated) | pending: sec-03 |
+| mini/rig → B2 | restic (systemd timers; rig on the same schedule — it runs 24/7) | pending: sec-03 |
 | HA full backups → NAS | HA Settings → Backups (key in Bitwarden) | pending: ha track |
 | NAS snapshots | Btrfs Snapshot Replication on Tier 1 shares | DSM |
 | Tier 2 media | NAS volumes + rotated external HDD | manual |

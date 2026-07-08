@@ -20,7 +20,7 @@ The **light always-on web/management stack** (~28 containers) under
 - **Life apps**: Miniflux, Wallabag, Navidrome, Mealie, Paperless-ngx, Pinchflat, Seerr, MusicSeerr, Libreseerr
 - **Media polish**: Tautulli, Kometa, Maintainerr, Recyclarr
 - **Ops**: Homepage, Uptime Kuma, Beszel, ntfy, Diun, Healthchecks, Dockge, Dependency-Track (until the NAS RAM upgrade)
-- **Infra**: Forgejo (git — HTTP :3030, `http://macmini.tailb31641.ts.net:3030`), LiteLLM (stable LLM endpoint that falls back when the rig sleeps)
+- **Infra**: Forgejo (git — HTTP :3030, `http://macmini.tailb31641.ts.net:3030`), LiteLLM (stable LLM endpoint; its small-model fallback is resilience only now — the rig is 24/7, so no wake-proxy workflow, though the mini keeps its WoL-relay role for rig recovery)
 - **This wiki**: static site at `/opt/stacks/wiki/site`, served by Caddy at <https://wiki.tabaska.us>
 
 Full generated inventory: [Services](../services/index.md).

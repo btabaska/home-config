@@ -21,9 +21,10 @@ home-config (GitHub, full repo)
   --limit $(hostname -s) --connection local --diff configs/ansible/site.yml`.
   `--check` was deliberately removed 2026-07-07: with it, the fleet only
   *reported* drift and never converged (the audit's P0-2).
-- **Timer**: daily 04:20 ± 30 min jitter, `Persistent=true`. On the rig the
-  wall-clock schedule is dropped in favor of `OnBootSec=3min` — converge
-  shortly after each WoL wake.
+- **Timer**: daily 04:20 ± 30 min jitter, `Persistent=true` — the same
+  `OnCalendar` schedule on every host, the rig included (it runs 24/7 as of
+  2026-07-08, so no wake-gating; `Persistent=true` is just the generic
+  catch-up for any missed window, e.g. after downtime).
 - **State**: first fully green converge on the mini 2026-07-07
   (ok=34 failed=0, apply mode). Rig deployment pending (glue-08 — gated on
   the rig sudo password and its Forgejo deploy key).

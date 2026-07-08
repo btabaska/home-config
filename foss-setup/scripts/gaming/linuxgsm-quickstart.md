@@ -106,7 +106,8 @@ Add to the gameserver user's crontab, e.g.:
 ---
 
 ### Heavy servers note (Palworld / ARK / modded)
-These run **on-demand on the CachyOS rig**, woken via Wake-on-LAN (`wake-rig.sh`).
+These run **on the CachyOS rig**, which is 24/7 as of 2026-07 (WoL / `wake-rig.sh`
+is recovery tooling only).
 You can run them with LinuxGSM the same way, OR use **Pelican Panel + Wings**
 (container-native, web UI, eggs in Git/GitOps) if you prefer a managed panel. See
 the Pelican install task for that path.

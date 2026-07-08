@@ -49,8 +49,9 @@ systemctl --user enable --now app-dev.lizardbyte.app.Sunshine
 systemctl --user status app-dev.lizardbyte.app.Sunshine
 ```
 
-To have the user service start at boot **without an interactive login** (headless /
-auto-suspend rig), enable lingering for your user:
+To have the user service start at boot **without an interactive login** (the 24/7
+rig boots unattended, e.g. after a power-outage recovery), enable lingering for
+your user:
 
 ```bash
 sudo loginctl enable-linger "$USER"

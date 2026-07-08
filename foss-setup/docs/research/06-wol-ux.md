@@ -1,3 +1,5 @@
+> **ADDENDUM 2026-07-08:** rig is now 24/7 — wake-UX/suspend recommendations herein are superseded (WoL kept as recovery).
+
 # Rig WoL UX research (agent complete)
 SUNSHINE Q ANSWERED: Moonlight ALREADY wakes the rig natively on LAN — "Wake PC" in every client (iOS/tvOS/SteamDeck/desktop), no config beyond pairing once. Over tailscale WoL can't traverse (Tailscale official) — needs a LAN-side waker.
 RECOMMENDED END STATE:

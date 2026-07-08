@@ -8,35 +8,35 @@ The FOSS world genuinely moved in the last year. The shifts relevant to you: Imm
 
 ---
 
-## 0. The host decision that drives everything: 24/7 vs. on-demand
+## 0. The host decision that drives everything: everything runs 24/7 (settled 2026-07-08)
 
-Before any app choice, settle this. It's the difference between a ~$160/year power bill and a ~$700+/year one, and it's *also* what makes the whole thing "set and forget."
+This was originally framed as "24/7 vs. on-demand," and it's still the difference between a ~$160/year power bill and a ~$700+/year one — but it's now **settled: every host, including the rig, runs 24/7** (decision 2026-07-08: ~130W rig idle ≈ $23/mo, accepted as the price of availability; an idle-power-tuning task is open). Wake-on-LAN is retained as **recovery tooling** (power outage, accidental shutdown), not a workflow — an unreachable rig is an incident, not expected sleep.
 
 **Always-on tier (the quiet workhorses):**
 - **DS920+ NAS** — storage, plus the home for most lightweight always-on services. Its Celeron J4125 has Intel Quick Sync, so it can even handle Jellyfin transcoding for a stream or two. **It ships with 4GB; the heavy-offload plan below needs a RAM upgrade to ~20GB first — a Crucial `CT16G4SFD8266` 16GB stick (~$40-110 depending on seller — verify it's brand-new and dual-rank/2Rx8; decided, future purchase, see capacity note). Until then keep the NAS to Immich + Plex + CWA.**
 - **Mac mini (Late 2014, Macmini7,1) -> Ubuntu Server** — your Docker host for anything you don't want on the NAS's locked-down DSM. True idle is ~6-10W; figure ~10-15W running the container stack. It's a **dual-core i5-4278U with 8GB of RAM soldered to the board — non-upgradeable, ever** — so treat it as a fixed *light* host: the web/management stack only (see capacity note).
 
-**On-demand tier (powerful but expensive to idle):**
-- **CachyOS rig (3090 Ti / 12700K, 64 GB RAM)** — your *local-LLM, game-streaming, and heavy-game-server box*, not a 24/7 server. Wake it for Gemma/Qwen/DeepSeek inference, a Sunshine streaming session, or a beefy game server; let it sleep otherwise. Running it 24/7 just to host services would dwarf every other cost on this page.
+**Heavy 24/7 tier (powerful; the idle bill is a deliberate trade):**
+- **CachyOS rig (3090 Ti / 12700K, 64 GB RAM)** — your *local-LLM, game-streaming, and heavy-game-server box*, now running **24/7** (decision 2026-07-08: ~130W idle ≈ $23/mo, accepted for availability). Gemma/Qwen/DeepSeek inference, Sunshine sessions, and beefy game servers are available anytime with no wake step; the open idle-power-tuning task (game-09) keeps the idle number honest. Wake-on-LAN stays configured purely as recovery (power outage, accidental shutdown).
 
 ### What runs where
 
 | Service | Host | Why |
 |---|---|---|
 | File storage, Immich, Plex, Calibre-Web-Automated, backups | DS920+ | Always on, low power, Quick Sync transcode |
-| **Heavy/always-on offload: Paperless-ngx, Dependency-Track, Frigate, Tdarr (server)** | DS920+ | Co-located with the data/media they touch; keeps RAM-hungry Java + live video detection off the small Mac mini (see capacity note below) |
-| Docker stack: Seerr (movie/TV requests), **MusicSeerr** (album requests), Miniflux, Navidrome, Pinchflat, Wallabag, Mealie, Tautulli/Kometa/Maintainerr, Homepage, Caddy, AdGuard+Unbound, monitoring (Beszel/Uptime-Kuma/ntfy), LiteLLM (small model), Forgejo | Mac mini (Ubuntu) | Flexible Docker host, ~12W, no DSM constraints — the *light* always-on services |
+| **Heavy/always-on offload: Paperless-ngx, Dependency-Track, Frigate** *(~~Tdarr (server)~~ — removed from plan 2026-07-08)* | DS920+ | Co-located with the data/media they touch; keeps RAM-hungry Java + live video detection off the small Mac mini (see capacity note below) |
+| Docker stack: Seerr (movie/TV requests), **MusicSeerr** (album requests), Miniflux, Navidrome, Pinchflat, Wallabag, Mealie, Tautulli/Kometa (~~Maintainerr~~ removed 2026-07-08), Homepage, Caddy, AdGuard+Unbound, monitoring (Beszel/Uptime-Kuma/ntfy), LiteLLM (small model), Forgejo | Mac mini (Ubuntu) | Flexible Docker host, ~12W, no DSM constraints — the *light* always-on services |
 | qBittorrent + Sonarr/Radarr/Prowlarr/Bazarr + sync agent | Managed seedbox — **Bytesized "Stream +3"** (3000 GB, off-site) | Keeps all P2P off your home network; ISP never sees a swarm (see Media acquisition) |
 | Home Assistant | **HA Green (purchased)** | Isolated, always-on, low power (see Smart Home) |
-| One light game server (e.g. a single Minecraft or Terraria) | Mac mini (Ubuntu) | Always-on for friends — but the 8GB box only has room for *one small* server alongside the stack; all other/heavier servers run on the rig on-demand (see capacity note) |
-| Local LLM (Ollama), Open WebUI, Sunshine streaming, heavy game servers, gaming | CachyOS rig | On-demand only; Wake-on-LAN + auto-suspend |
+| One light game server (e.g. a single Minecraft or Terraria) | Mac mini (Ubuntu) | Always-on for friends — but the 8GB box only has room for *one small* server alongside the stack; all other/heavier servers run on the rig, which is now 24/7 (see capacity note) |
+| Local LLM (Ollama), Open WebUI, Sunshine streaming, heavy game servers, gaming | CachyOS rig | Runs 24/7 (decision 2026-07-08); WoL kept as recovery tooling only |
 | Routing, firewall, VLANs, WiFi | Dream Wall | Already always-on |
 
 > If you'd rather consolidate, the Mac mini's services could also live on the NAS via Container Manager. But keeping a separate Docker host means a NAS firmware update or a runaway photo-index job never takes your containers down with it. Worth the extra ~$20/year.
 
-> **Capacity note — both always-on boxes are RAM-constrained; size for it (and the NAS needs a RAM upgrade first).** The Mac mini is a **Late-2014 Macmini7,1 (dual-core i5-4278U) with 8GB of RAM soldered to the board — it cannot be upgraded, ever.** Treat it as a fixed *light* host: the Docker web/management stack fits ~8GB with little to spare, so **no heavy game servers, no real local LLM model (a tiny ≤1B at most), and no HA VM live here** — those belong on the on-demand rig or an HA Green. The heavy hitters from Sections 2/8 — two Java apps (**Dependency-Track**'s apiserver wants ~4GB+ — official 2-4.5GB min — plus Paperless's **Tika**), **Frigate**'s live object detection, **Tdarr**, and the database pile (5× Postgres + Wallabag's MariaDB + two Redis) — would thrash or OOM an 8GB box, **so they move to the NAS** next to the data they touch: Frigate on the NAS Quick Sync iGPU (or keep it on the Mac mini *if* you add a ~$60 Coral), Tdarr server only with transcodes on the rig node, and Dependency-Track where there's RAM headroom.
+> **Capacity note — both always-on boxes are RAM-constrained; size for it (and the NAS needs a RAM upgrade first).** The Mac mini is a **Late-2014 Macmini7,1 (dual-core i5-4278U) with 8GB of RAM soldered to the board — it cannot be upgraded, ever.** Treat it as a fixed *light* host: the Docker web/management stack fits ~8GB with little to spare, so **no heavy game servers, no real local LLM model (a tiny ≤1B at most), and no HA VM live here** — those belong on the rig (24/7) or an HA Green. The heavy hitters from Sections 2/8 — two Java apps (**Dependency-Track**'s apiserver wants ~4GB+ — official 2-4.5GB min — plus Paperless's **Tika**), **Frigate**'s live object detection, ~~**Tdarr**~~ (removed from plan 2026-07-08), and the database pile (5× Postgres + Wallabag's MariaDB + two Redis) — would thrash or OOM an 8GB box, **so they move to the NAS** next to the data they touch: Frigate on the NAS Quick Sync iGPU (or keep it on the Mac mini *if* you add a ~$60 Coral), and Dependency-Track where there's RAM headroom. (Tdarr was in this offload list until it was dropped from the plan on 2026-07-08.)
 >
-> **UPDATE 2026-07-07: the RAM upgrade is DONE — the NAS reports 20GB (verified via /proc/meminfo), so the offload plan below is active, and the limp-mode guidance is retired.** Original sizing rationale kept for history: The DS920+ ships with **4GB**, and at 4GB it already swaps under just Immich (with ML) + Plex; it cannot also take the offloads. Intel officially caps the J4125 at 8GB, but the DS920+ is the well-documented exception that runs **20GB** with a single 16GB dual-rank SO-DIMM in practice (it works, but it's beyond Intel's spec and Synology's support). **Decided (future purchase):** Crucial **`CT16G4SFD8266`** — 16GB DDR4-2666 PC4-21300, dual-rank 2Rx8, CL19, **~$40-110 depending on seller** (verify it's brand-new and dual-rank 2Rx8; the exact stick locked in, buying it later). It yields 4GB + 16GB = **20GB that DSM recognizes and uses** (unofficial → voids Synology support, but proven reliable). **Until that stick is installed, limp by:** run only **Immich (ML concurrency capped + indexing scheduled off-peak) + Plex + Calibre-Web-Automated** on the NAS, and **defer Paperless / Frigate / Tdarr** — stand them up on the rig on-demand, or hold them — rather than landing the offloads on a 4GB NAS. **One rule for Dependency-Track: it runs on the NAS (verified deployed and healthy there 2026-07-07).** **Measure** with Section 5's Emporia + HA Energy and `free -m`/DSM resource monitor. The point isn't a fixed assignment — it's *don't put both Java apps + live video + six DBs on the small Mac mini, and don't land them on the NAS until it's at 20GB.*
+> **UPDATE 2026-07-07: the RAM upgrade is DONE — the NAS reports 20GB (verified via /proc/meminfo), so the offload plan below is active, and the limp-mode guidance is retired.** Original sizing rationale kept for history: The DS920+ ships with **4GB**, and at 4GB it already swaps under just Immich (with ML) + Plex; it cannot also take the offloads. Intel officially caps the J4125 at 8GB, but the DS920+ is the well-documented exception that runs **20GB** with a single 16GB dual-rank SO-DIMM in practice (it works, but it's beyond Intel's spec and Synology's support). **Decided (future purchase):** Crucial **`CT16G4SFD8266`** — 16GB DDR4-2666 PC4-21300, dual-rank 2Rx8, CL19, **~$40-110 depending on seller** (verify it's brand-new and dual-rank 2Rx8; the exact stick locked in, buying it later). It yields 4GB + 16GB = **20GB that DSM recognizes and uses** (unofficial → voids Synology support, but proven reliable). **Until that stick is installed, limp by:** run only **Immich (ML concurrency capped + indexing scheduled off-peak) + Plex + Calibre-Web-Automated** on the NAS, and **defer Paperless / Frigate / Tdarr** — stand them up on the rig, or hold them — rather than landing the offloads on a 4GB NAS. *(Tdarr has since been removed from the plan entirely, 2026-07-08.)* **One rule for Dependency-Track: it runs on the NAS (verified deployed and healthy there 2026-07-07).** **Measure** with Section 5's Emporia + HA Energy and `free -m`/DSM resource monitor. The point isn't a fixed assignment — it's *don't put both Java apps + live video + six DBs on the small Mac mini, and don't land them on the NAS until it's at 20GB.*
 
 ---
 
@@ -243,8 +243,8 @@ The acquisition stack above gets files onto the NAS; this layer makes the librar
 - **Recyclarr** — syncs **TRaSH Guides** custom formats / quality profiles / scoring into Sonarr/Radarr on a cron, so the *arrs grab *good* releases instead of mislabeled or bloated ones. A tiny CLI, perfectly set-and-forget. *Host: the seedbox (next to the *arrs).*
 - **Unpackerr** — auto-extracts RAR'd releases that Sonarr/Radarr otherwise silently fail to import. Optional on a private-tracker stack (RAR'd releases are uncommon there), more useful with Usenet or public trackers. *Host: the seedbox.*
 - **Kometa** (formerly Plex Meta Manager) — builds collections, resolution/HDR overlay badges, posters, and curated playlists, turning a folder dump into a "produced"-looking Plex. *Host: Mac mini.*
-- **Tdarr** *(or **FileFlows**)* — pre-transcodes the library to a direct-play-friendly codec set so the NAS's J4125 Quick Sync isn't asked to live-transcode multiple 4K/HDR streams it can't sustain. Run the heavy transcodes on the **CachyOS rig** (NVENC) on-demand and let the NAS just serve. *Server on the **NAS** (light, and next to the media library it scans); the heavy transcode **node** runs on the rig.*
-- **Maintainerr** — rule-based library pruning (e.g. "unwatched 90 days + not in a collection -> delete with a grace period"), cleaning across Plex + the *arrs + Seerr. The "anti-Seerr" that keeps Tier-2 storage from growing unbounded — directly serves the tiering goal in Section 6. *Host: Mac mini.*
+- ~~**Tdarr** *(or **FileFlows**)*~~ — **REMOVED from the plan (2026-07-08, task media-04, won't do):** re-encoding conflicts with the TRaSH quality automation (Recyclarr grabs the right releases in the first place) and storage isn't scarce. *(Original idea, for history: pre-transcode the library to a direct-play-friendly codec set — server on the NAS, transcode node on the rig.)*
+- ~~**Maintainerr**~~ — **REMOVED from the plan (2026-07-08, task media-03, won't do):** no auto-deletion wanted. *(Original idea, for history: rule-based library pruning across Plex + the *arrs + Seerr.)*
 - *Niche / by taste:* **Komga** or **Kavita** (comics/manga; Kavita also does ebooks) if that's a library you want; **beets** + **MusicBrainz Picard** for clean music tags once Lidarr is feeding Navidrome. (**YouTube archiving is already covered by Pinchflat above.**)
 - *Note — book automation:* **Readarr was retired (archived) in June 2025**, so there's no maintained "monitor an author, auto-grab new releases" *arr. CWA still covers organizing/serving ebooks; if you want *acquisition* automation later, **Bindery** or **LazyLibrarian** are the current community picks.
 
@@ -310,7 +310,7 @@ You're de-Appling the *backend*, but the household keeps iPhones. **HA's HomeKit
 
 ### Tie-ins worth doing
 - **Local voice (replaces Siri/Alexa):** HA's Assist pipeline + the Whisper/Piper add-ons gives local speech, and you can point its conversation agent at **Ollama on your rig** for a fully local LLM assistant.
-  - **The on-demand-rig problem + fix (LiteLLM fallback):** the rig sleeps, so a conversation agent pointed straight at it goes dead whenever it's suspended. Put **LiteLLM** (a tiny OpenAI-compatible gateway) in front instead: HA (and Open WebUI, scripts, etc.) all target one stable URL, and LiteLLM **routes to the rig's big model when it's awake and automatically falls back** — on timeout/5xx — to a **small always-on model** (a ≤1B model via Ollama/llama.cpp on the Mac mini, CPU-only is fine) or a cloud API. Net result: "turn off the lights" and quick questions are instant and always work; heavy reasoning uses the rig when it's up. (Optionally have HA send a Wake-on-LAN packet to spin the rig up for a genuinely heavy query.)
+  - **One stable URL + resilience (LiteLLM fallback):** the rig now runs 24/7 (decision 2026-07-08), so the old sleeping-rig dead-assistant problem is gone — but keep **LiteLLM** (a tiny OpenAI-compatible gateway) in front anyway: HA (and Open WebUI, scripts, etc.) all target one stable URL, and LiteLLM **routes to the rig's big model and automatically falls back** — on timeout/5xx — to a **small always-on model** (a ≤1B model via Ollama/llama.cpp on the Mac mini, CPU-only is fine) or a cloud API. A rig outage is now an *incident*, not an expected state; the fallback keeps "turn off the lights" and quick questions working while you fix it (WoL remains available as recovery after a power cut).
 - **Node-RED — visual automations:** install the HA **Node-RED add-on** once HA automations outgrow the built-in editor (complex occupancy/time/state-machine logic, presence flows). Optional but the standard escalation path; flows live in `/config` and are captured by the HA backup.
 - **HA backups — concrete method:** Settings -> System -> **Backups** -> schedule full backups (e.g. daily, keep 7) to the **NAS** via the **Samba/NFS backup location** (or the Google Drive Backup add-on), and **save the backup encryption key in Bitwarden** — you cannot restore without it. Also separately back up the Midea `.json` token files (above). See Section 8 for putting `/config` YAML under Git too.
 - **Energy dashboard:** with a smart plug or whole-home monitor, HA tracks per-device power — directly useful for the 24/7 power question in Section 5.
@@ -328,7 +328,7 @@ Pick by how much you want to manage:
 - **Pelican Panel** — the modern, container-native game-server panel (community fork by former Pterodactyl contributors). Panel + "Wings" agent; game definitions ("eggs") are JSON, shared via Git and imported through the admin UI; huge game list. Best if you want to be the friend-group's "spin up any game" host with a clean web UI.
 - **Pterodactyl** — the established panel Pelican forks from; still excellent, slightly heavier setup. **Crafty Controller** — simpler, Minecraft-focused.
 
-**Where to run them:** the 8GB Mac mini is already carrying the always-on web stack, so it hosts **at most one light always-on server** — e.g. a single **Minecraft (Paper)** or **Terraria** world — so friends can hop on anytime without OOM-ing the box. **Everything else runs on-demand on the CachyOS rig:** the other co-op titles (Valheim, Factorio, Project Zomboid, Core Keeper) *and* the heavier servers (Palworld, ARK, modded packs) — bring the rig up for game night (Wake-on-LAN) and let it sleep otherwise. (This matches Section 0's capacity note — don't stack multiple game servers on the small Mac mini.)
+**Where to run them:** the 8GB Mac mini is already carrying the always-on web stack, so it hosts **at most one light always-on server** — e.g. a single **Minecraft (Paper)** or **Terraria** world — so friends can hop on anytime without OOM-ing the box. **Everything else runs on the CachyOS rig, which is now 24/7 (decision 2026-07-08):** the other co-op titles (Valheim, Factorio, Project Zomboid, Core Keeper) *and* the heavier servers (Palworld, ARK, modded packs) — available for game night anytime, no wake step. (This matches Section 0's capacity note — don't stack multiple game servers on the small Mac mini.)
 
 **Exposing them safely (the important part):**
 - **Friends-only co-op -> Tailscale.** Invite friends to your tailnet (or share just the server node). No ports open to the internet, encrypted, works great for co-op. The set-and-forget, secure default.
@@ -340,13 +340,13 @@ Replaces NVIDIA's discontinued GameStream and beats GeForce Now / Xbox Cloud for
 - **Clients:** **Moonlight** on laptops, Steam Deck, Apple TV, phone, or TV.
 - **In-home:** keep host and clients on the **same (Trusted) VLAN** so Moonlight auto-discovers the host via mDNS and there's no inter-VLAN hop. Wire the host and the client near your TV. This is exactly why a "streaming VLAN" is the wrong move — it breaks discovery and adds latency.
 - **Remote -> Tailscale.** Add the host in Moonlight by its Tailscale IP (100.x.x.x) — auto-discovery doesn't work over Tailscale's Layer 3. **Critical tuning:** make sure Tailscale gets a *direct* connection, not a DERP relay — relays are throughput-limited (often only tens of Mbps, and as low as single digits under load) and ruin the stream. Run `tailscale status` and confirm "direct"; if relayed, forward **UDP 41641** on the Dream Wall to the host so hole-punching succeeds (Tailscale's newer self-hosted Peer Relays are another fallback if direct fails). Then you're limited only by encoder + bandwidth (tens to hundreds of Mbps).
-- **Wake-on-LAN ties it together:** with WoL + auto-login, you can wake the rig, stream a session, and let it sleep — the powerful box earns its keep on-demand instead of idling.
+- **Always ready:** the rig runs 24/7 (decision 2026-07-08), so a Moonlight session connects immediately — no wake step. Keep WoL enabled in BIOS purely as recovery tooling (power outage, accidental shutdown); if the rig won't answer, that's an incident, not expected sleep.
 - *Handhelds:* for Android handhelds, the **Apollo** (Sunshine fork) + **Artemis** (Moonlight fork) pair adds touchscreen/on-screen-keyboard niceties; otherwise stock Sunshine + Moonlight is more stable.
 
 #### The headless-display gotcha (and the fix you already have)
 Sunshine can only capture an **active** display at the client's resolution/refresh — with no monitor attached (or the monitor asleep), there's nothing to encode, which is the single most common headless-streaming failure. Three options, easiest first:
 - **Dummy HDMI plug (you own one) — simplest, most reliable.** Plug it in; the GPU sees a "monitor" and Sunshine captures it. Set the desktop to the plug at your target resolution. Zero software.
-- **Software virtual display on CachyOS (no dongle).** Your instinct is right that a Sunshine fork handles this on Linux. Stock **Apollo's** built-in virtual display is Windows-only, but two Linux solutions are CachyOS-tested: **`MrOz59/Apollo-Linux`** (an Apollo fork that adds **EVDI**-based virtual displays — `evdi-dkms`, auto-matches the client's resolution/HDR, works on NVIDIA), and **`frostplexx/sunshine_virt_display`** (a systemd daemon that creates an EDID-override virtual display on connect). Either gives a true headless, resolution-matching session — handy since the rig wakes on demand with no monitor on.
+- **Software virtual display on CachyOS (no dongle).** Your instinct is right that a Sunshine fork handles this on Linux. Stock **Apollo's** built-in virtual display is Windows-only, but two Linux solutions are CachyOS-tested: **`MrOz59/Apollo-Linux`** (an Apollo fork that adds **EVDI**-based virtual displays — `evdi-dkms`, auto-matches the client's resolution/HDR, works on NVIDIA), and **`frostplexx/sunshine_virt_display`** (a systemd daemon that creates an EDID-override virtual display on connect). Either gives a true headless, resolution-matching session — handy since the always-on rig runs headless with no monitor attached.
 - **Audio:** with no real display there's often no audio sink either — add a **PipeWire virtual sink** (or use the dummy plug's audio device) so Sunshine has something to capture.
 
 #### Save-game sync (Steam Cloud for everything)
@@ -358,8 +358,8 @@ The 3090 Ti hosts Sunshine streaming, heavy game servers, **and** Ollama inferen
 #### Make the streamed library usable — a launcher
 Sunshine streams whatever's running, but adding apps one-by-one is tedious. Add a **launcher** so the couch/stream experience covers more than Steam: **Heroic** (GOG/Epic/Amazon) or **Lutris** on CachyOS, surfaced through Sunshine (or Steam Big Picture). *Retro:* **RomM** is the rising "Plex for ROMs" — metadata scraping, a web UI with in-browser EmulatorJS play, and Playnite/RetroArch/Deck integration; run it on the Mac mini and stream/play from anywhere.
 
-### Local AI beyond chat (the rig's other on-demand job)
-Ollama + Open WebUI already give you local chat. Cheap extensions, all on the on-demand rig behind the same LiteLLM endpoint:
+### Local AI beyond chat (the rig's other job)
+Ollama + Open WebUI already give you local chat. Cheap extensions, all on the always-on rig behind the same LiteLLM endpoint:
 - **Image generation — ComfyUI** (or Stable Diffusion / A1111): the near-default local image stack, a natural NVENC-rig workload.
 - **Coding assistant — Continue (VS Code/JetBrains) or Aider (CLI)** pointed at your local endpoint: the most common "second use" of a homelab LLM, free.
 - **Chat with your own docs — Open WebUI RAG:** Open WebUI ships document upload + RAG + an embeddings model; point it at your **Obsidian vault** / Paperless docs so "ask my notes" works locally.
@@ -384,8 +384,8 @@ Ollama + Open WebUI already give you local chat. Cheap extensions, all on the on
 | CachyOS rig — *under LLM / streaming / heavy-server load* | 400-600W+ | ~$700-1,000+ *if sustained 24/7* |
 
 **Takeaways:**
-1. **The rig is the entire story.** Always-on gear is cheap (~$150/year). Idling the 3090 Ti adds as much again; sustained load 24/7 is multiples more. Keep it on-demand and its real cost is whatever your actual usage hours are (a few hours/day might be ~$40-80/year). This is exactly why Sunshine streaming, local LLM, and heavy game servers all live on the *on-demand* rig.
-2. **Wake-on-LAN + auto-suspend** on the rig: enable WoL in BIOS, suspend after idle, wake from phone/laptop (or via Sunshine) on demand.
+1. **The rig is the entire story — and its cost is now a deliberate trade.** Always-on gear is cheap (~$150/year). **Decision 2026-07-08: the rig runs 24/7 for availability** — ~130W idle ≈ $23/mo (~$275/year), accepted so Sunshine streaming, local LLM, and heavy game servers are ready instantly. The open **idle-power-tuning task (game-09)** and the GPU idle fix below are what keep that number honest.
+2. **Wake-on-LAN = recovery tooling only:** keep WoL enabled in BIOS so the rig can be brought back after a power outage or accidental shutdown. It is no longer part of any workflow — there is no auto-suspend; the rig stays up 24/7.
 3. **NAS drive hibernation:** enable HDD hibernation in DSM so drives spin down when idle.
 4. **GPU idle fix on Linux:** the 3090 Ti can get stuck in a high-power state at idle (~100-115W doing nothing) instead of its normal ~20-30W. Check `nvidia-smi` at idle; persistence mode (`-pm 1`, keeps the driver loaded and the fix stuck), a power limit (`nvidia-smi -pl`), and a modest undervolt (locked clocks + offset, via a systemd service so it survives reboot) keep idle and load down.
 5. **Measure it.** You already have **Emporia Energy** on your breaker/circuits — use its per-circuit data to replace these estimates with your real draw (and feed it into HA's Energy dashboard).
@@ -409,9 +409,9 @@ Don't back up 40TB to the cloud (~$278/month at B2's current ~$6.95/TB). Split i
 - **SSH/local targets:** **BorgBackup + Borgmatic** (best compression, fastest restores, YAML scheduling, DB-dump hooks, healthcheck pings) with a cheap SSH storage box.
 
 ### Backing up the CachyOS rig (your daily-driver home directory)
-The rig is on-demand, not a server — but `/home/you` still holds what a reinstall can't recreate: dotfiles and app configs (`~/.config`), shell/theme setup, SSH/GPG keys, browser profiles, local game saves (`~/.local/share`, Steam/Proton `compatdata`), and any documents/projects not already in Git or Proton. Back it up even though it sleeps a lot:
+The rig is a daily-driver, not a managed server — but `/home/you` still holds what a reinstall can't recreate: dotfiles and app configs (`~/.config`), shell/theme setup, SSH/GPG keys, browser profiles, local game saves (`~/.local/share`, Steam/Proton `compatdata`), and any documents/projects not already in Git or Proton. Now that it runs 24/7 (decision 2026-07-08), it backs up on plain timers like every other host:
 - **What:** target `~` and exclude the firehoses — `~/.cache`, Steam's re-downloadable game files, build/`node_modules` dirs, VM images. A short exclude list turns "hundreds of GB" into the few GB that actually matter.
-- **How (set-and-forget):** a **Restic** (or Kopia) job from CachyOS straight to **Backblaze B2** — encrypted, deduplicated, on a `systemd` timer that fires while the rig is awake (run it from a Sunshine/login session or a wake hook so a sleeping box doesn't miss every window). This is the same Tier-1 tool already in the table; you're just adding the rig's home as a source.
+- **How (set-and-forget):** a **Restic** (or Kopia) job from CachyOS straight to **Backblaze B2** — encrypted, deduplicated, on a plain `systemd` timer (the rig is up 24/7, so no wake-gating is needed). This is the same Tier-1 tool already in the table; you're just adding the rig's home as a source.
 - **Also keep a local copy:** point a second Restic repo — or **Synology Active Backup for Business**, which has a Linux agent — at the **NAS**, so the rig backs up over LAN when it's up (fast restores), and the NAS then sweeps that off-site with the rest of Tier 1. Two copies, one off-site, no thinking required.
 - **Dotfiles bonus:** keep the actual dotfiles in the same **Git** repo as your compose files (or a `chezmoi` / bare-repo setup). Then a rig rebuild is `git clone` + restore `~` from Restic, and you're back to your exact environment in minutes — the same "rebuildable" property Section 7 gives the servers.
 
@@ -501,7 +501,7 @@ So maintenance is just `ssh nas` / `ssh mini` / `ssh rig`. Keep `ForwardAgent no
 - **Per-host quirks (the things that bite):**
   - **Synology DSM** — SSH is **off by default**. Enable it (Control Panel -> Terminal & SNMP -> *Enable SSH service*), then make it key-based and put it behind the **DSM 2FA** you already enforce (Section 7 hardening). Don't SSH as the default `admin`/`root` — use a dedicated admin user. DSM resets `sshd_config` on updates, so treat deep SSH customization as non-persistent (document it in `hosts/ds920/restore.md`).
   - **HAOS (Home Assistant)** — there's no normal user shell. Use the official **SSH & Web Terminal add-on** (key auth, drop your public key in its config) for day-to-day, or the **`root@<ha-ip>:22222`** debug port for low-level access. This is the same box whose `/config` already lives in Git (Section 8).
-  - **On-demand rig** — it's asleep most of the time, so **wake then SSH**: send a Wake-on-LAN packet (`wol`/`etherwake <mac>`) and `ssh rig` once it's up. This reuses the exact WoL setup from Sections 4-5; pair it with the "fire jobs only while awake" timer trick (Section 6) so the rig's own backup/SBOM jobs and your manual SSH share one wake path rather than fighting auto-suspend.
+  - **Rig** — runs 24/7 (decision 2026-07-08), so `ssh rig` just works like any other host. Keep the WoL path (`wol`/`etherwake <mac>`, per Sections 4-5) documented as **recovery only** — for bringing the rig back after a power outage or accidental shutdown. If the rig is unreachable, treat it as an incident, not expected sleep.
   - **Seedbox** — already keys-only and hardened (see Security hardening below). Just add it to the same `~/.ssh/config` and your tailnet so it's reachable like any other node, with nothing extra exposed.
 - **Fleet maintenance — run one command across every box.** At 4-5 hosts, "SSH in and update each one" gets old fast. Stand up a tiny **Ansible** setup (agentless — it just uses the SSH/Tailscale path above) with an inventory of your hosts and a few small playbooks: apply security patches, reboot in a controlled order, and audit for package/version drift against the manifests from Section 8. Run it from the Mac mini or your laptop. This is the **manual** fleet lever; it complements (doesn't replace) the automatic **`unattended-upgrades`** security patching in *Security hardening* below — unattended-upgrades keeps each box current on its own, Ansible is for the times you want to push a deliberate change everywhere at once. The playbooks live in the Section 8 control repo, so they're version-controlled and rebuildable like everything else. (For the occasional one-off, a plain `for h in nas mini rig; do ssh $h '<cmd>'; done` is fine — reach for Ansible once you're repeating yourself.) **Section 9 builds this out fully** — inventory, roles, the `ansible-pull` set-and-forget convergence loop, SOPS-integrated secrets, and turning the Section 8 restore runbooks into one executable playbook.
 
@@ -617,8 +617,8 @@ Each `hosts/<box>/restore.md` is a short, *tested* checklist. Generic shape:
 
 ### Where it all runs (power-aware, per Sections 0 & 5)
 - **Mac mini (always-on, ~12W):** Forgejo (control-repo remote) and the nightly orchestration. (The light always-on web stack also lives here — see Section 0.)
-- **Each host:** Syft/Grype + etckeeper + the manifest/cron exporters, fired by systemd timers. On the **on-demand rig**, gate the timer to "while awake" with the same wake-hook trick as the Restic job in Section 6, so a sleeping box doesn't just miss every window.
-- **NAS:** DSM Configuration Backup + holds the Restic repo and HA backup archives; also hosts **Dependency-Track** (API + frontend + Postgres) and the other offloaded heavy services (Paperless, Frigate, Tdarr server) per Section 0's capacity note.
+- **Each host:** Syft/Grype + etckeeper + the manifest/cron exporters, fired by systemd timers. The rig runs 24/7 (decision 2026-07-08), so its timers fire on schedule like every other host — no wake-gating needed.
+- **NAS:** DSM Configuration Backup + holds the Restic repo and HA backup archives; also hosts **Dependency-Track** (API + frontend + Postgres) and the other offloaded heavy services (Paperless, Frigate) per Section 0's capacity note.
 
 ---
 
@@ -665,7 +665,7 @@ homelab/
     inventory.ini           # the fleet, by ssh-config alias (net-14)
     group_vars/
       all.yml               # fleet-wide defaults
-      on_demand.yml         # rig: wake-gating, "while awake" behavior
+      on_demand.yml         # rig (historical group name — rig is 24/7 now, no wake-gating)
     site.yml                # the whole fleet (both the push and ansible-pull entrypoint)
     playbooks/
       patch.yml             # rolling OS security updates
@@ -695,7 +695,7 @@ arch
 macmini
 seedbox
 
-[on_demand]           # the rig — wake-gated (group_vars/on_demand.yml)
+[on_demand]           # the rig — historical group name; runs 24/7 now (group_vars/on_demand.yml)
 cachyos
 
 [docker_hosts]        # gets the docker role; seedbox excluded (managed/jailed)
@@ -706,7 +706,7 @@ It reuses the **`~/.ssh/config` aliases** from Section 7 (each `ansible_host` is
 
 ### Push vs. pull — the actual set-and-forget decision
 Use **both**, for different jobs:
-- **`ansible-pull` on a systemd timer per host = the set-and-forget default.** Each box periodically clones the control repo and **converges itself**. No central scheduler to babysit, it keeps working even if the Mac mini is down, and it's the natural way to correct drift. On the **on-demand rig**, gate the timer to "while awake" with the **exact wake-hook trick from Sections 6/7** so a sleeping box doesn't just miss every window — the rig's Restic job, SBOM job, and Ansible convergence all share one wake path.
+- **`ansible-pull` on a systemd timer per host = the set-and-forget default.** Each box periodically clones the control repo and **converges itself**. No central scheduler to babysit, it keeps working even if the Mac mini is down, and it's the natural way to correct drift. The rig runs 24/7 (decision 2026-07-08), so its Restic job, SBOM job, and Ansible convergence all fire on plain timers — no wake-gating needed.
 - **Push (`ansible-playbook` from the Mac mini/laptop) = orchestration that needs ordering.** Rolling OS patches with `serial: 1`, reboot, and a health gate before the next host; coordinated multi-host stack redeploys. Things `ansible-pull` (which only knows about its own host) can't sequence.
 
 The safe-by-default move that mirrors Section 7's "no blind updates": run pull in **`--check` (report-only) mode for *config* changes** — it pings **ntfy** when it detects drift but waits for your deliberate push to apply — while letting it **auto-apply only OS security patches** (the same scope as `unattended-upgrades`). You get self-healing where it's safe and a heads-up where it isn't.
@@ -733,7 +733,7 @@ Small, single-purpose roles so the fleet is just a stack of them. Every one repl
 - **`base`** — admin user + the ed25519 key (Section 7), timezone/locale, `unattended-upgrades` for security-only patches (Section 7), sysctl (incl. the conntrack tuning if you ever fall back to home torrenting, Section 2), and **package convergence from the manifests** (`community.general.pacman` / `ansible.builtin.apt` fed by the `pacman -Qqe` / `apt-mark showmanual` lists Section 8 already exports). The manifest stops being a *record* and becomes the *enforcer*.
 - **`docker`** — engine + compose plugin, the **`daemon.json` log-rotation caps** (Section 7's silent-disk-fill fix), and `docker network create edge` (the Phase 2 prep step, now idempotent and never forgotten).
 - **`tailscale`** — install + `tailscale up --ssh` with the `tag:server` ACL tags (Section 7).
-- **`backup`** — Restic install + the systemd timer, with rig wake-gating (Section 6).
+- **`backup`** — Restic install + the systemd timer (Section 6; plain timers everywhere — the rig's former wake-gating is obsolete now that it runs 24/7).
 - **`sbom`** — Syft/Grype install + the nightly timer + DT upload (Section 8), **pinned to a version and checksum-verified** — that's the literal lesson of CVE-2026-33634 (Section 8), now codified instead of remembered.
 - **`monitoring`** *(planned — not yet in `site.yml`)* — would install the Beszel agent and friends (Section 7); for now Beszel agents are deployed by hand.
 - **`state`** — installs and bootstraps **etckeeper and chezmoi themselves** (`chezmoi init --apply <repo>`), so even your state-tracking tools are reproducibly present on a fresh box.
@@ -776,15 +776,15 @@ Do a phase before starting the next; each leaves you better off.
 **Phase 4 — Glue & polish**
 12. Stand up the management layer: **Homepage** (dashboard/observability + the household front door for your wife) + **Dockhand** (or Dockge) + **Beszel** + **Uptime Kuma** + **ntfy** + **Caddy**, and add **Pi-hole / AdGuard** for network DNS filtering (then **Unbound/DoT** for encrypted upstream + a second resolver).
 13. **Wire LAN app hosting:** add the `*.home.lan` wildcard DNS record (`address=/home.lan/<mac-mini-IP>`) in Pi-hole/AdGuard so any name resolves to the Mac mini, and let **Caddy** route by hostname. Ship vibecoded apps as small Compose stacks behind Caddy (option A). *Only if you want git-push-to-deploy:* stand up **Coolify** with its proxy on alternate ports behind Caddy (option B) — never let it grab 80/443, which Caddy owns. See Section 7's *Reverse proxy + HTTPS*.
-14. **Media companion layer:** **Tautulli** (Plex stats), **Kometa** (collections/overlays), **Maintainerr** (auto-pruning) on the Mac mini, and **Tdarr** (server on the **NAS**, transcode node on the rig). Add **Frigate** (on the **NAS** iGPU, or Mac mini + Coral) if you want better camera AI than UniFi's built-in detection. (Paperless/Tdarr/Frigate/Dependency-Track ride the NAS per Section 0's capacity note.)
+14. **Media companion layer:** **Tautulli** (Plex stats) and **Kometa** (collections/overlays) on the Mac mini. *(~~Maintainerr~~ and ~~Tdarr~~ were removed from the plan 2026-07-08 — media-03: no auto-deletion wanted; media-04: re-encoding conflicts with TRaSH quality automation and storage isn't scarce.)* Add **Frigate** (on the **NAS** iGPU, or Mac mini + Coral) if you want better camera AI than UniFi's built-in detection. (Paperless/Frigate/Dependency-Track ride the NAS per Section 0's capacity note.)
 15. **Harden it:** turn on **MFA/2FA** everywhere (hardware key on Bitwarden/Proton/DSM), set **Docker log rotation**, add **immutable backups** (B2 Object Lock for the off-site immutable copy; optional server-side append-only Borg as future hardening) and a **Healthchecks.io** dead-man's-switch, and put **CrowdSec/forward-auth** on the seedbox + any public ports.
 16. Push all compose files + configs to **Git** so the whole thing is rebuildable.
 17. **Stand up the inventory/SBOM layer (Section 8):** self-host the control repo (**Forgejo**), turn on **etckeeper** + **chezmoi** (which carries your `~/.ssh/config` + key) + the nightly **Syft** manifest/SBOM job on each host, commit the **`ansible/`** fleet-maintenance playbooks (patch/reboot/audit) to the control repo, stand up **Dependency-Track v5** on the **NAS** (RAM headroom; see Section 0), encrypt secrets with **SOPS + age**, and write + drill the per-host **restore runbooks**. Now you can see what's installed everywhere, get told the moment any of it goes vulnerable, run maintenance across the fleet in one command, and rebuild a wiped box in an hour.
 
 **Phase 5 — Play**
-18. **Game servers:** LinuxGSM or Pelican — light games always-on on the Mac mini, heavy games on-demand on the rig, friends in via Tailscale. See [foss-setup/configs/gaming/server-guide.md](foss-setup/configs/gaming/server-guide.md) for per-title feasibility and host assignment.
+18. **Game servers:** LinuxGSM or Pelican — light games on the Mac mini, heavy games on the rig (24/7 — available anytime), friends in via Tailscale. See [foss-setup/configs/gaming/server-guide.md](foss-setup/configs/gaming/server-guide.md) for per-title feasibility and host assignment.
 19. **Sunshine** on the rig + **Moonlight** clients; set up the **headless display** (dummy HDMI plug or the Apollo-Linux/`sunshine_virt_display` virtual display) and confirm Tailscale shows "direct" for remote streaming. Add a **launcher** (Heroic/Lutris, + RomM for retro) and **Ludusavi + Syncthing** save-sync.
-20. **Tune the rig:** Wake-on-LAN, auto-suspend, GPU idle/undervolt, and set the **GPU contention policy** (Ollama `keep_alive=0`) so streaming, servers, and AI share the one card. Optionally add **ComfyUI / Continue / Open WebUI RAG** behind LiteLLM.
+20. **Tune the rig (game-09 — idle-power tuning, 24/7 baseline):** GPU idle/undervolt and power-limit tuning to shave the ~130W 24/7 idle, keep WoL enabled in BIOS as recovery tooling, and set the **GPU contention policy** (Ollama `keep_alive=0`) so streaming, servers, and AI share the one card. Optionally add **ComfyUI / Continue / Open WebUI RAG** behind LiteLLM.
 
 ---
 
@@ -834,8 +834,8 @@ Grounded picks for the Zigbee backbone in Section 3 — all pair cleanly with **
 | Plex stats & monitoring | **Tautulli** | Mac mini |
 | Library polish (collections/overlays) | **Kometa** | Mac mini |
 | Quality profiles / extraction | **Recyclarr** + **Unpackerr** | seedbox |
-| Library pruning | **Maintainerr** | Mac mini |
-| Pre-transcode automation | **Tdarr** (node on rig) / FileFlows | NAS + rig |
+| Library pruning | ~~Maintainerr~~ — removed from plan 2026-07-08 (no auto-deletion wanted) | — |
+| Pre-transcode automation | ~~Tdarr / FileFlows~~ — removed from plan 2026-07-08 (re-encoding conflicts with TRaSH quality automation; storage not scarce) | — |
 | YouTube / web video archive | **Pinchflat** (Tube Archivist / MeTube alt) | NAS / Ubuntu |
 | Private media acquisition | **Managed seedbox** (Deluge + slskd) + **Seerr** + **MusicSeerr** | off-site + Mac mini + NAS |
 | Automated music acquisition | **MusicSeerr** + **Lidarr** + **Soularr** + **slskd** (Betty) + **beets** (optional) | Mac mini + NAS + seedbox |
@@ -869,7 +869,7 @@ Grounded picks for the Zigbee backbone in Section 3 — all pair cleanly with **
 | Config/dotfile/state-in-Git | **etckeeper** (/etc) + **chezmoi** (~) + **Forgejo** control repo | all hosts |
 | Fleet provisioning / convergence | **Ansible** (`ansible-pull` + roles, SOPS-integrated) | control repo -> rig + Mac mini (+ seedbox user-space) |
 | Secrets at rest | **SOPS + age** (chezmoi age for dotfiles) | control repo |
-| Local LLM | **Ollama** + Open WebUI | CachyOS rig (on-demand) |
+| Local LLM | **Ollama** + Open WebUI | CachyOS rig (24/7) |
 
 Already in your stack and worth keeping: **Kagi** (search), **ProtonMail/VPN/Drive/Calendar/Pass**, and **Plex** (lifetime pass — staying put; Jellyfin is the FOSS fallback only if Plex ever paywalls something you depend on).
 

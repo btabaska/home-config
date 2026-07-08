@@ -1,8 +1,8 @@
 ---
 # roles/backup — Restic on a timer (sec-06), driven by the control repo (glue-08).
-# The repo URL + password are secrets (SOPS, glue-06). On the on-demand rig the
-# timer is WAKE-GATED (wake_gated in group_vars/on_demand.yml) so a sleeping box
-# doesn't miss every window.
+# The repo URL + password are secrets (SOPS, glue-06). All hosts — including the
+# rig, 24/7 since 2026-07-08 — get a standard OnCalendar timer; the wake_gated
+# branch below is retained but dormant (wake_gated is false in group_vars/on_demand.yml).
 
 # Gate: the SOPS-encrypted restic env is seeded by glue-06 and may not exist in
 # the control repo yet. The sops lookup hard-fails on a missing file, which used
@@ -67,7 +67,8 @@
           Description=Schedule restic backup (sec-06)
           [Timer]
           {% if wake_gated | default(false) %}
-          # On-demand rig: run shortly after wake, not on a clock it sleeps through.
+          # Dormant branch (wake_gated is false fleet-wide since 2026-07-08, when
+          # the rig went 24/7): run shortly after boot instead of on a clock.
           OnBootSec=5min
           Persistent=true
           {% else %}

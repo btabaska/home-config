@@ -26,9 +26,10 @@ checks:
     runbook: wiki/runbooks/backups.md
     enabled: true
 
-  # Same wrapper+sudoers deployed on the rig. Disabled: the rig is on-demand
-  # (Persistent=true fires the backup on next wake) and mini→rig ssh is
-  # currently blocked by tailnet ACL. Run manually: run-checks.sh --host rig
+  # Same wrapper+sudoers deployed on the rig. The rig runs 24/7 now (decision
+  # 2026-07-08), so this runs daily like the mini check. NOTE: host: rig means
+  # this additionally requires mini→rig SSH access (previously blocked by
+  # tailnet ACL; being verified live by the orchestrator).
   - id: restic-snapshot-fresh-rig
     name: "restic B2 snapshot for rig newer than 26h"
     host: rig
@@ -37,7 +38,7 @@ checks:
     severity: warn
     task_id: nas-05
     runbook: wiki/runbooks/backups.md
-    enabled: false
+    enabled: true
 
   - id: backup-immich-dump-nonempty
     name: "newest immich DB dump is >1MB (not a truncated/empty dump)"

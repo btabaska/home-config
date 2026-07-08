@@ -98,7 +98,7 @@ Home
 │   ├── NAS (DS920+)                   storage schema, volumes, Container Manager
 │   ├── Ubuntu Docker host             /opt/stacks, Dockge, power budget
 │   ├── UniFi Dream Wall               VLANs, zone-based firewall, backups
-│   ├── CachyOS rig                    on-demand, WoL, GPU tuning, streaming
+│   ├── CachyOS rig                    24/7, WoL recovery, GPU tuning, streaming
 │   └── Seedbox                        off-site stack, rclone mounts
 │
 ├── Services                           (THE CORE — one man-page per service)

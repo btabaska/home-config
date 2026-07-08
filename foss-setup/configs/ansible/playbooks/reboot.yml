@@ -8,7 +8,7 @@
 #   ansible-playbook -i inventory.ini playbooks/reboot.yml
 #   ansible-playbook -i inventory.ini playbooks/reboot.yml --limit macmini   # one box
 #
-# Wake the on-demand rig first (game-08) or skip it: --limit '!cachyos'
+# The rig is 24/7 (2026-07-08) and always reachable; skip any host with --limit '!<host>'
 
 - name: Reboot hosts that require it (serialized)
   hosts: fleet

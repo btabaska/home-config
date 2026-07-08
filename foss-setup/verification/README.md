@@ -21,8 +21,9 @@ verification.timer (daily 07:15)
             │    • exit 1 if any crit check failed
             └─ bin/llm-triage.sh → bin/llm_triage.py        (verify-03/04)
                  • only when failures exist
-                 • wakes the rig via WoL (50:eb:f6:b5:82:c6) if the LLM endpoint
-                   is down; waits ≤90s, else records "rig unavailable" and exits 0
+                 • rig is 24/7 — LLM endpoint down means the rig is down (an
+                   incident); recovery: WoL (50:eb:f6:b5:82:c6), wait ≤90s,
+                   else records "rig unavailable" and exits 0
                  • ONE FRESH single-turn completion per failed check, using the
                    matching skills/*.md prompt; appends verdicts to
                    triage-<date>.md; malformed JSON → 1 retry → escalate:true
@@ -34,14 +35,15 @@ Manual runs:
 sudo systemctl start verification.service      # full cycle
 /opt/verification/bin/run-checks.sh            # checks only
 /opt/verification/bin/run-checks.sh --json     # machine-readable
-/opt/verification/bin/run-checks.sh --host rig # on-demand host: also runs its
-                                               # disabled checks (wake the rig first)
+/opt/verification/bin/run-checks.sh --host rig # rig-only run (rig checks are
+                                               # enabled in the daily cycle — rig is 24/7)
 /opt/verification/bin/llm-triage.sh            # triage last results.json
 ```
 
-`--host X` matches a check's `host` field **or its domain (file stem)** — that's
-how `--host rig` picks up the `enabled: false` rig checks. Filtered runs are
-on-demand: they write `results-<host>.json` and never touch the daily state
+`--host X` matches a check's `host` field **or its domain (file stem)**, and
+also includes that host/domain's `enabled: false` checks (e.g. the seedbox
+check). Filtered runs are ad-hoc/operator-driven: they write
+`results-<host>.json` and never touch the daily state
 (`results.json`, `reopen-suggestions.json`, `last-summary.md`) or send ntfy.
 
 ## Adding a check
@@ -129,8 +131,10 @@ ssh mini '
 - `backup-immich-dump-fresh` FAIL (last dump 2026-07-02) — guards reopened **nas-08**. Desired.
 - `git-*` may FAIL on drift (etckeeper dirty, 1 file in /opt/stacks) — real drift to review.
 - seedbox: SSH blocked by ACL → its check is `enabled: false`.
-- rig: mini→rig SSH denied by tailnet ACL → rig checks are HTTP-only, `enabled: false`
-  (on-demand host — run via `--host rig` only when awake).
+- rig: runs 24/7 (decision 2026-07-08) — rig checks are **enabled** in the daily
+  cycle; the rig being down / 502 is now an **incident**, with WoL retained as
+  the recovery tool (llm-triage.sh self-heal). HTTP-only probes for now
+  (mini→rig SSH historically denied by tailnet ACL; being re-verified).
 
 ## Human approval gate (policy — added 2026-07-08 at the operator's request)
 

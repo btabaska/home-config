@@ -1,9 +1,11 @@
 # rig (CachyOS gaming/AI box, 3090 Ti 24GB, NO sudo).
-# on-demand host — run via --host rig only when awake.
+# 24/7 host (decision 2026-07-08): the rig now runs continuously, so these
+# checks are enabled and a rig that is down/unreachable is an INCIDENT.
 # All checks are HTTP probes executed from mini: mini->rig SSH is blocked by
 # tailnet ACL policy ("tailnet policy does not permit you to SSH to this node"),
 # so host: url (curl from mini) is used instead of host: rig.
-# Wake first: wakeonlan -i 192.168.10.255 50:eb:f6:b5:82:c6 (llm-triage.sh does this automatically).
+# Recovery if the rig is down: wakeonlan -i 192.168.10.255 50:eb:f6:b5:82:c6
+# (llm-triage.sh attempts this automatically as the recovery path).
 checks:
   - id: rig-ollama
     name: "ollama API answers on rig:11434"
@@ -13,7 +15,7 @@ checks:
     severity: warn
     task_id: game-10
     runbook: wiki/runbooks/rig.md
-    enabled: false   # on-demand host — run via --host rig only when awake
+    enabled: true    # rig is 24/7 — failure here is an incident
 
   - id: rig-litellm
     name: "litellm proxy answers on rig:4000 (401 without key = up)"
@@ -23,7 +25,7 @@ checks:
     severity: warn
     task_id: game-10
     runbook: wiki/runbooks/rig.md
-    enabled: false   # on-demand host — run via --host rig only when awake
+    enabled: true    # rig is 24/7 — failure here is an incident
 
   - id: rig-open-webui
     name: "open-webui answers on rig:3000"
@@ -33,7 +35,7 @@ checks:
     severity: warn
     task_id: game-10
     runbook: wiki/runbooks/rig.md
-    enabled: false   # on-demand host — run via --host rig only when awake
+    enabled: true    # rig is 24/7 — failure here is an incident
 
   - id: rig-ollama-models
     name: "ollama has the triage model pulled (qwen3-coder:30b)"
@@ -43,4 +45,4 @@ checks:
     severity: warn
     task_id: game-10
     runbook: wiki/runbooks/rig.md
-    enabled: false   # on-demand host — run via --host rig only when awake
+    enabled: true    # rig is 24/7 — failure here is an incident

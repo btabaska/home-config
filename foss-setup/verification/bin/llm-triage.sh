@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # verify-04: LLM triage of failed checks against the local model on the rig.
-# Wakes the rig (WoL) if the LLM endpoint is down, waits up to 90s, then hands
-# off to llm_triage.py (fresh single-turn completion per failed check).
+# The rig runs 24/7, so the LLM endpoint being down means the rig is down —
+# an incident. Recovery path: attempt WoL, wait up to 90s, then hand off to
+# llm_triage.py (fresh single-turn completion per failed check).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -22,8 +23,8 @@ TRIAGE_FILE="${STATE_DIR}/triage-$(date +%F).md"
 llm_up() { curl -s -m 4 -o /dev/null "${LLM_BASE_URL}/models"; }
 
 if ! llm_up; then
-  echo "LLM endpoint ${LLM_BASE_URL} down — waking rig" >&2
-  # prefer the repo's wake-rig helper if installed on mini, else embedded WoL
+  echo "LLM endpoint ${LLM_BASE_URL} down — rig should be 24/7, this is an incident; attempting WoL recovery" >&2
+  # recovery path: prefer the repo's wake-rig helper if installed on mini, else embedded WoL
   if [ -x /opt/foss-setup/scripts/gaming/wake-rig.sh ]; then
     RIG_MAC="$RIG_MAC" /opt/foss-setup/scripts/gaming/wake-rig.sh || true
   else
@@ -34,9 +35,9 @@ if ! llm_up; then
     sleep 5; waited=$((waited + 5))
     if [ "$waited" -ge 90 ]; then
       mkdir -p "$STATE_DIR"
-      printf '\n## %s\n\nrig unavailable — LLM endpoint %s did not answer within 90s after WoL; triage skipped.\n' \
+      printf '\n## %s\n\nINCIDENT: rig unavailable — LLM endpoint %s did not answer within 90s after WoL recovery attempt (rig is expected 24/7); triage skipped.\n' \
         "$(date -Is)" "$LLM_BASE_URL" >> "$TRIAGE_FILE"
-      echo "rig unavailable — triage skipped (recorded in ${TRIAGE_FILE})" >&2
+      echo "INCIDENT: rig unavailable after WoL recovery attempt — triage skipped (recorded in ${TRIAGE_FILE})" >&2
       exit 0
     fi
   done

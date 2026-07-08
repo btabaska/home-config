@@ -10,7 +10,7 @@
 # Then for real:
 #   ansible-playbook -i inventory.ini playbooks/patch.yml
 #
-# Wake the on-demand rig first (game-08) or skip it: --limit '!cachyos'
+# The rig is 24/7 (2026-07-08) and always reachable; skip any host with --limit '!<host>'
 
 # Targets [debian] = Mac mini only. The no-root managed seedbox is intentionally
 # NOT in [debian]/[fleet] (see inventory.ini, M-an5), so it never gets root apt.

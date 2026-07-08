@@ -89,8 +89,10 @@ There is no normal user shell:
 - Low-level: the **`root@<ha-ip>:22222`** debug port.
 - This is the same box whose `/config` already lives in Git (sbom-03 / HA).
 
-### On-demand rig (CachyOS)
-It's asleep most of the time, so **wake, then SSH**:
+### Rig (CachyOS)
+Runs **24/7** as of 2026-07-08, so just `ssh rig` like any other host. If it
+doesn't answer, that's an **incident** (power outage, accidental shutdown) —
+recover it with the retained Wake-on-LAN tooling (game-08):
 
 ```bash
 # On Trusted VLAN (MacBook, etc.) — MAC in configs/gaming/rig-wol.env, bcast auto-detected
@@ -100,10 +102,9 @@ It's asleep most of the time, so **wake, then SSH**:
 ./scripts/gaming/wake-rig-via-mini.sh && ssh rig
 ```
 
-This reuses the Wake-on-LAN setup from game-08. The rig's own backup (nas-05)
-and SBOM (sbom-02) timers use the same "while awake" wake path, so manual SSH
-and automation share one wake mechanism rather than fighting auto-suspend
-(game-09).
+The rig's backup (nas-05) and SBOM (sbom-02) timers run on standard OnCalendar
+schedules like every other host; Persistent=true is just generic catch-up after
+downtime, not wake-gating.
 
 ### Seedbox
 Already keys-only and hardened (sec-04). Just add it to the same

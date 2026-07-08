@@ -30,6 +30,6 @@
     - role: docker      # engine, daemon.json log caps (sec-04), shared 'edge' network
       when: "'docker_hosts' in group_names"
     - role: tailscale   # tailscale up --ssh with net-13 tags
-    - role: backup      # restic timer (rig-wake-gated on on_demand)
+    - role: backup      # restic timer (standard OnCalendar fleet-wide; wake_gated is false since 2026-07-08)
     - role: sbom        # Syft/Grype + the sbom-02 nightly units
     - role: state       # installs + bootstraps etckeeper and chezmoi themselves

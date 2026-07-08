@@ -1,3 +1,5 @@
+> **ADDENDUM 2026-07-08:** rig is now 24/7 — wake-UX/suspend recommendations herein are superseded (WoL kept as recovery).
+
 # Game hosting tech spec (agent complete)
 ANSWER TO "can you do this autonomously": ~90% yes (compose, hooks, monitors, backups, configs, smoke tests); human: Tailscale ACL paste + node-share invites, UniFi port-forward if ever, playit.gg claim, Switch 2 console DNS, playtests.
 RECOMMENDED ARCH: pinned compose on rig /opt/stacks/games/ — itzg/minecraft-server (Paper, 10G Aikar heap, Geyser+Floodgate for Switch, AUTOPAUSE, mc-backup sidecar) + thijsvanloef/palworld-server-docker v2.4.1 (24G limit, perf flags, AUTO_PAUSE, scheduled restarts for the known memory leak, stop_grace 30s). Rig budget: both fit w/ ~26G spare alongside LLM stack. PANELS REJECTED for now: Pelican still beta + NO panel supports sleeping hosts (container autopause is the only on-demand semantics); web-UI via existing Dockge agent. Re-eval Pelican at 1.0.

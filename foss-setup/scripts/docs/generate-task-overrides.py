@@ -105,7 +105,7 @@ O["net-14"] = {
         P("net-13"),
         "MacBook: `ssh-keygen -t ed25519 -C homelab-maint -f ~/.ssh/id_ed25519_homelab`",
         "Per host: DSM → Control Panel → Terminal & SNMP → Enable SSH; Ubuntu: `sudo systemctl enable --now ssh`",
-        "`ssh-copy-id -i ~/.ssh/id_ed25519_homelab.pub user@192.168.10.4` (nas) and `.11` (mini); rig after WoL (game-08)",
+        "`ssh-copy-id -i ~/.ssh/id_ed25519_homelab.pub user@192.168.10.4` (nas), `.11` (mini), and `.12` (rig — 24/7)",
         f"`cp {REPO}/configs/network/ssh-config.example ~/.ssh/config` — set tailnet names/users; `chmod 600 ~/.ssh/config`",
         "Test: `ssh nas hostname`, `ssh mini hostname`, `ssh rig hostname`",
         "Document break-glass path in configs/network/ssh-maintenance-access.md",
@@ -313,7 +313,7 @@ O["nas-05"] = {
         "`ssh rig 'sudo pacman -S --needed restic'`",
         "Copy restic script; create /etc/restic/b2.env with RESTIC_REPOSITORY=b2:bucket:rig",
         "Exclude caches/Steam from BACKUP_PATHS",
-        "Enable timer (Persistent=true for on-demand rig)",
+        "Enable timer (Persistent=true catch-up; the rig is 24/7)",
     ],
     "commands": [
         f"scp {REPO}/scripts/backup/restic-backup.sh rig:/tmp/",
@@ -421,7 +421,7 @@ O["glue-04b"] = {
         f"**Mac mini** (ssh + gitconfig; lighter set): `scp {REPO}/scripts/dotfiles/bootstrap-dotfiles.sh mini:/tmp/` then `ssh mini 'DOTFILES_REPO=btabaska bash /tmp/bootstrap-dotfiles.sh'`.",
         "On each host after bootstrap: copy age key from Proton Pass to `~/.config/chezmoi/key.txt` if SSH config is encrypted, then `chezmoi apply`.",
         "Verify fleet-wide from MacBook: `ssh rig 'chezmoi diff && chezmoi status'` and `ssh mini 'chezmoi diff && chezmoi status'` — both diffs must be empty.",
-        "Test SSH aliases: `ssh mini hostname`, `ssh rig hostname` (wake rig first via game-08 if needed).",
+        "Test SSH aliases: `ssh mini hostname`, `ssh rig hostname`.",
         "**Ongoing sync:** edit on one box → `chezmoi edit` → `chezmoi apply` → `chezmoi cd && git push`; on others → `chezmoi update`. Use `.tmpl` files for per-host differences (see chezmoi-quickstart.md).",
         "glue-08 ansible-pull will automate `chezmoi init --apply` later; manual bootstrap is fine until Forgejo (glue-05) is up.",
     ],
@@ -505,6 +505,9 @@ for did, stack, port, env in [
     if did == "read-14":
         o["steps"].insert(3, "`ssh mini 'sudo mkdir -p /mnt/nas/youtube && sudo mount -t nfs 192.168.10.4:/volume1/youtube /mnt/nas/youtube'` — add to fstab; set PINCHFLAT_DOWNLOADS in .env")
     O[did] = o
+
+# media-03 (Maintainerr) REMOVED FROM PLAN 2026-07-08 — no auto-deletion wanted. Kept for reference.
+O["media-03"]["steps"].insert(0, "REMOVED FROM PLAN 2026-07-08 — won't-do: no auto-deletion wanted. Kept for reference.")
 
 O["docker-12"] = ustack("diun", 0, "DIUN_NTFY_* webhook to ntfy topic", no_curl=True)
 O["docker-12"]["steps"].extend([
@@ -1431,7 +1434,7 @@ O["glue-08"] = {
         "Edit CONTROL_REPO_URL in ansible-pull.service to Forgejo SSH URL before copying",
         "`ssh mini 'sudo cp /tmp/ansible-pull.service /tmp/ansible-pull.timer /etc/systemd/system/'`",
         "`ssh mini 'sudo systemctl daemon-reload && sudo systemctl enable --now ansible-pull.timer'`",
-        "Repeat on rig (OnBootSec=3min timer for wake-gated rig); verify `systemctl list-timers ansible-pull.timer`",
+        "Repeat on rig (standard OnCalendar timer, Persistent=true catch-up — the rig is 24/7); verify `systemctl list-timers ansible-pull.timer`",
     ],
     "commands": [
         f"scp {REPO}/configs/ansible/ansible-pull.service {REPO}/configs/ansible/ansible-pull.timer mini:/tmp/",
@@ -1476,8 +1479,7 @@ O["glue-07"] = {
         P("net-14", "glue-05"),
         "MacBook: `pipx install ansible` or brew install ansible",
         f"`cd {REPO}/configs/ansible && ansible-galaxy collection install -r requirements.yml`",
-        "Wake rig if testing all hosts: `ssh mini 'bash ~/wake-rig.sh'`",
-        f"`cd {REPO}/configs/ansible && ansible all -i inventory.ini -m ping`",
+        f"`cd {REPO}/configs/ansible && ansible all -i inventory.ini -m ping` — the rig is 24/7 and should answer",
     ],
     "commands": [
         f"cd {REPO}/configs/ansible && ansible-galaxy collection install -r requirements.yml",
@@ -1515,8 +1517,9 @@ O["sec-05"] = {"steps": ["unattended-upgrades on mini", "pacman cadence on rig",
 O["sec-03"] = {"steps": [P("nas-02", "nas-06", "docker-09"), "B2 Object Lock", "Deploy healthchecks", "Wire backup pings to ntfy"], "commands": ["ssh mini 'cd /opt/stacks/healthchecks && docker compose up -d'"], "files": ["configs/docker-stack/stacks/healthchecks/compose.yaml"], "verify": "Skipped backup alerts."}
 O["sec-04"] = {"steps": [P("seed-01", "docker-06"), "CrowdSec on seedbox", "Caddy forward-auth for public apps"], "commands": ["ssh seedbox 'cscli metrics'"], "files": [], "verify": "CrowdSec banning."}
 
-# media-04 tdarr on NAS
-O["media-04"] = {"steps": [P("nas-10", "game-08"), CM, "Tdarr server on NAS; node on rig", "Scan test folder"], "commands": [f"scp -r {REPO}/configs/docker-stack/stacks/tdarr nas:/tmp/"], "files": ["configs/docker-stack/stacks/tdarr/compose.yaml"], "verify": "Transcode completes on rig node."}
+# media-04 tdarr on NAS — REMOVED FROM PLAN 2026-07-08 (re-encoding conflicts with
+# TRaSH quality automation; storage not scarce). Kept for reference.
+O["media-04"] = {"steps": ["REMOVED FROM PLAN 2026-07-08 — won't-do: re-encoding conflicts with TRaSH quality automation and storage is not scarce. Kept for reference.", P("nas-10", "game-08"), CM, "Tdarr server on NAS; node on rig", "Scan test folder"], "commands": [f"scp -r {REPO}/configs/docker-stack/stacks/tdarr nas:/tmp/"], "files": ["configs/docker-stack/stacks/tdarr/compose.yaml"], "verify": "Transcode completes on rig node."}
 
 # game tasks
 O["game-01"] = {"steps": [f"LinuxGSM on mini per {REPO}/scripts/gaming/linuxgsm-quickstart.md", "Start light server", "Tailscale only exposure"], "commands": [f"scp {REPO}/scripts/gaming/linuxgsm-quickstart.md mini:/tmp/"], "files": ["scripts/gaming/linuxgsm-quickstart.md"], "verify": "Server starts on mini."}
@@ -1527,7 +1530,6 @@ O["game-05"] = {
     "steps": [
         MAC_OPEN,
         P("game-08"),
-        "Wake rig if asleep: `ssh mini 'bash ~/wake-rig.sh'`",
         f"`scp {REPO}/scripts/gaming/sunshine-autostart-notes.md rig:~/`",
         "On rig: add LizardByte pacman repo; `sudo pacman -S sunshine cuda`",
         "`ssh rig 'loginctl enable-linger $USER'`; enable user unit app-dev.lizardbyte.app.Sunshine",
@@ -1545,14 +1547,15 @@ O["game-05"] = {
 }
 O["game-06"] = {"steps": [P("game-05"), "Moonlight on phone/TV same VLAN", "Pair with PIN"], "commands": [], "files": [], "verify": "In-home stream works."}
 O["game-07"] = {"steps": [P("game-05", "game-06"), "`tailscale ping rig --until-direct`"], "commands": ["tailscale ping rig --until-direct"], "files": [], "verify": "Remote stream direct."}
-O["game-08"] = {"steps": [f"`scp {REPO}/scripts/gaming/enable-wol-cachyos.sh rig:~/`", f"`scp {REPO}/scripts/gaming/wake-rig.sh mini:~/`", "Test wake from mini"], "commands": [f"scp {REPO}/scripts/gaming/wake-rig.sh mini:~/", "ssh mini '~/wake-rig.sh'"], "files": ["scripts/gaming/enable-wol-cachyos.sh", "scripts/gaming/wake-rig.sh"], "verify": "rig wakes from off."}
-O["game-09"] = {"steps": [P("game-08"), "systemd suspend after idle on rig"], "commands": ["ssh rig 'systemctl status suspend.target'"], "files": [], "verify": "rig suspends when idle."}
+O["game-08"] = {"steps": ["The rig is 24/7 (decision 2026-07-08) — WoL is RECOVERY tooling (power outage, accidental shutdown), not workflow.", f"`scp {REPO}/scripts/gaming/enable-wol-cachyos.sh rig:~/`", f"`scp {REPO}/scripts/gaming/wake-rig.sh mini:~/`", "Test wake from mini (recovery drill)"], "commands": [f"scp {REPO}/scripts/gaming/wake-rig.sh mini:~/", "ssh mini '~/wake-rig.sh'"], "files": ["scripts/gaming/enable-wol-cachyos.sh", "scripts/gaming/wake-rig.sh"], "verify": "rig wakes from off (recovery drill)."}
+# game-09 rescoped 2026-07-08: auto-suspend closed as won't-do — rig is 24/7; task is idle-power tuning.
+O["game-09"] = {"steps": ["Rig runs 24/7 (decision 2026-07-08: ~130W idle ≈ $23/mo accepted for availability) — auto-suspend is closed as won't-do.", "Fix the plasmashell busy-loop that burns CPU at idle.", "Headless/greeter idle-power pass — no desktop session left logged in when idle.", "Measure idle draw at the wall (smart plug / Kill-A-Watt).", "Target <100W idle."], "commands": ["ssh rig 'top -bn1 | head -15'"], "files": [], "docs": D(("Arch Wiki: Power management", "https://wiki.archlinux.org/title/Power_management")), "verify": "Wall measurement shows <100W idle; plasmashell no longer busy-looping."}
 O["game-10"] = {"steps": [f"`scp {REPO}/scripts/gaming/gpu-power-tune.sh rig:~/`", "Install gpu-power-tune.service"], "commands": [f"scp {REPO}/scripts/gaming/gpu-power-tune.sh rig:~/"], "files": ["scripts/gaming/gpu-power-tune.sh", "scripts/gaming/gpu-power-tune.service"], "verify": "Power limit persists reboot."}
 O["game-11"] = {"steps": [P("game-05"), "Dummy HDMI or sunshine_virt_display", "PipeWire virtual sink"], "commands": ["ssh rig 'sudo pacman -S evdi-dkms'"], "files": [], "verify": "Headless stream matches client res."}
 O["game-12"] = {"steps": [P("read-02"), "Ludusavi + Syncthing saves"], "commands": ["ssh rig 'ludusavi backup --force'"], "files": [], "verify": "Save restores on laptop."}
 O["game-13"] = {"steps": [P("game-05", "ha-17"), "OLLAMA_KEEP_ALIVE=0", "No inference during stream"], "commands": ["ssh rig 'nvidia-smi --query-gpu=memory.used --format=csv'"], "files": [], "verify": "VRAM free after inference."}
 O["game-14"] = {"steps": [P("game-05"), "Lutris/Heroic on rig; RomM on mini optional"], "commands": ["ssh rig 'lutris --version'"], "files": [], "verify": "Non-Steam game streams."}
-O["ai-01"] = {"steps": [P("ha-17"), "ComfyUI on rig on-demand", "Continue → LiteLLM", "Open WebUI RAG optional"], "commands": ["ssh rig 'git clone https://github.com/comfyanonymous/ComfyUI'"], "files": [], "verify": "Image gen via ComfyUI."}
+O["ai-01"] = {"steps": [P("ha-17"), "ComfyUI on rig (24/7)", "Continue → LiteLLM", "Open WebUI RAG optional"], "commands": ["ssh rig 'git clone https://github.com/comfyanonymous/ComfyUI'"], "files": [], "verify": "Image gen via ComfyUI."}
 
 # --- Post-process: pad thin tasks ---
 def pad(task_id: str, extra_steps=None, extra_cmds=None):

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Rig is 24/7 since 2026-07 — this is RECOVERY tooling (power outage / accidental shutdown), not workflow.
 #
 # wake-rig.sh
 # Send a Wake-on-LAN magic packet to the CachyOS rig on the Trusted VLAN.

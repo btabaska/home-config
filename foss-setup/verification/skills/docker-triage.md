@@ -7,13 +7,15 @@ Environment facts:
   managed via dockge. User btabaska has passwordless sudo and docker access.
 - nas: Synology, NO sudo. Containers managed via Container Manager or
   /volume1/docker compose files. HTTP checks probe http://nas:<port> from mini.
-- rig: CachyOS, on-demand (often asleep). mini cannot SSH to it (tailnet ACL);
-  wake with: wakeonlan -i 192.168.10.255 50:eb:f6:b5:82:c6
+- rig: CachyOS, runs 24/7 — the rig being down/unreachable is an incident,
+  not expected. Recovery action: wakeonlan -i 192.168.10.255 50:eb:f6:b5:82:c6
+  (mini cannot SSH to it: tailnet ACL).
 - Checks compare curl HTTP codes: expected codes include 302/303/307 login
   redirects and 401 (plex unauthenticated) — those are the healthy values.
 
 Common signatures:
-- code 000 -> nothing listening: container down, or host down/asleep (rig).
+- code 000 -> nothing listening: container down, or host down (for the rig this
+  is an incident — recovery: WoL).
 - code 502/503 -> reverse proxy up but backend container unhealthy.
 - code 500 -> app up but erroring; check container logs.
 - expected 302 but got 200 (or similar drift) -> app config/version change, usually benign.

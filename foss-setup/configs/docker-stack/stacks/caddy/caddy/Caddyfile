@@ -172,7 +172,8 @@ vault.{$DOMAIN} {
 	reverse_proxy vaultwarden:80
 }
 
-# Rig AI stack (CachyOS — on-demand). HTTPS terminates on Mac mini Caddy, not the rig.
+# Rig AI stack (CachyOS — 24/7 since 2026-07-08; a 502 here is an incident).
+# HTTPS terminates on Mac mini Caddy, not the rig.
 # Set RIG_IP in .env (default homelab: 192.168.10.12).
 
 # Open WebUI chat UI
@@ -200,7 +201,7 @@ mcpo.{$DOMAIN} {
 }
 
 # Sunshine game-stream host UI (rig — HTTPS with a self-signed cert on :47990).
-# On-demand like the rest of the rig stack; expect 502 while the rig sleeps.
+# Always-on like the rest of the rig stack (rig is 24/7); a 502 here is an incident.
 sunshine.{$DOMAIN} {
 	import local_tls
 	reverse_proxy https://{$RIG_IP}:47990 {

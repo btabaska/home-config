@@ -21,7 +21,7 @@ a host.
 | Always-on | **DS920+ NAS** | three Basic volumes (~42 TB): Vol 1 Music/Books/Tier1/Docker, Vol 2 Movies, Vol 3 TV; Immich, Plex, CWA, *arr stack, backups |
 | Always-on | **Mac mini → Ubuntu Server** (~12W) | the Docker stack, light game servers |
 | Always-on | **UniFi Dream Wall** | router + firewall + switch + WiFi + controller |
-| On-demand | **CachyOS rig** (3090 Ti / 12700K) | local LLM, game streaming, heavy game servers |
+| Always-on (24/7 since 2026-07-08) | **CachyOS rig** (3090 Ti / 12700K) | local LLM, game streaming, heavy game servers; WoL kept as recovery only |
 | Off-site | **Managed seedbox** | the whole P2P download stack, invisible to the ISP |
 
 ---
@@ -101,7 +101,8 @@ Do a phase before starting the next — each one leaves you strictly better off.
   (`configs/ansible/`) to patch/reboot/audit every box in one command. This is
   where the whole repo becomes rebuildable.
 - **Phase 5 — Play.** Game servers (LinuxGSM/Pelican) and Sunshine + Moonlight
-  streaming, with Wake-on-LAN + GPU tuning on the rig (`scripts/gaming/`).
+  streaming, with GPU/idle-power tuning on the 24/7 rig (`scripts/gaming/`;
+  Wake-on-LAN stays set up as recovery tooling only).
 
 ---
 
@@ -115,9 +116,10 @@ This build optimizes for **quiet until something needs you**, not for novelty.
 2. **Pin versions, never `:latest`.** Every image is pinned. Updates are
    *notify-only* (Diun → ntfy); you bump tags deliberately after reading release
    notes. No 3am surprise breakage from a blind auto-pull.
-3. **Right host for the job.** Cheap always-on gear (~$150/yr total) runs the 24/7
-   services; the power-hungry rig stays **on-demand** (Wake-on-LAN), so it costs
-   only what you actually use.
+3. **Right host for the job.** Cheap always-on gear (~$150/yr total) runs the light
+   24/7 services; the power-hungry rig **also runs 24/7** (decision 2026-07-08:
+   ~130W idle ≈ $23/mo accepted for availability; idle-power tuning open). WoL is
+   recovery tooling only — an unreachable rig is an incident, not expected sleep.
 4. **3-2-1 backups, with a tested restore.** RAID is not a backup. Tier-1
    irreplaceable data goes off-site; an *untested* backup is just a hope.
 5. **Power resilience.** UPS on the NAS + Ubuntu box + Dream Wall; the NAS does a

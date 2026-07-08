@@ -74,7 +74,9 @@ Source: 5-agent audit of this repo on 2026-07-06. Repo root: `/Users/brandontaba
 **Change:** For each of syft and grype: add a `command: /usr/local/bin/syft version` (resp. grype) task with `register`, `changed_when: false`, `failed_when: false`; then run the installer `when:` the binary is missing or the registered stdout does not contain the pinned version string. Remove the `creates:` arg.
 **Verify:** Installer tasks have a `when:` referencing the registered version output; no `creates:` remains on them.
 
-### A-11: Wake-gate the sbom timer on the rig
+### A-11: Wake-gate the sbom timer on the rig — **OBSOLETE**
+> **OBSOLETE (2026-07-08):** superseded by the decision that the rig runs 24/7 (no auto-suspend; WoL retained as recovery tooling only). The rig is awake at 03:30, so the fixed `OnCalendar` timer is correct as-is — do not apply this task. Entry kept for history.
+
 **File:** `configs/ansible/roles/sbom/tasks/main.yml` (near lines 27–35)
 **Problem:** The fixed `OnCalendar=03:30` timer is copied verbatim to the wake-gated rig, which is asleep at 03:30.
 **Change:** Template the timer install the same way `configs/ansible/roles/backup/tasks/main.yml` (near lines 40–58) does: when `wake_gated | default(false)` is true, install a variant using `OnBootSec=` + `Persistent=true` instead of the fixed `OnCalendar`.
@@ -277,7 +279,7 @@ Source: 5-agent audit of this repo on 2026-07-06. Repo root: `/Users/brandontaba
 3. firewall-policy-order.md near lines 65–66: reword the 14b ordering note to "ZBF ordering only matters within a source→destination zone pair; keep 14b below #6 among IoT→Gateway policies."
 4. dns-resilience-plan.md near lines 20–23: add one sentence: clients (macOS/iOS/Android) rotate/race DNS servers, so listing the gateway as tertiary means occasional filter bypass — accepted fail-open tradeoff until dns-05.
 5. firewall-policy-checklist.md near line 264: add note that Protect-adopted cameras sync time from the console, so gateway NTP isn't needed once C-09's ports are open.
-6. ssh-maintenance-access.md near lines 92–100: add note that WoL requires the rig to be on wired Ethernet; device-onboarding-and-migration.md lists the gaming PCs as Wi-Fi — magic packets won't wake a Wi-Fi NIC. Cross-fix the connectivity column in device-onboarding-and-migration.md near line 48 if the rig is actually wired.
+6. ssh-maintenance-access.md near lines 92–100: add note that WoL is now **recovery tooling only** (the rig runs 24/7 as of 2026-07-08 — an unreachable rig is an incident, not expected sleep) and that recovery WoL requires the rig to be on wired Ethernet; device-onboarding-and-migration.md lists the gaming PCs as Wi-Fi — magic packets won't wake a Wi-Fi NIC. Cross-fix the connectivity column in device-onboarding-and-migration.md near line 48 if the rig is actually wired.
 **Verify:** All six edits applied; no other content changed.
 
 ### C-13: Document per-VLAN DHCP pool boundaries

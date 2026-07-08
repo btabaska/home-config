@@ -1,5 +1,7 @@
 # tdarr
 
+**REMOVED FROM PLAN 2026-07-08** — re-encoding conflicts with the TRaSH quality automation and storage is not scarce. Page kept for reference.
+
 Tdarr — distributed audio/video transcoding automation (server + local node)
 
 | | |

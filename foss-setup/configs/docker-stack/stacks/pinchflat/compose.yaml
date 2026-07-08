@@ -14,7 +14,8 @@
 
 services:
   pinchflat:
-    image: ghcr.io/kieraneglin/pinchflat:v2025.6.6
+    build: .
+    image: pinchflat-bgutil:local
     container_name: pinchflat
     restart: unless-stopped
     ports:

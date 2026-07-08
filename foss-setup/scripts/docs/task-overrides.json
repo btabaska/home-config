@@ -5,7 +5,7 @@
       "Prerequisite: net-13 complete.",
       "MacBook: `ssh-keygen -t ed25519 -C homelab-maint -f ~/.ssh/id_ed25519_homelab`",
       "Per host: DSM \u2192 Control Panel \u2192 Terminal & SNMP \u2192 Enable SSH; Ubuntu: `sudo systemctl enable --now ssh`",
-      "`ssh-copy-id -i ~/.ssh/id_ed25519_homelab.pub user@192.168.10.4` (nas) and `.11` (mini); rig after WoL (game-08)",
+      "`ssh-copy-id -i ~/.ssh/id_ed25519_homelab.pub user@192.168.10.4` (nas), `.11` (mini), and `.12` (rig \u2014 24/7)",
       "`cp ~/Documents/Home/foss-setup/configs/network/ssh-config.example ~/.ssh/config` \u2014 set tailnet names/users; `chmod 600 ~/.ssh/config`",
       "Test: `ssh nas hostname`, `ssh mini hostname`, `ssh rig hostname`",
       "Document break-glass path in configs/network/ssh-maintenance-access.md"
@@ -248,7 +248,7 @@
       "`ssh rig 'sudo pacman -S --needed restic'`",
       "Copy restic script; create /etc/restic/b2.env with RESTIC_REPOSITORY=b2:bucket:rig",
       "Exclude caches/Steam from BACKUP_PATHS",
-      "Enable timer (Persistent=true for on-demand rig)"
+      "Enable timer (Persistent=true catch-up; the rig is 24/7)"
     ],
     "commands": [
       "scp ~/Documents/Home/foss-setup/scripts/backup/restic-backup.sh rig:/tmp/",
@@ -376,7 +376,7 @@
       "**Mac mini** (ssh + gitconfig; lighter set): `scp ~/Documents/Home/foss-setup/scripts/dotfiles/bootstrap-dotfiles.sh mini:/tmp/` then `ssh mini 'DOTFILES_REPO=btabaska bash /tmp/bootstrap-dotfiles.sh'`.",
       "On each host after bootstrap: copy age key from Proton Pass to `~/.config/chezmoi/key.txt` if SSH config is encrypted, then `chezmoi apply`.",
       "Verify fleet-wide from MacBook: `ssh rig 'chezmoi diff && chezmoi status'` and `ssh mini 'chezmoi diff && chezmoi status'` \u2014 both diffs must be empty.",
-      "Test SSH aliases: `ssh mini hostname`, `ssh rig hostname` (wake rig first via game-08 if needed).",
+      "Test SSH aliases: `ssh mini hostname`, `ssh rig hostname`.",
       "**Ongoing sync:** edit on one box \u2192 `chezmoi edit` \u2192 `chezmoi apply` \u2192 `chezmoi cd && git push`; on others \u2192 `chezmoi update`. Use `.tmpl` files for per-host differences (see chezmoi-quickstart.md).",
       "glue-08 ansible-pull will automate `chezmoi init --apply` later; manual bootstrap is fine until Forgejo (glue-05) is up."
     ],
@@ -701,6 +701,7 @@
   },
   "media-03": {
     "steps": [
+      "REMOVED FROM PLAN 2026-07-08 \u2014 won't-do: no auto-deletion wanted. Kept for reference.",
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
       "Prerequisite: docker-01, docker-02 complete.",
       "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/maintainerr mini:/tmp/maintainerr`",
@@ -1595,13 +1596,13 @@
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
       "Prerequisite: seed-03, betty-01 complete.",
       "SSH to Betty. Deploy **slskd** as a **native binary** (Soulseek P2P stays off-site).",
-      "**Do NOT use rootless Docker** for slskd on Bytesized — peer port 50300 will not be reachable from the Internet.",
+      "**Do NOT use rootless Docker** for slskd on Bytesized \u2014 peer port 50300 will not be reachable from the Internet.",
       "`scp ~/Documents/Home/foss-setup/scripts/media/install-slskd-native.sh seedbox:~/install-slskd-native.sh`",
       "`scp ~/Documents/Home/foss-setup/configs/seedbox/slskd-native.example.env seedbox:~/slskd-native/.env`",
       "Edit `~/slskd-native/.env`: `SLSKD_SLSK_*` = Soulseek network account; `SLSKD_WEB_*` = web UI login.",
       "For Soularr (nas-29): uncomment/set `SLSKD_HTTP_IP` to Betty's Tailscale IP so the NAS can reach the API on :5030.",
       "`ssh seedbox 'chmod 600 ~/slskd-native/.env && bash ~/install-slskd-native.sh'`",
-      "Web UI (operator): `ssh -L 5030:127.0.0.1:5030 seedbox` → http://localhost:5030",
+      "Web UI (operator): `ssh -L 5030:127.0.0.1:5030 seedbox` \u2192 http://localhost:5030",
       "Verify on Betty: `curl -s 'https://www.slsknet.org/porttest.php?port=50300' | grep -i open`",
       "Create API key in slskd web UI for Soularr (nas-29)",
       "Confirm test download lands in ~/files/slskd/ and is visible on NAS at /volume1/mounts/seedbox-files/slskd/"
@@ -2086,7 +2087,7 @@
       "**Core (done):** Unbound on mini; AdGuard upstream `unbound:5335`; `*.tabaska.us` rewrites.",
       "Verify: `dig @192.168.10.2 google.com +short` and `dig @192.168.10.2 home.tabaska.us +short`.",
       "**Do not** point UniFi DHCP at AdGuard-only DNS until **dns-03** (fail-open chain) is live.",
-      "Resilience: **dns-02 → dns-05** — see configs/network/dns-resilience-plan.md.",
+      "Resilience: **dns-02 \u2192 dns-05** \u2014 see configs/network/dns-resilience-plan.md.",
       "Incident 2026-07-03: single-DNS DHCP took house offline when mini rebooted."
     ],
     "commands": [
@@ -2110,16 +2111,16 @@
         "url": "https://github.com/AdguardTeam/AdGuardHome/wiki/Configuration"
       }
     ],
-    "verify": "Mini AdGuard resolves public + internal names. dns-02–dns-05 required before AdGuard-only DHCP."
+    "verify": "Mini AdGuard resolves public + internal names. dns-02\u2013dns-05 required before AdGuard-only DHCP."
   },
   "dns-02": {
     "steps": [
-      "Read configs/network/dns-resilience-plan.md — NAS secondary must not depend on mini Unbound.",
+      "Read configs/network/dns-resilience-plan.md \u2014 NAS secondary must not depend on mini Unbound.",
       "`scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/adguard-nas nas:/tmp/adguard-nas`",
       "`ssh nas 'sudo mkdir -p /volume1/docker/adguard-nas && sudo rsync -a /tmp/adguard-nas/ /volume1/docker/adguard-nas/'`",
-      "Container Manager → create project from /volume1/docker/adguard-nas/compose.yaml → Start.",
-      "Wizard at http://192.168.10.4:3000 — upstream tls://1.1.1.1 tls://9.9.9.9.",
-      "Export mini AdGuard settings; import rewrites/blocklists; mirror *.tabaska.us → 192.168.10.2.",
+      "Container Manager \u2192 create project from /volume1/docker/adguard-nas/compose.yaml \u2192 Start.",
+      "Wizard at http://192.168.10.4:3000 \u2014 upstream tls://1.1.1.1 tls://9.9.9.9.",
+      "Export mini AdGuard settings; import rewrites/blocklists; mirror *.tabaska.us \u2192 192.168.10.2.",
       "Test: `dig @192.168.10.4 google.com +short` with mini AdGuard stopped."
     ],
     "commands": [
@@ -2142,21 +2143,25 @@
   "dns-03": {
     "steps": [
       "Prerequisite: dns-02 verified.",
-      "Dream Wall → Settings → Networks → Trusted, IoT, Guest, Work — each client VLAN.",
+      "Dream Wall \u2192 Settings \u2192 Networks \u2192 Trusted, IoT, Guest, Work \u2014 each client VLAN.",
       "DHCP DNS #1 192.168.10.2 (mini), #2 192.168.10.4 (NAS), #3 192.168.10.1 (gateway).",
       "Save; optionally 1 h lease once to speed migration.",
       "`./scripts/network/dns-resilience-verify.sh`"
     ],
-    "commands": ["./scripts/network/dns-resilience-verify.sh"],
-    "files": ["configs/network/dns-resilience-plan.md"],
+    "commands": [
+      "./scripts/network/dns-resilience-verify.sh"
+    ],
+    "files": [
+      "configs/network/dns-resilience-plan.md"
+    ],
     "docs": [],
     "verify": "All client VLANs list three DNS servers; verify script passes."
   },
   "dns-04": {
     "steps": [
       "Script: scripts/network/dns-resilience-verify.sh",
-      "Runbook: configs/network/dns-resilience-plan.md § Outage runbook",
-      "Drill: stop mini AdGuard → NAS + gateway still resolve → restart AdGuard",
+      "Runbook: configs/network/dns-resilience-plan.md \u00a7 Outage runbook",
+      "Drill: stop mini AdGuard \u2192 NAS + gateway still resolve \u2192 restart AdGuard",
       "Optional: Uptime Kuma monitor or weekly cron for verify script"
     ],
     "commands": [
@@ -2179,8 +2184,12 @@
       "Block known DoH endpoints.",
       "Re-run dns-resilience-verify.sh; mini-stop drill with redirect enabled."
     ],
-    "commands": ["./scripts/network/dns-resilience-verify.sh"],
-    "files": ["configs/network/dns-resilience-plan.md"],
+    "commands": [
+      "./scripts/network/dns-resilience-verify.sh"
+    ],
+    "files": [
+      "configs/network/dns-resilience-plan.md"
+    ],
     "docs": [],
     "verify": "Redirect + DoH block active; fail-open chain still passes with mini stopped."
   },
@@ -2268,7 +2277,7 @@
       "Edit CONTROL_REPO_URL in ansible-pull.service to Forgejo SSH URL before copying",
       "`ssh mini 'sudo cp /tmp/ansible-pull.service /tmp/ansible-pull.timer /etc/systemd/system/'`",
       "`ssh mini 'sudo systemctl daemon-reload && sudo systemctl enable --now ansible-pull.timer'`",
-      "Repeat on rig (OnBootSec=3min timer for wake-gated rig); verify `systemctl list-timers ansible-pull.timer`"
+      "Repeat on rig (standard OnCalendar timer, Persistent=true catch-up \u2014 the rig is 24/7); verify `systemctl list-timers ansible-pull.timer`"
     ],
     "commands": [
       "scp ~/Documents/Home/foss-setup/configs/ansible/ansible-pull.service ~/Documents/Home/foss-setup/configs/ansible/ansible-pull.timer mini:/tmp/",
@@ -2326,8 +2335,7 @@
       "Prerequisite: net-14, glue-05 complete.",
       "MacBook: `pipx install ansible` or brew install ansible",
       "`cd ~/Documents/Home/foss-setup/configs/ansible && ansible-galaxy collection install -r requirements.yml`",
-      "Wake rig if testing all hosts: `ssh mini 'bash ~/wake-rig.sh'`",
-      "`cd ~/Documents/Home/foss-setup/configs/ansible && ansible all -i inventory.ini -m ping`"
+      "`cd ~/Documents/Home/foss-setup/configs/ansible && ansible all -i inventory.ini -m ping` \u2014 the rig is 24/7 and should answer"
     ],
     "commands": [
       "cd ~/Documents/Home/foss-setup/configs/ansible && ansible-galaxy collection install -r requirements.yml",
@@ -2499,6 +2507,7 @@
   "media-04": {
     "steps": [
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "REMOVED FROM PLAN 2026-07-08 \u2014 won't-do: re-encoding conflicts with TRaSH quality automation and storage is not scarce. Kept for reference.",
       "Prerequisite: nas-10, game-08 complete.",
       "Prerequisite: DSM **Container Manager** installed (Package Center \u2192 Container Manager \u2192 Install). Install now if missing.",
       "Tdarr server on NAS; node on rig",
@@ -2567,7 +2576,6 @@
     "steps": [
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
       "Prerequisite: game-08 complete.",
-      "Wake rig if asleep: `ssh mini 'bash ~/wake-rig.sh'`",
       "`scp ~/Documents/Home/foss-setup/scripts/gaming/sunshine-autostart-notes.md rig:~/`",
       "On rig: add LizardByte pacman repo; `sudo pacman -S sunshine cuda`",
       "`ssh rig 'loginctl enable-linger $USER'`; enable user unit app-dev.lizardbyte.app.Sunshine",
@@ -2618,9 +2626,10 @@
   "game-08": {
     "steps": [
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
+      "The rig is 24/7 (decision 2026-07-08) \u2014 WoL is RECOVERY tooling (power outage, accidental shutdown), not workflow.",
       "`scp ~/Documents/Home/foss-setup/scripts/gaming/enable-wol-cachyos.sh rig:~/`",
       "`scp ~/Documents/Home/foss-setup/scripts/gaming/wake-rig.sh mini:~/`",
-      "Test wake from mini",
+      "Test wake from mini (recovery drill)",
       "From MacBook: confirm completion matches the verify block before checking this task done."
     ],
     "commands": [
@@ -2631,20 +2640,28 @@
       "scripts/gaming/enable-wol-cachyos.sh",
       "scripts/gaming/wake-rig.sh"
     ],
-    "verify": "rig wakes from off."
+    "verify": "rig wakes from off (recovery drill)."
   },
   "game-09": {
     "steps": [
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
-      "Prerequisite: game-08 complete.",
-      "systemd suspend after idle on rig",
-      "From MacBook: confirm completion matches the verify block before checking this task done."
+      "Rig runs 24/7 (decision 2026-07-08: ~130W idle \u2248 $23/mo accepted for availability) \u2014 auto-suspend is closed as won't-do.",
+      "Fix the plasmashell busy-loop that burns CPU at idle.",
+      "Headless/greeter idle-power pass \u2014 no desktop session left logged in when idle.",
+      "Measure idle draw at the wall (smart plug / Kill-A-Watt).",
+      "Target <100W idle."
     ],
     "commands": [
-      "ssh rig 'systemctl status suspend.target'"
+      "ssh rig 'top -bn1 | head -15'"
     ],
     "files": [],
-    "verify": "rig suspends when idle."
+    "verify": "Wall measurement shows <100W idle; plasmashell no longer busy-looping.",
+    "docs": [
+      {
+        "title": "Arch Wiki: Power management",
+        "url": "https://wiki.archlinux.org/title/Power_management"
+      }
+    ]
   },
   "game-10": {
     "steps": [
@@ -2720,7 +2737,7 @@
     "steps": [
       "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
       "Prerequisite: ha-17 complete.",
-      "ComfyUI on rig on-demand",
+      "ComfyUI on rig (24/7)",
       "Continue \u2192 LiteLLM",
       "Open WebUI RAG optional"
     ],

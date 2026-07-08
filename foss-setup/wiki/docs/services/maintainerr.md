@@ -1,5 +1,7 @@
 # maintainerr
 
+**REMOVED FROM PLAN 2026-07-08** — no auto-deletion wanted. Page kept for reference.
+
 Maintainerr — rule-based Plex library pruning ("Seerr in reverse")
 
 | | |

@@ -33,7 +33,7 @@ compose files). Hand-written prose lives only where judgment is needed.
 |---|---|---|---|---|
 | [mini](hosts/mini.md) | `mini` · 192.168.10.2 | Ubuntu Docker host — the always-on web/management stack, Caddy, primary DNS, Forgejo | 24/7 (~12 W) | ansible-pull + Dockge |
 | [nas](hosts/nas.md) | `nas` · 192.168.10.4 | Synology DS920+ — storage, Immich, Plex, CWA, *arr stack, secondary DNS | 24/7 | DSM UI (Container Manager) |
-| [rig](hosts/rig.md) | `rig` · 192.168.10.12 | CachyOS — local LLMs, Sunshine streaming, heavy game servers | **On-demand** (WoL) | ansible-pull (pending: glue-08) |
+| [rig](hosts/rig.md) | `rig` · 192.168.10.12 | CachyOS — local LLMs, Sunshine streaming, heavy game servers | 24/7 (~130 W idle; WoL kept for recovery) | ansible-pull (pending: glue-08) |
 | [seedbox](hosts/seedbox.md) | `seedbox` (Betty) | Off-site Bytesized box — Deluge + slskd, all P2P off the home network | Managed 24/7 | user-space only (no root) |
 | [gateway](hosts/gateway.md) | 192.168.10.1 | UniFi Dream Wall — routing, VLANs, firewall, WiFi, DHCP | 24/7 | UniFi GUI only |
 | [home-assistant](hosts/home-assistant.md) | 192.168.10.50 | HA Green — smart-home hub | 24/7 (~3 W) | HA itself (appliance) |

@@ -39,9 +39,11 @@ Four layers:
 
 3. **LLM triage on the rig** (verify-03/04). When checks fail, a local model
    on the rig (small, scoped skills) triages: groups related failures, drafts
-   the diagnosis against the runbook, proposes next steps. On-demand — waking
-   the rig for triage is acceptable; paging a human for a known-shape failure
-   is not.
+   the diagnosis against the runbook, proposes next steps. The rig runs 24/7
+   (as of 2026-07-08), so triage is always on call and rig checks run like
+   any other host's — the rig being down is itself an incident, not an
+   expected state. Paging a human for a known-shape failure is what this
+   layer exists to avoid.
 
 4. **Auto-reopen** (verify-05). Regressions feed back into the tracker:
    failed checks map to task ids and produce **reopen suggestions** against

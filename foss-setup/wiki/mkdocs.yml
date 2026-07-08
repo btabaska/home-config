@@ -53,7 +53,7 @@ nav:
   - Hosts:
       - mini (Ubuntu Docker host): hosts/mini.md
       - nas (Synology DS920+): hosts/nas.md
-      - rig (CachyOS, on-demand): hosts/rig.md
+      - rig (CachyOS): hosts/rig.md
       - seedbox (Betty): hosts/seedbox.md
       - gateway (UniFi Dream Wall): hosts/gateway.md
       - Home Assistant: hosts/home-assistant.md
@@ -107,7 +107,7 @@ nav:
       - Backup & restore: runbooks/backup-restore.md
       - Rebuild a host: runbooks/rebuild-a-host.md
       - Add a service: runbooks/add-a-service.md
-      - Wake the rig: runbooks/wake-the-rig.md
+      - Recover the rig (WoL): runbooks/wake-the-rig.md
       - Update images: runbooks/update-images.md
       - Verification: runbooks/verification.md
   - Operations:

@@ -1,6 +1,6 @@
-# Fires the restic backup nightly at 01:30. Persistent=true catches a missed run
-# (e.g. the on-demand CachyOS rig was asleep) the next time the host is awake —
-# the wake-friendly behavior Section 6 asks for.
+# Fires the restic backup nightly at 01:30 on every host — the rig included
+# (24/7 since 2026-07-08). Persistent=true is generic catch-up: it runs a
+# missed job at next boot if a host happened to be down at the scheduled time.
 [Unit]
 Description=Run restic backup daily
 

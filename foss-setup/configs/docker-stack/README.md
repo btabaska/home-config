@@ -9,7 +9,7 @@ This `stacks/` directory mirrors that layout 1:1 — copy it to `/opt/stacks` on
 stacks/
   seerr/             # Phase 2 — movie/TV request portal (Seerr)
   musicseerr/        # Phase 2 — music request portal (Lidarr; Seerr has no Lidarr support)
-  litellm/           # Phase 2 — AI gateway + always-on fallback (voice survives rig sleep)
+  litellm/           # Phase 2 — AI gateway + mini fallback (resilience if the rig is down)
   miniflux/          # Phase 3 — RSS reader + PostgreSQL
   navidrome/         # Phase 3 — music streaming
   paperless-ngx/     # Phase 3 — document OCR + full-text archive
@@ -29,8 +29,8 @@ stacks/
   dependency-track/  # Phase 4 — OWASP Dependency-Track v5 (SBOM / vuln dashboard)
   tautulli/          # Phase 4 — Plex analytics
   kometa/            # Phase 4 — Plex collections / overlays
-  maintainerr/       # Phase 4 — rule-based library pruning
-  tdarr/             # Phase 4 — pre-transcode (node on the rig)
+  maintainerr/       # REMOVED FROM PLAN 2026-07-08 (no auto-deletion wanted) — kept for reference
+  tdarr/             # REMOVED FROM PLAN 2026-07-08 (re-encoding conflicts with TRaSH; storage not scarce) — kept for reference
   frigate/           # Phase 2 (optional) — local camera AI
 alternatives/
   pihole/            # swap-in for AdGuard Home
@@ -43,10 +43,10 @@ alternatives/
 > Healthchecks on `8001` vs Paperless `8000`).
 >
 > **Offload the heavy hitters (see the plan's Section 0 capacity note).** The 2015
-> Mac mini caps at 16 GB RAM, so **Paperless-ngx, Dependency-Track, Frigate, and the
-> Tdarr server** are intended to run on the **NAS** (DSM Container Manager) instead —
+> Mac mini caps at 16 GB RAM, so **Paperless-ngx, Dependency-Track, and Frigate**
+> are intended to run on the **NAS** (DSM Container Manager) instead —
 > co-located with the data/media they touch and where there's RAM headroom. The
-> compose files here are host-agnostic; drop those four into the NAS's Container
+> compose files here are host-agnostic; drop those into the NAS's Container
 > Manager rather than `/opt/stacks` on the Mac mini. When a service runs on the NAS,
 > point its **Caddy** vhost at `{$NAS_IP}:<host-port>` instead of the container name
 > (the `edge` network is per-host) — see the note at the bottom of the Caddyfile.
@@ -80,9 +80,9 @@ you bump tags deliberately after reading release notes.
 | Dependency-Track | `dependencytrack/apiserver:5.0.2` + `frontend:5.0.1` |
 | Tautulli     | `ghcr.io/tautulli/tautulli:v2.17.2` |
 | Kometa       | `kometateam/kometa:v2.3.1`          |
-| Maintainerr  | `ghcr.io/maintainerr/maintainerr:3.15.3` |
+| Maintainerr  | `ghcr.io/maintainerr/maintainerr:3.15.3` (removed from plan) |
 | Libreseerr   | `ghcr.io/zamnzim/libreseerr@sha256:820134…` (digest-pinned; no version tags upstream) |
-| Tdarr        | `ghcr.io/haveagitgat/tdarr:2.78.01` (+node) |
+| Tdarr        | `ghcr.io/haveagitgat/tdarr:2.78.01` (+node; removed from plan) |
 | Frigate      | `ghcr.io/blakeblackshear/frigate:0.17.1` |
 | _alt:_ Pi-hole  | `pihole/pihole:2026.06.0`        |
 | _alt:_ Dockhand | `fnsys/dockhand:v1.0.35`         |

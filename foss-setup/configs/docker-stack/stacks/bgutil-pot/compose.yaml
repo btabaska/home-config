@@ -1,0 +1,13 @@
+# bgutil PO-token provider — generates YouTube PO tokens so yt-dlp (MeTube,
+# Pinchflat) stops getting HTTP 403 on the JS/GVS challenge (2026-07-08).
+# The yt-dlp bgutil plugin in those containers points at http://bgutil-pot:4416.
+services:
+  bgutil-pot:
+    image: brainicism/bgutil-ytdlp-pot-provider:latest
+    container_name: bgutil-pot
+    restart: unless-stopped
+    init: true
+    networks: [edge]
+networks:
+  edge:
+    external: true

@@ -3,14 +3,15 @@
 #
 # WHY THIS EXISTS — one stable endpoint, two brains:
 #   The CachyOS gaming rig has the big GPU and runs a large Ollama model
-#   (e.g. qwen2.5:14b) — but it SLEEPS to save power. The always-on Mac mini
-#   runs a small Ollama model (llama3.2:3b) 24/7. LiteLLM publishes a SINGLE
-#   OpenAI-compatible URL (http://<mac-mini>:4000) that:
-#     - routes requests to the rig's big model when it's awake, and
-#     - FALLS BACK to the Mac mini's small model when the rig is asleep
-#       (the request to the sleeping rig times out, router retries the fallback).
-#   Point all clients (Open WebUI, scripts, IDE) at this one URL and never care
-#   which machine is up. Wake-on-LAN the rig separately for heavy jobs.
+#   (e.g. qwen2.5:14b), and it runs 24/7 (decision 2026-07-08). The Mac mini
+#   also runs a small Ollama model (llama3.2:3b) 24/7. LiteLLM publishes a
+#   SINGLE OpenAI-compatible URL (http://<mac-mini>:4000) that:
+#     - routes requests to the rig's big model (the primary), and
+#     - FALLS BACK to the Mac mini's small model for RESILIENCE if the rig is
+#       ever unreachable (that's an incident now, not expected — the fallback
+#       just keeps AI clients degraded-but-working while you fix it).
+#   Point all clients (Open WebUI, scripts, IDE) at this one URL. Wake-on-LAN
+#   is retained as recovery tooling only.
 #
 # Config lives in ./config.yaml (mounted read-only) and is passed via --config.
 

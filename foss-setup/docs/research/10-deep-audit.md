@@ -1,3 +1,5 @@
+> **ADDENDUM 2026-07-08:** rig is now 24/7 — wake-UX/suspend recommendations herein are superseded (WoL kept as recovery).
+
 # Deep per-service audit — second pass (2026-07-08, 5 read-only agents)
 
 Covers the ~20 services the first-night sweep didn't individually inspect. Fixes marked ✅ were applied this same night (all reversible, all verified); everything else is options-only.

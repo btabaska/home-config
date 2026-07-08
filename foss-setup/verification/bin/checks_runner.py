@@ -128,7 +128,7 @@ def main():
 
     load_env_file(ENV_FILE)
     os.makedirs(STATE_DIR, exist_ok=True)
-    # Filtered (--host) runs are interactive/on-demand: they write to a side
+    # Filtered (--host) runs are ad-hoc operator runs: they write to a side
     # file and never touch the daily state (results.json, reopen-suggestions,
     # last-summary) or send notifications.
     filtered = bool(args.host)
@@ -141,7 +141,8 @@ def main():
         checks = [c for c in checks
                   if c["host"] == args.host or c["domain"] == args.host]
         # explicit host filter is an operator action: include disabled checks
-        # (this is how on-demand rig checks are run)
+        # (e.g. checks still disabled for other reasons, like the seedbox;
+        # rig checks are enabled in the daily cycle now — rig is 24/7)
         runnable = checks
     else:
         runnable = [c for c in checks if c.get("enabled", True)]

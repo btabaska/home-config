@@ -3,11 +3,13 @@
 # https://<name>.tabaska.us front door (Caddy on the mini, 192.168.10.2).
 #
 # Verified live 2026-07-07 (docker ps on mini + HTTP probes from mini).
-# hosts: mini=192.168.10.2, nas=192.168.10.4, rig=192.168.10.12 (on-demand),
+# hosts: mini=192.168.10.2, nas=192.168.10.4, rig=192.168.10.12 (24/7),
 #        ha=192.168.10.50, seedbox=100.119.134.94 (Tailscale, "Betty")
 #
 # ui: false  => backend/agent with no web UI: no Caddy vhost, no Homepage tile.
-# on_demand  => host sleeps when idle; expect 502 through Caddy until woken.
+# on_demand  => legacy field, kept for schema stability; all hosts run 24/7 now
+#               (rig sleep retired 2026-07-08 — WoL is recovery tooling only).
+#               A 502 through Caddy is an INCIDENT, not expected behavior.
 
 services:
   # --- Media ----------------------------------------------------------------
@@ -120,7 +122,8 @@ services:
     port: 6246
     url: https://maintainerr.tabaska.us
     on_demand: false
-    notes: Rule-based Plex library pruning.
+    status: removed
+    notes: REMOVED FROM PLAN 2026-07-08 — no auto-deletion wanted. Compose kept for reference.
   - name: deluge
     category: Media Automation
     host: seedbox
@@ -202,42 +205,42 @@ services:
     on_demand: false
     notes: Answers 400 via proxy until trusted_proxies configured (run-5); direct :8123 works.
 
-  # --- AI & Gaming (on-demand rig) ---------------------------------------------
+  # --- AI & Gaming (rig, 24/7 as of 2026-07-08; rig down = incident) ------------
   - name: open-webui
     category: AI & Gaming
     host: rig
     port: 3000
     url: https://ai.tabaska.us
-    on_demand: true
-    notes: Chat UI. Wake rig first; 502 while asleep.
+    on_demand: false
+    notes: Chat UI. Rig runs 24/7 — a 502 here is an incident (WoL is recovery tooling).
   - name: litellm
     category: AI & Gaming
     host: rig
     port: 4000
     url: https://llm.tabaska.us
-    on_demand: true
-    notes: OpenAI-compatible gateway (/ui admin). Wake rig first.
+    on_demand: false
+    notes: OpenAI-compatible gateway (/ui admin). Always-on; mini fallback kept for resilience.
   - name: ollama
     category: AI & Gaming
     host: rig
     port: 11434
     url: https://ollama.tabaska.us
-    on_demand: true
-    notes: Native Ollama API (verified up 2026-07-07 while rig awake).
+    on_demand: false
+    notes: Native Ollama API (verified up 2026-07-07). Rig runs 24/7.
   - name: mcpo
     category: AI & Gaming
     host: rig
     port: 8000
     url: https://mcpo.tabaska.us
-    on_demand: true
-    notes: MCP→OpenAPI tool bridge; docs at /docs (root 404s by design).
+    on_demand: false
+    notes: MCP→OpenAPI tool bridge; docs at /docs (root 404s by design). Rig runs 24/7.
   - name: sunshine
     category: AI & Gaming
     host: rig
     port: 47990
     url: https://sunshine.tabaska.us
-    on_demand: true
-    notes: Game-stream host UI, self-signed HTTPS upstream. Did not answer on 2026-07-07 even with rig awake — service may be stopped; vhost added anyway.
+    on_demand: false
+    notes: Game-stream host UI, self-signed HTTPS upstream. Did not answer on 2026-07-07 — service may be stopped; vhost added anyway. Rig runs 24/7.
 
   # --- Infrastructure & Ops --------------------------------------------------------
   - name: homepage
@@ -354,6 +357,7 @@ services:
     notes: Adult media organizer. LAN/Tailscale only. No API key in vault — no widget.
 
 # Dead / not running on 2026-07-07 (vhosts commented out in Caddyfile pending fix-18):
-#   tdarr   — NAS :8265 unreachable
+#   tdarr   — REMOVED FROM PLAN 2026-07-08: re-encoding conflicts with TRaSH quality
+#             automation and storage isn't scarce. Compose kept for reference.
 #   frigate — NAS :8971 unreachable
 #   recyclarr — stack dir exists on mini but no container (batch job anyway, no UI)

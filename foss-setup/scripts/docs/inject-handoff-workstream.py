@@ -20,14 +20,14 @@ HANDOFF_TASKS = [
         "steps": [
             "From your MacBook (operator station), confirm `~/.ssh/config` has aliases from `configs/network/ssh-config.example` — `nas`, `mini`, `rig`, `seedbox`.",
             "Test each host: `ssh nas 'hostname'`, `ssh mini 'hostname'`, `ssh seedbox 'hostname'`.",
-            "For the rig (often asleep): `RIG_MAC=<mac> ./scripts/gaming/wake-rig.sh && sleep 30 && ssh rig 'hostname'`.",
+            "For the rig (24/7): `ssh rig 'hostname'` — if it's down (power outage / accidental shutdown), recover with `RIG_MAC=<mac> ./scripts/gaming/wake-rig.sh && sleep 30`.",
             "If any host fails, fix keys or Tailscale before starting agent work — see `configs/network/ssh-maintenance-access.md`.",
         ],
         "commands": [
             "ssh nas 'hostname'",
             "ssh mini 'hostname'",
             "ssh seedbox 'hostname'",
-            "RIG_MAC=aa:bb:cc:dd:ee:ff ./scripts/gaming/wake-rig.sh && sleep 30 && ssh rig 'hostname'",
+            "ssh rig 'hostname'  # if down, recover: RIG_MAC=<mac> ./scripts/gaming/wake-rig.sh",
         ],
         "files": ["configs/network/ssh-config.example", "configs/network/ssh-maintenance-access.md"],
         "docs": [],
@@ -69,7 +69,7 @@ HANDOFF_TASKS = [
         "steps": [
             "Open `.handoff-secrets.yaml` and set `_meta.tailnet` to your MagicDNS suffix (Tailscale admin → DNS).",
             "Fill `hosts.nas`, `hosts.mini`, `hosts.rig`, `hosts.seedbox` — LAN IPs match the Network tab (Trusted VLAN 10).",
-            "Set `hosts.rig.wol_mac` from your rig NIC (used by `scripts/gaming/wake-rig.sh`).",
+            "Set `hosts.rig.wol_mac` from your rig NIC (used by `scripts/gaming/wake-rig.sh` — recovery tooling; the rig is 24/7).",
             "Optional: fill `hosts.ha` when HA Green is plugged in (192.168.10.13 reservation).",
         ],
         "commands": [

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
+# Rig is 24/7 since 2026-07 — this is RECOVERY tooling (power outage / accidental shutdown), not workflow.
 #
 # enable-wol-cachyos.sh
-# Persistently enable Wake-on-LAN (magic packet) on the CachyOS rig's wired NIC.
+# Persistently enable Wake-on-LAN (magic packet) on the CachyOS rig's wired NIC,
+# so the rig can be remotely powered back on after an unexpected power-off.
 #
 # WoL has two halves: (1) BIOS/UEFI must allow "Wake on PCIe/LAN" / "Power On By
 # PCI-E" AND disable deep ErP/EuP power-off that cuts power to the NIC; (2) the OS

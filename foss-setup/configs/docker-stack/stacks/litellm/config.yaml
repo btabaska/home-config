@@ -4,9 +4,10 @@
 #
 # Both entries advertise the SAME public model name ("home-llm") so clients ask
 # for "home-llm" and the router decides which backend serves it. `order:` makes the
-# rig the strictly-preferred deployment (order 1) and the Mac mini a true fallback
-# (order 2) — without it, simple-shuffle would hit the sleeping rig ~50% of the
-# time and eat the timeout before failing over.
+# rig the strictly-preferred deployment (order 1) and the Mac mini a resilience
+# fallback (order 2) — without it, simple-shuffle would send ~50% of traffic to
+# the small mini model even when the rig is healthy. The rig runs 24/7 now; the
+# fallback only carries traffic during an incident (rig down = incident).
 #
 # Replace RIG_IP with the gaming rig's Tailscale/LAN IP. "localhost" inside this
 # container is the container itself, so the Mac-mini host Ollama is reached via
@@ -17,7 +18,7 @@
 # otherwise the gateway-routed request is refused.
 
 model_list:
-  # --- PRIMARY: big model on the CachyOS rig's GPU (only awake on demand) ------
+  # --- PRIMARY: big model on the CachyOS rig's GPU (rig runs 24/7) -------------
   - model_name: home-llm
     litellm_params:
       model: ollama/qwen2.5:14b
@@ -26,20 +27,20 @@ model_list:
     model_info:
       id: rig-qwen14b
 
-  # --- FALLBACK: small model always-on on the Mac mini -------------------------
+  # --- FALLBACK: small model on the Mac mini (resilience if the rig is down) ---
   - model_name: home-llm
     litellm_params:
       model: ollama/llama3.2:1b        # tiny ≤1B model — the 8GB Mac mini cannot hold more (see capacity note)
       api_base: http://host.docker.internal:11434  # Mac mini host Ollama (needs OLLAMA_HOST=0.0.0.0)
-      order: 2                        # only used when the rig (order 1) is unavailable
+      order: 2                        # only used when the rig (order 1) is unreachable (incident)
     model_info:
       id: macmini-llama3b
 
 router_settings:
-  # Keep retries low so a sleeping rig fails over fast instead of hanging.
+  # Keep retries low so an unreachable rig fails over fast instead of hanging.
   num_retries: 1
-  # Per-request timeout (seconds). Raised from 15 to 40 so a cold 14B load on the
-  # just-woken rig isn't mistaken for a failure and prematurely failed over.
+  # Per-request timeout (seconds). Raised from 15 to 40 so a cold 14B model load
+  # on the rig isn't mistaken for a failure and prematurely failed over.
   timeout: 40
   # `order:` on each deployment (above) sets strict priority; simple-shuffle only
   # breaks ties among same-order deployments.

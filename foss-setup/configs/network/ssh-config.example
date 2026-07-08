@@ -24,8 +24,9 @@ Host mini
     HostName macmini.<tailnet-name>.ts.net
     User <admin-user>
 
-# On-demand box: wake it first with scripts/gaming/wake-rig.sh (game-08),
-# then `ssh rig`. RequestTTY keeps interactive sessions sane after a cold wake.
+# 24/7 box (since 2026-07-08) — `ssh rig` should just work; if it's down
+# (power outage / accidental shutdown), recover with scripts/gaming/wake-rig.sh
+# (game-08). RequestTTY keeps interactive sessions sane after a cold boot.
 Host rig
     HostName cachyos.<tailnet-name>.ts.net
     User <admin-user>

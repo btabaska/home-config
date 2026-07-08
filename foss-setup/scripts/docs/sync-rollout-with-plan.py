@@ -363,7 +363,7 @@ by_id["doc-01"]["depends_on"] = ["nas-01", "nas-00c", "nas-prep-01"]
 by_id["doc-01"]["steps"] = [
     "Prerequisite: nas-00c, nas-prep-01, Container Manager on NAS.",
     "**GATE:** NAS RAM ≥20GB — defer Paperless until Crucial CT16G4SFD8266 upgrade (cannot share 4GB with Immich ML).",
-    "On rig on-demand or hold until RAM upgrade — do not OOM the 4GB NAS.",
+    "On the rig (24/7) or hold until NAS RAM upgrade — do not OOM the 4GB NAS.",
     "`ssh -t nas 'sudo mkdir -p /volume1/docs/{consume,media,export} /volume1/docker/paperless-ngx'`",
     "Copy configs/docker-stack/stacks/paperless-ngx/ → /volume1/docker/paperless-ngx/; remove external `edge` network; bind /volume1/docs/*.",
     "Set PUID/PGID from `id`, PAPERLESS_SECRET_KEY, PAPERLESS_DBPASS, PAPERLESS_ADMIN_PASSWORD in .env.",
@@ -424,7 +424,7 @@ by_id["glue-07"]["steps"] = [
     "MacBook: `pipx install ansible` or `brew install ansible`.",
     "cd ~/Documents/Home/foss-setup/configs/ansible && ansible-galaxy collection install -r requirements.yml",
     "Edit inventory.ini — ansible_host matches ~/.ssh/config aliases (net-14).",
-    "Wake rig if testing all hosts. `ansible all -i inventory.ini -m ping`.",
+    "`ansible all -i inventory.ini -m ping` — the rig is 24/7 and should answer.",
     "**Scope:** Mac mini + rig + seedbox user-space only — NAS (DSM) and HA (HAOS) are intentionally excluded.",
 ]
 by_id["glue-07"]["files"] = ["configs/ansible/README.md", "configs/ansible/inventory.ini"]
@@ -432,20 +432,20 @@ by_id["glue-07"]["files"] = ["configs/ansible/README.md", "configs/ansible/inven
 by_id["glue-08"]["steps"] = [
     "Prerequisite: glue-07, glue-06 complete. Each host hostname matches inventory (macmini, cachyos, seedbox).",
     "Edit ansible-pull.service CONTROL_REPO_URL → Forgejo SSH URL from glue-05.",
-    "Deploy ansible-pull.service + timer to mini and rig (`OnBootSec=3min` on rig for wake-gated convergence).",
+    "Deploy ansible-pull.service + timer to mini and rig (same OnCalendar schedule on all hosts; Persistent=true is generic catch-up).",
     "Seedbox: optional ansible-pull for user-space compose only (no root/OS on managed box).",
     "`systemctl list-timers ansible-pull.timer` — first run should be check-mode drift report.",
 ]
 by_id["glue-08"]["files"] = ["configs/ansible/ansible-pull.service", "configs/ansible/ansible-pull.timer"]
 
 by_id["sbom-01"]["depends_on"] = ["nas-prep-01", "docker-09"]
-by_id["sbom-01"]["steps"].insert(2, "Deploy on **NAS** after 20GB RAM upgrade. On stock 4GB, defer or run DT temporarily on rig on-demand.")
+by_id["sbom-01"]["steps"].insert(2, "Deploy on **NAS** after 20GB RAM upgrade. On stock 4GB, defer or run DT temporarily on the rig (24/7).")
 
 by_id["sbom-02"]["steps"] = [
     "Prerequisite: sbom-01 complete. Install scripts/inventory/sbom-nightly on mini, rig, and NAS (Container Manager where applicable).",
     "Nightly: `syft dir:/ -o cyclonedx-json` + `syft <image>` per running container → upload to Dependency-Track REST API.",
     "Also export pacman -Qqe, apt-mark showmanual, flatpak list, pinned compose tags → control repo inventory.",
-    "On rig: gate timer to run while awake (Persistent=true), same as restic.",
+    "On rig: standard nightly timer (Persistent=true catch-up), same as restic.",
 ]
 by_id["sbom-02"]["files"] = ["scripts/inventory/sbom-nightly.sh"]
 
@@ -490,15 +490,23 @@ by_id["sec-04"]["steps"] = [
 by_id["sec-04"]["files"] = ["configs/docker-stack/stacks/caddy/Caddyfile"]
 
 # --- media-polish --------------------------------------------------------------
+# media-04 (Tdarr) REMOVED FROM PLAN 2026-07-08 — re-encoding conflicts with TRaSH
+# quality automation; storage not scarce. Entry kept for reference.
 by_id["media-04"]["host"] = "NAS"
+by_id["media-04"]["title"] = "(Removed from plan) Deploy Tdarr (pre-transcode library; node on the rig)"
 by_id["media-04"]["steps"] = [
+    "REMOVED FROM PLAN 2026-07-08 — won't-do: re-encoding conflicts with TRaSH quality automation and storage is not scarce. Kept for reference.",
     "Prerequisite: nas-10 (Plex libraries on vol2/vol3), game-08 (rig reachable). **GATE:** NAS RAM ≥20GB recommended.",
     "Deploy **Tdarr server on NAS** (Container Manager) — co-located with media on vol2/vol3.",
     "Copy configs/docker-stack/stacks/tdarr/ → /volume1/docker/tdarr/; adapt compose: mount /volume2/movies and /volume3/tv read-only; TRANSCODE_CACHE on local NAS scratch (not the arrays).",
-    "Deploy **Tdarr NVENC node on rig** (see compose comments): restart=no, serverIP=mini Tailscale IP, only while rig is awake.",
+    "Deploy **Tdarr NVENC node on rig** (see compose comments): restart=no, serverIP=mini Tailscale IP.",
     "Create direct-play-friendly HEVC profile; run test transcode on one file via rig node.",
 ]
 by_id["media-04"]["verify"] = "Tdarr server on NAS lists rig NVENC node; test file transcodes on rig and lands back in library."
+# media-03 (Maintainerr) REMOVED FROM PLAN 2026-07-08 — no auto-deletion wanted.
+by_id["media-03"]["title"] = "(Removed from plan) Deploy Maintainerr (rule-based library pruning)"
+if not by_id["media-03"]["steps"][0].startswith("REMOVED FROM PLAN"):
+    by_id["media-03"]["steps"].insert(0, "REMOVED FROM PLAN 2026-07-08 — won't-do: no auto-deletion wanted. Kept for reference.")
 
 # --- gaming --------------------------------------------------------------------
 by_id["game-01"]["steps"] = [
@@ -509,27 +517,28 @@ by_id["game-01"]["steps"] = [
 ]
 by_id["game-01"]["verify"] = "One light server runs on mini without OOM; friends join via tailnet."
 
-by_id["game-02"]["title"] = "(Optional) Pelican Panel on rig for on-demand heavy servers"
+by_id["game-02"]["title"] = "(Optional) Pelican Panel on rig for heavy servers"
 by_id["game-02"]["steps"] = [
     "Prerequisite: game-08 complete. **Optional** — only if you want a web UI for spinning up many game types.",
-    "Deploy Pelican on the **CachyOS rig** (on-demand), not the Mac mini.",
-    "Wake rig via WoL before game night; let it sleep after.",
+    "Deploy Pelican on the **CachyOS rig** (24/7), not the Mac mini.",
+    "The rig is 24/7 — the panel is available whenever you need it.",
 ]
 
+by_id["game-03"]["title"] = "Run heavy game servers on the CachyOS rig"
 by_id["game-03"]["steps"] = [
     "Prerequisite: game-08 complete.",
-    "Heavy/on-demand servers (Valheim, Factorio, Palworld, ARK, modded packs) run on the **rig only**.",
-    "Wake rig → start server → friends join via Tailscale → suspend rig after session.",
+    "Heavy servers (Valheim, Factorio, Palworld, ARK, modded packs) run on the **rig only**.",
+    "Start server → friends join via Tailscale (the rig is 24/7).",
     "Never run heavy servers 24/7 on the Mac mini (8GB) or NAS.",
 ]
 
 by_id["ai-01"]["steps"] = [
-    "Prerequisite: ha-17 (LiteLLM) complete. All on-demand on the **rig** unless noted.",
-    "**ComfyUI:** image generation when rig is awake (NVENC rig).",
+    "Prerequisite: ha-17 (LiteLLM) complete. All on the **rig** (24/7) unless noted.",
+    "**ComfyUI:** image generation on the rig (NVENC).",
     "**Continue/Aider:** point at LiteLLM endpoint (http://mini:4000) for coding assistant.",
     "**Open WebUI RAG:** upload Obsidian vault / Paperless exports for local doc Q&A.",
     "Set OLLAMA_KEEP_ALIVE=0 on rig so VRAM frees between sessions (game-13 contention policy).",
-    "Voice/quick queries use LiteLLM → small model on Mac mini when rig sleeps.",
+    "Voice/quick queries use LiteLLM → small Mac-mini model as a resilience fallback if the rig is down.",
 ]
 by_id["ai-01"]["verify"] = "ComfyUI generates an image; Continue answers via LiteLLM; rig VRAM clears after idle."
 
@@ -576,12 +585,19 @@ by_id["game-07"]["steps"] = [
     "Run `tailscale ping rig --until-direct` — must show **direct**, not DERP relay (relays ruin throughput).",
     "If relayed: forward UDP 41641 on Dream Wall to the rig, or use Tailscale Peer Relay as fallback.",
 ]
+# game-09 rescoped 2026-07-08: auto-suspend closed as won't-do (rig is 24/7);
+# task is now idle-power tuning of the 24/7 baseline.
+by_id["game-09"]["title"] = "Rig idle-power tuning (24/7 baseline)"
 by_id["game-09"]["steps"] = [
-    "Prerequisite: game-08 complete.",
-    "Enable auto-suspend on the rig after idle (systemd-logind IdleAction=suspend or desktop power settings).",
-    "Pair with game-08 WoL so Sunshine/Moonlight can wake the rig for a session, then let it sleep after.",
-    "Goal: rig earns its keep on-demand (~$40–80/yr) instead of idling 24/7 (~$160–210/yr).",
+    "Rig runs 24/7 (decision 2026-07-08: ~130W idle ≈ $23/mo accepted for availability) — auto-suspend is closed as won't-do.",
+    "Fix the plasmashell busy-loop that burns CPU at idle.",
+    "Headless/greeter idle-power pass — no desktop session left logged in when idle.",
+    "Measure idle draw at the wall (smart plug / Kill-A-Watt).",
+    "Target <100W idle.",
 ]
+by_id["game-09"]["commands"] = ["ssh rig 'top -bn1 | head -15'"]
+by_id["game-09"]["docs"] = [{"title": "Arch Wiki: Power management", "url": "https://wiki.archlinux.org/title/Power_management"}]
+by_id["game-09"]["verify"] = "Wall measurement shows <100W idle; plasmashell no longer busy-looping."
 by_id["game-11"]["steps"] = [
     "Prerequisite: game-05 complete.",
     "**Simplest:** plug your dummy HDMI dongle so the GPU sees a display at target resolution.",
@@ -598,7 +614,7 @@ by_id["game-13"]["steps"] = [
     "One GPU, three jobs: Sunshine stream, game servers, Ollama inference — set explicit rules.",
     "Ollama on rig: `OLLAMA_KEEP_ALIVE=0` so VRAM frees immediately after each request.",
     "Do not run heavy inference during an active Sunshine session or game server.",
-    "LiteLLM on Mac mini handles quick queries when rig is asleep (ha-17).",
+    "LiteLLM on Mac mini is the resilience fallback if the rig is ever down (ha-17).",
 ]
 by_id["game-14"]["steps"] = [
     "Prerequisite: game-05 complete.",
@@ -635,7 +651,7 @@ by_id["ha-10"]["steps"] = [
     "Settings → Dashboards → Energy → add grid consumption.",
     "Add Emporia Vue circuits (plan: whole-home + key circuits) if integrated.",
     "Add smart-plug monitors from Zigbee devices as they land.",
-    "Useful for validating Section 5 power estimates (always-on ~$150–200/yr vs rig on-demand).",
+    "Useful for validating Section 5 power estimates (always-on ~$150–200/yr; rig 24/7 ~130W idle ≈ $23/mo, tuning target <100W).",
 ]
 
 by_id["game-10"]["steps"] = [
@@ -792,7 +808,7 @@ by_id["glue-04b"] = {
         "**Mac mini** (ssh + gitconfig): `scp ~/Documents/Home/foss-setup/scripts/dotfiles/bootstrap-dotfiles.sh mini:/tmp/` then `ssh mini 'DOTFILES_REPO=btabaska bash /tmp/bootstrap-dotfiles.sh'`.",
         "On each host after bootstrap: copy age key from Proton Pass to `~/.config/chezmoi/key.txt` if SSH config is encrypted, then `chezmoi apply`.",
         "Verify fleet-wide from MacBook: `ssh rig 'chezmoi diff && chezmoi status'` and `ssh mini 'chezmoi diff && chezmoi status'` — both diffs must be empty.",
-        "Test SSH aliases: `ssh mini hostname`, `ssh rig hostname` (wake rig first via game-08 if needed).",
+        "Test SSH aliases: `ssh mini hostname`, `ssh rig hostname`.",
         "**Ongoing sync:** edit on one box → `chezmoi edit` → `chezmoi apply` → `chezmoi cd && git push`; on others → `chezmoi update`. Use `.tmpl` files for per-host differences (see chezmoi-quickstart.md).",
         "glue-08 ansible-pull will automate `chezmoi init --apply` later; manual bootstrap is fine until Forgejo (glue-05) is up.",
         "From MacBook: confirm completion matches the verify block before checking this task done.",
