@@ -66,3 +66,13 @@ The interim verification layer is: Uptime Kuma (HTTP monitors + ntfy),
 Healthchecks (dead-man's switch for scheduled jobs), Diun (image awareness),
 Beszel (host metrics), and the standalone drill scripts
 (`scripts/network/dns-resilience-verify.sh` and friends).
+
+## Human approval gate (policy — added 2026-07-08 at the operator's request)
+
+Verification is **read-only by design**, at every layer:
+
+1. Probes only observe (curl/dig/systemctl show/git status). They never restart, edit, or delete anything.
+2. The local-LLM triage layer only *diagnoses*: its output is a JSON verdict with `suggested_fix_commands` — **suggestions are never executed by the runner, a timer, or any automation.**
+3. Remediation happens exclusively through an interactive AI session (Claude), and anything that would change system state requires **explicit operator approval first**, presented as: *what is broken (evidence) -> what the fix will do -> what could go wrong*. Reply-to-approve in chat.
+
+If any future change to this framework would let a model execute commands autonomously, that change itself requires operator approval and a note here.
