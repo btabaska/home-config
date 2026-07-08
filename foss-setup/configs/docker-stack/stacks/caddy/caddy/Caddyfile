@@ -25,10 +25,15 @@
 #
 # (B) Caddy internal CA (no public DNS needed; clients must trust Caddy's root).
 (local_tls) {
-	tls internal
-	# HSTS: browsers pin HTTPS for a year (sec audit 2026-07-08)
+	# Real Let's Encrypt certs via Cloudflare DNS-01 (2026-07-08; NS delegated to
+	# Cloudflare, token in env). LAN-only services still get publicly-trusted
+	# certs because DNS-01 never needs an inbound port. Revert to `tls internal`
+	# only if the token is removed.
+	tls {
+		dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+		resolvers 1.1.1.1
+	}
 	header Strict-Transport-Security "max-age=31536000"
-	# access logs to stdout; docker log caps (10m x3) bound growth
 	log
 }
 # ---------------------------------------------------------------------------
@@ -172,8 +177,7 @@ vault.{$DOMAIN} {
 	reverse_proxy vaultwarden:80
 }
 
-# Rig AI stack (CachyOS — 24/7 since 2026-07-08; a 502 here is an incident).
-# HTTPS terminates on Mac mini Caddy, not the rig.
+# Rig AI stack (CachyOS — on-demand). HTTPS terminates on Mac mini Caddy, not the rig.
 # Set RIG_IP in .env (default homelab: 192.168.10.12).
 
 # Open WebUI chat UI
@@ -201,8 +205,8 @@ mcpo.{$DOMAIN} {
 }
 
 # Sunshine game-stream host UI (rig — HTTPS with a self-signed cert on :47990).
-# Always-on like the rest of the rig stack (rig is 24/7); a 502 here is an incident.
-sunshine.{$DOMAIN} {
+# On-demand like the rest of the rig stack; expect 502 while the rig sleeps.
+apollo.{$DOMAIN}, sunshine.{$DOMAIN} {
 	import local_tls
 	reverse_proxy https://{$RIG_IP}:47990 {
 		transport http {

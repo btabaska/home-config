@@ -234,13 +234,13 @@ services:
     url: https://mcpo.tabaska.us
     on_demand: false
     notes: MCP→OpenAPI tool bridge; docs at /docs (root 404s by design). Rig runs 24/7.
-  - name: sunshine
+  - name: apollo
     category: AI & Gaming
     host: rig
     port: 47990
-    url: https://sunshine.tabaska.us
+    url: https://apollo.tabaska.us
     on_demand: false
-    notes: Game-stream host UI, self-signed HTTPS upstream. Did not answer on 2026-07-07 — service may be stopped; vhost added anyway. Rig runs 24/7.
+    notes: Game-stream host UI (Apollo — a maintained Sunshine fork, AUR `apollo`; chosen over stock Sunshine for headless/virtual-display support + per-client permissions on the 24/7 headless rig). Drop-in for Moonlight clients — same ports. Self-signed HTTPS upstream on :47990. Rig runs 24/7.
 
   # --- Infrastructure & Ops --------------------------------------------------------
   - name: homepage

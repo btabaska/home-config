@@ -18,8 +18,10 @@ open task; Wake-on-LAN is kept purely as recovery tooling.
   LiteLLM on the mini (stable URL; its small always-on fallback model is
   pure resilience now — if you're on the fallback, the rig is down and
   that's an incident)
-- **Sunshine** game-streaming host (Moonlight clients; pairing UI
-  `https://192.168.10.12:47990`)
+- **Apollo** game-streaming host — a maintained Sunshine fork (AUR `apollo`),
+  chosen over stock Sunshine for headless/virtual-display support and
+  per-client permissions on this 24/7 headless box. Drop-in for Moonlight
+  clients on the same ports; pairing UI `https://192.168.10.12:47990`
 - **Heavy game servers** (LinuxGSM); the mini hosts at most one light
   always-on server
 - Daily driver desktop / gaming

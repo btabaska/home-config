@@ -1530,20 +1530,20 @@ O["game-05"] = {
     "steps": [
         MAC_OPEN,
         P("game-08"),
-        f"`scp {REPO}/scripts/gaming/sunshine-autostart-notes.md rig:~/`",
-        "On rig: add LizardByte pacman repo; `sudo pacman -S sunshine cuda`",
-        "`ssh rig 'loginctl enable-linger $USER'`; enable user unit app-dev.lizardbyte.app.Sunshine",
+        f"`scp {REPO}/scripts/gaming/apollo-autostart-notes.md rig:~/`",
+        "On rig: `paru -S apollo` (AUR; Apollo is a maintained Sunshine fork — headless/virtual-display + per-client perms suit the 24/7 headless rig); NVENC via NVIDIA driver",
+        "`ssh rig 'loginctl enable-linger $USER'`; enable user unit `apollo` (the AUR package's systemd --user unit)",
         "First-run UI via tunnel: `ssh -L 47990:localhost:47990 rig` → https://localhost:47990",
-        "Set NVENC; add Desktop app; clients must stay on Trusted VLAN for mDNS (game-06)",
+        "Set NVENC; set web creds; configure virtual display (capture=kms for Wayland headless); add Desktop app; clients must stay on Trusted VLAN for mDNS (game-06)",
     ],
     "commands": [
-        f"scp {REPO}/scripts/gaming/sunshine-autostart-notes.md rig:~/",
-        "ssh rig 'systemctl --user enable --now app-dev.lizardbyte.app.Sunshine'",
-        "ssh rig 'sunshine --version'",
+        f"scp {REPO}/scripts/gaming/apollo-autostart-notes.md rig:~/",
+        "ssh rig 'systemctl --user enable --now apollo'",
+        "ssh rig 'apollo --version'",
     ],
-    "files": ["scripts/gaming/sunshine-autostart-notes.md"],
-    "docs": D(("Sunshine", "https://docs.lizardbyte.dev/projects/sunshine/latest/md_docs_2getting__started.html"),),
-    "verify": "Sunshine streams desktop with NVENC; user unit survives reboot.",
+    "files": ["scripts/gaming/apollo-autostart-notes.md"],
+    "docs": D(("Apollo (Sunshine fork)", "https://github.com/ClassicOldSong/Apollo"),),
+    "verify": "Apollo streams desktop with NVENC; user unit survives reboot.",
 }
 O["game-06"] = {"steps": [P("game-05"), "Moonlight on phone/TV same VLAN", "Pair with PIN"], "commands": [], "files": [], "verify": "In-home stream works."}
 O["game-07"] = {"steps": [P("game-05", "game-06"), "`tailscale ping rig --until-direct`"], "commands": ["tailscale ping rig --until-direct"], "files": [], "verify": "Remote stream direct."}
@@ -1551,7 +1551,7 @@ O["game-08"] = {"steps": ["The rig is 24/7 (decision 2026-07-08) — WoL is RECO
 # game-09 rescoped 2026-07-08: auto-suspend closed as won't-do — rig is 24/7; task is idle-power tuning.
 O["game-09"] = {"steps": ["Rig runs 24/7 (decision 2026-07-08: ~130W idle ≈ $23/mo accepted for availability) — auto-suspend is closed as won't-do.", "Fix the plasmashell busy-loop that burns CPU at idle.", "Headless/greeter idle-power pass — no desktop session left logged in when idle.", "Measure idle draw at the wall (smart plug / Kill-A-Watt).", "Target <100W idle."], "commands": ["ssh rig 'top -bn1 | head -15'"], "files": [], "docs": D(("Arch Wiki: Power management", "https://wiki.archlinux.org/title/Power_management")), "verify": "Wall measurement shows <100W idle; plasmashell no longer busy-looping."}
 O["game-10"] = {"steps": [f"`scp {REPO}/scripts/gaming/gpu-power-tune.sh rig:~/`", "Install gpu-power-tune.service"], "commands": [f"scp {REPO}/scripts/gaming/gpu-power-tune.sh rig:~/"], "files": ["scripts/gaming/gpu-power-tune.sh", "scripts/gaming/gpu-power-tune.service"], "verify": "Power limit persists reboot."}
-O["game-11"] = {"steps": [P("game-05"), "Dummy HDMI or sunshine_virt_display", "PipeWire virtual sink"], "commands": ["ssh rig 'sudo pacman -S evdi-dkms'"], "files": [], "verify": "Headless stream matches client res."}
+O["game-11"] = {"steps": [P("game-05"), "Apollo's built-in virtual display (capture=kms) — no dummy HDMI needed on this headless rig", "PipeWire virtual sink"], "commands": ["ssh rig 'sudo pacman -S evdi-dkms'"], "files": [], "verify": "Headless stream matches client res."}
 O["game-12"] = {"steps": [P("read-02"), "Ludusavi + Syncthing saves"], "commands": ["ssh rig 'ludusavi backup --force'"], "files": [], "verify": "Save restores on laptop."}
 O["game-13"] = {"steps": [P("game-05", "ha-17"), "OLLAMA_KEEP_ALIVE=0", "No inference during stream"], "commands": ["ssh rig 'nvidia-smi --query-gpu=memory.used --format=csv'"], "files": [], "verify": "VRAM free after inference."}
 O["game-14"] = {"steps": [P("game-05"), "Lutris/Heroic on rig; RomM on mini optional"], "commands": ["ssh rig 'lutris --version'"], "files": [], "verify": "Non-Steam game streams."}

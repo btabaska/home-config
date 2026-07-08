@@ -44,7 +44,7 @@ hub/bridge — *not* on a VLAN directly).
 |---|---|---|---|
 | HA Green | 1 | Wi-Fi / wired | The controller; needs to reach IoT (allowed) + sit with the Apple hubs |
 | MacBook | 3 | Wi-Fi | Personal trusted computers |
-| Desktop gaming PC | 2 | Wi-Fi | Personal; Sunshine host / Moonlight clients stay same-subnet |
+| Desktop gaming PC | 2 | Wi-Fi | Personal; Apollo host / Moonlight clients stay same-subnet |
 | iPad | 2 | Wi-Fi | Personal Apple devices (also Home app remotes) |
 | Steam Deck | 2 | Wi-Fi | Personal; Moonlight clients |
 | Apple TV 4K | 2 | Wi-Fi / Eth | **HomeKit hub + Thread border router** — keep with HA |

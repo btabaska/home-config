@@ -24,7 +24,7 @@ Grounded in [foss-setup-plan-2.md](../../../foss-setup-plan-2.md) Sections 0, 4,
 |---|---|---|---|
 | **Mac mini** → Ubuntu Server | i5-4278U, **8 GB** (fixed), ~12 W | Always-on Docker stack (Seerr, Miniflux, Navidrome, Caddy, AdGuard, LiteLLM ≤1B, Forgejo, etc.) + **one light game server** | **24/7 light servers only** — ~2–3 GB headroom after stack |
 | **DS920+ NAS** | J4125, **20 GB** (after RAM upgrade) | Storage, Immich, Plex, CWA, Paperless-ngx, Dependency-Track, Frigate, Tdarr server, backups | **Avoid for game processes** — RAM headroom exists but CPU is weak and the box is already committed to ML indexing, Java (Paperless/DT), and live video; **use NAS for world/save storage**, not the server binary |
-| **CachyOS rig** | 12th-gen i7, **64 GB RAM**, RTX 3090 Ti, ~90–130 W idle | 24/7 (decision 2026-07-08): Sunshine, Ollama, **heavy game servers**, Tdarr transcode node | **Default for anything heavy** — 24/7 (~$23/mo idle accepted; idle-power-tuning task open); WoL kept for recovery only |
+| **CachyOS rig** | 12th-gen i7, **64 GB RAM**, RTX 3090 Ti, ~90–130 W idle | 24/7 (decision 2026-07-08): Apollo (Sunshine fork), Ollama, **heavy game servers**, Tdarr transcode node | **Default for anything heavy** — 24/7 (~$23/mo idle accepted; idle-power-tuning task open); WoL kept for recovery only |
 
 **Host tags used per game:** `Yes` = fits the plan's load budget · `Marginal` = technically possible but fights existing services · `No` = wrong tool (RAM, CPU, Wine, or DSM limits).
 
@@ -58,7 +58,7 @@ Do not use:                     Palworld, Enshrouded, Abiotic Factor, FFXI/WoW (
 ```
 Typical game-night load:
   Game server:     2–24 GB depending on title
-  Sunshine stream: GPU NVENC, ~0 extra RAM
+  Apollo stream:   GPU NVENC, ~0 extra RAM
   Ollama:          keep_alive=0 or off during games (Section 4 GPU policy)
   Headroom:        40+ GB remaining for most titles on this 64 GB box
 
@@ -72,7 +72,7 @@ Power: rig runs 24/7 (decision 2026-07-08 — ~130W idle ≈ $23/mo accepted for
 
 ### GPU contention policy
 
-The 3090 Ti serves Sunshine streaming, optional Ollama inference, and games that need Xvfb/OpenGL (Core Keeper, Wine titles). Set Ollama **`keep_alive=0`** and do not run inference during game or stream sessions.
+The 3090 Ti serves Apollo streaming (Apollo is a maintained Sunshine fork — same NVENC path), optional Ollama inference, and games that need Xvfb/OpenGL (Core Keeper, Wine titles). Set Ollama **`keep_alive=0`** and do not run inference during game or stream sessions.
 
 ---
 
@@ -82,7 +82,7 @@ From [foss-setup-plan-2.md](../../../foss-setup-plan-2.md) Sections 1, 4, and 7.
 
 | Method | Label in this guide | When to use |
 |---|---|---|
-| Same Trusted VLAN (wired preferred) | **Over LAN** | In-home play; Moonlight/Sunshine discovery requires same VLAN |
+| Same Trusted VLAN (wired preferred) | **Over LAN** | In-home play; Moonlight/Apollo discovery requires same VLAN |
 | **Tailscale** tailnet (invite friends) | **Over the internet** | Default for remote friends — encrypted, no port-forward |
 | Dream Wall port-forward or **Playit.gg** | **Over the internet** | Public listing or friends without Tailscale |
 

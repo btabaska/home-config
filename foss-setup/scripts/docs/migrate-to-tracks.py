@@ -21,7 +21,7 @@ TIER_META = {
     },
     "enhancements": {
         "title": "Enhancements",
-        "sub": "Optional polish — Plex analytics, game servers, Sunshine streaming, local AI extras. Safe to skip entirely or tackle years later.",
+        "sub": "Optional polish — Plex analytics, game servers, Apollo streaming, local AI extras. Safe to skip entirely or tackle years later.",
     },
 }
 
@@ -114,7 +114,7 @@ TRACK_META = {
         "tier": "enhancements",
         "order": 2,
         "title": "Gaming & streaming",
-        "sub": "LinuxGSM/Pelican servers, Sunshine/Moonlight, Wake-on-LAN, and GPU tuning.",
+        "sub": "LinuxGSM/Pelican servers, Apollo/Moonlight, Wake-on-LAN, and GPU tuning.",
     },
 }
 

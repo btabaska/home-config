@@ -52,7 +52,7 @@ foss-setup/
 │   ├── media/                 # seedbox sync, iPod tools, tailscale verify
 │   ├── reading/               # KOReader/CWA/Wallabag wiring, syncthing
 │   ├── inventory/             # SBOM generation/export: Syft+Grype, manifest exports, the SBOM systemd timer/units
-│   └── gaming/                # WoL, GPU power tune, Sunshine, LinuxGSM
+│   └── gaming/                # WoL, GPU power tune, Apollo (Sunshine fork), LinuxGSM
 ```
 
 **Two kinds of content, deliberately separated:**
@@ -100,8 +100,9 @@ Do a phase before starting the next — each one leaves you strictly better off.
   in Git** via Forgejo (`configs/git/`), and **fleet maintenance with Ansible**
   (`configs/ansible/`) to patch/reboot/audit every box in one command. This is
   where the whole repo becomes rebuildable.
-- **Phase 5 — Play.** Game servers (LinuxGSM/Pelican) and Sunshine + Moonlight
-  streaming, with GPU/idle-power tuning on the 24/7 rig (`scripts/gaming/`;
+- **Phase 5 — Play.** Game servers (LinuxGSM/Pelican) and Apollo + Moonlight
+  streaming (Apollo is a maintained Sunshine fork — headless/virtual-display +
+  per-client perms suit the 24/7 rig), with GPU/idle-power tuning (`scripts/gaming/`;
   Wake-on-LAN stays set up as recovery tooling only).
 
 ---

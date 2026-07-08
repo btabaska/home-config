@@ -21,7 +21,7 @@ ssh rig
 The rig's MAC is in the inventory (`configs/inventory/inventory.md`) — WoL is
 enabled in BIOS (game-08). Other recovery paths:
 
-- **Moonlight/Sunshine**: opening a stream to the rig sends WoL itself once
+- **Moonlight/Apollo**: opening a stream to the rig sends WoL itself once
   paired.
 - **Home Assistant**: a WoL switch entity (pending: ha track) — recover the
   rig from a dashboard.

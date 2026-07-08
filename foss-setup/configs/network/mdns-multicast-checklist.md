@@ -1,12 +1,12 @@
 # mDNS / Multicast Checklist (UniFi)
 
 mDNS (`*.local` service discovery: AirPlay, Chromecast/Google Cast, HomeKit, Matter,
-AirPrint, Sonos, Moonlight/Sunshine) is **link-local** — it does not cross VLANs on its
+AirPrint, Sonos, Moonlight/Apollo) is **link-local** — it does not cross VLANs on its
 own. The UniFi Gateway **mDNS Proxy** rebroadcasts it between VLANs.
 
 ## The one rule that matters for gaming
 
-- **Keep Sunshine (host) and Moonlight (clients) on the SAME network (Trusted).**
+- **Keep Apollo (host) and Moonlight (clients) on the SAME network (Trusted).**
   Same subnet → mDNS just works, no proxy, no router hop, lowest latency. This is the
   whole reason gaming/streaming is NOT its own VLAN.
 
@@ -75,7 +75,7 @@ speaker, HomeKit hub, or Sonos on **IoT**.
 - [ ] On a Trusted phone, open the cast/AirPlay picker → the IoT device appears.
 - [ ] Casting/playback actually starts (confirms the firewall control rule, not just
       discovery).
-- [ ] Moonlight on a Trusted client auto-discovers the Sunshine host (same subnet).
+- [ ] Moonlight on a Trusted client auto-discovers the Apollo host (same subnet).
 
 ## Authoritative docs
 

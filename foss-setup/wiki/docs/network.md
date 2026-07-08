@@ -23,7 +23,7 @@ Untrusted; block Untrusted → Trusted; narrow pinholes only.**
 | Network (VLAN) | Zone | What's on it |
 |---|---|---|
 | Default (mgmt) | Internal | UniFi gear only — no clients |
-| Trusted | Trusted | PCs, NAS, mini, phones, consoles, HA, Sunshine host + Moonlight clients |
+| Trusted | Trusted | PCs, NAS, mini, phones, consoles, HA, Apollo host + Moonlight clients |
 | IoT | IoT (untrusted) | Hue bridge, Nest, Midea, smart TVs |
 | Cameras (optional) | Cameras | IP cameras — no internet |
 | Work | Work | Work laptop — internet only |

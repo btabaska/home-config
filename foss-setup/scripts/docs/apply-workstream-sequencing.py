@@ -26,8 +26,8 @@ TIER_META = {
     },
     "enhancements": {
         "title": "Enhancements",
-        "sub": "Optional polish — Plex analytics, game servers, Sunshine streaming, local AI. "
-        "Gaming Phase 1 (WoL + Sunshine) can start anytime; Tdarr and GPU policy wait on WoL / HA voice.",
+        "sub": "Optional polish — Plex analytics, game servers, Apollo streaming, local AI. "
+        "Gaming Phase 1 (WoL + Apollo) can start anytime; Tdarr and GPU policy wait on WoL / HA voice.",
     },
 }
 
@@ -95,7 +95,7 @@ TRACK_META_PATCH = {
         "sub": "All async — Tautulli, Kometa, Maintainerr anytime; Tdarr after game-08 WoL.",
     },
     "gaming": {
-        "sub": "Phase 1: WoL + Sunshine + Moonlight. Phase 2: LinuxGSM servers. "
+        "sub": "Phase 1: WoL + Apollo + Moonlight. Phase 2: LinuxGSM servers. "
         "Phase 3: Ludusavi, RomM, GPU policy (needs ha-17).",
     },
 }

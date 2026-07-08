@@ -1,7 +1,7 @@
 # UniFi Dream Wall — VLAN / Zone / Firewall Plan
 
 Target: **5 networks, not over-segmented.** Gaming/streaming stays on **Trusted**
-(Moonlight/Sunshine discover each other via mDNS on the *same* subnet — a separate
+(Moonlight/Apollo discover each other via mDNS on the *same* subnet — a separate
 gaming VLAN forces a router hop and breaks auto-discovery). UniFi Network 9.x uses a
 **Zone-Based Firewall (ZBF)**; networks (VLANs) are assigned to zones and policies
 control traffic *between* zones.
@@ -14,7 +14,7 @@ control traffic *between* zones.
 | Network (VLAN) | VLAN ID | Subnet (example) | DHCP | mDNS proxy | Notes |
 |---|---|---|---|---|---|
 | Default (mgmt) | 1 | 192.168.1.0/24 | Yes | Off | UniFi gear only — gateway, switches, APs. No clients. |
-| Trusted | 10 | 192.168.10.0/24 | Yes | On | PCs, NAS, Mac mini, phones, consoles, **Sunshine host + Moonlight clients**, Home Assistant |
+| Trusted | 10 | 192.168.10.0/24 | Yes | On | PCs, NAS, Mac mini, phones, consoles, **Apollo host + Moonlight clients**, Home Assistant |
 | IoT | 20 | 192.168.20.0/24 | Yes | On | Hue bridge, Nest, Midea AC/dehumidifier, smart TVs / streaming sticks |
 | Cameras (optional) | 30 | 192.168.30.0/24 | Yes | Off | IP cameras — most locked down, no internet |
 | Work | 40 | 192.168.40.0/24 | Yes | Off | Work laptop — internet only, no LAN access |
@@ -68,7 +68,7 @@ Key intents:
 
 ## mDNS / multicast (why gaming stays on Trusted)
 
-- Moonlight discovers the Sunshine host via mDNS **on the same subnet** → keep both on
+- Moonlight discovers the Apollo host via mDNS **on the same subnet** → keep both on
   **Trusted**. No cross-VLAN proxy needed for game streaming.
 - For cross-VLAN discovery you *do* want (e.g. phone on Trusted → Chromecast/AirPlay/HomeKit
   on IoT): enable the **Gateway mDNS Proxy on BOTH the source and destination VLANs**

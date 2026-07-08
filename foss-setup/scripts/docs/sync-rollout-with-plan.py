@@ -290,7 +290,7 @@ by_id["net-01"]["steps"] = [
     "For Guest (VLAN 50), use the Guest/Hotspot network type for built-in client isolation.",
     "Set host/gateway per vlan-zone-firewall-plan.md (e.g. Trusted 192.168.10.1/24, IoT 192.168.20.1/24). Keep DHCP on.",
     "Leave Default (VLAN 1) as management — UniFi gear only, no clients.",
-    "**Trusted VLAN hosts:** PCs, NAS (.10), Mac mini (.11), rig (.12), **HA Green (.13)**, phones, consoles, Sunshine + Moonlight clients.",
+    "**Trusted VLAN hosts:** PCs, NAS (.10), Mac mini (.11), rig (.12), **HA Green (.13)**, phones, consoles, Apollo + Moonlight clients.",
     "Do NOT create a gaming VLAN — Moonlight needs same-subnet mDNS on Trusted.",
 ]
 by_id["net-12"]["steps"] = [
@@ -576,7 +576,7 @@ by_id["game-04"]["steps"] = [
 by_id["game-06"]["steps"] = [
     "Prerequisite: game-05 complete.",
     "Install Moonlight on phone, laptop, Apple TV — **same Trusted VLAN as the rig** for in-home (mDNS auto-discovery).",
-    "Pair with Sunshine PIN from first launch.",
+    "Pair with the Apollo PIN from first launch.",
     "Wire the client near the TV if possible — latency matters more than WiFi for couch streaming.",
 ]
 by_id["game-07"]["steps"] = [
@@ -600,8 +600,8 @@ by_id["game-09"]["docs"] = [{"title": "Arch Wiki: Power management", "url": "htt
 by_id["game-09"]["verify"] = "Wall measurement shows <100W idle; plasmashell no longer busy-looping."
 by_id["game-11"]["steps"] = [
     "Prerequisite: game-05 complete.",
-    "**Simplest:** plug your dummy HDMI dongle so the GPU sees a display at target resolution.",
-    "**Software path:** Apollo-Linux (EVDI) or sunshine_virt_display daemon for resolution-matching virtual display.",
+    "**Simplest (headless rig):** use Apollo's built-in virtual display — set `capture=kms` for Wayland headless; no dummy HDMI dongle needed.",
+    "**Alt path:** a dummy HDMI dongle or EVDI virtual display if you want the GPU to see a fixed physical output.",
     "Add PipeWire virtual sink if no audio device (headless capture needs a sink).",
 ]
 by_id["game-12"]["steps"] = [
@@ -611,14 +611,14 @@ by_id["game-12"]["steps"] = [
 ]
 by_id["game-13"]["steps"] = [
     "Prerequisite: game-05, ha-17 complete.",
-    "One GPU, three jobs: Sunshine stream, game servers, Ollama inference — set explicit rules.",
+    "One GPU, three jobs: Apollo stream, game servers, Ollama inference — set explicit rules.",
     "Ollama on rig: `OLLAMA_KEEP_ALIVE=0` so VRAM frees immediately after each request.",
-    "Do not run heavy inference during an active Sunshine session or game server.",
+    "Do not run heavy inference during an active Apollo session or game server.",
     "LiteLLM on Mac mini is the resilience fallback if the rig is ever down (ha-17).",
 ]
 by_id["game-14"]["steps"] = [
     "Prerequisite: game-05 complete.",
-    "Install Heroic (GOG/Epic) or Lutris on rig; add games to Sunshine Applications list for couch streaming.",
+    "Install Heroic (GOG/Epic) or Lutris on rig; add games to the Apollo Applications list for couch streaming.",
     "Optional: deploy RomM on Mac mini for retro library metadata + EmulatorJS; stream/play from Moonlight.",
 ]
 

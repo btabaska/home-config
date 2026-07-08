@@ -194,10 +194,10 @@
         icon: mdi-power
         href: https://ntfy.tabaska.us/wake-rig
         description: Publish here only if the rig is off (power outage) — sends Wake-on-LAN
-    - Sunshine:
+    - Apollo:
         icon: sunshine.png
-        href: https://sunshine.tabaska.us
-        description: Game streaming host (rig runs 24/7)
+        href: https://apollo.tabaska.us
+        description: Game streaming host — Apollo, Sunshine fork (rig runs 24/7)
         siteMonitor: https://192.168.10.12:47990
 
 - Infrastructure & Ops:
