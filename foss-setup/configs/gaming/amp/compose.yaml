@@ -1,0 +1,21 @@
+# AMP (CubeCoders) game panel — containerized (ImageGenius image), so it never
+# touches the CachyOS workstation host. License activates non-interactively via
+# LICENCE. ADS module = the panel that provisions/monitors game instances.
+services:
+  amp:
+    image: ghcr.io/imagegenius/amp:latest
+    container_name: amp
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+      - USERNAME=brandon
+      - PASSWORD=${AMP_PASSWORD}  # vault: cubecoders_amp.admin_password
+      - LICENCE=${AMP_LICENCE}  # vault: cubecoders_amp.license_key
+      - MODULE=ADS
+    volumes:
+      - ./config:/config
+    ports:
+      - "8080:8080"       # ADS web panel (fronted by Caddy at amp.tabaska.us)
+      - "8000-8010:8000-8010/udp"  # reserved for game instances AMP provisions

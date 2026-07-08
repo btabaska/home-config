@@ -204,8 +204,7 @@ mcpo.{$DOMAIN} {
 	reverse_proxy {$RIG_IP}:8000
 }
 
-# Sunshine game-stream host UI (rig — HTTPS with a self-signed cert on :47990).
-# On-demand like the rest of the rig stack; expect 502 while the rig sleeps.
+# Apollo game-stream host UI (rig, 24/7 — HTTPS on :47990). Sunshine fork.
 apollo.{$DOMAIN}, sunshine.{$DOMAIN} {
 	import local_tls
 	reverse_proxy https://{$RIG_IP}:47990 {
@@ -213,6 +212,12 @@ apollo.{$DOMAIN}, sunshine.{$DOMAIN} {
 			tls_insecure_skip_verify
 		}
 	}
+}
+
+# AMP game panel (CubeCoders, on the rig)
+amp.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$RIG_IP}:8080
 }
 
 # Backup dead-man's-switch

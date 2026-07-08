@@ -1,10 +1,10 @@
 {
  "_meta": {
-  "updated": "2026-07-08T04:15:00-04:00",
+  "updated": "2026-07-08T11:53:56-04:00",
   "source": "foss-analogue-progress-v1",
   "plan": "v3 \u2014 staged autonomous runs",
-  "task_count": 194,
-  "completed_count": 121,
+  "task_count": 222,
+  "completed_count": 123,
   "note": "Canonical progress-as-code (fix-16). Auto-loaded and additively merged by docs/index.html when served over HTTP; use Import progress on file://. Reopened ids are intentionally absent from done. Supersedes progress-backup-2026-07-05.json."
  },
  "done": {
@@ -128,7 +128,9 @@
   "ebook-03": true,
   "ebook-05": true,
   "sec-02": true,
-  "sec-05": true
+  "sec-05": true,
+  "ha-01": true,
+  "ha-02": true
  },
  "reopened": {
   "media-02": "Kometa config was untouched template (wrong plex subnet, blank token+TMDb key); daily runs failing since deploy. Fixed plex url/token from vault 2026-07-08; still blocked on human TMDb API key."
