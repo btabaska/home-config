@@ -1,0 +1,113 @@
+site_name: Going Analogue — Homelab Manual
+site_description: >-
+  Operations manual for the tabaska.us homelab — for the human operator and
+  for AI agents. Source of truth for how to run, check, fix, and rebuild
+  everything.
+site_url: https://wiki.tabaska.us/
+repo_url: https://github.com/btabaska/home-config
+repo_name: btabaska/home-config
+edit_uri: ""
+
+theme:
+  name: material
+  palette:
+    # Dark by default (matches the rollout tracker), light available.
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.sections
+    - navigation.instant
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Network: network.md
+  - Hosts:
+      - mini (Ubuntu Docker host): hosts/mini.md
+      - nas (Synology DS920+): hosts/nas.md
+      - rig (CachyOS, on-demand): hosts/rig.md
+      - seedbox (Betty): hosts/seedbox.md
+      - gateway (UniFi Dream Wall): hosts/gateway.md
+      - Home Assistant: hosts/home-assistant.md
+  - Services:
+      # BEGIN GENERATED SERVICES NAV (managed by scripts/docs/gen-wiki-services.py — do not edit by hand)
+      - Overview: services/index.md
+      - AI & Cameras:
+          - frigate: services/frigate.md
+          - litellm: services/litellm.md
+      - Documents & Life:
+          - mealie: services/mealie.md
+          - paperless-ngx: services/paperless-ngx.md
+      - Media & Acquisition:
+          - kometa: services/kometa.md
+          - libreseerr: services/libreseerr.md
+          - maintainerr: services/maintainerr.md
+          - media-automation: services/media-automation.md
+          - musicseerr: services/musicseerr.md
+          - pinchflat: services/pinchflat.md
+          - recyclarr: services/recyclarr.md
+          - seerr: services/seerr.md
+          - stash: services/stash.md
+          - tautulli: services/tautulli.md
+          - tdarr: services/tdarr.md
+      - Monitoring & Ops:
+          - beszel: services/beszel.md
+          - dependency-track: services/dependency-track.md
+          - diun: services/diun.md
+          - dockge: services/dockge.md
+          - healthchecks: services/healthchecks.md
+          - homepage: services/homepage.md
+          - ntfy: services/ntfy.md
+          - uptime-kuma: services/uptime-kuma.md
+      - Networking & Access:
+          - adguard: services/adguard.md
+          - adguard-nas: services/adguard-nas.md
+          - caddy: services/caddy.md
+          - unbound: services/unbound.md
+      - Photos & Reading:
+          - calibre-web-automated: services/calibre-web-automated.md
+          - immich: services/immich.md
+          - miniflux: services/miniflux.md
+          - navidrome: services/navidrome.md
+          - wallabag: services/wallabag.md
+      # END GENERATED SERVICES NAV
+  - Runbooks:
+      - DNS outage: runbooks/dns-outage.md
+      - Backup & restore: runbooks/backup-restore.md
+      - Rebuild a host: runbooks/rebuild-a-host.md
+      - Add a service: runbooks/add-a-service.md
+      - Wake the rig: runbooks/wake-the-rig.md
+      - Update images: runbooks/update-images.md
+      - Verification: runbooks/verification.md
+  - Operations:
+      - Ansible & convergence: operations/ansible.md
+      - Secrets policy: operations/secrets.md
+      - Tracker & AI sessions: operations/tracker.md
