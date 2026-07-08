@@ -1,18 +1,27 @@
 # restic backup → Backblaze B2 — Phase 1. Paired with restic-backup.timer.
 # Install (per host):
 #   sudo install -m 755 scripts/backup/restic-backup.sh /opt/scripts/restic-backup.sh
+#   sudo install -m 755 scripts/backup/ntfy-notify.sh   /opt/scripts/ntfy-notify.sh
 #   sudo install -m 644 scripts/backup/restic-backup.service /etc/systemd/system/restic-backup.service
 #   sudo install -m 644 scripts/backup/restic-backup.timer   /etc/systemd/system/restic-backup.timer
+#   sudo install -m 644 scripts/backup/ntfy-notify@.service  /etc/systemd/system/ntfy-notify@.service
 #   sudo systemctl daemon-reload && sudo systemctl enable --now restic-backup.timer
-# The env file holds B2 creds + RESTIC_REPOSITORY + the password file path (chmod 600).
+# The env file (/etc/restic/env, root 0600) holds B2 creds + RESTIC_REPOSITORY +
+# RESTIC_PASSWORD + BACKUP_PATHS/RESTIC_EXCLUDE_FILE/PRE_BACKUP_SCRIPT. The
+# script sources it itself (ENV_FILE), so no EnvironmentFile= here.
 [Unit]
 Description=restic backup to Backblaze B2
 After=network-online.target
 Wants=network-online.target
+OnFailure=ntfy-notify@%n.service
 
 [Service]
 Type=oneshot
-EnvironmentFile=/etc/restic/b2.env
+Environment=ENV_FILE=/etc/restic/env
+# Persistent restic cache (the unit has no $HOME; without this restic falls back
+# to a throwaway temp cache every run and warns "unable to open cache").
+CacheDirectory=restic
+Environment=RESTIC_CACHE_DIR=/var/cache/restic
 ExecStart=/opt/scripts/restic-backup.sh
 Nice=10
 IOSchedulingClass=best-effort

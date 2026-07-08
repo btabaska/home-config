@@ -1,0 +1,47 @@
+# restic excludes for rig (CachyOS gaming box) — deployed to /etc/restic/excludes.txt
+# (referenced by RESTIC_EXCLUDE_FILE in /etc/restic/env). One pattern per line.
+# Backup set is /etc + /home/btabaska; keep it LEAN Tier-1 (dotfiles, configs,
+# projects). Games, LLM models and media are re-downloadable — not backed up.
+
+# Games / game platforms / wine prefixes
+/home/btabaska/Games
+/home/btabaska/.local/share/Steam
+/home/btabaska/.steam
+/home/btabaska/.local/share/lutris
+/home/btabaska/.local/share/bottles
+/home/btabaska/.local/share/wineprefixes
+/home/btabaska/.wine
+/home/btabaska/Desktop/Portable_LAN_Games_Repo
+
+# LLM runtimes + model weights (re-downloadable, hundreds of GB)
+/home/btabaska/.ollama
+/home/btabaska/.lmstudio
+/home/btabaska/Documents/textgen-ik-4.6.2
+/home/btabaska/Documents/textgen-portable-ik-4.6.2-linux-cuda13.1.tar.gz
+/home/btabaska/Desktop/text-generation-webui-3.17
+/home/btabaska/Desktop/DavidAUgemma-4-31B-it-The-DECKARD-HERETIC-UNCENSORED-Thinking
+
+# Bulk media / transient (Music lives with the media tier, not restic Tier-1)
+/home/btabaska/Music
+/home/btabaska/Downloads
+/home/btabaska/Applications
+
+# Package-manager / toolchain caches (regenerable)
+/home/btabaska/.cache
+/home/btabaska/.npm
+/home/btabaska/.bun
+/home/btabaska/.cargo
+/home/btabaska/.rustup
+/home/btabaska/.local/share/pipx
+
+# ansible-pull working checkout — a git clone of the repo, regenerable
+/home/btabaska/.ansible-pull
+
+# Per-project deps (also caught by the wrapper's **/node_modules)
+/home/btabaska/Projects/*/node_modules
+
+# Electron/browser disk caches anywhere
+**/Cache
+**/GPUCache
+**/Code Cache
+**/CachedData

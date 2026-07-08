@@ -1,0 +1,12 @@
+# ntfy-notify@.service — templated failure notifier. Any unit can declare
+#   OnFailure=ntfy-notify@%n.service
+# and a high-priority message lands on the ntfy `backups` topic (mini's ntfy).
+# Install:
+#   sudo install -m 755 scripts/backup/ntfy-notify.sh /opt/scripts/ntfy-notify.sh
+#   sudo install -m 644 scripts/backup/ntfy-notify@.service /etc/systemd/system/
+[Unit]
+Description=ntfy failure notification for %i
+
+[Service]
+Type=oneshot
+ExecStart=/opt/scripts/ntfy-notify.sh %i

@@ -1,0 +1,4 @@
+# Deployed to /etc/sudoers.d/verification-restic (0440 root) on mini + rig.
+# Lets the verification runner (btabaska) read restic snapshot freshness without
+# loosening the root-only /etc/restic/env: exactly this root-owned script, no args.
+btabaska ALL=(root) NOPASSWD: /usr/local/bin/restic-latest-age

@@ -1,11 +1,11 @@
-# Fires the restic backup nightly at 02:30. Persistent=true catches a missed run
+# Fires the restic backup nightly at 01:30. Persistent=true catches a missed run
 # (e.g. the on-demand CachyOS rig was asleep) the next time the host is awake —
 # the wake-friendly behavior Section 6 asks for.
 [Unit]
 Description=Run restic backup daily
 
 [Timer]
-OnCalendar=*-*-* 02:30:00
+OnCalendar=*-*-* 01:30:00
 RandomizedDelaySec=15m
 Persistent=true
 

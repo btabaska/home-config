@@ -1,0 +1,28 @@
+# restic excludes for mini — deployed to /etc/restic/excludes.txt
+# (referenced by RESTIC_EXCLUDE_FILE in /etc/restic/env). One pattern per line.
+# Tier-1 principle: back up irreplaceable state, skip anything regenerable.
+
+# Regenerable / bulk media working dirs
+/opt/stacks/pinchflat/downloads
+/opt/stacks/metube/state
+# Wiki output is regenerated from the repo (mkdocs build)
+/opt/stacks/wiki/site
+
+# RAW live database dirs — unsafe to file-copy; consistent dumps are taken
+# instead by pre-backup-db-dumps.sh into /opt/stacks/backups/db/
+/opt/stacks/paperless-ngx/pgdata
+/opt/stacks/wallabag/db
+/opt/stacks/miniflux/db
+/opt/stacks/healthchecks/db
+/opt/stacks/forgejo/data/db
+
+# Redis dirs: task-queue/cache state, regenerable
+/opt/stacks/paperless-ngx/redis
+/opt/stacks/wallabag/redis
+
+# Cache dirs anywhere in the set
+**/cache
+**/Cache
+
+# ansible-pull working checkout — it's a git clone of the repo, regenerable
+/home/btabaska/.ansible-pull

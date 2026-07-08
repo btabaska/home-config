@@ -12,6 +12,33 @@ checks:
     runbook: wiki/runbooks/backups.md
     enabled: true
 
+  # restic → B2 offsite (nas-04/05). The env file is root 0600 and the runner is
+  # btabaska, so the check goes through /usr/local/bin/restic-latest-age — a
+  # root-owned wrapper permitted by /etc/sudoers.d/verification-restic
+  # (NOPASSWD, exact zero-argument command). Prints FRESH/STALE age_hours=N.
+  - id: restic-snapshot-fresh-mini
+    name: "restic B2 snapshot for mini newer than 26h"
+    host: mini
+    cmd: sudo -n /usr/local/bin/restic-latest-age
+    expect: '^FRESH'
+    severity: crit
+    task_id: nas-04
+    runbook: wiki/runbooks/backups.md
+    enabled: true
+
+  # Same wrapper+sudoers deployed on the rig. Disabled: the rig is on-demand
+  # (Persistent=true fires the backup on next wake) and mini→rig ssh is
+  # currently blocked by tailnet ACL. Run manually: run-checks.sh --host rig
+  - id: restic-snapshot-fresh-rig
+    name: "restic B2 snapshot for rig newer than 26h"
+    host: rig
+    cmd: sudo -n /usr/local/bin/restic-latest-age
+    expect: '^FRESH'
+    severity: warn
+    task_id: nas-05
+    runbook: wiki/runbooks/backups.md
+    enabled: false
+
   - id: backup-immich-dump-nonempty
     name: "newest immich DB dump is >1MB (not a truncated/empty dump)"
     host: nas

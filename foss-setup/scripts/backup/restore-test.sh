@@ -16,7 +16,7 @@
 #   borgmatic:       https://torsion.org/borgmatic/docs/how-to/extract-a-backup/
 #
 # Usage:
-#   ENV_FILE=/etc/restic/b2.env ./restore-test.sh restic
+#   ENV_FILE=/etc/restic/env ./restore-test.sh restic
 #   ./restore-test.sh borgmatic [/etc/borgmatic/config.yaml]
 
 set -euo pipefail
@@ -48,12 +48,16 @@ verify_nonempty() {
 case "${BACKEND}" in
   restic)
     command -v restic >/dev/null 2>&1 || die "restic not installed"
-    ENV_FILE="${ENV_FILE:-/etc/restic/b2.env}"
+    ENV_FILE="${ENV_FILE:-/etc/restic/env}"
     [[ -r "${ENV_FILE}" ]] || die "env file not readable: ${ENV_FILE}"
+    # set -a: export everything the env file defines (plain KEY=VALUE files work).
+    set -a
     # shellcheck disable=SC1090
     source "${ENV_FILE}"
+    set +a
     : "${RESTIC_REPOSITORY:?RESTIC_REPOSITORY must be set in ${ENV_FILE}}"
-    : "${RESTIC_PASSWORD_FILE:?RESTIC_PASSWORD_FILE must be set in ${ENV_FILE}}"
+    [[ -n "${RESTIC_PASSWORD:-}" || -n "${RESTIC_PASSWORD_FILE:-}" ]] \
+      || die "set RESTIC_PASSWORD or RESTIC_PASSWORD_FILE in ${ENV_FILE}"
 
     log "Confirming repository is reachable..."
     restic cat config >/dev/null || die "cannot read repo config — check creds/endpoint"

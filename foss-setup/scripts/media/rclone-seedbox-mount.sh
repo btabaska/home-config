@@ -129,9 +129,14 @@ echo "$(date -Is) INFO: mounting $REMOTE -> $MOUNTPOINT" >>"$LOG"
 #   --sftp-idle-timeout 60s: kill idle SFTP connections so they don't go stale
 #   --log-level INFO       : mount events + errors go to LOG
 #   --daemon               : backgrounds immediately; kernel signals readiness
+# --cache-dir on the data volume: rclone defaults to /root/.cache on the tiny
+# DSM system partition — it filled it to 100% on 2026-07-07 and broke DSM apps.
+CACHE_DIR="${CACHE_DIR:-/volume1/cache/rclone}"
+mkdir -p "$CACHE_DIR"
 "$RCLONE" mount "$REMOTE" "$MOUNTPOINT" \
   --config "$RCLONE_CONF" \
   --allow-other \
+  --cache-dir "$CACHE_DIR" \
   --vfs-cache-mode minimal \
   --dir-cache-time 1m \
   --buffer-size 32M \
