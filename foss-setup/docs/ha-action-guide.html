@@ -51,8 +51,8 @@ mini and HA both <em>stay on Trusted</em>, nothing moves · ecobee/Nest work par
 <h2>Checklist (summary)</h2>
 <table>
 <tr><th></th><th>Action</th><th>Time</th><th>Unblocks</th></tr>
-<tr><td>§1</td><td>Read the UniFi Trusted→IoT policies to me (screenshots fine)</td><td>10 min</td><td>correct firewall design, casting, verification probes</td></tr>
-<tr><td>§2</td><td>Approve/apply the target IoT firewall config</td><td>20 min</td><td>ha-19, TV/Plex, cloud-blocking</td></tr>
+<tr><td>§1</td><td><s>UniFi policy check</s> — DONE: firewall correct; mini bug fixed (docker subnet squat)</td><td>—</td><td>done 2026-07-08</td></tr>
+<tr><td>§2</td><td>Apply the remaining IoT config: fixed IPs, iot-local/iot-cloud groups, iot-local→WAN block, Plex pinhole</td><td>20 min</td><td>ha-19, TV/Plex, cloud-blocking</td></tr>
 <tr><td>§3</td><td>Move 13 WiFi devices to <code>BillWi-IoT</code> (room by room, no rush)</td><td>~5 min/device</td><td>ha-19, ha-21…ha-27</td></tr>
 <tr><td>§4</td><td>Create UniFi local admin for cameras → vault</td><td>10 min</td><td>ha-14 (cameras in HA)</td></tr>
 <tr><td>§5</td><td>Drop 4 sets of credentials in the vault (slots pre-created)</td><td>15 min</td><td>Roborock, VeSync, Emporia, Withings</td></tr>
@@ -60,7 +60,14 @@ mini and HA both <em>stay on Trusted</em>, nothing moves · ecobee/Nest work par
 <tr><td>§7</td><td>Re-home lights out of the “Legacy —” rooms (your own pace)</td><td>1–2 h once</td><td>clean rooms, Siri targeting</td></tr>
 </table>
 
-<h2>§1 — The Trusted→IoT firewall finding, explained <span class="tag t-info">READ</span></h2>
+<h2>§1 — The Trusted→IoT firewall finding <span class="tag t-do">RESOLVED 2026-07-08</span></h2>
+<div class="card do"><strong>Resolved — your firewall was correct all along.</strong> The screenshots + live tests confirmed
+Trusted→IoT Allow All (rules 10000/10001) and IoT→Trusted return-only: exactly the plan’s model. The mini’s
+"rejected" traffic was a <em>local</em> bug: Docker had auto-assigned the paperless stack 192.168.16.0/20 (which
+swallows the whole IoT VLAN) and kometa 192.168.32.0/20. Both are now pinned to safe 172.19.x subnets, the stacks
+were recreated (approved), and the mini reaches the Hue bridge (HTTPS 200). A verification check
+(<code>sys-docker-subnet-squat</code>) now alerts if Docker ever squats on 192.168.x again, and fix-19 (tracker)
+schedules the permanent daemon.json fix for a 4–7 AM window. Historical explanation kept below for reference.</div>
 <p><strong>What the plan says</strong> (master plan §1): traffic model is
 <em>“allow Trusted → IoT, block IoT → Trusted, add narrow pinholes.”</em>
 Your Trusted devices (laptop, phone, mini, HA) should be able to <em>initiate</em> connections to any IoT
@@ -89,9 +96,9 @@ open the policies between zone <em>Trusted</em> (or Internal) and zone <em>IoT</
 source/dest, action, order) and paste it to me. If it turns out you (or a past setup step) deliberately blocked
 Trusted→IoT, say so and I’ll design around it; otherwise §2 restores the plan’s model.</div>
 
-<h2>§2 — Target IoT network configuration <span class="tag t-do">DO (after §1)</span></h2>
-<p>What I want the IoT side to look like when ha-19 is done. VLANs/SSIDs themselves are fine as-is
-(<code>BillWi-IoT</code> = VLAN 20 = 192.168.20.0/24) — this is only policy + grouping.</p>
+<h2>§2 — Target IoT network configuration <span class="tag t-do">DO</span></h2>
+<p>§1 confirmed the zone skeleton is already right — what remains is only grouping + two rules. VLANs/SSIDs stay as-is
+(<code>BillWi-IoT</code> = VLAN 20 = 192.168.20.0/24).</p>
 <h3>2a. Two device groups inside IoT</h3>
 <p>UniFi → Settings → Profiles → <em>IP Groups</em> (or select clients → add to group). Membership by IP —
 give each IoT device a <strong>fixed DHCP reservation</strong> as it joins (client → Settings → Fixed IP), then:</p>
@@ -105,7 +112,7 @@ give each IoT device a <strong>fixed DHCP reservation</strong> as it joins (clie
 <tr><th>#</th><th>Rule</th><th>Action</th><th>Note</th></tr>
 <tr><td>1</td><td>IoT → gateway : DNS 53, DHCP 67, NTP 123</td><td>Allow</td><td>never blanket-block the gateway</td></tr>
 <tr><td>2</td><td>IoT (TVs) → mini 192.168.10.2:32400 and NAS 192.168.10.4:32400</td><td>Allow</td><td>Plex apps on the TVs</td></tr>
-<tr><td>3</td><td>Trusted → IoT (all)</td><td>Allow</td><td>the plan’s model; return traffic is automatic (stateful)</td></tr>
+<tr><td>3</td><td>Trusted → IoT (all)</td><td>Allow</td><td>✅ already exists (your rules 10000/10001) — nothing to do</td></tr>
 <tr><td>4</td><td><code>iot-local</code> → External/WAN</td><td>Block</td><td>the cloud kill-switch</td></tr>
 <tr><td>5</td><td>IoT → any internal zone</td><td>Block</td><td>the existing isolation rule — keep</td></tr>
 <tr><td>6</td><td><code>iot-cloud</code> → External/WAN</td><td>Allow</td><td>usually implicit; make explicit if #4 is zone-wide</td></tr>

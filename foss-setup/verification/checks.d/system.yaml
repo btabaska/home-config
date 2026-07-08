@@ -71,3 +71,15 @@ checks:
     task_id: seed-01
     runbook: wiki/runbooks/seedbox.md
     enabled: false   # SSH blocked by ACL — skip until a probe path exists
+
+  - id: sys-docker-subnet-squat
+    name: "no docker network overlaps 192.168.0.0/16 (LAN/VLAN space)"
+    host: mini
+    cmd: >-
+      docker network ls -q | xargs -n1 docker network inspect
+      --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}' 2>/dev/null | grep -c '^192\.168\.' || true
+    expect: '^0$'
+    severity: warn
+    task_id: ha-19
+    runbook: wiki/runbooks/docker.md
+    enabled: true

@@ -28,3 +28,9 @@ services:
       - KOMETA_RUN=${KOMETA_RUN:-False}
     volumes:
       - ./config:/config
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.19.20.0/24

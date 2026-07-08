@@ -94,8 +94,16 @@ UniFi, two device groups inside IoT:
 2. **iot-cloud (WAN allowed):** Roborock, ThinQ, VeSync, Withings, Edn, Emporia+Midea until
    their local paths land.
 
-Pinholes: IoT → mini:32400 + NAS:32400 (Plex for TVs); mDNS reflection already on (net-06).
-HA stays single-homed on Trusted (per master plan §1) and reaches IoT via Trusted→IoT allow.
+Pinholes: IoT → mini:32400 + NAS:32400 (Plex for TVs) — NEEDED (IoT→Trusted is return-only);
+mDNS reflection already on (net-06). HA stays single-homed on Trusted and reaches IoT via the
+existing Trusted→IoT Allow-All (verified 2026-07-08 from human screenshots: rules 10000/10001;
+zone matrix: IoT→Internal block, cameras isolated, Work blocked — all correct).
+
+**2026-07-08 gotcha for the record:** the mini could not reach VLAN 20 — NOT a firewall issue.
+Docker had auto-assigned paperless `192.168.16.0/20` (covers .16–.31 → swallowed the IoT VLAN)
+and kometa `192.168.32.0/20` because the 172.17–31 pools were exhausted by /16 stack networks.
+Fixed: pinned to 172.19.10.0/24 + 172.19.20.0/24; `sys-docker-subnet-squat` check guards it;
+fix-19 = permanent daemon.json `default-address-pools` fix in a maintenance window.
 
 ## Shopping list — v1.0 sensor/actuator fill-in (local-first, AliExpress-friendly)
 

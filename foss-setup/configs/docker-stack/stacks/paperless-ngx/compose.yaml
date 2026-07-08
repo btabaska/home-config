@@ -127,3 +127,6 @@ networks:
     external: true
   paperless:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.10.0/24
