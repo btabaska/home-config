@@ -36,6 +36,7 @@ lshw
 mariadb-server
 ncurses-bin
 net-tools
+nfs-common
 nginx
 nut-client
 openssh-server
@@ -51,6 +52,7 @@ php8.3-mysql
 php8.3-xml
 php8.3-zip
 python3-certbot-nginx
+python3-pip
 python3.10-venv
 redis-server
 shim-signed
@@ -65,6 +67,8 @@ ubuntu-minimal
 ubuntu-server
 ubuntu-server-minimal
 ubuntu-standard
+unattended-upgrades
 unpackerr
 unrar
 unzip
+wakeonlan

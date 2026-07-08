@@ -23,6 +23,7 @@ ghcr.io/recyclarr/recyclarr:7.4.2
 ghcr.io/recyclarr/recyclarr:8.4.0
 ghcr.io/seerr-team/seerr:v3.2.0
 ghcr.io/tautulli/tautulli:v2.17.2
+ghcr.io/zamnzim/libreseerr:latest
 gotenberg/gotenberg:8.21
 healthchecks/healthchecks:v3.10
 henrygd/beszel:0.18.7
@@ -30,7 +31,9 @@ henrygd/beszel-agent:0.18.7
 kometateam/kometa:v2.3.1
 louislam/dockge:1.5.0
 louislam/uptime-kuma:2.1.1
+mariadb:11.4
 miniflux/miniflux:2.3.1
 mvance/unbound:1.22.0
 postgres:17-alpine
 redis:7-alpine
+wallabag/wallabag:2.6.14

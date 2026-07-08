@@ -45,7 +45,7 @@ services:
     healthcheck:
       # /api/v3/status/ runs a DB test query and returns 200 (verified present in
       # the v3.10 API: hc/api/urls.py path("status/", views.status)).
-      test: ["CMD-SHELL", "curl -fs http://localhost:8000/api/v3/status/ || exit 1"]
+      test: ["CMD-SHELL", "python3 -c 'import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://localhost:8000/api/v3/status/\", timeout=4).status==200 else 1)'"]
       start_period: 30s
       interval: 30s
       timeout: 5s

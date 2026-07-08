@@ -9,13 +9,16 @@ HEALTH_CMD_B64="YmFzaCAvdm9sdW1lMS9zY3JpcHRzL25hcy9uYXMtZG9ja2VyLWhlYWx0aC5zaA==
 
 log() { printf '[%s] %s\n' "$(date -Is)" "$*"; }
 
-fix_repeat_hour() {
+fix_repeat_window() {
+  # DSM repeats a task within [run hour .. last work hour]. Setting only
+  # "repeat hour" leaves "last work hour=23", which pins the whole window to
+  # hour 0 (task fires 00:00-00:45 only). Both fields must be set.
   local task="$1"
   [[ -f "$task" ]] || return 0
-  if grep -q '^repeat hour=0$' "$task"; then
-    sed -i 's/^repeat hour=0$/repeat hour=23/' "$task"
-    log "Fixed repeat hour (0→23): $task"
-  fi
+  local changed=0
+  grep -q '^repeat hour=0$' "$task" && { sed -i 's/^repeat hour=0$/repeat hour=23/' "$task"; changed=1; }
+  grep -q '^last work hour=23$' "$task" && { sed -i 's/^last work hour=23$/last work hour=23/' "$task"; changed=1; }
+  [[ $changed -eq 1 ]] && log "Fixed repeat window (repeat hour + last work hour → 23): $task"
 }
 
 install_health_task() {
@@ -24,7 +27,7 @@ install_health_task() {
 
   cat >"$task" <<EOF
 id=5
-last work hour=0
+last work hour=23
 can edit owner=1
 can delete from ui=1
 edit dialog=SYNO.SDS.TaskScheduler.EditDialog
@@ -74,14 +77,14 @@ main() {
   touch /var/log/nas-docker-health.log
   chmod 644 /var/log/nas-docker-health.log
 
-  fix_repeat_hour "${TASK_DIR}/3.task"
-  fix_repeat_hour "${TASK_DIR}/4.task"
+  fix_repeat_window "${TASK_DIR}/3.task"
+  fix_repeat_window "${TASK_DIR}/4.task"
+  fix_repeat_window "${TASK_DIR}/5.task"
   install_health_task
 
-  if [[ -x /usr/syno/bin/synosystemctl ]]; then
-    /usr/syno/bin/synosystemctl restart synocrond 2>/dev/null \
-      || log "Note: synocrond restart skipped (may apply on next DSM scheduler reload)"
-  fi
+  # crond (not synocrond) regenerates /etc/crontab from the .task files
+  /usr/syno/bin/synosystemctl restart crond 2>/dev/null \
+    || log "WARNING: crond restart failed — /etc/crontab NOT regenerated; run: sudo synosystemctl restart crond"
 
   log "Done. Test now: bash /volume1/scripts/nas/nas-docker-health.sh"
   log "Logs: tail -f /var/log/nas-docker-health.log"
