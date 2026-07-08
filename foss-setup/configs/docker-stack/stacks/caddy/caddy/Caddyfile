@@ -105,10 +105,11 @@ maintainerr.{$DOMAIN} {
 }
 
 # Pre-transcode automation (server UI; the heavy node runs on the rig)
-tdarr.{$DOMAIN} {
-	import local_tls
-	reverse_proxy {$NAS_IP}:8265
-}
+# 2026-07-07 disabled pending fix-18 decision: Tdarr not running on NAS (:8265 unreachable)
+# tdarr.{$DOMAIN} {
+# 	import local_tls
+# 	reverse_proxy {$NAS_IP}:8265
+# }
 
 # "Sonarr for YouTube"
 pinchflat.{$DOMAIN} {
@@ -181,6 +182,17 @@ mcpo.{$DOMAIN} {
 	reverse_proxy {$RIG_IP}:8000
 }
 
+# Sunshine game-stream host UI (rig — HTTPS with a self-signed cert on :47990).
+# On-demand like the rest of the rig stack; expect 502 while the rig sleeps.
+sunshine.{$DOMAIN} {
+	import local_tls
+	reverse_proxy https://{$RIG_IP}:47990 {
+		transport http {
+			tls_insecure_skip_verify
+		}
+	}
+}
+
 # Backup dead-man's-switch
 health.{$DOMAIN} {
 	import local_tls
@@ -203,10 +215,11 @@ immich.{$DOMAIN} {
 }
 
 # Local camera AI (authenticated UI on 8971 — NAS)
-frigate.{$DOMAIN} {
-	import local_tls
-	reverse_proxy {$NAS_IP}:8971
-}
+# 2026-07-07 disabled pending fix-18 decision: Frigate not running on NAS (:8971 unreachable)
+# frigate.{$DOMAIN} {
+# 	import local_tls
+# 	reverse_proxy {$NAS_IP}:8971
+# }
 
 # ---------------------------------------------------------------------------
 # NAS media stack (*arr + Plex + ebooks)
@@ -249,6 +262,12 @@ books.{$DOMAIN} {
 	reverse_proxy {$NAS_IP}:8083
 }
 
+# Cloudflare-challenge solver for Prowlarr indexers (NAS — :8191; API, no real UI)
+flaresolverr.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:8191
+}
+
 # Adult media organizer (NAS — :9999; LAN/Tailscale only)
 stash.{$DOMAIN} {
 	import local_tls
@@ -282,6 +301,31 @@ slskd.{$DOMAIN} {
 metube.{$DOMAIN} {
 	import local_tls
 	reverse_proxy {$HOST_IP}:8081
+}
+
+# ---------------------------------------------------------------------------
+# Smart home
+# ---------------------------------------------------------------------------
+
+# Home Assistant (dedicated host — HA_IP in .env).
+# NOTE: HA will answer 400 "Bad Request" through this proxy until its
+# `http.use_x_forwarded_for` + `trusted_proxies` include the mini's Docker
+# networks — configured in run-5.
+ha.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$HA_IP}:8123
+}
+
+# ---------------------------------------------------------------------------
+# Wiki — static site built into /opt/stacks/wiki/site on the host, mounted
+# read-only at /srv/wiki (see compose.yaml). Serves 404 until the wiki build
+# lands; that's expected.
+# ---------------------------------------------------------------------------
+
+wiki.{$DOMAIN} {
+	import local_tls
+	root * /srv/wiki
+	file_server
 }
 
 # ---------------------------------------------------------------------------

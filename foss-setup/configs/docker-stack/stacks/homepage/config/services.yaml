@@ -1,8 +1,10 @@
-# Homepage service tiles — replace tabaska.us with your domain; fill API keys in .env.
-# Widget keys use {{HOMEPAGE_VAR_*}} placeholders (see .env.example).
-# Docs: https://gethomepage.dev/configs/services/
+# Homepage service tiles — one entry per live service, grouped by category.
+# Source of truth: configs/docker-stack/service-catalog.yaml (home-01).
+# hrefs always use the https://<name>.tabaska.us front door; widget/siteMonitor
+# URLs hit the upstream directly. Widget keys use {{HOMEPAGE_VAR_*}} from .env
+# (see .env.example). Docs: https://gethomepage.dev/configs/services/
 
-- Home:
+- Media:
     - Plex:
         icon: plex.png
         href: https://plex.tabaska.us
@@ -11,19 +13,18 @@
           type: plex
           url: http://192.168.10.4:32400
           key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
-    - Immich:
-        icon: immich.png
-        href: https://immich.tabaska.us
-        description: Photos
-        widget:
-          type: immich
-          url: http://192.168.10.4:2283
-          key: "{{HOMEPAGE_VAR_IMMICH_KEY}}"
-    - Navidrome:
-        icon: navidrome.png
-        href: https://music.tabaska.us
-        description: Music streaming
-        ping: http://navidrome:4533
+    - Pinchflat:
+        icon: pinchflat.png
+        href: https://pinchflat.tabaska.us
+        description: YouTube archiving
+        siteMonitor: http://pinchflat:8945
+    - MeTube:
+        icon: metube.png
+        href: https://metube.tabaska.us
+        description: One-off YouTube downloads
+        siteMonitor: http://192.168.10.2:8081
+
+- Requests:
     - Seerr:
         icon: overseerr.png
         href: https://seerr.tabaska.us
@@ -35,50 +36,15 @@
     - MusicSeerr:
         icon: lidarr.png
         href: https://musicseerr.tabaska.us
-        description: Request albums & discover music
-        ping: http://musicseerr:8688
-    - Mealie:
-        icon: mealie.png
-        href: https://recipes.tabaska.us
-        description: Recipes & meal planning
-        ping: http://mealie:9000
-    - Miniflux:
-        icon: miniflux.png
-        href: https://rss.tabaska.us
-        description: RSS reader
-        ping: http://miniflux:8080
-    - Wallabag:
-        icon: wallabag.png
-        href: https://wallabag.tabaska.us
-        description: Read-it-later
-        ping: http://wallabag:80
-    - Paperless:
-        icon: paperless.png
-        href: https://paperless.tabaska.us
-        description: Document archive & OCR
-        ping: http://paperless:8000
-    - Pinchflat:
-        icon: youtube.png
-        href: https://pinchflat.tabaska.us
-        description: YouTube archiving
-        ping: http://pinchflat:8945
+        description: Request albums
+        siteMonitor: http://musicseerr:8688
     - Libreseerr:
         icon: readarr.png
         href: https://libreseerr.tabaska.us
-        description: Book requests
-        ping: http://libreseerr:5000
-    - MeTube:
-        icon: youtube.png
-        href: https://metube.tabaska.us
-        description: YouTube downloads
-        ping: http://192.168.10.2:8081
-    - Calibre-Web:
-        icon: calibre-web.png
-        href: https://books.tabaska.us
-        description: Ebooks (LAN/VPN only)
-        ping: http://192.168.10.4:8083
+        description: Request books
+        siteMonitor: http://libreseerr:5000
 
-- Media automation:
+- Media Automation:
     - Sonarr:
         icon: sonarr.png
         href: https://sonarr.tabaska.us
@@ -119,6 +85,11 @@
           type: prowlarr
           url: http://192.168.10.4:9696
           key: "{{HOMEPAGE_VAR_PROWLARR_KEY}}"
+    - FlareSolverr:
+        icon: flaresolverr.png
+        href: https://flaresolverr.tabaska.us
+        description: Cloudflare solver (API)
+        siteMonitor: http://192.168.10.4:8191
     - Tautulli:
         icon: tautulli.png
         href: https://tautulli.tabaska.us
@@ -131,58 +102,118 @@
         icon: maintainerr.png
         href: https://maintainerr.tabaska.us
         description: Library cleanup rules
-        ping: http://maintainerr:6246
+        siteMonitor: http://maintainerr:6246
     - Deluge:
         icon: deluge.png
         href: https://deluge.tabaska.us
         description: Off-site torrents (seedbox)
-        ping: http://100.119.134.94:8112
+        siteMonitor: http://100.119.134.94:8112
     - slskd:
-        icon: soulseek.png
+        icon: slskd.png
         href: https://slskd.tabaska.us
         description: Soulseek (seedbox)
-        ping: http://100.119.134.94:5030
+        siteMonitor: http://100.119.134.94:5030
 
-- Observability:
+- Photos:
+    - Immich:
+        icon: immich.png
+        href: https://immich.tabaska.us
+        description: Photo library & backup
+        widget:
+          type: immich
+          url: http://192.168.10.4:2283
+          key: "{{HOMEPAGE_VAR_IMMICH_KEY}}"
+          version: 2
+
+- Music:
+    - Navidrome:
+        icon: navidrome.png
+        href: https://music.tabaska.us
+        description: Music streaming
+        siteMonitor: http://navidrome:4533
+
+- Reading & Docs:
+    - Calibre-Web:
+        icon: calibre-web.png
+        href: https://books.tabaska.us
+        description: Ebook library
+        siteMonitor: http://192.168.10.4:8083
+    - Paperless:
+        icon: paperless.png
+        href: https://paperless.tabaska.us
+        description: Document archive & OCR
+        siteMonitor: http://paperless:8000
+    - Wallabag:
+        icon: wallabag.png
+        href: https://wallabag.tabaska.us
+        description: Read-it-later
+        siteMonitor: http://wallabag:80
+    - Miniflux:
+        icon: miniflux.png
+        href: https://rss.tabaska.us
+        description: RSS reader
+        siteMonitor: http://miniflux:8080
+
+- Life:
+    - Mealie:
+        icon: mealie.png
+        href: https://recipes.tabaska.us
+        description: Recipes & meal planning
+        siteMonitor: http://mealie:9000
+
+- Smart Home:
+    - Home Assistant:
+        icon: home-assistant.png
+        href: https://ha.tabaska.us
+        description: Automation hub (proxy 400 until run-5 trusted_proxies)
+        siteMonitor: http://192.168.10.50:8123
+
+- AI & Gaming (on-demand):
+    - Open WebUI:
+        icon: open-webui.png
+        href: https://ai.tabaska.us
+        description: Chat UI (wake rig first)
+        siteMonitor: http://192.168.10.12:3000
+    - LiteLLM:
+        icon: si-litellm
+        href: https://llm.tabaska.us
+        description: LLM gateway (wake rig first)
+        siteMonitor: http://192.168.10.12:4000
+    - Ollama:
+        icon: ollama.png
+        href: https://ollama.tabaska.us
+        description: Model API (wake rig first)
+        siteMonitor: http://192.168.10.12:11434
+    - mcpo:
+        icon: mdi-tools
+        href: https://mcpo.tabaska.us/docs
+        description: MCP tool bridge (wake rig first)
+    - Sunshine:
+        icon: sunshine.png
+        href: https://sunshine.tabaska.us
+        description: Game streaming host (wake rig first)
+
+- Infrastructure & Ops:
     - Beszel:
         icon: beszel.png
         href: https://status.tabaska.us
         description: Host & container monitoring
-        ping: http://beszel:8090
+        siteMonitor: http://beszel:8090
     - Uptime Kuma:
         icon: uptime-kuma.png
         href: https://uptime.tabaska.us
-        description: Uptime checks
-        widget:
-          type: uptimekuma
-          url: http://uptime-kuma:3001
-          slug: "{{HOMEPAGE_VAR_UPTIMEKUMA_SLUG}}"
+        description: Uptime checks & status
+        siteMonitor: http://uptime-kuma:3001
     - Healthchecks:
         icon: healthchecks.png
         href: https://health.tabaska.us
         description: Backup dead-man's-switch
-        ping: http://healthchecks:8000
+        siteMonitor: http://healthchecks:8000
     - Dependency-Track:
         icon: dependency-track.png
         href: https://deptrack.tabaska.us
-        description: SBOM & vulnerability dashboard
-        widget:
-          type: customapi
-          url: http://192.168.10.4:9011/api/v1/metrics/portfolio/current
-          method: GET
-          headers:
-            X-Api-Key: "{{HOMEPAGE_VAR_DEPTRACK_KEY}}"
-          refreshInterval: 600000
-          mappings:
-            - field: projects
-              label: Projects
-              format: number
-            - field: vulnerabilities
-              label: Vulns (total)
-              format: number
-            - field: critical
-              label: Critical
-              format: number
+        description: SBOM & vulnerabilities
+        siteMonitor: http://192.168.10.4:9010
     - AdGuard Home:
         icon: adguard-home.png
         href: https://dns.tabaska.us
@@ -192,31 +223,39 @@
           url: http://adguardhome:80
           username: "{{HOMEPAGE_VAR_ADGUARD_USER}}"
           password: "{{HOMEPAGE_VAR_ADGUARD_PASS}}"
-
-- Operations:
     - Dockge:
         icon: dockge.png
         href: https://dockge.tabaska.us
         description: Compose stack manager
-        ping: http://dockge:5001
+        siteMonitor: http://dockge:5001
     - Forgejo:
         icon: forgejo.png
         href: https://git.tabaska.us
         description: Git forge & control repo
-        ping: http://forgejo:3000
+        siteMonitor: http://forgejo:3000
     - ntfy:
         icon: ntfy.png
         href: https://ntfy.tabaska.us
         description: Push notifications
-        ping: http://ntfy:80
+        siteMonitor: http://ntfy:80
+
+- Wiki & Docs:
+    - Wiki:
+        icon: mdi-book-open-page-variant
+        href: https://wiki.tabaska.us
+        description: Homelab wiki (build pending)
+    - Uptime status:
+        icon: uptime-kuma.png
+        href: https://uptime.tabaska.us
+        description: Service uptime dashboard
+    - ntfy alerts:
+        icon: ntfy.png
+        href: https://ntfy.tabaska.us
+        description: Notification topics
 
 - Private:
     - Stash:
         icon: stash.png
         href: https://stash.tabaska.us
         description: Media organizer (LAN/VPN only)
-        widget:
-          type: stash
-          url: http://192.168.10.4:9999
-          key: "{{HOMEPAGE_VAR_STASH_KEY}}"
-          fields: ["scenes", "images", "performers", "studios"]
+        siteMonitor: http://192.168.10.4:9999

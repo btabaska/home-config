@@ -35,11 +35,13 @@ services:
       - ACME_EMAIL=${ACME_EMAIL}
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
       - NAS_IP=${NAS_IP:-} # optional: only for upstreams you offload to the NAS
-      - RIG_IP=${RIG_IP:-} # CachyOS rig LAN IP (ai/llm/ollama/mcpo subdomains)
+      - RIG_IP=${RIG_IP:-}
+      - HA_IP=${HA_IP:-} # Home Assistant host (ha.<domain>)
       - SEEDBOX_IP=${SEEDBOX_IP:-} # Betty Tailscale IP (Deluge + slskd)
       - HOST_IP=${HOST_IP:-} # Mac mini LAN IP for host-network stacks (e.g. MeTube)
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/stacks/wiki/site:/srv/wiki:ro # static wiki (built by the wiki stack; 404 until populated)
       - caddy_data:/data # certs & keys — treat as non-ephemeral (avoids LE rate limits)
       - caddy_config:/config
     networks:

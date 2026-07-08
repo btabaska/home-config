@@ -1,0 +1,352 @@
+# service-catalog.yaml — source of truth for the home surface (home-01..04).
+# Every LIVE service in the homelab: what it is, where it runs, and its public
+# https://<name>.tabaska.us front door (Caddy on the mini, 192.168.10.2).
+#
+# Verified live 2026-07-07 (docker ps on mini + HTTP probes from mini).
+# hosts: mini=192.168.10.2, nas=192.168.10.4, rig=192.168.10.12 (on-demand),
+#        ha=192.168.10.50, seedbox=100.119.134.94 (Tailscale, "Betty")
+#
+# ui: false  => backend/agent with no web UI: no Caddy vhost, no Homepage tile.
+# on_demand  => host sleeps when idle; expect 502 through Caddy until woken.
+
+services:
+  # --- Media ----------------------------------------------------------------
+  - name: plex
+    category: Media
+    host: nas
+    port: 32400
+    url: https://plex.tabaska.us
+    on_demand: false
+    notes: Movies & TV. Widget uses Plex token.
+  - name: metube
+    category: Media
+    host: mini
+    port: 8081
+    url: https://metube.tabaska.us
+    on_demand: false
+    notes: One-off YouTube downloads (host-network; proxied via HOST_IP).
+  - name: pinchflat
+    category: Media
+    host: mini
+    port: 8945
+    url: https://pinchflat.tabaska.us
+    on_demand: false
+    notes: YouTube channel archiving ("Sonarr for YouTube").
+  - name: kometa
+    category: Media
+    host: mini
+    port: null
+    url: null
+    on_demand: false
+    ui: false
+    notes: Plex collections/metadata batch job — no web UI, runs on schedule.
+
+  # --- Requests ---------------------------------------------------------------
+  - name: seerr
+    category: Requests
+    host: mini
+    port: 5055
+    url: https://seerr.tabaska.us
+    on_demand: false
+    notes: Movie/TV request portal (Jellyseerr/Overseerr-compatible API).
+  - name: musicseerr
+    category: Requests
+    host: mini
+    port: 8688
+    url: https://musicseerr.tabaska.us
+    on_demand: false
+    notes: Album request portal (feeds Lidarr).
+  - name: libreseerr
+    category: Requests
+    host: mini
+    port: 8789
+    url: https://libreseerr.tabaska.us
+    on_demand: false
+    notes: Book request portal (feeds Readarr). Container port 5000.
+
+  # --- Media Automation -------------------------------------------------------
+  - name: sonarr
+    category: Media Automation
+    host: nas
+    port: 8989
+    url: https://sonarr.tabaska.us
+    on_demand: false
+    notes: TV automation.
+  - name: radarr
+    category: Media Automation
+    host: nas
+    port: 7878
+    url: https://radarr.tabaska.us
+    on_demand: false
+    notes: Movie automation.
+  - name: lidarr
+    category: Media Automation
+    host: nas
+    port: 8686
+    url: https://lidarr.tabaska.us
+    on_demand: false
+    notes: Music automation.
+  - name: readarr
+    category: Media Automation
+    host: nas
+    port: 8787
+    url: https://readarr.tabaska.us
+    on_demand: false
+    notes: Book automation.
+  - name: prowlarr
+    category: Media Automation
+    host: nas
+    port: 9696
+    url: https://prowlarr.tabaska.us
+    on_demand: false
+    notes: Indexer manager for the *arr stack.
+  - name: flaresolverr
+    category: Media Automation
+    host: nas
+    port: 8191
+    url: https://flaresolverr.tabaska.us
+    on_demand: false
+    notes: Cloudflare-challenge solver for Prowlarr. API only — root returns a status JSON.
+  - name: tautulli
+    category: Media Automation
+    host: mini
+    port: 8181
+    url: https://tautulli.tabaska.us
+    on_demand: false
+    notes: Plex analytics/history.
+  - name: maintainerr
+    category: Media Automation
+    host: mini
+    port: 6246
+    url: https://maintainerr.tabaska.us
+    on_demand: false
+    notes: Rule-based Plex library pruning.
+  - name: deluge
+    category: Media Automation
+    host: seedbox
+    port: 8112
+    url: https://deluge.tabaska.us
+    on_demand: false
+    notes: Off-site torrents (Betty seedbox over Tailscale).
+  - name: slskd
+    category: Media Automation
+    host: seedbox
+    port: 5030
+    url: https://slskd.tabaska.us
+    on_demand: false
+    notes: Soulseek daemon (Betty seedbox over Tailscale).
+
+  # --- Photos -----------------------------------------------------------------
+  - name: immich
+    category: Photos
+    host: nas
+    port: 2283
+    url: https://immich.tabaska.us
+    on_demand: false
+    notes: Photo library + mobile backup. Vhost verified 2026-07-07.
+
+  # --- Music ------------------------------------------------------------------
+  - name: navidrome
+    category: Music
+    host: mini
+    port: 4533
+    url: https://music.tabaska.us
+    on_demand: false
+    notes: Subsonic-compatible music streaming.
+
+  # --- Reading & Docs -----------------------------------------------------------
+  - name: calibre-web-automated
+    category: Reading & Docs
+    host: nas
+    port: 8083
+    url: https://books.tabaska.us
+    on_demand: false
+    notes: Ebook library (CWA).
+  - name: paperless
+    category: Reading & Docs
+    host: mini
+    port: 8000
+    url: https://paperless.tabaska.us
+    on_demand: false
+    notes: Document archive + OCR (redis/db/gotenberg/tika sidecars, no UI of their own).
+  - name: wallabag
+    category: Reading & Docs
+    host: mini
+    port: 8085
+    url: https://wallabag.tabaska.us
+    on_demand: false
+    notes: Read-it-later. Container port 80.
+  - name: miniflux
+    category: Reading & Docs
+    host: mini
+    port: 8082
+    url: https://rss.tabaska.us
+    on_demand: false
+    notes: RSS reader. Container port 8080.
+
+  # --- Life ---------------------------------------------------------------------
+  - name: mealie
+    category: Life
+    host: mini
+    port: 9000
+    url: https://recipes.tabaska.us
+    on_demand: false
+    notes: Recipes & meal planning. Container health flapping (unhealthy in docker ps) but serving.
+
+  # --- Smart Home -----------------------------------------------------------------
+  - name: home-assistant
+    category: Smart Home
+    host: ha
+    port: 8123
+    url: https://ha.tabaska.us
+    on_demand: false
+    notes: Answers 400 via proxy until trusted_proxies configured (run-5); direct :8123 works.
+
+  # --- AI & Gaming (on-demand rig) ---------------------------------------------
+  - name: open-webui
+    category: AI & Gaming
+    host: rig
+    port: 3000
+    url: https://ai.tabaska.us
+    on_demand: true
+    notes: Chat UI. Wake rig first; 502 while asleep.
+  - name: litellm
+    category: AI & Gaming
+    host: rig
+    port: 4000
+    url: https://llm.tabaska.us
+    on_demand: true
+    notes: OpenAI-compatible gateway (/ui admin). Wake rig first.
+  - name: ollama
+    category: AI & Gaming
+    host: rig
+    port: 11434
+    url: https://ollama.tabaska.us
+    on_demand: true
+    notes: Native Ollama API (verified up 2026-07-07 while rig awake).
+  - name: mcpo
+    category: AI & Gaming
+    host: rig
+    port: 8000
+    url: https://mcpo.tabaska.us
+    on_demand: true
+    notes: MCP→OpenAPI tool bridge; docs at /docs (root 404s by design).
+  - name: sunshine
+    category: AI & Gaming
+    host: rig
+    port: 47990
+    url: https://sunshine.tabaska.us
+    on_demand: true
+    notes: Game-stream host UI, self-signed HTTPS upstream. Did not answer on 2026-07-07 even with rig awake — service may be stopped; vhost added anyway.
+
+  # --- Infrastructure & Ops --------------------------------------------------------
+  - name: homepage
+    category: Infrastructure & Ops
+    host: mini
+    port: 3010
+    url: https://home.tabaska.us
+    on_demand: false
+    notes: This dashboard. Container port 3000.
+  - name: caddy
+    category: Infrastructure & Ops
+    host: mini
+    port: 443
+    url: null
+    ui: false
+    on_demand: false
+    notes: The reverse proxy itself — no UI vhost.
+  - name: beszel
+    category: Infrastructure & Ops
+    host: mini
+    port: 8090
+    url: https://status.tabaska.us
+    on_demand: false
+    notes: Host/container metrics hub (beszel-agent on mini feeds it; agent has no UI).
+  - name: uptime-kuma
+    category: Infrastructure & Ops
+    host: mini
+    port: 3001
+    url: https://uptime.tabaska.us
+    on_demand: false
+    notes: Uptime checks. No published status page yet, so Homepage uses siteMonitor not the widget.
+  - name: healthchecks
+    category: Infrastructure & Ops
+    host: mini
+    port: 8001
+    url: https://health.tabaska.us
+    on_demand: false
+    notes: Cron/backup dead-man's-switch. Container reports unhealthy but web UI serves. Container port 8000.
+  - name: dependency-track
+    category: Infrastructure & Ops
+    host: nas
+    port: 9010
+    url: https://deptrack.tabaska.us
+    on_demand: false
+    notes: SBOM/vuln dashboard; API on :9011 (Caddy routes /api/* there).
+  - name: adguard-home
+    category: Infrastructure & Ops
+    host: mini
+    port: 53
+    url: https://dns.tabaska.us
+    on_demand: false
+    notes: DNS filtering; admin UI proxied (container :80). Unbound (:5335) is its upstream resolver — no UI.
+  - name: unbound
+    category: Infrastructure & Ops
+    host: mini
+    port: 5335
+    url: null
+    ui: false
+    on_demand: false
+    notes: Recursive DNS resolver behind AdGuard — no web UI.
+  - name: dockge
+    category: Infrastructure & Ops
+    host: mini
+    port: 5001
+    url: https://dockge.tabaska.us
+    on_demand: false
+    notes: Compose stack manager.
+  - name: forgejo
+    category: Infrastructure & Ops
+    host: mini
+    port: 3030
+    url: https://git.tabaska.us
+    on_demand: false
+    notes: Git forge / control repo. SSH on host :2222. Container port 3000.
+  - name: ntfy
+    category: Infrastructure & Ops
+    host: mini
+    port: 8080
+    url: https://ntfy.tabaska.us
+    on_demand: false
+    notes: Push notifications. Container port 80.
+  - name: diun
+    category: Infrastructure & Ops
+    host: mini
+    port: null
+    url: null
+    ui: false
+    on_demand: false
+    notes: Image-update notifier → ntfy. No web UI.
+
+  # --- Wiki & Docs -------------------------------------------------------------
+  - name: wiki
+    category: Wiki & Docs
+    host: mini
+    port: null
+    url: https://wiki.tabaska.us
+    on_demand: false
+    notes: Static site served by Caddy from /opt/stacks/wiki/site (built by the wiki task; 404 until populated).
+
+  # --- Private -----------------------------------------------------------------
+  - name: stash
+    category: Private
+    host: nas
+    port: 9999
+    url: https://stash.tabaska.us
+    on_demand: false
+    notes: Adult media organizer. LAN/Tailscale only. No API key in vault — no widget.
+
+# Dead / not running on 2026-07-07 (vhosts commented out in Caddyfile pending fix-18):
+#   tdarr   — NAS :8265 unreachable
+#   frigate — NAS :8971 unreachable
+#   recyclarr — stack dir exists on mini but no container (batch job anyway, no UI)

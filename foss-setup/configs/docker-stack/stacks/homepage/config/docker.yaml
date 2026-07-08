@@ -1,7 +1,11 @@
-# Auto-discover containers on this host via the Docker socket.
-# NAS-hosted stacks (Immich, Plex, CWA, etc.) are not visible here — add manual
-# service: entries in services.yaml for those, or rely on the Home group links.
-# Docs: https://gethomepage.dev/configs/docker/
-
-local:
-  socket: /var/run/docker.sock
+# Docker auto-discovery — DISABLED 2026-07-07 (home-03).
+# Every live service is now defined manually in services.yaml (driven by
+# configs/docker-stack/service-catalog.yaml), so socket discovery added nothing
+# but a repeating "connect EACCES /var/run/docker.sock" log error: homepage's
+# entrypoint drops to PUID:PGID and sheds supplementary groups, so even
+# group_add: ["<docker gid>"] can't grant the app socket access. If discovery
+# is ever wanted again, front the socket with docker-socket-proxy and point
+# this at tcp:// instead. Docs: https://gethomepage.dev/configs/docker/
+#
+# local:
+#   socket: /var/run/docker.sock
