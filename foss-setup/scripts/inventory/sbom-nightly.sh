@@ -101,7 +101,6 @@ upload_bom() {
   code="$(curl -sS -o "${WORKDIR}/upload.out" -w '%{http_code}' \
     -X PUT "${DTRACK_URL}/api/v1/bom" \
     -H "X-Api-Key: ${DTRACK_API_KEY}" \
-    -H "Content-Type: multipart/form-data" \
     -F "autoCreate=true" \
     -F "projectName=${project_name}" \
     -F "projectVersion=${version}" \
