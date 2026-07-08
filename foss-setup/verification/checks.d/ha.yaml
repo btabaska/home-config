@@ -15,7 +15,9 @@ checks:
   - id: ha-api-auth
     name: "HA REST API authenticates (long-lived token valid)"
     host: mini
-    cmd: curl -s -m 8 -H "Authorization: Bearer $HA_TOKEN" http://192.168.10.50:8123/api/config | grep -c '"version"'
+    cmd: >-
+      curl -s -m 8 -H "Authorization: Bearer $HA_TOKEN"
+      http://192.168.10.50:8123/api/config | grep -c '"version"'
     expect: '^1$'
     severity: warn
     task_id: ha-32
@@ -25,7 +27,9 @@ checks:
   - id: ha-hue-lights
     name: "Hue integration healthy (>=50 light entities registered)"
     host: mini
-    cmd: curl -s -m 8 -H "Authorization: Bearer $HA_TOKEN" http://192.168.10.50:8123/api/states | grep -o '"entity_id":"light\.' | wc -l | tr -d ' '
+    cmd: >-
+      curl -s -m 8 -H "Authorization: Bearer $HA_TOKEN"
+      http://192.168.10.50:8123/api/states | grep -o '"entity_id":"light\.' | wc -l | tr -d ' '
     expect: '^([5-9][0-9]|[1-9][0-9]{2,})$'
     severity: warn
     task_id: ha-05

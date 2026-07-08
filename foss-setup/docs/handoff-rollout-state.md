@@ -1,5 +1,16 @@
 # Rollout handoff state
 
+### Run 5 kickoff — smart home context + plan (2026-07-08, day session)
+
+- **Full house/device context captured** → `docs/research/11-ha-home-context.md` (71 Culver Rd profile, canonical rooms↔HA-areas table, 18-device integration map, IoT firewall policy, ~$550 Zigbee shopping list, 12 pitched opportunities, fut-01..06 future projects). Read it before touching Run 5.
+- **Live HA audit** (192.168.10.50, core 2026.6.4): Hue (73 lights/21 scenes) + 2× Elgato + Matter/Thread + companion app already integrated — tracker was behind reality. ha-01/ha-02 closed with verification. 16 lights `unavailable` = wall-switch power cuts.
+- **HA registry work (AI, reversible, verified)**: 4 floors created; areas renamed to canonical rooms (6 renames); Laundry/Gym/Storage areas added; all areas floor-assigned; misassigned bathtub light Kitchen→Bathroom. 4 room-name ambiguities await human answer (see context doc §open questions).
+- **Long-lived HA token minted** (client "homelab-agent", 10 y) → vault `hosts.ha.api_token`; also on mini in `/etc/verification/env` as `HA_TOKEN`. Hue bridge located at **192.168.20.100 (already on IoT VLAN 20, 0 B WAN)** → vault `hue.bridge_ip`. Hue app shows stale 192.168.1.115 (pre-VLAN cache; harmless).
+- **Tracker (Plan v3 → 222 tasks)**: ha-06 RESCOPED — new-in-box **ecobee Premium replaces Nest 3rd gen**, integrated locally via homekit_controller; Google SDM cloud path dropped. New tasks ha-18..ha-32 (rooms, IoT migration ledger, Level locks stay Apple-native, Roborock, Roomba, LG TVs, ThinQ, Apple TV/HomePods, VeSync, Emporia, Withings, non-integratables, sensor wave 1, automations pack, ops glue) + fut-01..06 (irrigation, plug-in solar, weather station, Meshtastic, sump, grow tent) in run 7. ha-01 stale IP fixed (.13→.50).
+- **Verification**: new `checks.d/ha.yaml` (3 checks, HA_TOKEN-authed) deployed; sweep **60/60 pass, 0 crit** after committing /opt/stacks drift (AMP vhost + homepage tile — another session's work, committed+pushed+mirrored to repo).
+- **Findings**: (1) Trusted→IoT is REJECTED for mini while HA (10.50) gets through — narrower than plan §1 assumes; reconcile in UniFi (ha-19). (2) Concurrent session did the TLS/Apollo work above mid-session — watch for races when two agents run at once.
+- **⚠ Cloudflare token hygiene**: the token value has now appeared in TWO chat transcripts (user paste + this session's masking slip during a vault inspection). Rotation recommended: Cloudflare dash → API Tokens → Roll, update vault + Caddy env on mini, restart caddy, verify a cert renewal.
+
 ### TLS cutover + Apollo (2026-07-08 late)
 
 - **REAL TLS LIVE**: NS delegated to Cloudflare (courtney/ryan.ns.cloudflare.com), zone active, email verified safe (MX/SPF/verification intact + Cloudflare added Proton DKIM ×3 + DMARC the old zone lacked). Flipped Caddy `local_tls` snippet from `tls internal` → Cloudflare DNS-01; **42 vhosts obtained Lets Encrypt certs** (valid→Oct 6, auto-renew). Unblocks ntfy iOS push, Kobo sync, Bitwarden repoint. Token in vault cloudflare.api_token (came via chat — user may rotate).
