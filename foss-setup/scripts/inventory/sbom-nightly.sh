@@ -121,9 +121,14 @@ grype_gate() {
 }
 
 # --- 1. Host filesystem SBOM -----------------------------------------------------
+# SCAN_EXCLUDES (env, space-separated globs relative to SCAN_ROOT) keeps data
+# volumes out of the walk — without it the NAS scans ~42TB of media nightly and
+# a single syft run outlives the day (observed 14h+, 2026-07-07).
 host_bom="${WORKDIR}/host-${HOSTNAME_SHORT}.cdx.json"
 log "Generating host SBOM for ${SCAN_ROOT} -> ${host_bom}"
-syft "dir:${SCAN_ROOT}" -o cyclonedx-json > "${host_bom}"
+exclude_args=()
+for pat in ${SCAN_EXCLUDES:-}; do exclude_args+=(--exclude "${pat}"); done
+syft "dir:${SCAN_ROOT}" "${exclude_args[@]}" -o cyclonedx-json > "${host_bom}"
 grype_gate "${host_bom}" "host:${HOSTNAME_SHORT}"
 upload_bom "host:${HOSTNAME_SHORT}" "${host_bom}" "$(date +%Y-%m-%d)"
 
