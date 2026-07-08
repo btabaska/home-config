@@ -1,17 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
 <title>Overnight Report — July 8, 2026</title>
 <meta name="description" content="Full service-by-service audit, game-hosting spec, WoL/YouTube/alerting fixes, and an ethos-aligned stack plan tuned to your devices.">
 <style>
-  :root{
-    --bg:#0F1311; --panel:#161C19; --panel2:#1C2420; --ink:#E8EEE9; --dim:#9DB0A6;
-    --line:#28322D; --accent:#4FD1A5; --accent2:#7CC7FF;
-    --crit:#FF6B5E; --warn:#F5C451; --ok:#5BD6A0; --info:#7CC7FF;
-    --crit-bg:#2A1614; --warn-bg:#292213; --ok-bg:#12271E; --info-bg:#132430;
+  :root{color-scheme:light;
+    --bg:#FAFAF6; --panel:#FFFFFF; --panel2:#F1F4EF; --ink:#1C2420; --dim:#5B6B62;
+    --line:#DCE3DC; --accent:#0E7D5B; --accent2:#0B6BA8;
+    --crit:#B3261E; --warn:#8A6D00; --ok:#0E7D5B; --info:#0B6BA8;
+    --crit-bg:#FCEEEC; --warn-bg:#FAF3DC; --ok-bg:#E7F4EE; --info-bg:#E9F2FA;
     --serif:"Iowan Old Style",Charter,Georgia,serif;
     --sans:"Avenir Next","Segoe UI",system-ui,sans-serif;
     --mono:"SF Mono",Menlo,Consolas,monospace;
   }
   html{background:var(--bg);}
-  body{font-family:var(--serif);color:var(--ink);font-size:16px;line-height:1.6;margin:0;}
+  body{font-family:var(--serif);color:#1C2420;background:#FAFAF6;font-size:16px;line-height:1.6;margin:0;}
   .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 120px;}
   header.top{border-bottom:1px solid var(--line);padding-bottom:24px;margin-bottom:8px;}
   .eyebrow{font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);}
@@ -24,7 +30,7 @@
   p{max-width:74ch;margin:10px 0;} p.sub{color:var(--dim);font-family:var(--sans);font-size:13.5px;margin:2px 0 16px;}
   a{color:var(--accent2);text-decoration:none;border-bottom:1px solid transparent;}
   a:hover,a:focus{border-bottom-color:var(--accent2);outline:none;}
-  code{font-family:var(--mono);font-size:.85em;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:#B8E6D3;}
+  code{font-family:var(--mono);font-size:.85em;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:#0A5C44;}
   nav.toc{font-family:var(--sans);font-size:13px;display:flex;flex-wrap:wrap;gap:6px 16px;padding:16px 0 2px;color:var(--dim);}
   nav.toc a{color:var(--dim);} nav.toc a:hover{color:var(--accent);border-color:transparent;}
   .chip{display:inline-block;font-family:var(--sans);font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:3px;padding:2px 7px;vertical-align:1px;}
@@ -47,15 +53,17 @@
   ol.opts{padding-left:20px;margin:8px 0;} ol.opts li{margin:8px 0;max-width:72ch;}
   .rec{font-family:var(--sans);font-size:13.5px;color:var(--accent);margin:8px 0 4px;} .rec b{color:var(--accent);}
   .q{font-family:var(--sans);font-weight:650;font-size:16px;color:var(--accent2);margin:22px 0 4px;}
-  .banner{background:linear-gradient(180deg,var(--crit-bg),var(--panel));border:1px solid #3a221f;border-radius:10px;padding:18px 22px;margin:22px 0;}
+  .banner{background:linear-gradient(180deg,var(--crit-bg),var(--panel));border:1px solid #E3B8B3;border-radius:10px;padding:18px 22px;margin:22px 0;}
   .banner h3{margin-top:8px;color:var(--crit);}
-  .flow{font-family:var(--mono);font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;white-space:pre;color:#B8E6D3;margin:12px 0;}
+  .flow{font-family:var(--mono);font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;white-space:pre;color:#0A5C44;margin:12px 0;}
   .footer{margin-top:64px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-family:var(--sans);font-size:12.5px;}
   .pill-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;}
   .pill{font-family:var(--sans);font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 12px;color:var(--dim);}
   .pill b{color:var(--ok);}
   hr{border:none;border-top:1px solid var(--line);margin:40px 0;}
 </style>
+</head>
+<body>
 <div class="wrap">
 <header class="top">
   <div class="eyebrow">Going Analogue · Overnight autonomous run</div>
@@ -241,3 +249,5 @@ AUDIO -> music (recommended start):
 
 <div class="footer">Generated from 9 parallel read-only research agents + live fleet telemetry, overnight 2026-07-07 → 07-08. No hosts or services were modified during this research run (the two security tasks noted in §status were the earlier pre-approved track). Every recommendation is source-cited in the underlying research notes. — Claude</div>
 </div>
+</body>
+</html>
