@@ -1,5 +1,11 @@
 # Rollout handoff state
 
+### Apollo resolutions + AMP Minecraft (2026-07-08 evening)
+
+- **Apollo per-client resolution**: dd_configuration_option=ensure_active, dd_resolution_option=automatic, dd_refresh_rate_option=automatic, dd_config_revert_on_disconnect=enabled (rig ~/.config/sunshine/sunshine.conf). Follows each Moonlight client's requested res/fps, reverts after. User sets Deck=1280x800@90, TV=4K@30 client-side. Caveat: 1280x800@90 not in dummy EDID → may negotiate to 60 until the 4K120 dummy arrives.
+- **Dummy plug**: HDMI-A-1, supports up to 3840x2160@30 (+4096x2160@24). Single-display policy service live (see below).
+- **AMP Minecraft**: could NOT create the instance autonomously — this minimal AMP container breaks two ways: (1) API CreateInstance needs the deployment-defaults licence key which is only settable via the AMP UI (node not in settings spec); (2) ampinstmgr CLI CreateInstance hits BusyBox `su -f` incompatibility ("su: unrecognized option: f"). Both mean the FIRST instance must be born via the AMP web UI. Prepared everything else: firewall 25565/tcp + 19132/udp open (LAN+tailnet), instance admin pw at rig:/opt/stacks/amp/.mc-admin-password, runbook `configs/gaming/minecraft-crossplay-finish.md`. USER STEPS: set deployment licence in UI → create Minecraft Java instance (Paper) → install Geyser+Floodgate from plugin browser → then I verify + configure crossplay + Switch 2 (BedrockConnect DNS for the console). AMP panel healthy, no partial instance left.
+
 ### Run 5 kickoff — smart home context + plan (2026-07-08, day session)
 
 - **Full house/device context captured** → `docs/research/11-ha-home-context.md` (71 Culver Rd profile, canonical rooms↔HA-areas table, 18-device integration map, IoT firewall policy, ~$550 Zigbee shopping list, 12 pitched opportunities, fut-01..06 future projects). Read it before touching Run 5.
