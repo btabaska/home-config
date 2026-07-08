@@ -1,0 +1,4 @@
+# *arr vs TRaSH audit (agent complete) — GOOD NEWS
+VERDICT: TRaSH already FULLY implemented on Sonarr (WEB-1080p, 37 CFs, all 171 series) and Radarr (HD Bluray+WEB, 40 CFs, all 316 movies) via recyclarr 8.4.0 — runs as one-shot cron Sundays 03:00 on mini (that's why "no container running"); last sync clean. Naming = TRaSH plex-tmdb everywhere. Quality definitions synced.
+Remaining hygiene (LOW): delete 6 unused factory profiles in sonarr/radarr (accidental-pick risk grabs LQ/x265); Lidarr: move 2 artists from "Any" to FLAC Preferred + delete junk metadata profiles ("y","Test"); recyclarr cron log → persistent path; FlareSolverr proxy in Prowlarr tagged to nothing (fine — both indexers private; tag when adding CF-protected indexer).
+Prowlarr healthy: IPTorrents + MyAnonamouse, 0 failures, fullSync to all 4 apps, MAM correctly scoped to Lidarr/Readarr. Remote path mappings identical across all apps (seedbox pull consistent).
