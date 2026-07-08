@@ -319,6 +319,13 @@ services:
     url: https://ntfy.tabaska.us
     on_demand: false
     notes: Push notifications. Container port 80.
+  - name: vaultwarden
+    category: Infrastructure & Ops
+    host: mini
+    port: null
+    url: https://vault.tabaska.us
+    on_demand: false
+    notes: Passwords (Bitwarden-compatible server). Edge network only — no host port; Caddy proxies vaultwarden:80.
   - name: diun
     category: Infrastructure & Ops
     host: mini

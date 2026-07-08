@@ -87,6 +87,7 @@ nav:
           - homepage: services/homepage.md
           - ntfy: services/ntfy.md
           - uptime-kuma: services/uptime-kuma.md
+          - vaultwarden: services/vaultwarden.md
       - Networking & Access:
           - adguard: services/adguard.md
           - adguard-nas: services/adguard-nas.md
@@ -98,6 +99,8 @@ nav:
           - miniflux: services/miniflux.md
           - navidrome: services/navidrome.md
           - wallabag: services/wallabag.md
+      - Uncategorized:
+          - metube: services/metube.md
       # END GENERATED SERVICES NAV
   - Runbooks:
       - DNS outage: runbooks/dns-outage.md

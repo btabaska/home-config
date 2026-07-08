@@ -1,6 +1,6 @@
 # Services
 
-32 compose stacks, generated from the repo (`configs/docker-stack/` and `configs/nas/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+34 compose stacks, generated from the repo (`configs/docker-stack/` and `configs/nas/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 
@@ -44,6 +44,7 @@
 | [homepage](homepage.md) | mini | https://home.tabaska.us |
 | [ntfy](ntfy.md) | mini | https://ntfy.tabaska.us |
 | [uptime-kuma](uptime-kuma.md) | mini | https://uptime.tabaska.us |
+| [vaultwarden](vaultwarden.md) | mini | https://vault.tabaska.us |
 
 ## Networking & Access
 
@@ -63,6 +64,12 @@
 | [miniflux](miniflux.md) | mini | https://rss.tabaska.us |
 | [navidrome](navidrome.md) | mini | https://music.tabaska.us |
 | [wallabag](wallabag.md) | mini | https://wallabag.tabaska.us |
+
+## Uncategorized
+
+| Stack | Host | URL |
+|---|---|---|
+| [metube](metube.md) | mini | https://metube.tabaska.us |
 
 Not compose-managed (so not listed above): **Plex** (native NAS package), **slskd + Deluge** (seedbox, provider-managed/native — see [seedbox](../hosts/seedbox.md)), **Forgejo** (runs from `/opt/stacks` on the mini).
 

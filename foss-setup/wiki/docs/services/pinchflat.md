@@ -13,7 +13,7 @@ Pinchflat — "Sonarr for YouTube": automated, self-hosted YouTube archiving
 
 | Service | Image (pinned) | Ports |
 |---|---|---|
-| `pinchflat` | `ghcr.io/kieraneglin/pinchflat:v2025.9.26` | `8945:8945` |
+| `pinchflat` | `ghcr.io/kieraneglin/pinchflat:v2025.6.6` | `8945:8945` |
 
 ## Volumes
 

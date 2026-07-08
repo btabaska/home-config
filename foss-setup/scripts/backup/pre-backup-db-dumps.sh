@@ -20,6 +20,11 @@
 #   forgejo_db      postgres  -U forgejo      db forgejo   (repos are on-disk
 #                   under /opt/stacks/forgejo/data/forgejo and backed up as files)
 #
+# vaultwarden is NOT dumped here: its image ships no sqlite3 CLI, so a
+# `.backup` via docker exec isn't trivial. Restic snapshots the live
+# /opt/stacks/vaultwarden/data/db.sqlite3 instead (small, WAL-journaled) —
+# acceptable for v1, FLAGGED: add a proper sqlite dump if the vault grows.
+#
 # Any failed or empty dump exits non-zero, which ABORTS the restic backup.
 
 set -euo pipefail

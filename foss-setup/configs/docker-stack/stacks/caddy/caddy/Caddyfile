@@ -155,6 +155,13 @@ git.{$DOMAIN} {
 	reverse_proxy forgejo:3000
 }
 
+# Password manager (Vaultwarden — Bitwarden-compatible). Needs websockets for
+# live sync; modern Caddy proxies them automatically, no extra config needed.
+vault.{$DOMAIN} {
+	import local_tls
+	reverse_proxy vaultwarden:80
+}
+
 # Rig AI stack (CachyOS — on-demand). HTTPS terminates on Mac mini Caddy, not the rig.
 # Set RIG_IP in .env (default homelab: 192.168.10.12).
 

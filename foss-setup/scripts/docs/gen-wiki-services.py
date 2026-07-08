@@ -65,6 +65,7 @@ URL_OVERRIDES = {
     "calibre-web-automated": "http://192.168.10.4:8083 (deliberately LAN/VPN-only)",
     "libreseerr": "https://libreseerr.tabaska.us (LAN: http://192.168.10.2:8789)",
     "media-automation": None,  # multi-app stack; per-service ports below
+    "vaultwarden": "https://vault.tabaska.us",
 }
 
 CATEGORIES = {
@@ -79,7 +80,7 @@ CATEGORIES = {
     "Documents & Life": ["paperless-ngx", "mealie"],
     "Monitoring & Ops": [
         "homepage", "uptime-kuma", "beszel", "ntfy", "diun", "healthchecks",
-        "dockge", "dependency-track",
+        "dockge", "dependency-track", "vaultwarden",
     ],
     "AI & Cameras": ["litellm", "frigate"],
 }

@@ -66,7 +66,21 @@ ls_ok() {
   fi
   local count
   count=$(echo "$out" | grep -c .) || count=0
-  echo "$(ts) INFO: watchdog ls ok — $count top-level entries in $MOUNTPOINT" >>"$LOG"
+
+  # READ probe, not just a listing: on 2026-07-05..07 the SFTP session served
+  # corrupted reads (rardecode checksum failures broke unpackerr for 2 days)
+  # while `ls` kept succeeding — a listing-only check can't see a bad session.
+  # Reading real bytes through the VFS exercises the data path.
+  local probe
+  probe=$(find "$MOUNTPOINT" -type f -size +1M 2>/dev/null | head -1) || true
+  if [[ -n "$probe" ]]; then
+    if ! timeout "${READ_TIMEOUT:-30}" head -c 262144 "$probe" >/dev/null 2>&1; then
+      echo "$(ts) WARN: watchdog read-probe FAILED on $probe — listing ok but data path is bad" >>"$LOG"
+      return 1
+    fi
+  fi
+
+  echo "$(ts) INFO: watchdog ls+read ok — $count top-level entries in $MOUNTPOINT" >>"$LOG"
   # Write health marker with timestamp and entry count.
   printf '%s entries=%d\n' "$(ts)" "$count" > "$HEALTH_FILE"
   return 0

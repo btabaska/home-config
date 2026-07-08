@@ -20,6 +20,11 @@
 /opt/stacks/paperless-ngx/redis
 /opt/stacks/wallabag/redis
 
+# NOTE: /opt/stacks/vaultwarden/data is intentionally NOT excluded — small
+# SQLite DB + attachments, irreplaceable (passwords). Restic snapshots the
+# live db.sqlite3 (no sqlite3 CLI in the container for a .backup dump);
+# acceptable for v1 — flagged: revisit with a proper sqlite dump if it grows.
+
 # Cache dirs anywhere in the set
 **/cache
 **/Cache

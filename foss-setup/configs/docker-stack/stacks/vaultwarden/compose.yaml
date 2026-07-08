@@ -1,0 +1,42 @@
+# Vaultwarden — self-hosted Bitwarden-compatible password manager server.
+# Docs:
+#   - Wiki / config reference: https://github.com/dani-garcia/vaultwarden/wiki
+#   - Releases:                https://github.com/dani-garcia/vaultwarden/releases
+#   - Image tags:              https://hub.docker.com/r/vaultwarden/server/tags
+#
+# PINNED to 1.36.0 (latest stable, 2026-05-03; ships web vault v2026.4.1).
+# To upgrade: bump the tag, read release notes, `docker compose pull && up -d`.
+#
+# No published ports — Caddy fronts it at https://vault.<domain> over the shared
+# `edge` network (reverse_proxy vaultwarden:80; websockets handled automatically).
+# Data is a small SQLite DB + attachments under ./data (gitignored). It is
+# intentionally INCLUDED in restic backups — see /etc/restic/excludes.txt note.
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:1.36.0
+    container_name: vaultwarden
+    restart: unless-stopped
+    environment:
+      - TZ=${TZ:-America/New_York}
+      # Public URL — must match how clients reach it (links, WebAuthn, invites).
+      - DOMAIN=${DOMAIN}
+      # Open signups only until the operator registers, then flip to false (.env).
+      - SIGNUPS_ALLOWED=${SIGNUPS_ALLOWED:-false}
+      # Admin panel at /admin. Generate with: openssl rand -base64 48
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
+    volumes:
+      - ./data:/data
+    networks:
+      - edge
+    healthcheck:
+      # /healthcheck.sh ships in the official image (curls /alive).
+      test: ["CMD", "/healthcheck.sh"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  edge:
+    external: true

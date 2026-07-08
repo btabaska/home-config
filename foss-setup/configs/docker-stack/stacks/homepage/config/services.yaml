@@ -241,6 +241,11 @@
         href: https://ntfy.tabaska.us
         description: Push notifications
         siteMonitor: http://ntfy:80
+    - Vaultwarden:
+        icon: vaultwarden.png
+        href: https://vault.tabaska.us
+        description: Passwords (Bitwarden server)
+        siteMonitor: http://vaultwarden:80
 
 - Wiki & Docs:
     - Wiki:
