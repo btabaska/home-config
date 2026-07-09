@@ -1,5 +1,20 @@
 # Rollout handoff state
 
+### RCA: rig freeze (2026-07-08 20:02 EDT) = NVMe PCIe link instability on the OS drive (2026-07-09)
+
+- **Event**: rig froze **2026-07-08 20:02:39 EDT**, stayed dead ~13h until user hard-rebooted 07-09 08:59. Boot -1 log ends abruptly mid-operation — **no shutdown sequence, no kernel panic, no pstore dump**. Boot -2 ended cleanly (deliberate reboot 08:46), so the freeze is a single event, but the underlying fault is chronic.
+- **PRIMARY CAUSE (strongly supported)**: NVMe **nvme1 = WD Blue SN570 2TB** at PCI **0000:74:00.0** throws continuous **PCIe correctable AER errors** (`RxErr`, Physical Layer, Receiver ID): **764 (boot -2), 724 (boot -1), 8-16 within 2 min of the new boot** — ~2/min at idle, happening right now. ALL AER is on this one device (362 "PCIe Bus Error" headers in boot -1, 0 on other slots).
+- **It's a LINK/signal problem, not a dying drive**: SMART clean — Critical Warning 0x00, **0 Media/Data Integrity Errors, 0 error-log entries**, 1% used, 34°C, 5647 POH. Link trains full Gen3 x4. So NAND/controller are fine; the PCIe **physical layer** is marginal.
+- **Why it froze the whole box**: per `/etc/fstab`, the root btrfs `UUID=e4b84b06` (subvols `/`, `/home`, `/root`, `/srv`, `/var/cache`, `/var/tmp`, `/var/log`) **AND `/boot`** all live on this same SN570. A transient link wedge blocks ALL OS I/O → journald can't write (hence abrupt stop, no panic) → hard hang. Kernel cmdline has **`nowatchdog`** so nothing auto-recovers → frozen till manual power-cycle. **Unsafe Shutdowns = 523** (high) ⇒ this freeze/hard-reboot cycle has likely recurred.
+- **Aggravator = power management**: **PCIe ASPM L1 Enabled** on the link + **NVMe APST enabled** (`nvme_core.default_ps_max_latency_us=100000`). Power-state transitions on a marginal link are the classic trigger for RxErr storms + occasional drops.
+- **Ruled out**: thermal (28°C, no throttle/critical-temp), OOM (none), MCE/hardware-error (none), GPU (no Xid/NVRM errors — NVIDIA 610.43.02 clean).
+- **RECOMMENDED FIXES (NOT applied — need user OK + 4-7AM window; bootloader = limine)**:
+  1. Kernel params via `/etc/default/limine` `KERNEL_CMDLINE[default]`: add **`nvme_core.default_ps_max_latency_us=0`** (kill NVMe APST) + **`pcie_aspm=off`** (or gentler `pcie_aspm.policy=performance`). Regenerate limine + reboot. Most common cure for RxErr AER storms + associated hangs.
+  2. Physical (user): power down, **reseat the SN570 M.2** (clean contacts); try a CPU-direct M.2 slot if free.
+  3. Resilience: consider dropping `nowatchdog` / enabling a watchdog so a future hang auto-reboots (this box is meant to be 24/7 — 13h dead is the cost of no watchdog).
+  4. If AER persists after 1+2: slot/controller marginal → migrate OS to the healthier Corsair MP600 PRO (nvme0) or replace the SN570. It hosts the whole OS, so this is the durable fix.
+- **Monitoring gap**: nothing alerted on the AER storm. TODO: add a verification check = count `PCIe Bus Error` in `dmesg`/journal, warn if > threshold.
+
 ### Follow-ups after queue fix — RIG DOWN, Radarr/Lidarr fixed, Hacks E01 desync (2026-07-09)
 
 - **RIG IS FULLY OFFLINE (needs physical power-on)**: no LAN ping (192.168.10.12), SSH "host down", Tailscale "offline, last seen ~12h ago". Supposed to be 24/7 (suspend masked) so this is a crash or power event, not a sleep. **WoL recovery FAILED** — fired `wake-rig.sh` from mini (MAC 50:eb:f6:b5:82:c6), no response after 90s (WoL from full S5/crash isn't waking it). Impact: AI stack (ollama/litellm/open-webui), Apollo, AMP panel all down. **Action needed: user power-cycles rig physically**, then recheck. (User said they separately fixed the *mini* reboot in another window — mini not investigated here.)
