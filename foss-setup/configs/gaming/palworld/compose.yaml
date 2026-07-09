@@ -1,0 +1,49 @@
+# Palworld dedicated server — Going Analogue homelab.
+# NOTE: deliberately NOT on AMP — the AMP container is minimal Alpine (musl) and
+# SteamCMD/Palworld binaries need glibc. This is the standard glibc container,
+# which manages the steamcmd install/updates itself.
+# Public access: via the shared playit.gg agent (/opt/stacks/playit) — create a
+# UDP 8211 tunnel -> 127.0.0.1:8211 in the playit dashboard. Do NOT open the router.
+# Secrets: .env only (SERVER_PASSWORD/ADMIN_PASSWORD); vaulted as
+#   palworld.server_password / palworld.admin_password. .env is gitignored.
+services:
+  palworld:
+    image: ghcr.io/thijsvanloef/palworld-server-docker:latest
+    container_name: palworld
+    restart: unless-stopped
+    stop_grace_period: 30s   # allow a clean save on shutdown
+    ports:
+      - "8211:8211/udp"                 # game port (public via playit)
+      - "8212:8212/tcp"                 # REST API (LAN — gamedig/monitoring, admin auth)
+      - "127.0.0.1:25575:25575/tcp"     # RCON — localhost only (admin/backup tooling)
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+      - PORT=8211
+      - PLAYERS=16
+      - MULTITHREAD_ENABLED=true
+      - COMMUNITY=false                 # not listed on the public community browser
+      - SERVER_NAME=${SERVER_NAME}
+      - SERVER_DESCRIPTION=${SERVER_DESCRIPTION}
+      - SERVER_PASSWORD=${SERVER_PASSWORD}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - RCON_ENABLED=true
+      - RCON_PORT=25575
+      - REST_API_ENABLED=true
+      - REST_API_PORT=8212
+      - BACKUP_ENABLED=true             # image's own world-save cron
+      - BACKUP_CRON_EXPRESSION=0 * * * * # hourly local snapshot
+      - DELETE_OLD_BACKUPS=true
+      - OLD_BACKUP_DAYS=30
+      - AUTO_UPDATE_ENABLED=true
+      - AUTO_UPDATE_CRON_EXPRESSION=0 4 * * *   # 4AM ET maintenance window
+      - AUTO_REBOOT_ENABLED=false       # don't reboot out from under players
+    volumes:
+      - ./game:/palworld
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -u admin:$$ADMIN_PASSWORD http://127.0.0.1:8212/v1/api/info >/dev/null || exit 1"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 900s   # first boot downloads the server via steamcmd

@@ -22,6 +22,10 @@ INTERVAL=60
 RETRY=3
 RETRY_INTERVAL=60
 NTFY_TOKEN="${NTFY_TOKEN:?set NTFY_TOKEN (vault: ntfy.kuma_token)}"
+# Optional: Palworld REST-API monitor (vault: palworld.admin_password). If unset,
+# the Palworld monitor is skipped. gamedig-in-Kuma can't send the REST Basic auth,
+# so this is a plain HTTP monitor against /v1/api/info with basic auth instead.
+PALWORLD_ADMIN_PW="${PALWORLD_ADMIN_PW:-}"
 NTFY_URL="${NTFY_URL:-http://ntfy:80}"     # kuma + ntfy share the edge network
 NTFY_TOPIC="${NTFY_TOPIC:-homelab-alerts}" # phone is subscribed to this topic
 NOTIF_NAME="ntfy → ${NTFY_TOPIC}"
@@ -47,6 +51,14 @@ add_http() { # name url accept [ignore_tls]
   sql "INSERT INTO monitor (name, active, user_id, \`interval\`, url, type, maxretries, retry_interval, accepted_statuscodes_json, method, ignore_tls)
        VALUES ('${name//\'/\\\'}', 1, ${USER_ID}, ${INTERVAL}, '${url}', 'http', ${RETRY}, ${RETRY_INTERVAL}, '${accept}', 'GET', ${itls});"
   echo "added $name → $url"
+}
+
+add_http_basic() { # name url accept user pass
+  local name="$1" url="$2" accept="$3" user="$4" pass="$5"
+  exists "$name" && { echo "skip  $name"; return 0; }
+  sql "INSERT INTO monitor (name, active, user_id, \`interval\`, url, type, maxretries, retry_interval, accepted_statuscodes_json, method, auth_method, basic_auth_user, basic_auth_pass)
+       VALUES ('${name//\'/\\\'}', 1, ${USER_ID}, ${INTERVAL}, '${url}', 'http', ${RETRY}, ${RETRY_INTERVAL}, '${accept}', 'GET', 'basic', '${user//\'/\\\'}', '${pass//\'/\\\'}');"
+  echo "added $name → $url (basic auth)"
 }
 
 add_ping() { # name host
@@ -121,6 +133,13 @@ main() {
 
   # ---- game servers ----
   add_port "Rig Minecraft Java" "${RIG}" 25565   # Bedrock/Geyser is UDP 19132 (not probeable here)
+  # Palworld: game traffic is UDP 8211 (unprobeable connectionless); liveness via
+  # its REST API on 8212 (admin basic auth). Only added if PALWORLD_ADMIN_PW is set.
+  if [[ -n "$PALWORLD_ADMIN_PW" ]]; then
+    add_http_basic "Rig Palworld" "http://${RIG}:8212/v1/api/info" "$A_OK" "admin" "$PALWORLD_ADMIN_PW"
+  else
+    echo "skip  Rig Palworld (PALWORLD_ADMIN_PW unset)"
+  fi
 
   # ---- host reachability ----
   add_ping "Ping NAS"     "${NAS}"
