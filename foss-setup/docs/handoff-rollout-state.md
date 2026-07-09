@@ -1,5 +1,15 @@
 # Rollout handoff state
 
+### playit PREMIUM cutover — all 3 tunnels re-verified on the dedicated IP (2026-07-09 eve)
+
+- **User upgraded to playit.plus and RECREATED the tunnels** (old free addresses `analysis-conditioning.gl.joinmc.link:14450` / `stop-spain.gl.at.ply.gg:58804` are DEAD). New, all on dedicated IP **69.9.181.17**, allowance now 16 TCP + 16 UDP, account email now **verified**:
+  - **Java** `filter-unthawed.nyc.mcjoin.link` (premium hostname routing, default port 25565 — verified with a real MC status ping: Paper 26.1.2)
+  - **Bedrock** `fun-diamonds.nyc.at.playit.plus:1111` (verified RakNet pong)
+  - **Palworld** `filter-unthawed.nyc.at.playit.plus:1105` (tunnel loaded + local REST healthy "Tabaska Palworld" v0.7.3; UDP unprobeable — needs one real client join as final proof)
+- **Incident during cutover**: agent flapped `tunnel_count` 2↔3 and the Bedrock UDP tunnel timed out from outside even when "loaded". **Fix = restart the playit container after all tunnels show assigned** — the UDP claim only establishes on a fresh control connect. Took 2 restarts (first one raced the flapping). Verify tunnels with real protocol pings, never the dashboard alone.
+- **BedrockConnect remote entry updated** (mini `/opt/stacks/bedrock-connect/config/custom_servers.json` → new Bedrock address, container restarted, repo mirror synced). Runbook `configs/gaming/minecraft-crossplay-finish.md` rewritten with the new addresses + the restart gotcha.
+- Still open: `mc.tabaska.us` external domain (user has premium now — dashboard Domains → add domain → paste me the requested DNS record and I do Cloudflare + AdGuard LAN split-horizon) · Palworld/Bedrock could move to default ports (19132/8211) on the dedicated IP if the dashboard allows port choice — nice-to-have.
+
 ### Full independent fleet audit — read-only sweep (2026-07-09, Fable 5)
 
 Report: `docs/research/12-full-audit-2026-07.md`. Swept mini/nas/rig/seedbox + the public

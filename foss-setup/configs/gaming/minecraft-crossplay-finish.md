@@ -8,16 +8,23 @@ both verified from the mini. Kuma monitor "Rig Minecraft Java" watches 25565.
 LAN:
 - **Java**: `192.168.10.12:25565` · **Bedrock**: `192.168.10.12` port `19132`
 
-Public (playit.gg tunnels via agent on the rig, /opt/stacks/playit — home IP
-never exposed, no Dream Wall port-forwards; both verified 2026-07-09):
-- **Java**: `analysis-conditioning.gl.joinmc.link:14450` (joinmc.link has SRV —
-  most clients can omit the port)
-- **Bedrock**: `stop-spain.gl.at.ply.gg` port `58804`
-- Agent secret: vault `playit_gg.secret_key`. Account allows 4 TCP + 4 UDP
-  tunnels — add Palworld etc. as more tunnels on the SAME agent (dashboard;
-  the agent key is read-only via API, creation is dashboard/account-auth only).
-- **Switch / consoles**: still need BedrockConnect (can't type an address) —
-  decision open (self-host on mini). See todo-guide.
+Public (playit.gg **premium** tunnels, recreated 2026-07-09 eve on the dedicated
+IP 69.9.181.17; agent on the rig /opt/stacks/playit; all re-verified):
+- **Java**: `filter-unthawed.nyc.mcjoin.link` (premium hostname routing —
+  default port 25565, friends type just the hostname)
+- **Bedrock**: `fun-diamonds.nyc.at.playit.plus` port `1111` (= 69.9.181.17:1111)
+- **Palworld**: `filter-unthawed.nyc.at.playit.plus` port `1105` (= 69.9.181.17:1105)
+- Agent secret: vault `playit_gg.secret_key`. Premium allows 16 TCP + 16 UDP
+  tunnels on the same agent (agent API key is read-only; tunnel creation is
+  dashboard-only). OLD free addresses (analysis-conditioning.gl.joinmc.link,
+  stop-spain.gl.at.ply.gg) are DEAD — tunnels were recreated for paid routing.
+- **Gotcha (2026-07-09)**: right after recreating tunnels the agent flapped
+  tunnel_count 2↔3 and the Bedrock UDP tunnel didn't route (timeouts) even
+  once "loaded". Fix: restart the playit container AFTER the dashboard shows
+  all tunnels assigned — the UDP claim only establishes cleanly on a fresh
+  connect. Verify with a RakNet ping, not the dashboard status.
+- **Switch / consoles**: BedrockConnect on the mini (LIVE — see todo Task 09);
+  its "Remote/playit" list entry points at the new Bedrock address.
 
 **Sleep mode is OFF** (`Limits.SleepMode=False`): AMP's empty-server sleep
 (5 min) stopped the app and its wake listener only speaks Java protocol on
