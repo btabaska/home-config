@@ -198,11 +198,16 @@
 </div>
 
 <div class="task">
-  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 10</div><h2 class="ttitle">Friendly DNS name for the Minecraft server?</h2></div></div>
-  <div class="chips"><span class="chip eff">decision</span><span class="chip unb">mc.tabaska.us</span></div>
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 10</div><h2 class="ttitle">Friendly game domains — DONE ✅ (2026-07-09)</h2></div></div>
+  <div class="chips"><span class="chip eff">done</span><span class="chip unb">share these</span></div>
   <div class="body">
-    <p class="why">Instead of handing friends <code>192.168.10.12:25565</code>, I can add <code>mc.tabaska.us</code> in Cloudflare pointing at the rig (internal split-horizon via AdGuard, or public if you ever expose it).</p>
-    <div class="ping">Ping Claude with “add mc.tabaska.us”.</div>
+    <p class="why"><b>Live via playit.plus external domains</b> (NS-delegated to playit-dns in Cloudflare; home IP never in DNS). All verified end-to-end, inside and outside the house:</p>
+    <ul class="plain">
+      <li><b>Minecraft Java</b>: <code>minecraft.tabaska.us</code> — no port. Remote friends route through playit (SRV); home players auto-connect straight to the rig at LAN speed (split-horizon).</li>
+      <li><b>Palworld</b>: <code>palworld.tabaska.us</code> port <code>1105</code> — same address works at home and away.</li>
+      <li><b>Bedrock</b> (phones/PC): <code>fun-diamonds.nyc.at.playit.plus</code> port <code>1111</code>; consoles at home use BedrockConnect (Task 09).</li>
+    </ul>
+    <div class="ping">Optional: a bedrock.tabaska.us domain for the Bedrock tunnel (still needs the port — Bedrock ignores SRV) — say the word.</div>
   </div>
 </div>
 

@@ -8,12 +8,22 @@ both verified from the mini. Kuma monitor "Rig Minecraft Java" watches 25565.
 LAN:
 - **Java**: `192.168.10.12:25565` · **Bedrock**: `192.168.10.12` port `19132`
 
-Public (playit.gg **premium** tunnels, recreated 2026-07-09 eve on the dedicated
-IP 69.9.181.17; agent on the rig /opt/stacks/playit; all re-verified):
-- **Java**: `filter-unthawed.nyc.mcjoin.link` (premium hostname routing —
-  default port 25565, friends type just the hostname)
-- **Bedrock**: `fun-diamonds.nyc.at.playit.plus` port `1111` (= 69.9.181.17:1111)
-- **Palworld**: `filter-unthawed.nyc.at.playit.plus` port `1105` (= 69.9.181.17:1105)
+Public (playit.gg **premium** tunnels on dedicated IP 69.9.181.17 + **external
+domains** NS-delegated to playit-dns; agent on the rig /opt/stacks/playit):
+- **Java**: **`minecraft.tabaska.us`** — no port. Public path: playit-dns serves
+  A=69.9.181.17 + SRV `_minecraft._tcp` → :1105 (verified with a real status
+  ping). LAN path: AdGuard exact rewrite → 192.168.10.12 direct + a filter rule
+  blocking that SRV name on both resolvers so home clients fall back to A:25565
+  (otherwise the public SRV's :1105 would point them at a dead rig port).
+  (`filter-unthawed.nyc.mcjoin.link` also still works.)
+- **Palworld**: **`palworld.tabaska.us:1105`** — LAN rewrite points at
+  69.9.181.17 (NOT the rig) so the same address+port works everywhere; LAN-direct
+  would need :8211 and a different address, not worth the confusion.
+- **Bedrock**: `fun-diamonds.nyc.at.playit.plus` port `1111` (= 69.9.181.17:1111;
+  no domain — Bedrock ignores SRV so a domain saves nothing but the hostname)
+- **Cloudflare**: 4 NS records (minecraft/palworld.tabaska.us → ns1/ns2.playit-dns.com).
+  playit-dns answers everything under those two names — manage them in the
+  playit dashboard, not Cloudflare.
 - Agent secret: vault `playit_gg.secret_key`. Premium allows 16 TCP + 16 UDP
   tunnels on the same agent (agent API key is read-only; tunnel creation is
   dashboard-only). OLD free addresses (analysis-conditioning.gl.joinmc.link,

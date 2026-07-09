@@ -1,5 +1,14 @@
 # Rollout handoff state
 
+### Game domains LIVE: minecraft/palworld.tabaska.us via playit-dns delegation (2026-07-09 eve²)
+
+- **NS delegation, not A/CNAME**: playit external domains work by delegating the subdomain to their nameservers. Added 4 NS records in Cloudflare via API (`minecraft.tabaska.us` + `palworld.tabaska.us` → ns1/ns2.playit-dns.com, TTL 300). playit-dns now serves both names (A=69.9.181.17; for minecraft also SRV `_minecraft._tcp` → :1105). **Records under those names are managed in the playit dashboard from now on, not Cloudflare.**
+- **Verified public**: `minecraft.tabaska.us` resolved exactly like a Java client (SRV → 69.9.181.17:1105) → real status ping → Paper 26.1.2. `palworld.tabaska.us` → 69.9.181.17 (game join still needs a live client test).
+- **LAN split-horizon (both AdGuards)**: exact rewrites `minecraft.tabaska.us → 192.168.10.12` (direct, port 25565 matches) and `palworld.tabaska.us → 69.9.181.17` (deliberately NOT the rig: friends' address carries :1105 which only exists on the playit edge; pointing LAN at the rig would break the port). PLUS filter rule `||_minecraft._tcp.minecraft.tabaska.us^` on both resolvers — without it, LAN Java clients would follow the PUBLIC SRV to rig:1105 (dead). Verified: SRV empty + A=rig via both resolvers; rig 25565 open.
+- **The user-facing addresses now**: Java `minecraft.tabaska.us` (portless, everywhere) · Palworld `palworld.tabaska.us:1105` (everywhere) · Bedrock `fun-diamonds.nyc.at.playit.plus:1111` (no domain — Bedrock ignores SRV; a bedrock.tabaska.us would still need the port, offered to user as optional).
+- **Pattern for future games**: create tunnel in playit dashboard → add `<game>.tabaska.us` external domain there → agent tells me the NS records are already in place if under an existing delegated name, else add 2 more NS records in Cloudflare → add LAN rewrite (rig-direct only if the public port matches the local port; otherwise point at 69.9.181.17).
+- Todo-guide TASK 10 → done. Runbook updated (connect section rewritten).
+
 ### playit PREMIUM cutover — all 3 tunnels re-verified on the dedicated IP (2026-07-09 eve)
 
 - **User upgraded to playit.plus and RECREATED the tunnels** (old free addresses `analysis-conditioning.gl.joinmc.link:14450` / `stop-spain.gl.at.ply.gg:58804` are DEAD). New, all on dedicated IP **69.9.181.17**, allowance now 16 TCP + 16 UDP, account email now **verified**:
