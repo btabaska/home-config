@@ -9,10 +9,12 @@ Already-deployed safety nets remain in place and back this up:
 `net-selfheal.timer` (recovers a dead link in ≤60s) and the `KeepConfiguration=dhcp`
 drop-in (moot once static, remove in step 5).
 
-## 0. Prerequisite (UniFi — user)
-UniFi Network → Client Devices → **mini** (`98:5a:eb:ca:b2:ef`) → Settings →
-**Fixed IP → 192.168.10.2**. This reserves .2 so DHCP never hands it to another
-device. (Or exclude .2 from the DHCP pool.)
+## 0. Prerequisite (UniFi) — ✅ DONE
+Confirmed 2026-07-09: UniFi already has a **Fixed IP reservation for
+`98:5a:eb:ca:b2:ef` → 192.168.10.2**, so .2 can be hard-coded static with no
+conflict risk. (Note: the reservation being present means the DHCP server *should*
+answer renewals with .2 — the fact it doesn't points to a UniFi RENEW-handling
+quirk or a networkd DHCP-client issue; going static sidesteps it either way.)
 
 ## 1-6. On mini (run with a TTY so `netplan try` can be confirmed)
 ```bash
