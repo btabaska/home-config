@@ -46,10 +46,15 @@ checks:
     runbook: wiki/runbooks/dns.md
     enabled: true
 
+  # 3 attempts: a single 3s UDP try false-failed the sweep twice on 2026-07-09
+  # (one dropped packet / slow upstream cache-miss = crit page) while manual
+  # 10/10 retests answered in 4ms. Retries page only on sustained failure.
   - id: dns-nas-external
     name: "Secondary resolver (NAS 192.168.10.4) resolves example.com"
     host: mini
-    cmd: dig +short +time=3 +tries=1 @192.168.10.4 example.com
+    cmd: >-
+      for i in 1 2 3; do
+      dig +short +time=3 +tries=1 @192.168.10.4 example.com && break; sleep 2; done
     expect: '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+'
     severity: crit
     task_id: dns-02
