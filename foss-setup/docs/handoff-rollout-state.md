@@ -6,6 +6,7 @@
 - **Palworld renamed** `SERVER_NAME=Robits Farm` (.env edit + container recreate; REST verified `servername: Robits Farm`, healthy).
 - **Held the line on COMMUNITY=false**: user tried to find the server in the in-game community browser — that requires registering with Pocketpair's public list, which advertises the **home WAN IP** (server self-detects; knows nothing of playit) and invites randoms. Join method = **direct connect** `palworld.tabaska.us:1105` + server password (vault `palworld.server_password`). If a future session is asked to enable community listing, surface the home-IP leak first.
 - User-facing address card now: Java `minecraft.tabaska.us` · Bedrock `bedrock.tabaska.us:1111` · Palworld `palworld.tabaska.us:1105` ("Robits Farm") · Switch = BedrockConnect at home.
+- **Palworld password DRIFT found + fixed**: user got "incorrect password" — the deployed `.env` SERVER_PASSWORD, the generated `PalWorldSettings.ini` value, and the vault `palworld.server_password` were THREE different values (md5-compared; the deploy session vaulted one string but shipped another — another docs-vs-reality instance for the audit pattern). User chose a simple game password; set in `.env` + recreate, verified live in PalWorldSettings.ini, vault synced to match. Lesson: after env-driven deploys, verify the *generated* config matches the vault, not just the compose input. (User's choice; it's a video-game password, in-transcript by user's own hand.)
 
 ### Game domains LIVE: minecraft/palworld.tabaska.us via playit-dns delegation (2026-07-09 eve²)
 
