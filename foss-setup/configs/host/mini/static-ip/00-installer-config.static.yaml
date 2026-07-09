@@ -1,0 +1,25 @@
+# STAGED — NOT YET APPLIED. Proposed static-IP replacement for mini's netplan.
+#
+# Replaces the bare `dhcp4: true` in /etc/netplan/00-installer-config.yaml that
+# caused the recurring 24h DHCP-lease-expiry off-network outages
+# (see foss-setup/docs/handoff-rollout-state.md, 2026-07-09 entry).
+#
+# Apply during the 4-7AM ET maintenance window using README-apply.md (netplan try,
+# auto-reverts). Pair with a UniFi DHCP reservation for MAC 98:5a:eb:ca:b2:ef -> .2.
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp3s0f0:
+      dhcp4: false
+      dhcp6: false
+      addresses:
+        - 192.168.10.2/24
+      routes:
+        - to: default
+          via: 192.168.10.1
+          metric: 100
+      nameservers:
+        # parity with the DHCP-provided link DNS (AdGuard on mini, then nas, then gw)
+        addresses: [192.168.10.2, 192.168.10.4, 192.168.10.1]
+      link-local: [ipv6]
