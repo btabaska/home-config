@@ -46,3 +46,24 @@ checks:
     task_id: game-10
     runbook: wiki/runbooks/rig.md
     enabled: true    # rig is 24/7 — failure here is an incident
+
+  # 2026-07-09 regression: rig UFW hardening (LAN+tailnet scoping) silently blocked
+  # docker containers -> host ollama (172.x hits INPUT chain, no rule matched), so
+  # ai.tabaska.us showed "no models" while every port probe above stayed green.
+  # This end-to-end completion exercises open-webui/litellm's actual path to ollama.
+  # Needs LITELLM_MASTER_KEY in /etc/verification/env (vault: litellm.master_key).
+  # NUM_PARALLEL=1: if a big model is mid-generation the request queues and can blow
+  # the 50s budget — one isolated failure = retry before treating it as an outage.
+  - id: rig-ai-e2e
+    name: "litellm end-to-end completion (containers reach host ollama)"
+    host: url
+    cmd: >-
+      curl -s -m 50 -H "Authorization: Bearer $LITELLM_MASTER_KEY"
+      -H "Content-Type: application/json"
+      -d '{"model":"utility","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}'
+      http://cachyos.tailb31641.ts.net:4000/v1/chat/completions
+    expect: '"finish_reason"'
+    severity: warn
+    task_id: game-10
+    runbook: wiki/runbooks/rig.md
+    enabled: true    # rig is 24/7 — failure here is an incident

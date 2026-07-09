@@ -1,5 +1,13 @@
 # Rollout handoff state
 
+### ai.tabaska.us "no models" — rig UFW blocked docker→host ollama; fixed + new e2e check (2026-07-09 late)
+
+- **RCA**: the 07-09 rig UFW hardening ("scoped to LAN+tailnet, dropped Anywhere rules") silently cut off docker containers → host-native Ollama. Containers (open-webui, litellm) reach `host.docker.internal:11434` from `172.19.0.x`; with INPUT default-deny and only `192.168.10.0/24` + `100.64.0.0/10` allows on 11434, that traffic dropped. Open WebUI's model list came up empty while **every external port probe stayed green** (sweep was 63/63 the whole time — the broken hop was container→host, which nothing tested).
+- **Fix (live + persistent)**: `ufw allow from 172.16.0.0/12 to any port 11434 proto tcp comment "docker containers -> host ollama"`. Verified: owui container fetches all 17 ollama models; litellm completion returns; ai.tabaska.us 200. Rule of thumb now in `wiki/docs/hosts/rig.md`: any host-native service that containers must reach needs its own `172.16.0.0/12` allow.
+- **New check `rig-ai-e2e`** (checks.d/rig.yaml, deployed to mini): real chat completion through litellm→ollama using `LITELLM_MASTER_KEY` added to mini `/etc/verification/env` (from vault `litellm.master_key`). Flake note: NUM_PARALLEL=1 means a busy GPU can queue past the 50s budget (saw one timeout while the user's 23GB model was generating) — retry before calling it an outage. url-subset sweep 7/7 after fix.
+- **Pre-existing noise, not fixed**: open-webui logs a 401 "missing bearer" on an enabled-but-unconfigured default OpenAI connection (`OPENAI_API_BASE_URL`/`OPENAI_API_KEY` env empty, nothing in DB config). Harmless — models come via the direct Ollama connection. Optional cleanup: set `ENABLE_OPENAI_API=false` (needs container recreate) or point it at litellm with the master key to expose the curated `chat/code/utility` aliases in the UI.
+- Also noticed while in there: `wiki/docs/hosts/rig.md` said "LiteLLM on the mini" — live reality is litellm runs on the rig (container, port 4000). Not corrected beyond the new UFW section; flag for the next docs pass.
+
 ### SESSION CLOSE — gaming stack complete; state roll-up + tonight's Palworld 1.0 (2026-07-09 night)
 
 - **Gaming stack is DONE and fully verified.** Final address card: Java `minecraft.tabaska.us` (portless) · Bedrock `bedrock.tabaska.us:1111` · Palworld `palworld.tabaska.us:1105` ("Robits Farm", simple password chosen by user, vault synced) · Switch at home = BedrockConnect via any featured tile. All paths protocol-ping verified except a live Palworld client join (user connected successfully — confirmed working).

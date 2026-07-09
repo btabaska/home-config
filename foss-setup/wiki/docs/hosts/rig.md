@@ -41,6 +41,19 @@ stuck-at-idle high-power state. The repo copy of the script is fixed; the
 deployed copy on the rig is stale and the service fails at boot
 (pending: game-10 — redeploy + `systemctl restart gpu-power-tune`).
 
+## Firewall (UFW)
+
+UFW is active with default-deny incoming, rules scoped to LAN
+(`192.168.10.0/24`) + tailnet (`100.64.0.0/10`). **Gotcha (bit us
+2026-07-09)**: docker containers reaching services on the *host* (e.g.
+open-webui/litellm → native Ollama via `host.docker.internal:11434`) arrive
+from `172.x` and hit the INPUT chain — LAN/tailnet-scoped rules do NOT cover
+them. Symptom: ai.tabaska.us "no models available" while every external port
+probe stays green. Fix in place: `ufw allow from 172.16.0.0/12 to any port
+11434 proto tcp`. If a new host-native service needs container access, it
+needs its own `172.16.0.0/12` rule. Caught by verification check
+`rig-ai-e2e` (real completion through litellm).
+
 ## Maintenance channel
 
 **ansible-pull — not yet deployed here** (pending: glue-08 rig half, blocked
