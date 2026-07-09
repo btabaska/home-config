@@ -1,5 +1,19 @@
 # Rollout handoff state
 
+### Sonarr queue declogged 57→0 + seed-preserving architecture (2026-07-09)
+
+- **Symptom**: Sonarr queue stuck at 57 items "for a while." Diagnosis: only **9 distinct torrents** behind 57 rows (one 48-episode season pack = 48 rows). All Deluge/torrent on the seedbox.
+- **ROOT CAUSE**: Sonarr's Deluge download client had **no Post-Import Category** (`tvImportedCategory` empty) and `removeCompletedDownloads=False`. So every imported torrent stayed in the `sonarr` label, kept getting re-scanned, got pinned with an "already imported" *warning*, and never left the queue. (Deluge carried **266** `sonarr`-labeled torrents; only the warning-pinned ones showed in the queue.)
+- **FIX (live, reversible — user wanted seeding preserved for ratio, NOT deletion)**:
+  1. Created Deluge label `sonarr-imported` (RPC via `~/venvs/deluge/bin/python`, Label plugin).
+  2. Set Sonarr Deluge **`tvImportedCategory = sonarr-imported`** → future imports auto-relabel out of the tracked `sonarr` label the moment they import → they leave the queue while Deluge keeps seeding. `removeCompletedDownloads` left **False** so nothing is auto-deleted.
+  3. Relabeled the existing done torrents `sonarr`→`sonarr-imported` (Phineas&Ferb pack, South Park, both HotD, hacks, INSECURE). All 6 verified **still Seeding**.
+- **Stragglers handled**: 3 dead `Sex.Life S02` downloads (0%, ratio -1, 3 days) → removed + blocklisted + re-searched. `INSECURE THE END` = an S00 special the user doesn't collect (0/42) → relabeled/kept seeding.
+- **DISCOVERED pre-existing desync (NOT fixed — needs user OK, unrelated to queue)**: **Hacks S01E01** shows missing in Sonarr (9/10 S01) but a valid 1.87GB MKV (`...S01E01 - There Is No Line...-scene.mkv`, correct EBML magic) sits on disk at the library path — **Plex can play it now**. Sonarr's disk scan silently refuses to enumerate/register that specific file (RescanSeries completes, hasFile stays False; ManualImport hits "Destination already exists" because the ghost is there; folder scan lists E02–E10 but not E01). Likely fix = delete the ghost `-scene` file and re-import the pack's `-glhf` E01 (still seeding, importable) — held pending user OK since it's a deletion.
+- **Reaper (user chose age-only 14d, remove+data)**: `deluge-reaper.py` on betty (`~/scripts/`), cron `0 5 * * *` CEST, `--live`. Removes `sonarr`/`sonarr-imported` torrents (+seedbox data only; NAS library is a separate copy) once age ≥14d. Dry-run now = **0 eligible** (oldest torrent 6.7d — seedbox populated ~1 wk ago); first reaps ~next week. Repo: `foss-setup/configs/host/seedbox/` (script + README).
+- **Latent same-gap**: Radarr/Lidarr Deluge clients also have no Post-Import Category — apply the same fix if they clog.
+- **Side observations (not acted on)**: rig SSH timed out at session start (supposed to be 24/7 — recheck); all mini containers showed "Up ~4 min" (mini rebooted recently, consistent with the DHCP-lease RCA below).
+
 ### RCA: recurring mini "freeze" = 24h DHCP lease expiry (2026-07-09)
 
 - **Symptom**: every ~1-2 days mini stops answering everything (no ARP/ping/SSH/DNS); it's still powered ("frozen"); hard reboot fixes it. Took out `home.tabaska.us` (Homepage → mini) and, worse, mini's own AdGuard DNS.
