@@ -1,5 +1,42 @@
 # Rollout handoff state
 
+### Full independent fleet audit — read-only sweep (2026-07-09, Fable 5)
+
+Report: `docs/research/12-full-audit-2026-07.md`. Swept mini/nas/rig/seedbox + the public
+game surface, treating every "done/live/verified/backed-up" claim as a hypothesis. **Fleet is
+in good shape — no CRIT.** The prior sessions' scary items held up: rig NVMe fix + AER monitor
+real and working; AMP Minecraft world **and** Palworld saves confirmed in rig restic→B2 (snapshot
+`39763ef8`); NAS HyperBackup→B2 offsite (07-08 20:02) covers Immich photos+DB+docs+homes; both
+AdGuards consistent; BedrockConnect hijack live on both; Minecraft Java+Bedrock listening.
+
+- **Reopened 3 tasks (regressed, evidence in progress.json `reopened`):**
+  - `glue-08` — ansible-pull on mini fails exit 2 **every night** (timer fires+fails; Healthchecks
+    `ansible-pull-mini` down since 07-08). Fleet not self-converging on mini; DHCP fixes still not
+    in the role. **Do NOT force a converge** without checking it won't clobber netplan/net-selfheal.
+  - `sbom-02` — SBOM→Dependency-Track dead on BOTH hosts (mini OOM Jul 04-08 + upload/DNS fail;
+    rig `sbom-nightly.service` failed on a missing env file).
+  - `sbom-03` — `etckeeper-commit.service` FAILED on mini (git ref lock mismatch); /etc not being
+    auto-committed. 3rd+ recurrence.
+- **Two monitoring checks lie in opposite directions:** `immich-dump-nas` is falsely DOWN — the
+  DB dump runs fine + is offsite, but the DSM-scheduled run's dead-man ping doesn't land (ping URL
+  matches vault; a manual run pinged OK). `ansible-pull-mini` down is REAL. So `alert-healthchecks
+  -none-down` (crit) fires for one false + one real reason. **nas-08 kept DONE** (backup healthy;
+  only the monitor needs repair).
+- **True sweep state = 61/63** as the timer runs it (`User=btabaska`), not the 63/63 the last
+  scheduled run logged (etckeeper + healthchecks regressed since 14:15 UTC). ⚠️ The sweep is
+  fragile as **root**: `sudo run-checks.sh` yields 9 false failures (root has no known_hosts / ssh
+  aliases → "NAS down" artifact). Run it as btabaska.
+- **DOC CORRECTION:** the rig OS drive is a **WD Blue SN770** (`WDS200T3X0C-00SJG0`), NOT an SN570.
+  Same PCI addr `0000:74:00.0`, so the AER monitor target is correct — only prior notes' model
+  string was wrong. Corrected in memory `rig-nvme-pcie-link`.
+- **Other opens:** Palworld public access still needs the playit dashboard UDP-8211 tunnel (only
+  the 2 MC tunnels exist) + playit account email unverified; rig `/boot` 68% (snapper skipping boot
+  entries); 21/31 mini `.env` world-readable w/ secrets; mini static-IP still staged.
+- **Hygiene slip this session:** the NAS `health.env` `NTFY_TOKEN` (homelab-alerts topic) surfaced
+  in the audit shell output — **rotate it** and re-vault.
+- No fixes applied to live services (read-only posture) beyond doc/tracker corrections. `ssh seedbox`
+  alias is broken — reach betty via `ssh -o HostKeyAlias=seedbox.tailb31641.ts.net btabaska@100.119.134.94`.
+
 ### Palworld gameplay tuning + AMP world now has offsite backup (2026-07-09 late⁴)
 
 - **Palworld settings (per user)**: `DIFFICULTY=Hard`, `PAL_DAMAGE_RATE_DEFENSE=0.8` (pals take 0.8× damage — tankier), `ENEMY_DROP_ITEM_RATE=2.0` (2× dropped items); everything else left at image/vanilla defaults (ExpRate/capture/attack all 1.0). Set as **non-secret env in compose.yaml** (not .env), mirrored to repo. Verified in the compiled ini after full restart: `Difficulty=Hard, PalDamageRateDefense=0.8, EnemyDropItemRate=2.0`. **Gotcha**: `compile-settings.sh` rewrites the ini from env on every start, but Palworld also rewrites the ini on clean shutdown — so during a `compose up` recreate there's a brief window where the ini shows the OLD values (old container's shutdown write) before the new container recompiles. Read the ini only after the server is fully up (RCON answers), or you'll misread a race.
