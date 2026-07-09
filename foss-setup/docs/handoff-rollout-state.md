@@ -1,5 +1,12 @@
 # Rollout handoff state
 
+### bedrock.tabaska.us + Palworld renamed "Robits Farm" (2026-07-09 eve³)
+
+- **bedrock.tabaska.us LIVE**: +2 NS records in Cloudflare (→ ns1/ns2.playit-dns.com, now 6 total game-domain NS records), LAN rewrites → 69.9.181.17 on both AdGuards (playit IP, NOT the rig — the shared `:1111` only exists on the edge, same reasoning as palworld). Verified: public + both LAN resolvers → 69.9.181.17, RakNet **pong via `bedrock.tabaska.us:1111`**. BedrockConnect's "Remote/playit" entry repointed to the domain (container restarted, repo mirror synced).
+- **Palworld renamed** `SERVER_NAME=Robits Farm` (.env edit + container recreate; REST verified `servername: Robits Farm`, healthy).
+- **Held the line on COMMUNITY=false**: user tried to find the server in the in-game community browser — that requires registering with Pocketpair's public list, which advertises the **home WAN IP** (server self-detects; knows nothing of playit) and invites randoms. Join method = **direct connect** `palworld.tabaska.us:1105` + server password (vault `palworld.server_password`). If a future session is asked to enable community listing, surface the home-IP leak first.
+- User-facing address card now: Java `minecraft.tabaska.us` · Bedrock `bedrock.tabaska.us:1111` · Palworld `palworld.tabaska.us:1105` ("Robits Farm") · Switch = BedrockConnect at home.
+
 ### Game domains LIVE: minecraft/palworld.tabaska.us via playit-dns delegation (2026-07-09 eve²)
 
 - **NS delegation, not A/CNAME**: playit external domains work by delegating the subdomain to their nameservers. Added 4 NS records in Cloudflare via API (`minecraft.tabaska.us` + `palworld.tabaska.us` → ns1/ns2.playit-dns.com, TTL 300). playit-dns now serves both names (A=69.9.181.17; for minecraft also SRV `_minecraft._tcp` → :1105). **Records under those names are managed in the playit dashboard from now on, not Cloudflare.**

@@ -19,10 +19,12 @@ domains** NS-delegated to playit-dns; agent on the rig /opt/stacks/playit):
 - **Palworld**: **`palworld.tabaska.us:1105`** — LAN rewrite points at
   69.9.181.17 (NOT the rig) so the same address+port works everywhere; LAN-direct
   would need :8211 and a different address, not worth the confusion.
-- **Bedrock**: `fun-diamonds.nyc.at.playit.plus` port `1111` (= 69.9.181.17:1111;
-  no domain — Bedrock ignores SRV so a domain saves nothing but the hostname)
-- **Cloudflare**: 4 NS records (minecraft/palworld.tabaska.us → ns1/ns2.playit-dns.com).
-  playit-dns answers everything under those two names — manage them in the
+- **Bedrock**: **`bedrock.tabaska.us`** port `1111` (= 69.9.181.17:1111; NS-delegated
+  like the others; Bedrock ignores SRV so the port must still be typed.
+  `fun-diamonds.nyc.at.playit.plus:1111` also still works.) LAN rewrite → 69.9.181.17
+  (same everywhere-address reasoning as Palworld).
+- **Cloudflare**: 6 NS records (minecraft/palworld/bedrock.tabaska.us → ns1/ns2.playit-dns.com).
+  playit-dns answers everything under those three names — manage them in the
   playit dashboard, not Cloudflare.
 - Agent secret: vault `playit_gg.secret_key`. Premium allows 16 TCP + 16 UDP
   tunnels on the same agent (agent API key is read-only; tunnel creation is
@@ -79,9 +81,11 @@ proof the actual server is running.
 - `.mc-admin-password` on the rig is unused (instance auth = panel creds).
 
 ## Still open
-- Switch 2: BedrockConnect self-host (user decision) + Geyser auth-mode tuning
-  for Floodgate-linked accounts if wanted.
-- `mc.tabaska.us` friendly DNS (user decision).
-- Whitelist: off by default — decide before handing the address to friends.
+- Whitelist: user decided OFF (2026-07-09) — mitigation is AMP hourly backups
+  (retention 28) + sticky baseline + rig restic nightly. Flip on only if a
+  stranger ever joins.
+- Geyser auth-mode tuning for Floodgate-linked accounts, if ever wanted.
 - AMP module update will eventually make the java25 wrapper unnecessary —
   retest with plain Temurin path after AMP updates past module 2.8.
+(BedrockConnect: DONE, live on mini. Friendly DNS: DONE — minecraft/palworld/
+bedrock.tabaska.us via playit-dns delegation.)
