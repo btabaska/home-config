@@ -1,5 +1,12 @@
 # Rollout handoff state
 
+### SESSION CLOSE — monitoring at 100% surface; NEXT MANDATE: documentation debt sweep (2026-07-09 night²)
+
+- **Monitoring session closed at 74/74 sweep, 53 Kuma monitors all up, 9 healthchecks dead-mans all up.** User confirmed alert receipt and signed off on the coverage matrix (every container/native unit/job/network path — see the three entries below for the full architecture: layered AI-stack coverage → playit protocol pings → fleet manifests+tripwire).
+- **USER MANDATE for the next session**: full documentation audit — "documentation tech debt is equally concerning to no monitoring." **The LIVE service stack is the source of truth**; docs must be corrected to match reality (not vice versa), except where live state is itself a known defect (then it's a task, not a doc fix).
+- **Known drift found this session (seed list for the audit)**: wiki/docs/hosts/rig.md said "LiteLLM on the mini, fleet-wide front door + fallback model" — never existed; litellm runs on the rig, and mini's /opt/stacks/litellm dir is an orphaned never-deployed stack (decide: deploy-as-fallback or remove + doc). checks.d/rig.yaml header claims "mini->rig SSH blocked by tailnet ACL" — stale, LAN ssh works and host:rig checks run. Older handoff/audit docs still describe Kuma as 50 liveness monitors / daily-only sweep. seed-monitors.sh comments predate the premium SRV:1105 discovery. tdarr/maintainerr (inert), frigate (undeployed stack dir), SBOM/dependency-track (retired but dtrack containers still run on NAS + stack docs remain) — reconcile each: retire fully or document why kept.
+- Session cleanups already done: hung beets one-off removed (nas), sbom-nightly disabled+reset (rig), stale kuma playit TCP monitor deleted.
+
 ### 100% surface coverage: fleet manifests + tripwire, every container/unit now monitored (2026-07-09 late⁴)
 
 - **User mandate**: "100% surface coverage across every service. If anything stops working I need to know. Period." Full inventory (71 containers on mini 38 / nas 23+1 stuck / rig 8, plus native units) diffed against all monitoring: ~25 port-less workers and sidecars had ZERO coverage (beets, kometa, soularr, unpackerr, diun×2, bedrock-connect, bgutil-pot, rreading-glasses, every db/redis/tika sidecar), plus 3 unmonitored web UIs (RoMM, AMP panel, Synology DSM) and recyclarr's weekly cron whose failures went only to a log file.
