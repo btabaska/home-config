@@ -6,7 +6,8 @@
 - **Both tunnels VERIFIED end-to-end from off-host** (real MC status ping + RakNet pong through the public edge): Java `analysis-conditioning.gl.joinmc.link:14450` (SRV → port optional in client) · Bedrock `stop-spain.gl.at.ply.gg:58804`. Agent API key is READ-ONLY (`NotAllowedWithReadOnly` on tunnels/create) — tunnel creation is dashboard-only.
 - **Gotcha found while verifying — AMP sleep mode**: `Limits.SleepMode=True` (default, 5-min empty timeout) stopped the app mid-verification; AMP's wake listener answers **Java protocol only** on 25565 (MOTD "Powered by AMP") — so (a) a Java status ping is NOT proof the real server is up, and (b) **Bedrock/Geyser is completely dark while asleep** and Bedrock joins can never wake it. Set `Limits.SleepMode=False` (rig is 24/7). If sleep is ever wanted again, know that it silently breaks the Bedrock side.
 - **User's playit account email still unverified** (agent logs `account_status=email_not_verified`) — remind to verify or playit may cap/expire things.
-- Still open: whitelist before the address leaves the friend group (recommended, one command away) · BedrockConnect for Switch (todo Task 09) · mc.tabaska.us (Task 10).
+- **User DECIDED: no whitelist** — mitigation = backups instead: AMP's built-in hourly-backup trigger ENABLED (retention MaxBackupCount=28), sticky baseline backup "baseline-pre-launch" taken (465MB), and the world is inside the rig's nightly restic→B2 (`/opt` is in BACKUP_PATHS). Griefing recovery = AMP UI → Backups → restore. Flip whitelist later only if a stranger shows up.
+- Still open: BedrockConnect for Switch (todo Task 09) · mc.tabaska.us (Task 10).
 
 ### AMP white-screen fixed + Minecraft crossplay server LIVE, fully automated (2026-07-09 night)
 
