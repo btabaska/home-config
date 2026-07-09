@@ -124,6 +124,10 @@ def main():
     ap.add_argument("--json", action="store_true", help="print results JSON to stdout")
     ap.add_argument("--checks-dir", default=DEFAULT_CHECKS_DIR)
     ap.add_argument("--no-notify", action="store_true", help="skip ntfy notification")
+    ap.add_argument("--notify", action="store_true",
+                    help="send ntfy on filtered (--host) runs too — used by the "
+                         "scheduled quick tier; ad-hoc filtered runs stay silent "
+                         "by default")
     args = ap.parse_args()
 
     load_env_file(ENV_FILE)
@@ -213,8 +217,11 @@ def main():
         with open(os.path.join(STATE_DIR, "last-summary.md"), "w") as f:
             f.write("\n".join(lines) + "\n")
 
-    # ONE ntfy summary, only on failures or recoveries (state diff vs previous run)
-    if not filtered and not args.no_notify and (failed or recovered):
+    # ONE ntfy summary, only on failures or recoveries (state diff vs previous
+    # run). Filtered runs are silent unless --notify (the quick tier timer);
+    # their state diff uses their own results-<host>.json, so tiers don't
+    # clobber each other's recovery tracking.
+    if (not filtered or args.notify) and not args.no_notify and (failed or recovered):
         parts = []
         if failed:
             parts.append(f"{len(failed)} failed ({len(crit_failed)} crit): "
@@ -223,8 +230,9 @@ def main():
             parts.append("recovered: " + ", ".join(recovered))
         if reopen:
             parts.append("reopen candidates: " + ", ".join(reopen))
-        title = ("Verification: FAILURES" if failed
-                 else "Verification: all recovered")
+        tier = f" [{args.host} tier]" if filtered else ""
+        title = (f"Verification{tier}: FAILURES" if failed
+                 else f"Verification{tier}: all recovered")
         try:
             send_ntfy("\n".join(parts), title,
                       "high" if crit_failed else "default")

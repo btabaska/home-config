@@ -1,0 +1,9 @@
+[Unit]
+Description=AI stack watchdog: container->host ollama hop -> healthchecks dead-man
+After=docker.service ollama.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/ai-stack-watchdog.env
+ExecStart=/usr/local/bin/ai-stack-watchdog.sh

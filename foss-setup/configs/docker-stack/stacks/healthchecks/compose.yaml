@@ -30,6 +30,10 @@ services:
       - SITE_NAME=Healthchecks
       - DEFAULT_FROM_EMAIL=${HC_DEFAULT_FROM_EMAIL:-healthchecks@example.com}
       - ALLOWED_HOSTS=${HC_ALLOWED_HOSTS:-*}
+      # ntfy/webhook targets are on this LAN (ntfy container, 192.168.10.x) — without
+      # this, every notification silently fails: "Connections to private IP addresses
+      # are not allowed" (found 2026-07-09: the dead-man alerts had never fired).
+      - INTEGRATIONS_ALLOW_PRIVATE_IPS=True
       - DB=postgres
       - DB_HOST=db
       - DB_PORT=5432

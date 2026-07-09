@@ -1,0 +1,12 @@
+[Unit]
+Description=Hourly quick verification tier
+
+[Timer]
+# :40 offset — clear of the 07:15 PT daily full sweep and staggered from the
+# rig ai-stack-watchdog (*:0/10).
+OnCalendar=*-*-* *:40:00
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

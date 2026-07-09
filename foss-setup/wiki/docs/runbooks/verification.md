@@ -37,6 +37,24 @@ Four layers:
    (pass→fail transition) so alerts stay meaningful — no daily "all green"
    noise.
 
+    **Two tiers (since 2026-07-09)**: the full sweep runs daily at 07:15 PT
+    (`verification.timer`), and the cheap `--host url` subset runs **hourly**
+    (`verification-quick.timer`, `--notify` flag) so a functional regression
+    is flagged within the hour, not the next morning. Each tier keeps its own
+    state file, both are dead-manned in Healthchecks (`verification-mini`,
+    `verification-quick-mini`).
+
+    **Probe what the user experiences, not just what answers.** The
+    2026-07-09 lesson: ai.tabaska.us had "no models" for hours while 63/63
+    checks and 50 Kuma monitors stayed green, because every probe tested
+    ports from outside and the broken hop was container→host on the rig
+    (UFW). Layered fix: `rig-ai-e2e` (real completion, daily+hourly),
+    `ai-stack-watchdog.timer` **on the rig** (the hop itself, every 10 min →
+    Healthchecks dead-man), and a Kuma keyword monitor on the authenticated
+    LiteLLM model list (~1 min). When adding a check, ask: *which vantage
+    point sees this break?* — some paths are only visible from inside the
+    host or container that uses them.
+
 3. **LLM triage on the rig** (verify-03/04). When checks fail, a local model
    on the rig (small, scoped skills) triages: groups related failures, drafts
    the diagnosis against the runbook, proposes next steps. The rig runs 24/7
