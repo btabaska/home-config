@@ -164,10 +164,11 @@
 <div class="tier">Decisions — quick yes/no</div>
 
 <div class="task">
-  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 08</div><h2 class="ttitle">Point the Kobos at CWA sync (server side is DONE)</h2></div></div>
-  <div class="chips"><span class="chip eff">10 min per Kobo</span><span class="chip unb">wireless book sync</span></div>
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 08</div><h2 class="ttitle">Kobo wireless sync — DONE ✅ (both devices)</h2></div></div>
+  <div class="chips"><span class="chip eff">done</span><span class="chip unb">wireless book sync</span></div>
   <div class="body">
-    <p class="why">The CWA Kobo sync endpoint is now <b>enabled and verified</b> (2026-07-09): real-TLS endpoint live, store passthrough on, sync token generated. Each Kobo just needs one line changed in its config over USB — then books sync over WiFi like the Kobo store.</p>
+    <p class="why"><b>Both Kobos sync the CWA library over WiFi.</b> Each device uses its own token so reading progress stays separate — Kobo #1 = admin, Kobo #2 = user <code>kobo2</code>. Endpoints/creds in the vault.</p>
+    <div class="note"><span class="t">Fixed 2026-07-09</span>The Forma failed at first for two reasons, both now resolved on the CWA server (NAS): (1) the full-library sync took ~62s — too slow for the device's ~30s timeout because of large graphic-novel files — fixed by batching (<code>SYNC_ITEM_LIMIT=10</code>) so it syncs in fast rounds; (2) briefly disabling the store passthrough broke the device OAuth, so it's left <b>on</b>. Also flipped <code>NETWORK_SHARE_MODE=false</code> (local disk → WAL). All documented in <code>/volume1/docker/calibre-web-automated/PATCHES.md</code> — re-apply the batch limit if the CWA image is ever updated.</div>
     <ol class="steps">
       <li>Plug the Kobo (Sage or Forma) into any computer via USB and accept “Connect” on the device.</li>
       <li>On the mounted drive open the hidden <code>.kobo</code> folder → <code>Kobo/Kobo eReader.conf</code> in a text editor.</li>
