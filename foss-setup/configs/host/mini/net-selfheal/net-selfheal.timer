@@ -1,0 +1,10 @@
+[Unit]
+Description=Run net-selfheal every minute (recover NIC after DHCP lease loss)
+
+[Timer]
+OnBootSec=90
+OnUnitActiveSec=60
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target

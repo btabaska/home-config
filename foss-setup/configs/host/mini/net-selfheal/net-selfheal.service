@@ -1,0 +1,9 @@
+[Unit]
+Description=Self-heal enp3s0f0 when its DHCP lease/route is lost
+Documentation=file:///Users/brandontabaska/Documents/Home/foss-setup/docs/handoff-rollout-state.md
+After=network.target systemd-networkd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/net-selfheal.sh
+TimeoutStartSec=90
