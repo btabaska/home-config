@@ -1,5 +1,12 @@
 # Rollout handoff state
 
+### Playit tunnel: wedged TCP claims found + fixed by the new checks; upstream claim degradation ongoing (2026-07-09 late³)
+
+- **The new public-path probing immediately caught a REAL silent outage**: Java public path (69.9.181.17:1105) dead — TCP connects accepted by the edge but real MC status pings timed out. Agent logs: "timeout connecting to claim address" per connection while claiming "connected; tunnels loaded, 0 pending". **The known UDP claim-wedge gotcha applies to TCP claims too**; `docker restart playit` fixed it. Every local check and playit's own dashboard stayed green throughout — nobody could join while everything looked fine.
+- **Port monitors are structurally useless against the playit edge**: connects are accepted even when claims are wedged, and 25565 there is hostname-routed (`*.mcjoin.link`) so bare probes flap. Removed the Kuma TCP monitor (added earlier this session, wrong tool); replaced with REAL protocol pings in the sweep url tier (hourly + daily): `playit-java-public` (MC handshake+status via `mc-status-ping.py`) and `playit-bedrock-public` (RakNet unconnected ping via `mc-bedrock-ping.py`), both `scripts/gaming/` → deployed to mini `/opt/verification/bin/`.
+- **ONGOING upstream degradation at session close**: playit's claim leg (69.9.181.2:43782, DC 41) drops ~50% of connection attempts — measured from BOTH mini and rig; our WAN is 0% loss incl. to the edge IP itself; playit status page green. Friends' Java AND Bedrock joins are coin-flip-per-attempt tonight (Palworld likely same mechanism). Nothing fixable locally — worth reporting to playit if it persists. The sweep checks retry 4× and page only on hard outage; the try-count in check output shows degradation without alert flapping.
+- url tier now 9/9 (both public paths pass within retries). Kuma back to 50 active monitors, all up.
+
 ### Monitoring gap audit after the UFW incident — layered functional coverage + a second silent failure found (2026-07-09 late²)
 
 - **User mandate**: no more silent regressions — audit every monitoring layer, make the UFW class impossible to miss. Findings: Kuma's 50 monitors were ALL liveness (port/200/ping, zero keyword checks); the deep sweep ran once daily 07:15 PT; Beszel = metrics only; Healthchecks = cron dead-mans only. Nothing probed function, and nothing probed from inside the rig.

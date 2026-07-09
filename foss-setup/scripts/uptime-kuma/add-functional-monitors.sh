@@ -41,15 +41,14 @@ main() {
     echo "added $name"
   fi
 
-  # Public game path: local port checks stay green when the playit tunnel dies
-  # (same silent-gap class). TCP to the dedicated IP = the path friends use.
-  # 300s interval — this transits the playit edge, no need to hammer it.
-  name="Playit Java public (69.9.181.17)"
-  if exists "$name"; then echo "skip  $name"; else
-    sql "INSERT INTO monitor (name, active, user_id, \`interval\`, hostname, port, type, maxretries, retry_interval, accepted_statuscodes_json, method)
-         VALUES ('${name//\'/\\\'}', 1, ${USER_ID}, 300, '${PLAYIT_IP}', 25565, 'port', 3, 300, '[\"200-299\"]', 'GET');"
-    echo "added $name"
-  fi
+  # NO playit public-path monitor here — a bare TCP probe is worthless AND
+  # flaky against the playit edge (verified live 2026-07-09): when the agent's
+  # claim leg wedges, the edge still ACCEPTS TCP connects and only the data
+  # exchange fails, so a port monitor stays green through a real outage; and
+  # 25565 is hostname-routed (*.mcjoin.link) so bare connects there flap.
+  # The public paths are covered by REAL protocol pings in the verification
+  # sweep instead: checks playit-java-public / playit-bedrock-public
+  # (checks.d/rig.yaml, hourly via the url quick tier).
 
   # Link everything to the default ntfy notification (same as seed-monitors.sh)
   local nid
