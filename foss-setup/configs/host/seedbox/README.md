@@ -39,6 +39,10 @@ Cron (installed on betty, 05:00 CEST daily):
 ```
 Dry-run anytime: `ssh seedbox '~/venvs/deluge/bin/python ~/scripts/deluge-reaper.py'`
 
-## Not yet done
-- Radarr (`radarr` label, 4 torrents) and Lidarr (`lidarr`, 5) have the SAME latent gap
-  — no Post-Import Category set. Apply the same `*ImportedCategory` fix if their queues clog.
+## Applied to all three *arr (2026-07-09)
+- Sonarr: `tvImportedCategory = sonarr-imported`
+- Radarr (API v3): `movieImportedCategory = radarr-imported`
+- Lidarr (API v1): `musicImportedCategory = lidarr-imported`
+- Deluge labels `radarr-imported` / `lidarr-imported` created. All three keep
+  `removeCompletedDownloads=False` (seeding preserved). The reaper's LABELS set could be
+  widened to include radarr*/lidarr* labels later if those need disk reclamation too.

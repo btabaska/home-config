@@ -1,5 +1,11 @@
 # Rollout handoff state
 
+### Follow-ups after queue fix — RIG DOWN, Radarr/Lidarr fixed, Hacks E01 desync (2026-07-09)
+
+- **RIG IS FULLY OFFLINE (needs physical power-on)**: no LAN ping (192.168.10.12), SSH "host down", Tailscale "offline, last seen ~12h ago". Supposed to be 24/7 (suspend masked) so this is a crash or power event, not a sleep. **WoL recovery FAILED** — fired `wake-rig.sh` from mini (MAC 50:eb:f6:b5:82:c6), no response after 90s (WoL from full S5/crash isn't waking it). Impact: AI stack (ollama/litellm/open-webui), Apollo, AMP panel all down. **Action needed: user power-cycles rig physically**, then recheck. (User said they separately fixed the *mini* reboot in another window — mini not investigated here.)
+- **Radarr + Lidarr got the same Post-Import Category fix** (they had the identical empty-category gap): Radarr `movieImportedCategory=radarr-imported` (v3), Lidarr `musicImportedCategory=lidarr-imported` (v1); Deluge labels created; removeCompletedDownloads stays False. All three *arr now auto-declog while seeding.
+- **Hacks S01E01 — STILL UNRESOLVED (Sonarr DB quirk)**: deleted the ghost `-scene` file (user OK'd) and re-imported the pack's `-glhf` E01 via ManualImport (Copy). The file physically lands correctly (`Season 01/...S01E01...-scene.mkv`, 1.87GB, valid), episode is monitored, no conflicting episodefile record — **but `hasFile` stays False** after ManualImport ×2 + RescanSeries ×3. Content IS on disk and Plex-playable; only Sonarr's tracking is stuck (46/47 S01... i.e. still shows E01 missing). Next lever = **Sonarr container restart** to clear its internal cache (not done — mild downtime, user's call). Risk if left: Sonarr may keep trying to re-grab a "missing" E01 → lands on existing file → could re-stick the queue.
+
 ### Sonarr queue declogged 57→0 + seed-preserving architecture (2026-07-09)
 
 - **Symptom**: Sonarr queue stuck at 57 items "for a while." Diagnosis: only **9 distinct torrents** behind 57 rows (one 48-episode season pack = 48 rows). All Deluge/torrent on the seedbox.
