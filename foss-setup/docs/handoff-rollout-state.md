@@ -1,5 +1,12 @@
 # Rollout handoff state
 
+### Tracker repair + state sync (2026-07-08 night)
+
+- **The Plan v3 guide (docs/index.html) had been rendering BLANK (0/223 tasks)** — the retro-01..07 stubs (added earlier without `host`/`type`/`estimate`, and with `detail` as an HTML string instead of the sectioned array) crashed `esc()`/`renderDetail()` before the first paint. Fixed: `esc` is now null-safe (one malformed task can no longer blank the whole tracker) and the retro tasks were filled to schema (async, hosts, verify lines, markdown-lite sectioned detail). **If you add tasks to taskData: title/host/type/estimate are required, and `detail` must be an array of `{h, body, sub, cmds}` sections — validate by loading the page.**
+- **State synced to reality**: game-11 marked done (verified live on rig: `display-policy.service` active, dummy plug HDMI-A-1, Apollo dd_* per-client resolution config present). game-02 rescoped Pelican→AMP (deployed at amp.tabaska.us, licensed; remaining = human creates first Minecraft instance via web UI, then agent finishes crossplay). Stale "Pelican on the Mac mini" prose fixed. progress.json meta corrected to **124/223 (56%)**; run bars: R0 87 · R1 80 · R2 88 · R3 36 · R4 65 · R5 6 · R6 17 · R7 0.
+- **Sweep at session start: 61/61 pass, 0 crit, 1 skipped** (61st = new sys-docker-subnet-squat guard). No regressions.
+- Tracker has no served vhost — view via `file://` + Import progress, or any HTTP serve of docs/ (auto-merges progress.json). `.claude/launch.json` config `foss-docs` serves it on :8899 for sessions.
+
 ### Apollo resolutions + AMP Minecraft (2026-07-08 evening)
 
 - **Apollo per-client resolution**: dd_configuration_option=ensure_active, dd_resolution_option=automatic, dd_refresh_rate_option=automatic, dd_config_revert_on_disconnect=enabled (rig ~/.config/sunshine/sunshine.conf). Follows each Moonlight client's requested res/fps, reverts after. User sets Deck=1280x800@90, TV=4K@30 client-side. Caveat: 1280x800@90 not in dummy EDID → may negotiate to 60 until the 4K120 dummy arrives.
