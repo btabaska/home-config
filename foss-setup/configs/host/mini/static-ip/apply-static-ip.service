@@ -1,0 +1,8 @@
+[Unit]
+Description=Guarded one-shot static-IP apply for mini (M2, auto-reverts to DHCP on failure)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/apply-static-ip.sh

@@ -1,11 +1,11 @@
 {
  "_meta": {
-  "updated": "2026-07-09T17:30:00-04:00",
+  "updated": "2026-07-09T18:15:00-04:00",
   "source": "foss-analogue-progress-v1",
   "plan": "v3 \u2014 staged autonomous runs",
   "task_count": 223,
-  "completed_count": 137,
-  "note": "Canonical progress-as-code (fix-16). Auto-merged by docs/index.html over HTTP. 2026-07-09 full-audit (research/12): reopened glue-08 (ansible-pull fails exit 2 nightly), sbom-02 (SBOM->D-Track dead on mini+rig), sbom-03 (etckeeper-commit.service failed) after verifying against live state. nas-08 held DONE (Immich+dump+offsite all healthy; only the dead-man ping is broken). 140->137."
+  "completed_count": 139,
+  "note": "Canonical progress-as-code (fix-16). Auto-merged by docs/index.html over HTTP. 2026-07-09 full-audit + remediation (research/12): FIXED and re-closed glue-08 (accepted apt releaseinfo change -> ansible-pull converges ok=30 failed=0, pings green) and sbom-03 (cleared etckeeper ref-lock + stale index.lock -> commits clean, sweep 63/63). RETIRED sbom-01/02/04 (user decision): SBOM/Dependency-Track judged overkill for a home net + syft was OOM'ing the 8GB mini; sbom-nightly timers disabled on mini+rig and the `sbom` ansible role removed so convergence won't redeploy it (sbom-01/04 left in done as completed setup work, feature retired). fix-19 default-address-pools restored in daemon.json + docker role (converge had been stripping them). 137->139; sbom-02 not counted (retired)."
  },
  "done": {
   "betty-01": true,
@@ -34,6 +34,7 @@
   "glue-04": true,
   "glue-05": true,
   "glue-07": true,
+  "glue-08": true,
   "media-01": true,
   "media-03": true,
   "nas-00a": true,
@@ -73,6 +74,7 @@
   "read-07": true,
   "read-14": true,
   "sbom-01": true,
+  "sbom-03": true,
   "sbom-04": true,
   "seed-01": true,
   "seed-03": true,
@@ -146,9 +148,10 @@
   "fix-19": true,
   "game-02": true
  },
- "reopened": {
-  "glue-08": "2026-07-09 full-audit: ansible-pull.service on mini fails every night, exit 2/INVALIDARGUMENT (journalctl 07-09 04:27); timer enabled+active so it fires+fails daily; Healthchecks ansible-pull-mini DOWN since 07-08 04:49. Fleet no longer self-converges on mini; DHCP fixes (net-selfheal/KeepConfiguration/static-IP) still live only on-disk, not in the role.",
-  "sbom-02": "2026-07-09 full-audit: SBOM->Dependency-Track pipeline dead on BOTH hosts. mini sbom-nightly OOM-killed Jul 04/05/06/08 (syft ~6GB on 8GB box) then 07-09 failed on D-Track upload + anchore DNS; rig sbom-nightly.service FAILED (missing env file). D-Track not being populated.",
-  "sbom-03": "2026-07-09 full-audit: etckeeper-commit.service FAILED on mini (git ref lock mismatch: HEAD at 185b37e but expected c4cfc08). /etc changes not auto-committed; trips sys-failed-units. 3rd+ recurrence of etckeeper wedging on mini."
+ "reopened": {},
+ "retired": {
+  "sbom-01": "2026-07-09 (user decision): SBOM/Dependency-Track feature retired — overkill for a home network and syft was OOM'ing the 8GB mini nightly (Jul 04-08). Syft/Grype install left in place but the nightly pipeline is disabled. Left in done as completed setup work.",
+  "sbom-02": "2026-07-09 (user decision): RETIRED — the nightly-SBOM->Dependency-Track objective is abandoned. sbom-nightly timers disabled on mini+rig; the `sbom` ansible role removed from site.yml so convergence won't redeploy it. Was failing on both hosts anyway (mini OOM, rig missing env file).",
+  "sbom-04": "2026-07-09 (user decision): part of the retired SBOM feature (per-OS package manifest for syft). Left in done as completed work; no longer feeding an active pipeline."
  }
 }

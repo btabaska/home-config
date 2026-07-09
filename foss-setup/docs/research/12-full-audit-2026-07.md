@@ -146,6 +146,10 @@ None. No data-loss-imminent condition, no down public service, no active securit
   agent logs) — unverified accounts risk tunnel caps/expiry.
 - **Fix (user):** playit dashboard → Add Tunnel → Palworld (UDP 8211 → 127.0.0.1:8211) on the
   existing `tabaska-home-agent`; verify the account email. **Effort:** S (user). **Risk:** none.
+- **RESOLVED (concurrent session, 2026-07-09 eve):** user upgraded to playit.plus, recreated all
+  tunnels on a **dedicated IP** (Java/Bedrock/**Palworld** all verified) and **verified the account
+  email**. The 2-free-tunnel / no-Palworld / unverified-email state above is superseded — see the
+  "playit PREMIUM cutover" handoff entry.
 
 ### M5 — 21 of 31 mini `/opt/stacks` `.env` files are world-readable and contain secrets
 - **Evidence:** `find /opt/stacks -name .env -perm -o=r` → 21 hits (`-rw-r--r--`), ≥8 with
@@ -277,3 +281,30 @@ live TCP clients); allocations 1/4 TCP + 1/4 UDP.
 5. **M2 static IP** (S, in-window + UniFi step) — retire the DHCP-lease outage class entirely.
 6. **M5 .env perms** (S), **M3 /boot prune** (S), **M6 sweep root-guard** (S).
 7. **M4 Palworld tunnel + playit email** (user), then verify public reachability.
+
+---
+
+## Remediation applied (2026-07-09, same session, user-authorized)
+
+After the read-only audit, the user directed: retire SBOM, fix the hygiene issues,
+and take care of all recommended fixes (window items to run tonight). Applied and
+verified:
+
+| # | Fix | Verification | State |
+|---|---|---|---|
+| H1 | **ansible-pull** — accepted the `ondrej/php` apt releaseinfo change (`apt-get update --allow-releaseinfo-change`); the failing task was the apt-cache update. | Real converge via `systemctl start ansible-pull.service`: `ok=30 changed=3 failed=0`; `ansible-pull-mini` Healthchecks now **up**. | ✅ glue-08 re-closed |
+| H2/#4 | **SBOM retired** (user decision) — disabled+stopped `sbom-nightly.timer` on mini **and** rig; removed the `sbom` role from `ansible/site.yml` so convergence won't redeploy it. | mini + rig timers `disabled/inactive`; converge did NOT re-enable sbom. | ✅ sbom-01/02/04 retired |
+| H3 | **etckeeper** — cleared the stale `/etc/.git/index.lock` + reset the failed unit; later broke the ref-lock race by briefly stopping `etc-watch.path` for a clean `etckeeper commit`. | `systemctl --failed` empty; `/etc` clean; commits succeed; `sys-failed-units` + `git-etckeeper-clean` both pass. | ✅ sbom-03 re-closed |
+| M1 | **immich dead-man** — hardcoded `/bin/curl` in `immich-db-dump.sh` (DSM cron's minimal PATH couldn't find bare `curl`); ran it to verify. | `immich-dump-nas` Healthchecks flipped **up** (ping 20:23). | ✅ |
+| M3 | **rig /boot** — lowered `MAX_SNAPSHOT_ENTRIES` 8→4 in `limine-snapper-sync.conf` (backup kept); `limine.conf` intact. | Config applied; space reclaims on next kernel/snapshot regen (did **not** force an initramfs regen on the daily driver). | ✅ (root cause) |
+| M5 | **mini `.env` perms** — `chmod o-rwx` on all `/opt/stacks/*/.env`. | world-readable count 21 → **0**. | ✅ |
+| M6 | **sweep root-guard** — `run-checks.sh` now warns (overridable via `VERIFY_ALLOW_ROOT=1`) when run as root. | warns as root; silent + green as btabaska. | ✅ |
+| — | **fix-19 regression** (found while remediating H1) — the ansible docker role's daemon.json template omitted `default-address-pools`, so every converge stripped fix-19 and bounced docker. Restored the pools in the role template **and** in mini's on-disk daemon.json. | daemon.json has all 3 keys; committed. **Pools apply on the next docker restart** (not forced now to avoid a second container bounce). | ✅ |
+| L3 | **seedbox** — `chmod 600 slskd.yml.bak`. | now `-rw-------`. | ✅ |
+| M2 | **static IP** — deployed a **guarded, self-testing, auto-reverting** apply (`/usr/local/sbin/apply-static-ip.sh`) + one-shot timer for **08:35 UTC / 04:35 EDT tonight**. Applies the static netplan, self-tests (IP + gateway + external + DNS), and reverts to DHCP + pings ntfy if anything fails. | timer armed (`apply-static-ip.timer`, next 2026-07-10 08:35 UTC). ⚠️ Still needs the UniFi Fixed-IP reservation for `98:5a:eb:ca:b2:ef`→.2 to prevent a future lease conflict (the ntfy on success reminds of this). | ⏳ scheduled |
+
+**Final sweep after remediation: `63/63 passed, 0 failed, 0 crit, 1 skipped`** (seedbox SSH, known ACL). All 38 mini containers healthy after the one converge-induced docker bounce.
+
+**Left to the user (per their instructions):** NTFY token rotation (M-hygiene — the NAS `health.env` token surfaced in the audit output); the Palworld playit tunnel + account-email verification (handled in a separate agent); and adding the UniFi Fixed-IP reservation before/after tonight's static-IP apply.
+
+**Note on the docker bounce:** the first successful ansible converge in a while applied the daemon.json log-cap config, which restarted Docker once and bounced all mini containers (~1 min recovery, verified all 38 back healthy). Future converges are idempotent (on-disk daemon.json now matches the role template).

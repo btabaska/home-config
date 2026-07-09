@@ -10,6 +10,42 @@
 - **BedrockConnect remote entry updated** (mini `/opt/stacks/bedrock-connect/config/custom_servers.json` → new Bedrock address, container restarted, repo mirror synced). Runbook `configs/gaming/minecraft-crossplay-finish.md` rewritten with the new addresses + the restart gotcha.
 - Still open: `mc.tabaska.us` external domain (user has premium now — dashboard Domains → add domain → paste me the requested DNS record and I do Cloudflare + AdGuard LAN split-horizon) · Palworld/Bedrock could move to default ports (19132/8211) on the dedicated IP if the dashboard allows port choice — nice-to-have.
 
+### Audit remediation applied — sweep back to 63/63 (2026-07-09, Fable 5)
+
+Acting on the audit below + user direction ("retire SBOM, fix hygiene, take care of all
+recommended fixes, run the window items tonight"). All verified; full table in research/12.
+(playit/Palworld public access = the concurrent session's entry above — my M4 finding is
+resolved by that work; playit email is now verified there too.)
+
+- **glue-08 FIXED** — ansible-pull failed on `apt-get update` (the `ondrej/php` PPA releaseinfo
+  Label change). `apt-get update --allow-releaseinfo-change` cleared it; a real converge ran
+  `ok=30 failed=0` and pinged green. **NOTE:** that first successful converge applied daemon.json
+  log-caps → **restarted docker once → bounced all mini containers** (~1 min, all 38 verified back
+  healthy). Future converges are idempotent.
+- **SBOM RETIRED** (user) — `sbom-nightly.timer` disabled+stopped on mini+rig; `sbom` role removed
+  from `ansible/site.yml`. sbom-01/02/04 moved to a new `retired` block in progress.json.
+- **sbom-03 (etckeeper) FIXED** — the recurring wedge has TWO root causes, now understood: (1) a
+  **ref-lock race** between the `etc-watch.path` auto-committer and manual/other commits, and (2)
+  the auto-committer using bare `git commit` (not `etckeeper commit`), leaving `.etckeeper`
+  perpetually dirty → flapping `git-etckeeper-clean`. Cleared the lock + settled `.etckeeper` by
+  briefly stopping `etc-watch.path` for a clean commit. **Durable fix still open:** point etc-watch
+  at `etckeeper commit` and/or serialize /etc commits.
+- **immich dead-man FIXED** — hardcoded `/bin/curl` in the NAS `immich-db-dump.sh` (DSM cron's
+  minimal PATH couldn't find bare `curl`, so the scheduled ping never landed though the dump ran).
+  `immich-dump-nas` is now up.
+- **fix-19 regression FIXED** — the ansible docker role template omitted `default-address-pools`,
+  so every converge stripped fix-19 and bounced docker. Restored pools in the role + on-disk
+  daemon.json (take effect on next docker restart; not forced now).
+- **Hygiene:** mini `/opt/stacks/*/.env` world-readable 21→0; seedbox `slskd.yml.bak` → 600; rig
+  `/boot` retention lowered (MAX_SNAPSHOT_ENTRIES 8→4); verification `run-checks.sh` now warns when
+  run as root (the root-run false-failure trap that briefly looked like a "NAS outage").
+- **static IP (M2) SCHEDULED for tonight** — guarded auto-reverting apply
+  (`/usr/local/sbin/apply-static-ip.sh` + `apply-static-ip.timer`, fires **08:35 UTC = 04:35 EDT**).
+  Self-tests IP+gateway+external+DNS; reverts to DHCP + ntfy on any failure. ⚠️ **Still needs the
+  UniFi Fixed-IP reservation** for `98:5a:eb:ca:b2:ef`→.2 (success ntfy reminds you).
+- **Left to user:** rotate the NAS `health.env` NTFY_TOKEN (it surfaced in audit output).
+  **Final sweep: 63/63, 0 crit.**
+
 ### Full independent fleet audit — read-only sweep (2026-07-09, Fable 5)
 
 Report: `docs/research/12-full-audit-2026-07.md`. Swept mini/nas/rig/seedbox + the public

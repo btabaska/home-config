@@ -71,14 +71,22 @@
     append: true
 
 # --- the silent-disk-fill fix from sec-04: cap json-file logs globally
-- name: Cap container log size (sec-04)
+# --- fix-19: default-address-pools keep Docker off the 192.168.x home/IoT VLANs
+#     (without these, new bridge networks squat 192.168.16.0/20 incl. the IoT VLAN).
+#     Regression 2026-07-09: this template previously omitted the pools, so every
+#     converge stripped fix-19 and bounced docker. Restored here.
+- name: Cap container log size (sec-04) + pin default address pools (fix-19)
   ansible.builtin.copy:
     dest: /etc/docker/daemon.json
     mode: "0644"
     content: |
       {
         "log-driver": "json-file",
-        "log-opts": { "max-size": "{{ docker_log_max_size }}", "max-file": "{{ docker_log_max_file }}" }
+        "log-opts": { "max-size": "{{ docker_log_max_size }}", "max-file": "{{ docker_log_max_file }}" },
+        "default-address-pools": [
+          { "base": "172.16.0.0/12", "size": 24 },
+          { "base": "10.201.0.0/16", "size": 24 }
+        ]
       }
   notify: restart docker
 
