@@ -1,5 +1,14 @@
 # Rollout handoff state
 
+### rig NVMe fix APPLIED (out of window, user-authorized) + AER→ntfy monitor live (2026-07-09)
+
+- **NOTE for the concurrent session**: the NVMe kernel-param fix is **DONE** — do NOT re-apply it in the 4-7AM window (the earlier RCA entry's "await window" is superseded).
+- **Applied to rig `/etc/default/limine` `KERNEL_CMDLINE[default]`** (backup at `/etc/default/limine.bak-preaspm`): added `nvme_core.default_ps_max_latency_us=0` (disable NVMe APST) + `pcie_aspm=off`. Ran `limine-update`, verified generated `/boot/limine.conf` default entries carry the params + `root=UUID` intact, **rebooted rig** (came back clean in ~40s).
+- **VERIFIED**: `/proc/cmdline` has both params; APST latency now `0`; **PCIe AER errors = 0** over 2 min uptime (was **8-16 in the first 2 min** pre-fix). So the RxErr storm is stopped. (`pcie_aspm=off` still shows "ASPM L1 Enabled" in lspci LnkCtl, so APST was the dominant trigger; errors stopped regardless.)
+- **Drive mapping is by PCI addr, not nvmeX** (the number reshuffles on reboot): `0000:74:00.0` = WD Blue SN570 = OS drive (root btrfs `/`,`/home`,`/var/*` + `/boot`). Currently enumerates as `nvme2`. Use SMART/PCI, never the `nvmeN` name.
+- **AER→ntfy monitor deployed on rig** (self-contained, because tailnet ACL blocks mini→rig SSH so the mini runner can't read rig's journal): `/opt/pcie-aer-monitor/pcie-aer-monitor.sh` + systemd timer (every 20 min, root). Counts AER on `74:00.0` this boot; POSTs to ntfy `verification` topic (same iOS push you already get) only if correctable climbs ≥25/interval, any fatal/uncorrectable, or SMART critical!=0x00. Silent when healthy. Token: vault `ntfy.rig_aer_token` (label `rig-aer`). Repo: `foss-setup/configs/host/rig/pcie-aer-monitor/`. One `[TEST]` ntfy sent + delivered (200); no more test pings.
+- **Still open (physical/durable, user's call)**: reseat the SN570 M.2 / try a CPU-direct slot; consider dropping `nowatchdog` for auto-recovery; if AER ever returns, migrate OS to the Corsair MP600 PRO or replace the SN570. The software fix treats the trigger, not the marginal link itself.
+
 ### Kobo sync live + rig back + regressions cleared (2026-07-09 afternoon)
 
 - **Rig is BACK as of 08:59 EDT** — it came up within a minute of a `wakeonlan 50:eb:f6:b5:82:c6` fired from mini at ~08:58 (vault MAC, same as wake-rig.sh — verified identical, so the earlier failed WoL was state-dependent, not a wrong MAC; a user power-cycle at that moment is the alternative explanation). All services healthy post-boot: ollama/litellm/open-webui all 200, Apollo user-unit active, restic ran. NVMe RCA below explains the crash; fixes still await the 4-7AM window.
@@ -16,7 +25,7 @@
 - **Why it froze the whole box**: per `/etc/fstab`, the root btrfs `UUID=e4b84b06` (subvols `/`, `/home`, `/root`, `/srv`, `/var/cache`, `/var/tmp`, `/var/log`) **AND `/boot`** all live on this same SN570. A transient link wedge blocks ALL OS I/O → journald can't write (hence abrupt stop, no panic) → hard hang. Kernel cmdline has **`nowatchdog`** so nothing auto-recovers → frozen till manual power-cycle. **Unsafe Shutdowns = 523** (high) ⇒ this freeze/hard-reboot cycle has likely recurred.
 - **Aggravator = power management**: **PCIe ASPM L1 Enabled** on the link + **NVMe APST enabled** (`nvme_core.default_ps_max_latency_us=100000`). Power-state transitions on a marginal link are the classic trigger for RxErr storms + occasional drops.
 - **Ruled out**: thermal (28°C, no throttle/critical-temp), OOM (none), MCE/hardware-error (none), GPU (no Xid/NVRM errors — NVIDIA 610.43.02 clean).
-- **RECOMMENDED FIXES (NOT applied — need user OK + 4-7AM window; bootloader = limine)**:
+- **FIXES — #1 APPLIED & VERIFIED 2026-07-09 (user waived window); see the newest top entry. #2-4 still open.** (bootloader = limine)**:**
   1. Kernel params via `/etc/default/limine` `KERNEL_CMDLINE[default]`: add **`nvme_core.default_ps_max_latency_us=0`** (kill NVMe APST) + **`pcie_aspm=off`** (or gentler `pcie_aspm.policy=performance`). Regenerate limine + reboot. Most common cure for RxErr AER storms + associated hangs.
   2. Physical (user): power down, **reseat the SN570 M.2** (clean contacts); try a CPU-direct M.2 slot if free.
   3. Resilience: consider dropping `nowatchdog` / enabling a watchdog so a future hang auto-reboots (this box is meant to be 24/7 — 13h dead is the cost of no watchdog).

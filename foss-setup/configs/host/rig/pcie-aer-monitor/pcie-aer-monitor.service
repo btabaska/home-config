@@ -1,0 +1,9 @@
+[Unit]
+Description=PCIe AER monitor for OS NVMe (74:00.0) -> ntfy alert
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/pcie-aer-monitor/pcie-aer-monitor.sh
+Nice=10
