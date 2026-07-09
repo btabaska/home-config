@@ -5,10 +5,26 @@ The server is **up and verified**: Paper 26.1.2 on Temurin 25, Geyser on UDP
 both verified from the mini. Kuma monitor "Rig Minecraft Java" watches 25565.
 
 ## How to connect
-- **Java clients**: `192.168.10.12:25565`
-- **Bedrock (phones/PC)**: `192.168.10.12` port `19132`
-- **Switch / consoles**: need BedrockConnect (can't type an IP) — decision
-  still open with the user (self-host on mini). See todo-guide.
+LAN:
+- **Java**: `192.168.10.12:25565` · **Bedrock**: `192.168.10.12` port `19132`
+
+Public (playit.gg tunnels via agent on the rig, /opt/stacks/playit — home IP
+never exposed, no Dream Wall port-forwards; both verified 2026-07-09):
+- **Java**: `analysis-conditioning.gl.joinmc.link:14450` (joinmc.link has SRV —
+  most clients can omit the port)
+- **Bedrock**: `stop-spain.gl.at.ply.gg` port `58804`
+- Agent secret: vault `playit_gg.secret_key`. Account allows 4 TCP + 4 UDP
+  tunnels — add Palworld etc. as more tunnels on the SAME agent (dashboard;
+  the agent key is read-only via API, creation is dashboard/account-auth only).
+- **Switch / consoles**: still need BedrockConnect (can't type an address) —
+  decision open (self-host on mini). See todo-guide.
+
+**Sleep mode is OFF** (`Limits.SleepMode=False`): AMP's empty-server sleep
+(5 min) stopped the app and its wake listener only speaks Java protocol on
+25565 — Bedrock/Geyser was dark while asleep and Bedrock joins could never
+wake it. Rig is 24/7 so the server just stays up. Gotcha: when asleep, AMP
+answers Java status pings itself ("Powered by AMP" MOTD) — a Java ping is NOT
+proof the actual server is running.
 
 ## Architecture / operational notes (hard-won, don't relearn)
 - Instance: internal name **MinecraftCross01** (friendly "MinecraftCross"),
