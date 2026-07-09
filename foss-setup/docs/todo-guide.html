@@ -162,16 +162,10 @@
 </div>
 
 <div class="task">
-  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 07</div><h2 class="ttitle">Green-light the two monitoring integrations</h2></div></div>
-  <div class="chips"><span class="chip eff">just say go</span><span class="chip blk">creds already in vault</span></div>
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 07</div><h2 class="ttitle">Monitoring pass — DONE ✅ (2026-07-09)</h2></div></div>
+  <div class="chips"><span class="chip eff">done</span><span class="chip unb">nothing needed</span></div>
   <div class="body">
-    <p class="why">Uptime Kuma (up/down monitoring) and Beszel (host metrics) both need a focused scripted pass I didn't want to start blind at the tail of a long session. Their admin creds are already in the vault from earlier.</p>
-    <ul class="plain">
-      <li><b>Uptime Kuma</b> — add the ntfy notification channel + monitors for the ~34 unmonitored services (it only watches the NAS today). Needs its socket.io API scripted.</li>
-      <li><b>Beszel</b> — register the mini + NAS + rig agents (only your MacBook shows now) with down/disk alerts. The mini agent is socket-mode and needs its “Add System” done right.</li>
-    </ul>
-    <div class="vault">vault: uptime_kuma.admin_* · beszel.admin_*</div>
-    <div class="ping">Then ping Claude with “do the Kuma + Beszel pass” — no other input needed.</div>
+    <p class="why"><b>Complete.</b> Uptime Kuma now watches <b>47 monitors</b> across the whole fleet (all up: every mini/NAS/rig/HA/seedbox service, DNS resolvers, host pings, and 3 full-chain TLS vhost checks with cert-expiry alerts), all wired to ntfy → <code>homelab-alerts</code> on your phone. Beszel now tracks <b>mini + NAS + rig</b> (the old “MacBook” entry was actually the mini, mislabeled — fixed) with down/disk/memory alerts, test-verified to your phone. Check this off — nothing to do.</p>
   </div>
 </div>
 

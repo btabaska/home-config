@@ -93,3 +93,32 @@ checks:
     task_id: read-14
     runbook: wiki/runbooks/media.md
     enabled: true
+
+  - id: alert-kuma-none-down
+    name: "no Uptime Kuma monitor is down (47 fleet monitors seeded 2026-07-09)"
+    host: mini
+    cmd: docker exec uptime-kuma mariadb --socket=/app/data/run/mariadb.sock kuma -N -e "SELECT CONCAT('down=', COUNT(*)) FROM monitor m JOIN heartbeat h ON h.id=(SELECT MAX(id) FROM heartbeat WHERE monitor_id=m.id) WHERE m.active=1 AND h.status=0;"
+    expect: '^down=0$'
+    severity: warn
+    task_id: sec-03
+    runbook: wiki/runbooks/alerting.md
+    enabled: true
+
+  # needs BESZEL_ADMIN_USER/BESZEL_ADMIN_PASSWORD in /etc/verification/env
+  # (vault: beszel.admin_user / beszel.admin_password — never in this repo)
+  - id: alert-beszel-none-down
+    name: "Beszel hub shows no system down (mini/nas/rig agents, seeded 2026-07-09)"
+    host: mini
+    cmd: >-
+      TOK=$(curl -s -m 8 -X POST http://localhost:8090/api/collections/_superusers/auth-with-password
+      -H 'Content-Type: application/json'
+      -d "{\"identity\":\"$BESZEL_ADMIN_USER\",\"password\":\"$BESZEL_ADMIN_PASSWORD\"}"
+      | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])') &&
+      curl -s -m 8 -H "Authorization: $TOK"
+      'http://localhost:8090/api/collections/systems/records?filter=(status%3D%22down%22)'
+      | python3 -c 'import json,sys; print("down="+str(json.load(sys.stdin)["totalItems"]))'
+    expect: '^down=0$'
+    severity: warn
+    task_id: sec-03
+    runbook: wiki/runbooks/alerting.md
+    enabled: true
