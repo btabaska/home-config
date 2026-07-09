@@ -100,13 +100,14 @@
   <div class="chips"><span class="chip eff">3 min</span><span class="chip unb">unblocks: game streaming</span></div>
   <div class="body">
     <p class="why">Apollo is running on the rig with NVENC hardware encoding and captures the dummy display when your monitor's off. Pairing is a one-time PIN exchange.</p>
+    <div class="note"><span class="t">Fixed 2026-07-09</span>The Apollo web password in the vault was wrong — I reset it and verified login works (POST /api/login → 200). The <b>new</b> password is in the vault at <code>apollo.web_password</code>; user is <code>brandon</code>. Use that one.</div>
     <ol class="steps">
       <li>Install/open <b>Moonlight</b> on the client (Steam Deck, iPhone, Apple TV, laptop). It should auto-discover the rig on your LAN, or add <code>192.168.10.12</code> manually.</li>
       <li>Select the rig — Moonlight shows a <b>4-digit PIN</b>.</li>
-      <li>Open <a href="https://apollo.tabaska.us">apollo.tabaska.us</a> (user <code>brandon</code>, vault password), go to <b>PIN</b>, and enter it.</li>
+      <li>Open <a href="https://apollo.tabaska.us">apollo.tabaska.us</a> (user <code>brandon</code>, <b>new</b> vault password), go to <b>PIN</b>, and enter it.</li>
       <li>Set the client's resolution/fps: <b>Steam Deck → 1280×800, 90fps</b>; <b>4K TV → 3840×2160, 30fps</b>. Apollo switches the display to match per session and reverts after.</li>
     </ol>
-    <div class="vault">vault: apollo.web_password</div>
+    <div class="vault">vault: apollo.web_password (reset 2026-07-09)</div>
     <div class="note"><span class="t">Heads up</span>1280×800@90 isn't in the current dummy plug's EDID, so the Deck may negotiate down to 60fps until your 4K120 dummy arrives. 1080p and 4K@30 work now.</div>
     <div class="ping">No ping needed — once paired, Moonlight's “Wake PC” also works. Tell me if you want per-game launch shortcuts.</div>
   </div>
@@ -118,14 +119,8 @@
   <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 04</div><h2 class="ttitle">Get a TMDb API key</h2></div></div>
   <div class="chips"><span class="chip eff">5 min</span><span class="chip unb">finishes: Kometa</span></div>
   <div class="body">
-    <p class="why">Kometa builds Plex collections/overlays but every run fails without a (free) TMDb key. It's the only thing left on it.</p>
-    <ol class="steps">
-      <li>Sign up at <a href="https://www.themoviedb.org">themoviedb.org</a> (free).</li>
-      <li>Profile → <b>Settings → API</b> → request an API key (Developer, personal use). Approval is instant.</li>
-      <li>Copy the <b>API Read Access Token</b> (v4) or the API Key (v3) — Kometa uses the v3 key.</li>
-    </ol>
-    <div class="vault">drop into vault: tmdb.apikey</div>
-    <div class="ping">Then ping Claude — I'll wire it into Kometa's config and kick a run.</div>
+    <p class="why"><b>✓ Done (2026-07-09)</b> — you dropped the key in the vault (<code>tmdb.api_key</code>); I validated it against TMDb (live lookup OK) and wired it into Kometa's config on the mini. Kometa's nightly run at 05:00 now has what it needs. Nothing left for you here.</p>
+    <div class="ping">No ping needed. (If the 05:00 build ever errors, tell me — the only prior failure was a transient DNS blip during the network instability, now resolved.)</div>
   </div>
 </div>
 

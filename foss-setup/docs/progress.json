@@ -1,11 +1,11 @@
 {
  "_meta": {
-  "updated": "2026-07-09T12:00:00-04:00",
+  "updated": "2026-07-09T12:40:00-04:00",
   "source": "foss-analogue-progress-v1",
   "plan": "v3 — staged autonomous runs",
   "task_count": 223,
-  "completed_count": 135,
-  "note": "Canonical progress-as-code (fix-16). Auto-loaded and additively merged by docs/index.html when served over HTTP; use Import progress on file://. Reopened ids are intentionally absent from done. 2026-07-09: closed the 9 handoff onboarding items (setup live), read-10 (iPod toolchain verified on rig), and media-04 (Tdarr won't-do); stripped all ⚠/SUPERSEDED markers from the tracker."
+  "completed_count": 136,
+  "note": "Canonical progress-as-code (fix-16). Auto-loaded and additively merged by docs/index.html over HTTP; Import progress on file://. 2026-07-09: closed 9 handoff onboarding items, read-10 (iPod toolchain on rig), media-04 (Tdarr won't-do), and media-02 (Kometa — TMDb key now in vault, wired + validated). Stripped all ⚠/SUPERSEDED markers."
  },
  "done": {
   "betty-01": true,
@@ -142,9 +142,8 @@
   "handoff-10": true,
   "handoff-11": true,
   "read-10": true,
-  "media-04": true
+  "media-04": true,
+  "media-02": true
  },
- "reopened": {
-  "media-02": "Kometa config was untouched template (wrong plex subnet, blank token+TMDb key); daily runs failing since deploy. Fixed plex url/token from vault 2026-07-08; still blocked on human TMDb API key."
- }
+ "reopened": {}
 }
