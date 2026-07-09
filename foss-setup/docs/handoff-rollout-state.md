@@ -1,5 +1,13 @@
 # Rollout handoff state
 
+### BedrockConnect LIVE — consoles join MinecraftCross with zero device config (2026-07-09 late²)
+
+- **Deployed `bedrock-connect` on the mini** (`/opt/stacks/bedrock-connect`, strausmann/minecraft-bedrock-connect, UDP **19132** — free on mini since Geyser's 19132 is on the rig; NODB=true, custom server list at `config/custom_servers.json` pre-seeded with `MinecraftCross (Home)` = 192.168.10.12:19132 and a playit fallback entry). Verified: RakNet pong "Join To Open Server List"; custom-server data confirmed loaded in logs.
+- **DNS hijack instead of console DNS settings**: 10 featured-server domains (hivebedrock.network, geo.hivebedrock.network, mco.mineplex.com, org.mineplex.com, mco.lbsg.net, play.inpvp.net, mco.cubecraft.net, play.galaxite.net, play.pixelparadise.gg, play.enchanted.gg) rewritten → 192.168.10.2 on **both** AdGuards (mini: YAML edit + container restart — no API creds for mini AdGuard in vault; NAS: `/control/rewrite/add` API). Verified both resolvers answer 192.168.10.2 for the hijacked names. **Consequence: real featured servers are unreachable from the LAN** while rewrites are on (acceptable per user; scope per-device later if anyone misses The Hive).
+- Console flow (works for ANY Bedrock console on home WiFi, not just Switch): Minecraft → Play → Servers → open any featured tile → BedrockConnect list → MinecraftCross (Home). Off-LAN the hijack doesn't apply (featured servers resolve normally).
+- Repo: /opt/stacks committed+pushed on mini (compose only — config/ is gitignored there); full mirror incl. custom_servers.json at `configs/docker-stack/stacks/bedrock-connect/`. todo-guide TASK 09 → done.
+- Note for next agent: mini AdGuard rewrites now include these 10 + `*.tabaska.us`; if AdGuard config is ever regenerated, re-add (NAS list is API-managed, mini's is in the YAML).
+
 ### playit.gg public access LIVE + AMP sleep-mode gotcha (2026-07-09 late)
 
 - **Decision: friends connect via playit.gg tunnels** (not raw static-IP port-forward, not Tailscale — consoles can't run TS). Agent container on rig `/opt/stacks/playit` (ghcr.io/playit-cloud/playit-agent, host network, SECRET_KEY in on-host .env + vault `playit_gg.secret_key`; repo mirror configs/gaming/playit/). One agent, many tunnels — account allows **4 TCP + 4 UDP**; Palworld etc. = just more dashboard tunnels later.

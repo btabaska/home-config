@@ -1,0 +1,21 @@
+# BedrockConnect — lets consoles (Switch 2) join self-hosted Bedrock servers.
+# AdGuard rewrites hijack the featured-server domains -> this box; the console
+# opens any featured server tile and lands in a server-list UI pre-seeded with
+# MinecraftCross. No console settings needed (LAN DNS is already AdGuard).
+services:
+  bedrock-connect:
+    image: strausmann/minecraft-bedrock-connect:latest
+    container_name: bedrock-connect
+    restart: unless-stopped
+    ports:
+      - "19132:19132/udp"
+    environment:
+      - NODB=true
+      - CUSTOM_SERVERS=/config/custom_servers.json
+    volumes:
+      - ./config:/config
+    networks:
+      - edge
+networks:
+  edge:
+    external: true

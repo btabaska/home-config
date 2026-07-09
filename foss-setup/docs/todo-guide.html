@@ -184,11 +184,16 @@
 </div>
 
 <div class="task">
-  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 09</div><h2 class="ttitle">Self-host BedrockConnect for the Switch?</h2></div></div>
-  <div class="chips"><span class="chip eff">decision</span><span class="chip unb">Switch 2 → your MC server</span></div>
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 09</div><h2 class="ttitle">BedrockConnect — DONE ✅ (2026-07-09)</h2></div></div>
+  <div class="chips"><span class="chip eff">done</span><span class="chip unb">Switch: just open Servers</span></div>
   <div class="body">
-    <p class="why">The Switch can't type a server IP, so it joins your Minecraft world via BedrockConnect (a DNS trick that adds a “connect to server” tile). I can self-host it on the mini so no third-party DNS is involved.</p>
-    <div class="ping">Ping Claude with “stand up BedrockConnect” (do Task 02 first).</div>
+    <p class="why"><b>Live, self-hosted on the mini.</b> AdGuard (both resolvers) hijacks the featured-server domains, so any console on home WiFi lands in BedrockConnect with <code>MinecraftCross (Home)</code> pre-listed — <b>no Switch settings changes needed</b>.</p>
+    <ol class="steps">
+      <li>On the Switch (home WiFi): <b>Minecraft → Play → Servers</b> tab.</li>
+      <li>Open <b>any</b> featured server (The Hive, Lifeboat, CubeCraft…) — instead of that server, the BedrockConnect list appears.</li>
+      <li>Pick <b>MinecraftCross (Home)</b> → Join. (A “Remote/playit” entry exists too, for oddball routing cases.)</li>
+    </ol>
+    <div class="note"><span class="t">Heads up</span>This only works on your home network (the DNS trick lives in AdGuard). Real featured servers are unreachable from home WiFi while this is on — say the word if anyone ever wants them back and I'll scope the rewrites per-device.</div>
   </div>
 </div>
 
