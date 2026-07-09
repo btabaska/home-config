@@ -355,6 +355,12 @@ wiki.{$DOMAIN} {
 	file_server
 }
 
+# RomM — retro ROM library (retro-02); app on the mini, ROMs on the NAS games share
+romm.{$DOMAIN} {
+	import local_tls
+	reverse_proxy romm:8080
+}
+
 # ---------------------------------------------------------------------------
 # NOTE on host placement: the upstreams above use container names, which only
 # resolve for services that share this Caddy host's `edge` network (i.e. run on

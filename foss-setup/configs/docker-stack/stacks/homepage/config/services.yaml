@@ -204,6 +204,11 @@
         href: https://sunshine.tabaska.us
         description: Game streaming host (rig runs 24/7)
         siteMonitor: https://192.168.10.12:47990
+    - RomM (retro library):
+        icon: mdi-controller-classic
+        href: https://romm.tabaska.us
+        description: Self-hosted ROM manager + web player (IGDB metadata); app on the mini, ROMs on the NAS games share
+        siteMonitor: http://romm:8080
 
 - Infrastructure & Ops:
     - Beszel:

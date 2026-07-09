@@ -125,17 +125,17 @@
 </div>
 
 <div class="task">
-  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 05</div><h2 class="ttitle">Get a Twitch/IGDB client ID + secret</h2></div></div>
-  <div class="chips"><span class="chip eff">5 min</span><span class="chip unb">unblocks: RomM / retro</span></div>
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 05</div><h2 class="ttitle">Create your RomM admin account (retro library is live)</h2></div></div>
+  <div class="chips"><span class="chip eff">2 min UI</span><span class="chip unb">retro library</span></div>
   <div class="body">
-    <p class="why">RomM (your retro game library) pulls box art and metadata from IGDB, which authenticates via a free Twitch developer app.</p>
+    <p class="why"><b>✓ Deployed 2026-07-09</b> — you added the IGDB client ID + secret to the vault; I validated them against Twitch/IGDB (live game lookup OK) and stood up <b>RomM</b> on the mini at <a href="https://romm.tabaska.us">romm.tabaska.us</a> (real cert, IGDB metadata enabled). ROMs live on the NAS <code>games</code> share. Only the first-run wizard is left.</p>
     <ol class="steps">
-      <li>Go to <a href="https://dev.twitch.tv/console">dev.twitch.tv/console</a> → <b>Register Your Application</b>.</li>
-      <li>Name it anything (e.g. “romm”), OAuth Redirect URL <code>http://localhost</code>, Category “Application Integration”.</li>
-      <li>Copy the <b>Client ID</b>, then <b>New Secret</b> and copy the <b>Client Secret</b>.</li>
+      <li>Open <a href="https://romm.tabaska.us">romm.tabaska.us</a> → the setup wizard prompts you to <b>create the first admin user</b> (pick a username + password; save it — tell me and I'll vault it).</li>
+      <li>Drop ROM files into the matching platform folder on the NAS games share: <code>/mnt/share/Games/romm/roms/&lt;platform&gt;/</code> (folders already made for gb, gbc, gba, nes, snes, n64, genesis, psx, psp, nds).</li>
+      <li>In RomM, click <b>Scan</b> — IGDB fills in box art and metadata automatically.</li>
     </ol>
-    <div class="vault">drop into vault: igdb.client_id · igdb.client_secret</div>
-    <div class="ping">Then ping Claude — I'll wire RomM and stand up the retro library.</div>
+    <div class="vault">already in vault: igdb.client_id · igdb.client_secret · romm.*</div>
+    <div class="ping">Then ping Claude with your RomM admin creds — I'll vault them, add the RomM Homepage widget (rom/platform counts), and wire the EmulatorJS in-browser player. Retro handheld/EmuDeck steps are separate (tracker retro-03..07).</div>
   </div>
 </div>
 
