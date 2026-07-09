@@ -39,6 +39,10 @@ services:
       - AUTO_UPDATE_ENABLED=true
       - AUTO_UPDATE_CRON_EXPRESSION=0 4 * * *   # 4AM ET maintenance window
       - AUTO_REBOOT_ENABLED=false       # don't reboot out from under players
+      # --- gameplay tuning (2026-07-09): Hard base, but pals take 0.8x dmg + 2x drops ---
+      - DIFFICULTY=Hard
+      - PAL_DAMAGE_RATE_DEFENSE=0.8    # pals take 0.8x damage (tankier than Hard default)
+      - ENEMY_DROP_ITEM_RATE=2.0       # dropped-items multiplier 2x
     volumes:
       - ./game:/palworld
     healthcheck:
