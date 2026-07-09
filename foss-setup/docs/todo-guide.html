@@ -174,11 +174,12 @@
     <ol class="steps">
       <li>Plug the Kobo (Sage or Forma) into any computer via USB and accept “Connect” on the device.</li>
       <li>On the mounted drive open the hidden <code>.kobo</code> folder → <code>Kobo/Kobo eReader.conf</code> in a text editor.</li>
-      <li>In the <code>[OneStoreServices]</code> section add/replace the line <code>api_endpoint=https://books.tabaska.us/kobo/&lt;token&gt;</code> — the full URL (token included) is in the vault at <code>cwa.kobo_api_endpoint_admin</code>, or view the token at <a href="https://books.tabaska.us">books.tabaska.us</a> → login → profile → Kobo Sync Token.</li>
+      <li>In the <code>[OneStoreServices]</code> section add/replace the line <code>api_endpoint=https://books.tabaska.us/kobo/&lt;token&gt;</code> — use a <b>different token per device</b> so reading progress stays separate: <b>Kobo #1</b> → <code>cwa.kobo_api_endpoint_admin</code> (admin user); <b>Kobo #2</b> → <code>cwa.kobo2_api_endpoint</code> (user <code>kobo2</code>). Both full URLs (token included) are in the vault.</li>
       <li>Save, eject, unplug, then tap <b>Sync</b> on the Kobo (home screen sync icon). Your CWA library downloads over WiFi (auto-converted to kepub); the official Kobo store still works through the passthrough proxy.</li>
-      <li>Repeat for the second Kobo — same endpoint is fine (both under the admin account). If you want separate reading-progress/libraries per device, ask Claude to add a second CWA user + token.</li>
+      <li>Both devices see the same full library, but each tracks its own reading position/shelves under its own user. To manage a device's shelves on the web, log into <a href="https://books.tabaska.us">books.tabaska.us</a> as that user (admin, or <code>kobo2</code> — passwords in the vault).</li>
     </ol>
-    <div class="vault">vault: cwa.kobo_api_endpoint_admin · cwa.kobo_sync_token_admin</div>
+    <div class="note"><span class="t">Done 2026-07-09</span>Second CWA user + Kobo token created and verified (initialization endpoint returns 200 with the kobo2 token, 401 with a bogus one). Both endpoints are live in the vault.</div>
+    <div class="vault">vault: cwa.kobo_api_endpoint_admin · cwa.kobo_sync_token_admin · cwa.kobo2_api_endpoint · cwa.kobo2_sync_token · cwa.kobo2_username · cwa.kobo2_password</div>
     <div class="note"><span class="t">Heads up</span>The Kobo must be on the home WiFi (or Tailscale) where <code>books.tabaska.us</code> resolves via AdGuard split-horizon DNS. First sync can take a few minutes with a large library.</div>
     <div class="ping">Then ping Claude if a sync errors — otherwise nothing needed. Optional later: KOReader on the Kobo for Wallabag/RSS (read-08/09 in the tracker).</div>
   </div>
