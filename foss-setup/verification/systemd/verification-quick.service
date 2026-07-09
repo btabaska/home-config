@@ -12,6 +12,9 @@ EnvironmentFile=-/etc/verification/env
 # sat invisible for hours because the full sweep only runs daily at 07:15).
 # --notify: quick tier alerts on state change; ad-hoc filtered runs stay silent.
 ExecStart=/opt/verification/bin/run-checks.sh --host url --notify
+# Fleet-wide container manifests + health + failed systemd units (see
+# checks.d/docker-fleet.yaml) — the blanket "anything stopped working" layer.
+ExecStart=/opt/verification/bin/run-checks.sh --host docker-fleet --notify
 # Dead-man: healthchecks "verification-quick-mini" (ntfy on silence >1h30m).
 # Deploy note: replace the placeholder with vault healthchecks.verification_quick_mini_ping_url
 ExecStartPost=/usr/bin/curl -fsS -m 10 --retry 3 -o /dev/null HC_QUICK_PING_URL

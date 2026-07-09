@@ -1,5 +1,19 @@
 # Rollout handoff state
 
+### 100% surface coverage: fleet manifests + tripwire, every container/unit now monitored (2026-07-09 late⁴)
+
+- **User mandate**: "100% surface coverage across every service. If anything stops working I need to know. Period." Full inventory (71 containers on mini 38 / nas 23+1 stuck / rig 8, plus native units) diffed against all monitoring: ~25 port-less workers and sidecars had ZERO coverage (beets, kometa, soularr, unpackerr, diun×2, bedrock-connect, bgutil-pot, rreading-glasses, every db/redis/tika sidecar), plus 3 unmonitored web UIs (RoMM, AMP panel, Synology DSM) and recyclarr's weekly cron whose failures went only to a log file.
+- **Blanket mechanism, not 30 hand-made monitors** — `checks.d/docker-fleet.yaml` (domain runs hourly via quick tier + daily; state file results-docker-fleet.json):
+  - per-host MANIFEST check: running containers must equal `verification/coverage/<host>.containers` (repo + mini:/opt/verification/coverage/). Catches any crashed/stopped container by name AND any NEW un-manifested container — the tripwire that keeps coverage at 100% as the fleet grows. **Deploy/retire a service ⇒ update the manifest** (runbook updated).
+  - per-host HEALTH check: no unhealthy or restart-looping containers (broken-but-running class).
+  - `systemd-failed-{mini,rig}`: any failed native unit fails the sweep.
+  - NAS access: `NAS_SUDO_PASSWORD` added to mini /etc/verification/env (vault sudo.nas_password); rig via mini→rig LAN ssh. `LC_ALL=C sort` everywhere (mac/linux collation differs — bit me once).
+  - **Negative-tested**: stopped diun → both mini checks failed naming it → restarted, state reset cleanly.
+- **Kuma +3** (53 active, all up): Mini RoMM :8998, Rig AMP panel :8080, NAS DSM :5000 (`add_web` section in add-functional-monitors.sh).
+- **recyclarr weekly cron dead-manned**: healthchecks `recyclarr-sync-mini` (timeout 7d, grace 1d, vault `healthchecks.recyclarr_sync_mini_ping_url`), crontab now curls the ping after successful sync; armed with an initial ping.
+- **Cleanups**: removed a HUNG beets one-off on nas (`media-automation-beets-run-*`, `beet version` stuck "Up 33 hours" — compose-run leftovers are excluded from manifests via `-run-` filter, but watch for these hanging); disabled+reset retired `sbom-nightly.timer` on rig (was the only failed unit in the fleet, SBOM retired in audit f9251f9).
+- **Deliberately NOT covered (documented)**: job-level failures inside long-running workers (kometa's nightly run, beets imports — container up, job failing; needs log scraping/exit-hook work); Synology native pkg failures (DSM self-manages; Beszel watches host vitals; DSM web UI now Kuma-monitored); seedbox = Deluge+slskd Kuma only (no root on betty); Palworld public UDP path (REST covers the server, playit-bedrock-public is the UDP-tunnel canary). And the standing SPOF: all alerting lives on mini — HA-based external watcher still recommended (user decision pending).
+
 ### Playit tunnel: wedged TCP claims found + fixed by the new checks; upstream claim degradation ongoing (2026-07-09 late³)
 
 - **The new public-path probing immediately caught a REAL silent outage**: Java public path (69.9.181.17:1105) dead — TCP connects accepted by the edge but real MC status pings timed out. Agent logs: "timeout connecting to claim address" per connection while claiming "connected; tunnels loaded, 0 pending". **The known UDP claim-wedge gotcha applies to TCP claims too**; `docker restart playit` fixed it. Every local check and playit's own dashboard stayed green throughout — nobody could join while everything looked fine.

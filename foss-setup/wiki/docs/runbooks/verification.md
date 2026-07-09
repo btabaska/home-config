@@ -44,6 +44,16 @@ Four layers:
     state file, both are dead-manned in Healthchecks (`verification-mini`,
     `verification-quick-mini`).
 
+    **Blanket coverage + tripwire (since 2026-07-09, user mandate: 100%
+    surface)**: `checks.d/docker-fleet.yaml` diffs every host's running
+    containers against `verification/coverage/<host>.containers` and flags
+    unhealthy/restart-looping containers and failed systemd units — so
+    port-less workers (beets, kometa, soularr, sidecar DBs…) page like
+    anything else, and a NEW container that nobody added monitoring for
+    fails the sweep until the manifest (and, if user-facing, a Kuma
+    monitor) is updated. **Deploying or retiring a service = update the
+    manifest in the repo and redeploy it to mini.**
+
     **Probe what the user experiences, not just what answers.** The
     2026-07-09 lesson: ai.tabaska.us had "no models" for hours while 63/63
     checks and 50 Kuma monitors stayed green, because every probe tested

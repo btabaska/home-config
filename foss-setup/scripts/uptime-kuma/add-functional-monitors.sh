@@ -50,6 +50,20 @@ main() {
   # sweep instead: checks playit-java-public / playit-bedrock-public
   # (checks.d/rig.yaml, hourly via the url quick tier).
 
+  # Web UIs found unmonitored in the 2026-07-09 full-coverage audit.
+  # (Workers/sidecars without ports are covered by checks.d/docker-fleet.yaml
+  # manifest+health checks, not Kuma.)
+  add_web() { # name url accept
+    local name="$1" url="$2" accept="$3"
+    exists "$name" && { echo "skip  $name"; return 0; }
+    sql "INSERT INTO monitor (name, active, user_id, \`interval\`, url, type, maxretries, retry_interval, accepted_statuscodes_json, method)
+         VALUES ('${name//\'/\\\'}', 1, ${USER_ID}, 60, '${url}', 'http', 3, 60, '${accept}', 'GET');"
+    echo "added $name"
+  }
+  add_web "Mini RoMM"      "http://192.168.10.2:8998"  '["200-299","300-399"]'
+  add_web "Rig AMP panel"  "http://${RIG}:8080"        '["200-299","300-399"]'
+  add_web "NAS DSM"        "http://192.168.10.4:5000"  '["200-299","300-399"]'
+
   # Link everything to the default ntfy notification (same as seed-monitors.sh)
   local nid
   nid=$(sql "SELECT id FROM notification WHERE is_default=1 LIMIT 1;")

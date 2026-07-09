@@ -1,0 +1,121 @@
+# Blanket container coverage — the "100% surface" layer (user mandate 2026-07-09:
+# "If anything stops working I need to know. Period.")
+#
+# Two generic invariants per host instead of one monitor per service:
+#   1. MANIFEST: running containers == verification/coverage/<host>.containers.
+#      A crashed/stopped worker (beets, kometa, soularr, db sidecars…) shows as
+#      "missing"; a NEW container nobody added monitoring for shows as "extra"
+#      — the coverage TRIPWIRE that keeps this at 100% as the fleet grows.
+#      Deploying a new service = add it to the manifest (and a Kuma monitor if
+#      it's user-facing); retiring one = remove it. Manifests live in the repo
+#      and deploy to mini:/opt/verification/coverage/.
+#   2. HEALTH: no container unhealthy or in a restart loop (these still count
+#      as "running" and pass the manifest check while being broken).
+#
+# One-off `compose run` containers (named *-run-<hash>) are excluded.
+# All checks execute from mini (host: mini/local) so NAS sudo + ssh work; the
+# shared domain "docker-fleet" puts them in the hourly quick tier
+# (verification-quick.service runs --host docker-fleet --notify).
+# NAS needs NAS_SUDO_PASSWORD in /etc/verification/env (vault: sudo.nas_password).
+checks:
+  - id: containers-manifest-mini
+    name: "mini: running containers match coverage manifest"
+    host: mini
+    cmd: >-
+      docker ps --format '{{.Names}}' | grep -v -- '-run-' | LC_ALL=C sort
+      | diff /opt/verification/coverage/mini.containers - && echo COVERAGE_OK
+    expect: COVERAGE_OK
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  - id: containers-health-mini
+    name: "mini: no unhealthy or restart-looping containers"
+    host: mini
+    cmd: >-
+      bad=$(docker ps -a --filter health=unhealthy --format '{{.Names}}';
+      docker ps -a --filter status=restarting --format '{{.Names}}');
+      if [ -z "$bad" ]; then echo HEALTH_OK; else echo "BAD: $bad"; fi
+    expect: HEALTH_OK
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  - id: containers-manifest-nas
+    name: "nas: running containers match coverage manifest"
+    host: mini
+    cmd: >-
+      printf '%s\n' "$NAS_SUDO_PASSWORD"
+      | ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "sudo -S -p '' /usr/local/bin/docker ps --format '{{.Names}}'" 2>/dev/null
+      | grep -v -- '-run-' | LC_ALL=C sort
+      | diff /opt/verification/coverage/nas.containers - && echo COVERAGE_OK
+    expect: COVERAGE_OK
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  - id: containers-health-nas
+    name: "nas: no unhealthy or restart-looping containers"
+    host: mini
+    cmd: >-
+      bad=$(printf '%s\n%s\n' "$NAS_SUDO_PASSWORD" "$NAS_SUDO_PASSWORD"
+      | ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "sudo -S -p '' /usr/local/bin/docker ps -a --filter health=unhealthy --format '{{.Names}}';
+      sudo -S -p '' /usr/local/bin/docker ps -a --filter status=restarting --format '{{.Names}}'" 2>/dev/null);
+      if [ -z "$bad" ]; then echo HEALTH_OK; else echo "BAD: $bad"; fi
+    expect: HEALTH_OK
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  - id: containers-manifest-rig
+    name: "rig: running containers match coverage manifest"
+    host: mini
+    cmd: >-
+      ssh -o BatchMode=yes -o ConnectTimeout=10 rig
+      "docker ps --format '{{.Names}}'" | grep -v -- '-run-' | LC_ALL=C sort
+      | diff /opt/verification/coverage/rig.containers - && echo COVERAGE_OK
+    expect: COVERAGE_OK
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  - id: containers-health-rig
+    name: "rig: no unhealthy or restart-looping containers"
+    host: rig
+    cmd: >-
+      bad=$(docker ps -a --filter health=unhealthy --format '{{.Names}}';
+      docker ps -a --filter status=restarting --format '{{.Names}}');
+      if [ -z "$bad" ]; then echo HEALTH_OK; else echo "BAD: $bad"; fi
+    expect: HEALTH_OK
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  # Native-service blanket: any failed systemd unit = something stopped working.
+  - id: systemd-failed-mini
+    name: "mini: no failed systemd units"
+    host: mini
+    cmd: systemctl --failed --no-legend | grep . || echo NO_FAILED_UNITS
+    expect: NO_FAILED_UNITS
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  - id: systemd-failed-rig
+    name: "rig: no failed systemd units"
+    host: rig
+    cmd: systemctl --failed --no-legend | grep . || echo NO_FAILED_UNITS
+    expect: NO_FAILED_UNITS
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
