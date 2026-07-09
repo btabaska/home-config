@@ -79,19 +79,16 @@
 </div>
 
 <div class="task">
-  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 02</div><h2 class="ttitle">Finish the Minecraft server in AMP</h2></div></div>
-  <div class="chips"><span class="chip eff">~5 min UI</span><span class="chip unb">unblocks: crossplay + monitoring</span></div>
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 02</div><h2 class="ttitle">Minecraft crossplay server — DONE ✅ (2026-07-09)</h2></div></div>
+  <div class="chips"><span class="chip eff">done</span><span class="chip unb">play now</span></div>
   <div class="body">
-    <p class="why">AMP is deployed and licensed, but this minimal container can't create the <em>first</em> game instance from the API/CLI — it has to be born through AMP's web UI. Everything else (firewall, licence, runbook) is prepared. Full runbook: <code>configs/gaming/minecraft-crossplay-finish.md</code>.</p>
-    <ol class="steps">
-      <li>Open <a href="https://amp.tabaska.us">amp.tabaska.us</a> and log in (user <code>brandon</code>, password in the vault).</li>
-      <li>Go to <b>Configuration → Instance Deployment → Deployment Defaults → Licence Key</b>, paste your AMP licence, and Save. <em>(This one field is the only reason the automated create failed — AMP needs it to license child instances.)</em></li>
-      <li>Back on the AMP home, click <b>Create Instance</b> → Application <b>Minecraft Java Edition</b> → Name <code>MinecraftCross</code> → Port <code>25565</code> → Create.</li>
-      <li><b>Manage</b> the new instance → in its Configuration set the server type to <b>Paper</b> (Geyser/Floodgate are Spigot plugins — they need Paper, not Vanilla) → Update/Install → Start.</li>
-      <li>In the instance's <b>Plugins</b> browser, install <b>Geyser-Spigot</b> and <b>Floodgate</b>, then restart the instance.</li>
-    </ol>
-    <div class="vault">vault: cubecoders_amp.admin_password · cubecoders_amp.license_key</div>
-    <div class="ping">Then ping Claude — I'll verify the Bedrock↔Java handshake, tune the Geyser/Floodgate configs, wire player-count monitoring into ntfy + Uptime Kuma, and set up the Switch 2 connection (BedrockConnect).</div>
+    <p class="why"><b>Live and verified.</b> <code>MinecraftCross</code> runs Paper 26.1.2 with Geyser + Floodgate; Java and Bedrock handshakes both tested from the LAN. Both the AMP panel and the server now auto-start after a rig reboot (the “white screen” cause is fixed). A Kuma monitor watches it. Runbook: <code>configs/gaming/minecraft-crossplay-finish.md</code>.</p>
+    <ul class="plain">
+      <li><b>Java</b> (PC): connect to <code>192.168.10.12:25565</code></li>
+      <li><b>Bedrock</b> (phone/PC): server <code>192.168.10.12</code>, port <code>19132</code></li>
+      <li><b>Switch 2</b>: needs BedrockConnect — that's Task 09's decision.</li>
+    </ul>
+    <div class="ping">Optional follow-ups, just say the word: whitelist on, mc.tabaska.us name (Task 10), BedrockConnect for the Switch (Task 09).</div>
   </div>
 </div>
 

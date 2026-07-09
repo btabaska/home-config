@@ -1,12 +1,27 @@
 # AMP (CubeCoders) game panel — containerized (ImageGenius image), so it never
 # touches the CachyOS workstation host. License activates non-interactively via
 # LICENCE. ADS module = the panel that provisions/monitors game instances.
+#
+# 2026-07-09 additions (see handoff):
+# - hostname pinned: AMP licence activations are machine-id-bound; without a
+#   fixed hostname every `compose up` recreate invalidates instance licences
+#   (deployed rig value: c5f46f35aee3 — keep whatever the container had when
+#   the licence was last activated, or reactivate after changing it).
+# - Java for Minecraft: base image is Alpine with NO java. openjdk21 comes via
+#   the package-install mod; Minecraft 26.x additionally needs Java 25, which
+#   lives in the persisted volume at /config/java/jdk-25.0.3+9-jre (Temurin
+#   musl build) behind /config/java/java25-paperfix.sh — a wrapper that strips
+#   the `--log-strip-color` flag AMP's module still passes but Paper 26.x
+#   removed. The instance's Java.JavaVersion points at the wrapper.
 services:
   amp:
     image: ghcr.io/imagegenius/amp:latest
     container_name: amp
+    hostname: c5f46f35aee3  # pinned: AMP licence activation is machine-id-bound
     restart: unless-stopped
     environment:
+      - DOCKER_MODS=linuxserver/mods:universal-package-install
+      - INSTALL_PACKAGES=openjdk21-jre-headless # Minecraft needs Java; base image has none
       - PUID=1000
       - PGID=1000
       - TZ=America/New_York
@@ -19,3 +34,5 @@ services:
     ports:
       - "8080:8080"       # ADS web panel (fronted by Caddy at amp.tabaska.us)
       - "8000-8010:8000-8010/udp"  # reserved for game instances AMP provisions
+      - "25565:25565"     # Minecraft Java (MinecraftCross)
+      - "19132:19132/udp" # Minecraft Bedrock via Geyser (MinecraftCross)

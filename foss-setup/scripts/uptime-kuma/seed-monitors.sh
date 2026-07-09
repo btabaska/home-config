@@ -119,6 +119,9 @@ main() {
   add_dns  "DNS AdGuard NAS"  "home.tabaska.us" "${NAS}" 53
   add_port "DNS Unbound mini" "unbound" 5335
 
+  # ---- game servers ----
+  add_port "Rig Minecraft Java" "${RIG}" 25565   # Bedrock/Geyser is UDP 19132 (not probeable here)
+
   # ---- host reachability ----
   add_ping "Ping NAS"     "${NAS}"
   add_ping "Ping Rig"     "${RIG}"
