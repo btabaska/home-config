@@ -1,0 +1,14 @@
+# playit.gg tunnel agent — public game-server access without opening the Dream Wall
+# or exposing the home IP. ONE agent, MANY tunnels (Minecraft Java/Bedrock now,
+# Palworld etc. later) — tunnels are created in the playit.gg dashboard and
+# forward to localhost ports on the rig.
+# .env (not committed): SECRET_KEY from playit.gg -> Agents -> Add Agent (Docker);
+# also vaulted as playit.secret_key.
+services:
+  playit:
+    image: ghcr.io/playit-cloud/playit-agent:latest
+    container_name: playit
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
