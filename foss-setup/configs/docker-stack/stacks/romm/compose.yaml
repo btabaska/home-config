@@ -16,6 +16,14 @@ networks:
   edge:
     external: true
   romm-internal:
+    # Pin an explicit subnet: the default 172.x pools are exhausted on the mini,
+    # so docker otherwise auto-allocates into 192.168.x and squats the LAN/IoT
+    # VLAN (192.168.16.0/20 overlaps IoT 192.168.20.x). Sits in a free slice of
+    # 172.19 alongside paperless (.10) and kometa (.20). Until fix-19
+    # (default-address-pools) lands, new stacks with private nets must pin one.
+    ipam:
+      config:
+        - subnet: 172.19.30.0/24
 
 volumes:
   romm_resources:
