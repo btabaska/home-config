@@ -116,12 +116,25 @@ echo "$(date -Is) INFO: mounting $REMOTE -> $MOUNTPOINT" >>"$LOG"
 
 # rclone mount flags:
 #   --allow-other          : *arr containers (PUID != root) can read the mount
-#   --vfs-cache-mode minimal : cache VFS metadata (dirs + open file handles) but
-#                             not file data. Lighter than `writes` on 4 GB RAM.
-#                             `reads` mode requires a newer rclone; `minimal` is
-#                             the correct choice for a read-only workload.
-#   --dir-cache-time 1m    : picks up newly-completed downloads within 60 s
-#   --buffer-size 32M      : per-file read-ahead; balanced for 4 GB NAS RAM
+#   --vfs-cache-mode full  : cache file DATA on disk, not just metadata. RETUNED
+#                            2026-07-10 (was `minimal`, chosen when the DS920+
+#                            had 4 GB — it now has ~20 GB). `minimal` re-read
+#                            every byte over SFTP on each scan/analyze/import-
+#                            copy; with SQLite locks held during those reads it
+#                            was a prime driver of the import-queue freezes.
+#                            `full` serves repeat reads (media-info parse, then
+#                            the import copy) from the local cache → far less
+#                            network I/O and lock-hold time. Read-only workload,
+#                            so this only ever caches downloads being imported.
+#   --vfs-cache-max-size 50G : hard cap the cache on /volume1 (won't fill the
+#                            volume; the 2026-07-07 fill was the cache-dir being
+#                            on the tiny system partition — fixed separately).
+#   --vfs-cache-max-age 24h : evict cached files a day after last use.
+#   --dir-cache-time 3m    : SFTP has no change-notify, so this is the max time
+#                            to SEE a newly-completed download. 3m (was 1m)
+#                            cuts constant re-listing; import latency is bounded
+#                            by it, fine for TV/movies.
+#   --buffer-size 64M      : per-open-file read-ahead (was 32M; more RAM now).
 #   --timeout 60s          : global I/O timeout per operation
 #   --contimeout 15s       : SFTP connection timeout (fail fast on network loss)
 #   --low-level-retries 3  : retry transient SFTP errors at the transport layer
@@ -137,9 +150,11 @@ mkdir -p "$CACHE_DIR"
   --config "$RCLONE_CONF" \
   --allow-other \
   --cache-dir "$CACHE_DIR" \
-  --vfs-cache-mode minimal \
-  --dir-cache-time 1m \
-  --buffer-size 32M \
+  --vfs-cache-mode full \
+  --vfs-cache-max-size 50G \
+  --vfs-cache-max-age 24h \
+  --dir-cache-time 3m \
+  --buffer-size 64M \
   --timeout 60s \
   --contimeout 15s \
   --low-level-retries 3 \
