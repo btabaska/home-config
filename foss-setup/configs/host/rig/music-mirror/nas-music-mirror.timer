@@ -1,0 +1,10 @@
+[Unit]
+Description=Keep ~/Music mirrored from the NAS (daily) for iPod sync
+
+[Timer]
+OnCalendar=*-*-* 05:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

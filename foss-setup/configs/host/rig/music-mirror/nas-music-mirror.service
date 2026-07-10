@@ -1,0 +1,11 @@
+[Unit]
+Description=Mirror NAS music library -> ~/Music as iPod-playable ALAC/MP3
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=btabaska
+Nice=10
+IOSchedulingClass=idle
+ExecStart=/home/btabaska/bin/nas-music-to-alac-mirror.sh
