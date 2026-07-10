@@ -15,3 +15,111 @@ checks:
     task_id: verify-06
     runbook: wiki/runbooks/verification.md
     enabled: true
+
+  # ---------------------------------------------------------------------------
+  # *arr IMPORT-PIPELINE checks (added 2026-07-10 after the Sonarr freeze).
+  # These probe the pipeline's FUNCTION, not container liveness — the whole
+  # week's incidents (musicseerr, soularr, unpackerr) were "container Up, job
+  # dead", invisible to the manifest/health checks. Keys SONARR_API_KEY /
+  # RADARR_API_KEY in mini /etc/verification/env (vault arr_api_keys.*).
+  # ---------------------------------------------------------------------------
+
+  # THE canary. Items pile up in the import queue in a 'warning' tracked state
+  # when anything downstream stalls: dead unpackerr (archives never extracted),
+  # dead mount, broken mapping, un-mappable release. This ALONE would have
+  # caught the 2-day unpackerr wedge a day before the user saw a frozen UI.
+  # Threshold 5: transient items during active grabbing are fine; a pile-up is
+  # not. Tool-agnostic — fires no matter WHY imports stall.
+  - id: sonarr-queue-stuck
+    name: "sonarr: import queue not clogged (<=5 items stuck in warning state)"
+    host: url
+    cmd: >-
+      curl -sm 20 -H "X-Api-Key: $SONARR_API_KEY"
+      "http://192.168.10.4:8989/api/v3/queue?pageSize=200"
+      | python3 -c "import json,sys; d=json.load(sys.stdin);
+      print('stuck=%d' % sum(1 for r in d.get('records',[])
+      if r.get('trackedDownloadStatus')=='warning'))"
+    expect: '^stuck=[0-5]$'
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  - id: radarr-queue-stuck
+    name: "radarr: import queue not clogged (<=5 items stuck in warning state)"
+    host: url
+    cmd: >-
+      curl -sm 20 -H "X-Api-Key: $RADARR_API_KEY"
+      "http://192.168.10.4:7878/api/v3/queue?pageSize=200"
+      | python3 -c "import json,sys; d=json.load(sys.stdin);
+      print('stuck=%d' % sum(1 for r in d.get('records',[])
+      if r.get('trackedDownloadStatus')=='warning'))"
+    expect: '^stuck=[0-5]$'
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  # Sonarr/Radarr self-diagnostics for the PLUMBING only — download client
+  # unreachable, root folder missing, remote path mapping wrong, completed-
+  # download-handling disabled. Deliberately IGNORES indexer-availability
+  # health (Indexer*Check) because that flaps with 429 backoff (e.g. the IPT
+  # query-cap self-heal) and is not a pipeline break — no-grabs is a separate
+  # concern handled by the query budget, not a paging condition here.
+  # re.match ANCHORS at the start of the source name, so it catches the core
+  # plumbing checks (RootFolderCheck, DownloadClientCheck/…StatusCheck,
+  # RemotePathMappingCheck, ImportMechanismCheck) but NOT sibling features that
+  # merely contain the word — e.g. MovieCollectionRootFolderCheck (collection
+  # auto-add), which is a separate concern tracked on its own, not an
+  # import-path break. Indexer*Check is intentionally out of scope (flaps with
+  # 429 backoff / the IPT query-cap self-heal).
+  - id: sonarr-pipeline-health
+    name: "sonarr: no download-client/root-folder/remote-path/import health issues"
+    host: url
+    cmd: >-
+      curl -sm 20 -H "X-Api-Key: $SONARR_API_KEY"
+      "http://192.168.10.4:8989/api/v3/health"
+      | python3 -c "import json,sys,re; h=json.load(sys.stdin);
+      bad=sorted({i['source'] for i in h
+      if re.match(r'(DownloadClient|RootFolder|RemotePathMapping|ImportMechanism)', i.get('source',''))});
+      print('pipeline=' + (','.join(bad) if bad else 'ok'))"
+    expect: '^pipeline=ok$'
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  - id: radarr-pipeline-health
+    name: "radarr: no download-client/root-folder/remote-path/import health issues"
+    host: url
+    cmd: >-
+      curl -sm 20 -H "X-Api-Key: $RADARR_API_KEY"
+      "http://192.168.10.4:7878/api/v3/health"
+      | python3 -c "import json,sys,re; h=json.load(sys.stdin);
+      bad=sorted({i['source'] for i in h
+      if re.match(r'(DownloadClient|RootFolder|RemotePathMapping|ImportMechanism)', i.get('source',''))});
+      print('pipeline=' + (','.join(bad) if bad else 'ok'))"
+    expect: '^pipeline=ok$'
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  # The shared SPOF. The rclone SFTP mount is the single path every *arr import
+  # reads through; when it drops, the bind target becomes an empty dir and
+  # EVERY import silently does nothing (the mount script's own top-line
+  # warning). `ls` with a hard timeout catches stale/hung SFTP handles that a
+  # `mount | grep` would miss. crit — this is the scariest silent failure.
+  - id: seedbox-mount-listable
+    name: "nas: rclone seedbox mount lists content within 15s (imports depend on it)"
+    host: mini
+    cmd: >-
+      n=$(printf '%s\n' "$NAS_SUDO_PASSWORD"
+      | ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "sudo -S -p '' timeout 15 ls /volume1/mounts/seedbox-files/tv 2>/dev/null | head -1"
+      2>/dev/null); [ -n "$n" ] && echo mount=ok || echo mount=DEAD
+    expect: '^mount=ok$'
+    severity: crit
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true

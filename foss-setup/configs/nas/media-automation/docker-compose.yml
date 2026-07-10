@@ -73,7 +73,7 @@ x-common-env: &common-env
   PGID: ${PGID:?run 'id <user>' on the NAS and set PGID in .env}
   TZ: ${TZ:-America/New_York}
 
-# Host paths — set in .env (see ../SCHEMA.md three-volume layout).
+# Host paths — set in .env (see nas-storage-schema.md three-volume layout).
 
 x-seedbox-mount: &seedbox-mount
   type: bind
@@ -304,6 +304,19 @@ services:
       - ./unpackerr/unpackerr.conf:/etc/unpackerr/unpackerr.conf:ro
       - *seedbox-mount                 # /seedbox (rslave) — MUST match the *arrs exactly
     restart: always
+    # Liveness for the "process up but poller WEDGED" class (2026-07-10:
+    # unpackerr ran 2 days doing nothing while "Up", invisible to container-
+    # liveness monitoring). Probes unpackerr's own webserver (enabled in
+    # unpackerr.conf [webserver]); a fully-wedged process stops answering ->
+    # container goes "unhealthy" -> the fleet HEALTH check (containers-health-
+    # nas) pages. `wget` ships in the image. Pairs with the media.yaml
+    # *-queue-stuck checks, which catch the user-visible symptom tool-agnostically.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -T5 -O /dev/null http://localhost:5656/metrics || exit 1"]
+      interval: 2m
+      timeout: 10s
+      retries: 3
+      start_period: 90s
     depends_on:
       - sonarr
       - radarr
