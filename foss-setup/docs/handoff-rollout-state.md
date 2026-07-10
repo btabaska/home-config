@@ -1,5 +1,13 @@
 # Rollout handoff state
 
+### MusicSeerr "Couldn't sync the library" — v1.4.2 crypto bug, fixed via env key (2026-07-10 early)
+
+- **Symptom**: library sync Failed since 07-09 00:37, search dead, yet settings page said "Connected to Lidarr". Logs: every Lidarr call 401, circuit breaker 'lidarr' stuck OPEN (which is what killed search).
+- **Root cause (confirmed in app code)**: musicseerr v1.4.2 half-shipped encryption-at-rest — saving settings encrypts `lidarr_api_key` in config.json (Fernet, `config/.env` DATA_ENC_KEY), but `core/config.py load_from_file()` never decrypts, so after any restart the app literally sends the ciphertext as the API key. The UI "Test" validates the plaintext form value → false green. Reproduced deterministically: plaintext in file = works, encrypted = 401s.
+- **Upstream is a dead end**: project rebranded to DroppedNeedle in v2.0.0 and REMOVED Lidarr support entirely (native library instead). v2 is a migration decision (affects the lidarr+soularr+slskd pipeline), not an upgrade. Pinned at v1.4.2.
+- **Durable fix**: `LIDARR_API_KEY` env var (pydantic BaseSettings reads it) + key REMOVED from config.json — file loader only overrides keys present in the file. Compose + stack `.env` on mini (gitignored), mirror synced, vault `lidarr.api_key` added. Restart-tested twice: all 200s. **Gotcha: if anyone re-saves the Lidarr settings page in the UI it writes an encrypted key back into config.json which would override the env on next restart — delete `lidarr_api_key` from config.json again if MusicSeerr breaks after a settings save.**
+- Backups left in place: `config.json.bak-encrypted-key` (pre-fix state).
+
 ### SESSION CLOSE — monitoring at 100% surface; NEXT MANDATE: documentation debt sweep (2026-07-09 night²)
 
 - **Monitoring session closed at 74/74 sweep, 53 Kuma monitors all up, 9 healthchecks dead-mans all up.** User confirmed alert receipt and signed off on the coverage matrix (every container/native unit/job/network path — see the three entries below for the full architecture: layered AI-stack coverage → playit protocol pings → fleet manifests+tripwire).
