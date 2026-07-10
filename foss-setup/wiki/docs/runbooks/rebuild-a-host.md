@@ -34,7 +34,8 @@ cd /opt/stacks/adguard  && docker compose up -d   # then unbound, then the rest
 for d in /opt/stacks/*/; do (cd "$d" && docker compose up -d); done
 
 # 7. Restore data volumes (DB-backed services) — see Backup & restore
-#    restic restore per volume (pending: sec-03); Immich DB from pg_dump
+#    restic restore per volume (live on mini/rig — /etc/restic/env);
+#    Immich DB from pg_dump
 
 # 8. Rejoin the tailnet
 sudo tailscale up --ssh
@@ -45,7 +46,7 @@ sudo tailscale up --ssh
 | Host | Differences |
 |---|---|
 | **mini** | Steps above verbatim. Also: etckeeper init, verify Caddy has certs (volume `caddy_data` restore avoids LE rate limits) |
-| **rig** | No `/opt/stacks`; chezmoi + pacman manifests via ansible-pull; `gpu-power-tune.service`; ansible-pull timer runs the standard daily schedule (`OnCalendar` + `Persistent=true`, same as every host — the rig is 24/7) |
+| **rig** | Has its own `/opt/stacks` (gaming: amp, palworld, playit, beszel-agent — compose sources in `configs/gaming/` + `configs/host/rig/`; AMP instance + Palworld saves restore from restic). The **AI stack (litellm/open-webui/mcpo) lives in the separate `local-ai-tooling` repo** — clone it to `~/Documents/GitHub/` and `compose up` from its `docker/` dir; native Ollama via pacman. Plus chezmoi + pacman manifests via ansible-pull; `gpu-power-tune.service`; host timers (`ai-stack-watchdog`, `pcie-aer-monitor`) from `configs/host/rig/`. ⚠️ AMP licence is hostname-pinned — restore the compose `hostname:` before `up` or instance licences invalidate |
 | **nas** | **Not this runbook** — DSM Configuration Backup restore + Container Manager projects from `configs/nas/` + data from Hyper Backup |
 | **HA** | Restore its own backup archive (key in Bitwarden) |
 | **gateway** | Restore the `.unf` export in the UniFi GUI |

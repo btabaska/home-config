@@ -5,26 +5,34 @@ immutable (B2 Object Lock), zero restore errors (tested). Tier 1
 (irreplaceable: photos, documents, configs, HA, saves) goes off-site;
 Tier 2 (re-acquirable media) gets local redundancy only.
 
-!!! warning "Where this stands today"
-    **B2 does not exist yet** — no bucket, no keys (pending: nas-02…07,
-    sec-03; blocked on the human creating the B2 account + app key into the
-    vault). Restic/borgmatic jobs are likewise pending. What exists now:
-    the Immich pg_dump on the NAS, DSM snapshots, and config-as-code in git.
-    Until B2 lands, the pg_dump is the only Immich safety net.
+!!! success "Where this stands (verified live 2026-07-09)"
+    **B2 exists and restic to it is LIVE on the mini and the rig** — daily
+    systemd timers, both dead-manned in Healthchecks (`restic-backup-mini`,
+    `restic-backup-rig`, green). The nightly Immich pg_dump is live and
+    dead-manned (`immich-dump-nas`). Still pending: **NAS Tier 1 shares →
+    B2 via Hyper Backup** (nas-02 — until it lands, NAS-side Tier 1 rides
+    Btrfs snapshots + the pg_dump only), the optional Hetzner second
+    off-site (nas-06), and HA backups (ha track).
 
 ## What is backed up where (current + planned)
 
 | Data | Mechanism | Status |
 |---|---|---|
-| Immich Postgres | `/volume1/docker/immich/immich-pg-dump.sh` → `/volume1/docker/immich/backups/` | Script works; **DSM Task Scheduler entry pending** (nas-08): root, daily 02:30 |
+| Immich Postgres | NAS Task Scheduler nightly → `/volume1/docker/immich/backups/` | **Live**, dead-manned (`immich-dump-nas`; 2026-07-09 fix: hardcode `/bin/curl` — DSM cron PATH has no `curl`) |
 | All configs / compose / scripts | git — GitHub `home-config` + Forgejo mirrors | Live |
 | `/etc` on mini | etckeeper (auto-commit on apt ops) | Live |
 | Dotfiles | chezmoi | Live |
-| NAS Tier 1 → B2 | Hyper Backup (S3 API) + Object Lock | pending: nas-02…07 |
-| mini/rig → B2 | restic (systemd timers; rig on the same schedule — it runs 24/7) | pending: sec-03 |
+| mini → B2 | restic daily timer: `/opt/stacks /etc ~/.ssh ~/.config ~/.docker` (env `/etc/restic/env`) | **Live**, dead-manned |
+| rig → B2 | restic daily timer: `/etc /home/btabaska` + Palworld saves + the AMP `MinecraftCross01` instance (gap closed — was missing until 2026-07-09) | **Live**, dead-manned |
+| NAS Tier 1 → B2 | Hyper Backup (S3 API) + Object Lock | **pending: nas-02** (vault has the bucket + keys) |
+| 2nd off-site → Hetzner | borgmatic (optional) | pending: nas-06 |
 | HA full backups → NAS | HA Settings → Backups (key in Bitwarden) | pending: ha track |
 | NAS snapshots | Btrfs Snapshot Replication on Tier 1 shares | DSM |
 | Tier 2 media | NAS volumes + rotated external HDD | manual |
+
+The ansible `backup` role that would *manage* the restic units is still
+SOPS-gated (sec-03) — the live timers were hand-deployed from
+`scripts/backup/`; treat the repo scripts as their source.
 
 ## Restore: Immich database (the drill that matters now)
 
@@ -58,19 +66,34 @@ Then spot-check: log in, confirm albums and people are intact.
 1. `git clone` the stack from Forgejo `home/docker-stacks` (or `configs/docker-stack/stacks/<name>`).
 2. Recreate `.env` from `.env.example` + the vault.
 3. `docker compose up -d`, then restore any data volume from restic
-   (pending: sec-03) or the NAS copy.
+   (`/opt/stacks` is in the mini's BACKUP_PATHS) or the NAS copy.
 
 Full-host rebuilds: [Rebuild a host](rebuild-a-host.md).
 
-## Restore: restic from B2 — pending
+## Restore: restic from B2
 
-Once sec-03/nas-07 land, this section gets the exact
-`restic -r b2:<bucket> restore` commands and the quarterly restore-test
-procedure. Keys: B2 app key + restic password live in the vault / Bitwarden
-(+ printed copy) — **a backup you can't decrypt is not a backup**.
+The repo/env/paths live on each host at `/etc/restic/env` (600, root). All
+restic credentials are in that file and in the vault
+(`backblaze_b2.restic_password_mini` / `_rig`) — **a backup you can't
+decrypt is not a backup**.
+
+```bash
+# List snapshots (on the host being restored)
+sudo bash -c 'set -a; . /etc/restic/env; restic snapshots --compact | tail'
+
+# Restore one path from the latest snapshot into a scratch dir (never in place)
+sudo bash -c 'set -a; . /etc/restic/env; restic restore latest \
+  --target /tmp/restore --include /opt/stacks/<name>'
+```
+
+Scripted monthly proof: `scripts/backup/restore-test.sh restic`
+(`ENV_FILE=/etc/restic/env`) — restores the latest snapshot to a temp dir
+and verifies files exist; read-only for the live system and the repo.
 
 ## Verify (any backup work)
 
 - New dump file appeared and is >0 bytes; `gunzip -t` passes.
-- Healthchecks ping received (once wired) — silence is a failure.
-- Quarterly: one real restore drill, logged in the tracker (glue-06 / sbom-05).
+- Healthchecks ping received — silence is a failure (`restic-backup-mini`,
+  `restic-backup-rig`, `immich-dump-nas`).
+- Monthly: `restore-test.sh`; quarterly: a real restore drill, logged in the
+  tracker (glue-06 / sbom-05 — both still open).

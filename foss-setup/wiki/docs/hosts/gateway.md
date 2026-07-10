@@ -15,7 +15,8 @@ box. Everything hangs off it.
 - Routing, NAT, and the **Zone-Based Firewall** (custom zones: Trusted, IoT,
   Cameras, Work — see [Network](../network.md))
 - VLANs and per-network **DHCP** — including the DNS chain handed to clients
-  (`192.168.10.2, 192.168.10.4, 192.168.10.1`; pending: dns-03 done right)
+  (`192.168.10.2, 192.168.10.4, 192.168.10.1` — dns-03 closed; guarded by
+  the sweep's dns checks)
 - WiFi (one SSID each for Trusted, IoT, Guest, Work; WPA3 where possible)
 - mDNS/IoT auto-discovery between Trusted and IoT (IGMP snooping OFF)
 - IDS/IPS (Threat Management)

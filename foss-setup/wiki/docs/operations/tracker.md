@@ -1,7 +1,8 @@
 # Operations — Tracker & AI sessions
 
 The rollout is driven by **Plan v3**: `foss-setup/docs/index.html`, a
-self-contained HTML tracker with **194 tasks organized as 8 staged runs**.
+self-contained HTML tracker with **223 tasks (as of 2026-07-09) organized
+as staged runs** — the count grows as runs add work.
 This page is how to read it, and the protocol AI sessions follow.
 
 ## The tracker
@@ -31,8 +32,12 @@ This page is how to read it, and the protocol AI sessions follow.
   not the truth. Export/merge back to `progress.json` and commit.
 - **Reopened ids are intentionally absent from `done`** — a regression means
   the checkmark comes off (dns-02, game-10, nas-08 were all reopened by the
-  2026-07-07 audit). The verification framework will automate this
-  (reopen suggestions — pending: verify-05).
+  2026-07-07 audit, later re-closed). This is automated now (verify-05):
+  failed checks that carry a `task_id` write
+  `mini:/var/lib/verification/reopen-suggestions.json` and ntfy a summary —
+  session-start protocol is to process that file first. A `retired` block
+  (2026-07-09) holds deliberately-abandoned tasks (the SBOM feature) so
+  they neither count as done nor look like regressions.
 
 ## How AI sessions work
 

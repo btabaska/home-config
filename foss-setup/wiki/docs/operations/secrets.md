@@ -41,7 +41,10 @@ dates only**:
 |---|---|---|
 | 2026-07-07 | `ntfy.diun_token` | Leaked in a committed handoff doc — revoked + rotated |
 | 2026-07-07 | `wallabag.*` | Default admin replaced |
-| pending | NAS AdGuard admin | Temp password set during API install; rotation blocked until the container is up (dns-02) |
+| pending | `adguard_nas.admin_password` | Temp password set during API install; dns-02 closed so rotation is now unblocked — still to do |
+| pending | `cloudflare.api_token` | Transcript exposure (2026-07-09 audit) |
+| pending | `cubecoders_amp.admin_password` | Transcript exposure — and the deployed rig compose has it inline instead of `.env` (2026-07-09 audit; fix both together) |
+| pending | `ntfy.phone_password` | Visible in `ps` output on the mini (2026-07-09 audit; move to netrc when rotating) |
 
 When you rotate: update the vault + Bitwarden, update the consuming `.env`
 on the host, restart the service, add a row here.

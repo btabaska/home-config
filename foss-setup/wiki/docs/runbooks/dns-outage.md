@@ -17,11 +17,12 @@ Design intent: mini down ⇒ clients fall to the NAS (filtering + local names
 survive); mini **and** NAS down ⇒ gateway (internet survives, local names and
 filtering are gone until an AdGuard returns).
 
-!!! warning "Known state (2026-07-07 audit)"
-    The chain is not yet healthy: the NAS secondary was down and the DHCP
-    handout listed off-subnet `192.168.1.1` instead of the NAS/gateway
-    (pending: dns-02 restart, dns-03 fix in UniFi, dns-04 drill). Until those
-    close, a mini outage kills all local names.
+!!! success "Known state (re-verified 2026-07-09)"
+    The chain is healthy and continuously guarded: dns-02 (NAS secondary)
+    and dns-03 (DHCP handout — the 2026-07-07 audit had found off-subnet
+    `192.168.1.1` in it) are closed, and the verification sweep probes both
+    resolvers hourly/daily with auto-reopen on regression. The scripted
+    outage *drill* (dns-04) has still never been run end-to-end.
 
 ## Test each hop (from any LAN machine)
 

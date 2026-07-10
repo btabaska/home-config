@@ -11,11 +11,17 @@ for dead containers and undocumented ports accumulate.
 [ ] 2. Pin the image    exact tag (never :latest, never :release)
 [ ] 3. .env.example     every required var, placeholder values only
 [ ] 4. Caddy vhost      <name>.tabaska.us in caddy/Caddyfile
-[ ] 5. Homepage entry   homepage config (group, icon, URL)
-[ ] 6. Wiki regen       gen-wiki-services.py + build-wiki.sh
-[ ] 7. Verification     health probe (Uptime Kuma now; checks.d when it lands)
-[ ] 8. Commit + deploy  repo commit, publish, compose up on the mini
+[ ] 5. Catalog entry    configs/docker-stack/service-catalog.yaml (category/url/notes)
+[ ] 6. Homepage entry   homepage config (group, icon, URL)
+[ ] 7. Wiki regen       gen-wiki-services.py + build-wiki.sh
+[ ] 8. Monitoring       Kuma monitor (web UI) + checks.d probe (functional)
+                        + verification/coverage/<host>.containers manifest
+[ ] 9. Commit + deploy  repo commit, publish, compose up on the mini
 ```
+
+Retiring a service is the same list in reverse — **the coverage manifest
+and Caddy vhost especially** (a lingering vhost 502s; a stale manifest
+fails the sweep by design).
 
 ## Step by step
 
@@ -42,22 +48,29 @@ for dead containers and undocumented ports accumulate.
     No AdGuard change needed — the `*.tabaska.us` wildcard rewrite already
     points at the mini. (NAS/rig services: proxy by IP env var instead.)
 
-5. **Homepage entry** in the homepage stack's `services.yaml` — friendly
+5. **Catalog entry** in `configs/docker-stack/service-catalog.yaml`
+   (name/category/host/port/url/notes; `ui: false` for port-less workers) —
+   it drives the wiki's categories and URLs.
+6. **Homepage entry** in the homepage stack's `services.yaml` — friendly
    name, icon, `https://<name>.tabaska.us`, widget if one exists.
-6. **Wiki regen.**
+7. **Wiki regen.**
 
     ```bash
     python3 foss-setup/scripts/docs/gen-wiki-services.py
     bash foss-setup/scripts/docs/build-wiki.sh
     ```
 
-7. **Verification check.** Add an Uptime Kuma monitor for the URL now; when
-   the verification framework lands (pending: verify-01), add a
-   `checks.d/<name>.yaml` probe (cmd/expect/severity/runbook) instead.
-8. **Commit + deploy.** Commit the repo (config + homepage + generated wiki
-   pages in the same commit), `publish-deploy.sh`, then on the mini:
-   `/opt/stacks/<name>` — copy the stack, fill `.env`, `docker compose up -d`,
-   commit `/opt/stacks` too.
+8. **Monitoring** (the [verification runbook](verification.md) has the full
+   picture): an Uptime Kuma monitor for the web UI, a
+   `checks.d/<domain>.yaml` probe for function where liveness isn't enough,
+   and **always** add the container names to
+   `verification/coverage/<host>.containers` (repo) + redeploy to
+   `mini:/opt/verification/coverage/` — the docker-fleet tripwire fails the
+   sweep on any un-manifested container until you do.
+9. **Commit + deploy.** Commit the repo (config + catalog + homepage +
+   generated wiki pages in the same commit), `publish-deploy.sh`, then on
+   the mini: `/opt/stacks/<name>` — copy the stack, fill `.env`,
+   `docker compose up -d`, commit `/opt/stacks` too.
 
 ## Verify
 

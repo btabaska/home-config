@@ -21,13 +21,14 @@ home-config (GitHub, full repo)
   --limit $(hostname -s) --connection local --diff configs/ansible/site.yml`.
   `--check` was deliberately removed 2026-07-07: with it, the fleet only
   *reported* drift and never converged (the audit's P0-2).
-- **Timer**: daily 04:20 ± 30 min jitter, `Persistent=true` — the same
-  `OnCalendar` schedule on every host, the rig included (it runs 24/7 as of
-  2026-07-08, so no wake-gating; `Persistent=true` is just the generic
-  catch-up for any missed window, e.g. after downtime).
-- **State**: first fully green converge on the mini 2026-07-07
-  (ok=34 failed=0, apply mode). Rig deployment pending (glue-08 — gated on
-  the rig sudo password and its Forgejo deploy key).
+- **Timer**: daily ~04:20 **UTC** ± jitter on the mini (~04:40 ET on the
+  rig), `Persistent=true` — the same `OnCalendar` pattern on every host, the
+  rig included (24/7 as of 2026-07-08, so no wake-gating; `Persistent=true`
+  is just the generic catch-up for any missed window).
+- **State**: deployed and green on **both mini and rig** (glue-08 closed;
+  each dead-manned in Healthchecks: `ansible-pull-mini`, `ansible-pull-rig`).
+  First green converge mini 2026-07-07 (ok=34 failed=0); re-fixed 2026-07-09
+  after an apt releaseinfo change (see Troubleshooting).
 
 ## What the roles do
 
@@ -36,8 +37,8 @@ home-config (GitHub, full repo)
 | `base` | Packages, unattended-upgrades, pkglist manifests, sysctl, the boring host baseline |
 | `docker` | Docker engine, `daemon.json` log rotation (10m×3), the external `edge` network |
 | `tailscale` | Install + join (skips `tailscale up` when already connected) |
-| `backup` | restic jobs — **gated on the SOPS secret existing** (pending: B2/sec-03) |
-| `sbom` | Nightly Syft SBOM generation + upload to Dependency-Track, manifest exports |
+| `backup` | restic via ansible — **gated on the SOPS secret existing** (sec-03 open, so the role skips). The *live* restic timers on mini+rig were hand-deployed from `scripts/backup/` and are dead-manned in Healthchecks |
+| ~~`sbom`~~ | **RETIRED 2026-07-09** (user decision; Syft OOM'd the 8 GB mini) — removed from `site.yml` so convergence won't redeploy it |
 | `state` | etckeeper, chezmoi invocation, cron/timer exports |
 
 Playbooks for deliberate fleet-wide pushes: `playbooks/patch.yml`,
@@ -76,5 +77,7 @@ invocation by hand (never bake `--check` back into the unit).
 |---|---|
 | `Could not match supplied host pattern` | hostname ≠ inventory name — check `inventory.ini` vs `hostname -s` |
 | Fetch fails | Forgejo down on the mini, or deploy key not registered |
-| backup/sbom role hard-stops | SOPS secret missing — roles gate on it; see [Secrets](secrets.md) |
+| `apt-get update` fails on a PPA "Label"/releaseinfo change | Upstream repo metadata changed (bit glue-08, 2026-07-09) — one manual `apt-get update --allow-releaseinfo-change`, then converges are green again |
+| backup role skips/hard-stops | SOPS secret missing — the role gates on it; see [Secrets](secrets.md) |
 | Converge green but box drifted | Someone changed the host by hand — the fix goes in the repo, not the host |
+| Converge restarts docker (bounces every container ~1 min) | A `daemon.json` change landed (log caps, address pools) — expected once per change, idempotent after |

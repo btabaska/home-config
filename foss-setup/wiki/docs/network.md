@@ -12,7 +12,7 @@ mode) → Dream Wall → devices.
 | mini | 192.168.10.2 | `macmini.tailb31641.ts.net` | Caddy 80/443, DNS :53, Forgejo :3030 (HTTP) |
 | nas (DS920+) | 192.168.10.4 | `nas.*.ts.net` | DSM, Immich :2283, AdGuard secondary :53/:3000 |
 | rig (CachyOS) | 192.168.10.12 | `cachyos.*.ts.net` | 24/7 — if unreachable, recover via WoL ([runbook](runbooks/wake-the-rig.md)) |
-| Home Assistant | 192.168.10.50 | not on tailnet yet (pending: ha-01) | :8123 |
+| Home Assistant | 192.168.10.50 | not on tailnet yet (ha track — Run 5 in progress) | :8123 |
 | seedbox (Betty) | off-site (shared IP 185.162.184.38) | `seedbox` via Tailscale SSH | No LAN presence |
 
 ## VLANs and firewall zones
@@ -51,9 +51,12 @@ upstream sees queries). The NAS secondary deliberately uses public DoT
 The design rule: **"filtering off" must never mean "internet off"** (incident
 2026-07-03 — a mini reboot took DNS down house-wide).
 
-Status: the chain is **not yet correctly deployed** — the NAS secondary was
-down and the DHCP handout wrong at the 2026-07-07 audit (pending: dns-02,
-dns-03, dns-04). If names stop resolving, go straight to the
+Status (2026-07-09): the chain is **deployed and continuously guarded** —
+dns-02 (NAS secondary up) and dns-03 (DHCP handout) are closed, both
+resolvers are probed by the verification sweep's dns checks and Kuma, and a
+regression auto-reopens the task. Still open: the scripted outage *drill*
+(dns-04, optional) and gateway NAT-redirect/DoH-blocking hardening (dns-05,
+gated on it). If names stop resolving, go straight to the
 [DNS outage runbook](runbooks/dns-outage.md).
 
 ## `*.tabaska.us` — the wildcard and Caddy
@@ -79,5 +82,5 @@ ed25519 key + `~/.ssh/config` aliases (`ssh mini`, `ssh nas`, `ssh rig`,
 verify the connection is **direct**, not DERP-relayed (`tailscale status`);
 forward UDP 41641 on the gateway if not.
 
-Known gap: the tailnet ACL currently **blocks operator → seedbox SSH**
-(pending: human queue — add an SSH rule in the Tailscale admin console).
+The early tailnet-ACL gap that blocked operator → seedbox SSH is **fixed**
+— `ssh seedbox` works (verified 2026-07-09).

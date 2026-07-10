@@ -39,8 +39,9 @@ Diun notices a new tag → ntfy pushes to your phone → you read release notes
     curl -s -o /dev/null -w '%{http_code}\n' https://<name>.tabaska.us
     ```
 
-7. **Wiki**: regenerate service pages (the pin is on the page) —
-   `python3 scripts/docs/gen-wiki-services.py && bash scripts/docs/build-wiki.sh`.
+7. **Wiki**: regenerate service pages (the pin is on the page) — from the
+   `home-config` repo root:
+   `python3 foss-setup/scripts/docs/gen-wiki-services.py && bash foss-setup/scripts/docs/build-wiki.sh`.
 
 ## Rollback
 
