@@ -7,6 +7,14 @@
 #   fixed hostname every `compose up` recreate invalidates instance licences
 #   (deployed rig value: c5f46f35aee3 — keep whatever the container had when
 #   the licence was last activated, or reactivate after changing it).
+# - 2026-07-10: mac_address ALSO pinned — hostname alone is NOT enough. Docker
+#   26+ assigns a RANDOM MAC per container (re)start, and AMP's machine
+#   fingerprint includes it: the 07-10 04:35 ansible-converge docker-daemon
+#   restart rotated the MAC and broke BOTH instances (NoMatchingMachineId,
+#   Minecraft dead at boot with exit 32 NO_LICENCE despite Start-on-Boot).
+#   With hostname+MAC pinned the identity survives restarts AND recreates.
+#   If the licence ever breaks anyway: docker exec -u abc amp ampinstmgr
+#   reactivate <Instance> <key> (key: vault cubecoders_amp.license_key).
 # - Java for Minecraft: base image is Alpine with NO java. openjdk21 comes via
 #   the package-install mod; Minecraft 26.x additionally needs Java 25, which
 #   lives in the persisted volume at /config/java/jdk-25.0.3+9-jre (Temurin
@@ -18,6 +26,7 @@ services:
     image: ghcr.io/imagegenius/amp:latest
     container_name: amp
     hostname: c5f46f35aee3  # pinned: AMP licence activation is machine-id-bound
+    mac_address: 5e:c4:36:bf:b4:43  # pinned 2026-07-10: random MACs per (re)start break the licence — see header
     restart: unless-stopped
     environment:
       - DOCKER_MODS=linuxserver/mods:universal-package-install

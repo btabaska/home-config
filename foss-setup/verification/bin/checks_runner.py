@@ -3,9 +3,12 @@
 
 Runs on mini. Loads checks.d/*.yaml (PyYAML — verified present on mini, 5.4.1),
 executes enabled checks, writes results.json / last-summary.md /
-reopen-suggestions.json under /var/lib/verification, sends ONE ntfy summary
-when failures exist or a previous failure recovered, exits nonzero if any
-crit check failed. stdlib + PyYAML only — no third-party pip deps.
+reopen-suggestions.json under /var/lib/verification, sends ONE ntfy summary on
+STATE TRANSITIONS (new failures or recoveries vs the previous run of the same
+tier — a persistent unchanged failure set does not re-page; the unfiltered
+daily sweep additionally pages while anything is still failing, as the
+once-a-day reminder), exits nonzero if any crit check failed. stdlib + PyYAML
+only — no third-party pip deps.
 """
 import argparse
 import datetime
@@ -108,6 +111,40 @@ def previous_failed_ids(results_path):
         return set()
 
 
+ACKS_PATH = os.path.join(STATE_DIR, "acks.json")
+
+
+def load_acks():
+    """Operator-acknowledged check ids: {id: {"until": iso, "reason": str}}.
+
+    An acked check still RUNS and is recorded in results/summaries — it just
+    stops paging until the ack expires (known/accepted outages, e.g. the
+    playit upstream outage 2026-07-10, which otherwise flap-pages on every
+    hourly quick run). Manage with ack-check.sh. Expired entries are pruned
+    here on load.
+    """
+    try:
+        with open(ACKS_PATH) as f:
+            acks = json.load(f)
+    except Exception:
+        return {}
+    now = datetime.datetime.now().astimezone()
+    live = {}
+    for cid, meta in acks.items():
+        try:
+            if datetime.datetime.fromisoformat(meta["until"]) > now:
+                live[cid] = meta
+        except Exception:
+            continue
+    if live != acks:
+        try:
+            with open(ACKS_PATH, "w") as f:
+                json.dump(live, f, indent=2)
+        except Exception:
+            pass
+    return live
+
+
 def send_ntfy(message, title, priority):
     url = os.environ.get("NTFY_URL", "http://127.0.0.1:8080/verification")
     token = os.environ.get("NTFY_TOKEN", "")
@@ -172,6 +209,9 @@ def main():
     ran = [r for r in results if r["status"] != "skipped"]
     failed = [r for r in ran if r["status"] == "fail"]
     crit_failed = [r for r in failed if r["severity"] == "crit"]
+    failed_ids = {r["id"] for r in failed}
+    new_failures = sorted(failed_ids - prev_failed)
+    recovered = sorted(prev_failed - failed_ids)
     now = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
     doc = {
         "timestamp": now,
@@ -211,7 +251,6 @@ def main():
             first = (r["output"].splitlines() or [""])[0][:100].replace("|", "\\|")
             lines.append(f"| {r['id']} | {r['severity']} | {r['task_id']} | {first} |")
         lines.append("")
-    recovered = sorted(prev_failed - {r["id"] for r in failed})
     if recovered:
         lines += ["## Recovered since last run", ""] + [f"- {i}" for i in recovered] + [""]
     lines += ["## All checks", ""]
@@ -222,25 +261,53 @@ def main():
         with open(os.path.join(STATE_DIR, "last-summary.md"), "w") as f:
             f.write("\n".join(lines) + "\n")
 
-    # ONE ntfy summary, only on failures or recoveries (state diff vs previous
-    # run). Filtered runs are silent unless --notify (the quick tier timer);
-    # their state diff uses their own results-<host>.json, so tiers don't
-    # clobber each other's recovery tracking.
-    if (not filtered or args.notify) and not args.no_notify and (failed or recovered):
+    # ONE ntfy summary, on TRANSITIONS only (new failures / recoveries vs the
+    # previous run of the same tier). A persistent unchanged failure set must
+    # NOT re-page every run — the hourly quick tier re-paged the same playit
+    # upstream outage all morning on 2026-07-10 ("failures like this are
+    # unacceptable" — user). The UNfiltered daily sweep still pages while
+    # anything is failing: one reminder per day so nothing rots silently.
+    # Filtered runs are silent unless --notify (the quick tier timer); their
+    # state diff uses their own results-<host>.json, so tiers don't clobber
+    # each other's transition tracking.
+    # Acked checks (operator-acknowledged known outages) are excluded from all
+    # paging math but stay visible in results/summaries.
+    acks = load_acks()
+    page_new = [i for i in new_failures if i not in acks]
+    page_recovered = [i for i in recovered if i not in acks]
+    page_failed_ids = {i for i in failed_ids if i not in acks}
+    page_crit = [r for r in crit_failed if r["id"] not in acks]
+    transition = bool(page_new or page_recovered)
+    daily_reminder = (not filtered) and bool(page_failed_ids)
+    if ((not filtered or args.notify) and not args.no_notify
+            and (transition or daily_reminder)):
         parts = []
-        if failed:
-            parts.append(f"{len(failed)} failed ({len(crit_failed)} crit): "
-                         + ", ".join(r["id"] for r in failed))
-        if recovered:
-            parts.append("recovered: " + ", ".join(recovered))
+        if page_new:
+            parts.append(f"NEW failures ({len(page_new)}): "
+                         + ", ".join(page_new))
+        if page_recovered:
+            parts.append("recovered: " + ", ".join(page_recovered))
+        still = sorted(page_failed_ids - set(page_new))
+        if still:
+            parts.append(f"still failing ({len(still)}): " + ", ".join(still))
+        acked_failing = sorted(failed_ids & set(acks))
+        if acked_failing:
+            parts.append("acked/suppressed: " + ", ".join(
+                f"{i} (until {acks[i]['until'][:16]})" for i in acked_failing))
+        if page_crit:
+            parts.append("crit: " + ", ".join(r["id"] for r in page_crit))
         if reopen:
             parts.append("reopen candidates: " + ", ".join(reopen))
         tier = f" [{args.host} tier]" if filtered else ""
-        title = (f"Verification{tier}: FAILURES" if failed
-                 else f"Verification{tier}: all recovered")
+        if page_new:
+            title = f"Verification{tier}: {len(page_new)} NEW failure(s)"
+        elif page_failed_ids:
+            title = f"Verification{tier}: still failing"
+        else:
+            title = f"Verification{tier}: all recovered"
         try:
             send_ntfy("\n".join(parts), title,
-                      "high" if crit_failed else "default")
+                      "high" if page_crit else "default")
             print(f"ntfy: sent ({title})", file=sys.stderr)
         except Exception as e:
             print(f"ntfy: send FAILED: {e}", file=sys.stderr)

@@ -16,3 +16,4 @@
 
 # Local server migration snapshot (contains Plex tokens, API keys, indexer cookies)
 migration-snapshot/
+__pycache__/

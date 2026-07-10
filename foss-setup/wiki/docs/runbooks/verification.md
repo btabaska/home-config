@@ -36,9 +36,15 @@ Four layers:
 2. **Runner — `run-checks`** (verify-02). Globs `checks.d/`, executes each
    `cmd` over SSH from the mini (BatchMode, timeout), evaluates `expect`,
    writes timestamped JSON results (check id, host, status, output,
-   duration). Runs on a systemd timer. Alerts via **ntfy only on regression**
-   (pass→fail transition) so alerts stay meaningful — no daily "all green"
-   noise.
+   duration). Runs on a systemd timer. Alerts via **ntfy only on state
+   transitions** (new failure or recovery vs that tier's previous run — since
+   2026-07-10, hardened after the hourly tier re-paged one persistent playit
+   upstream outage all morning). A persistent unchanged failure set does not
+   re-page; the **daily full sweep still pages while anything is failing**
+   (the once-a-day reminder that keeps nothing rotting silently). Known
+   /accepted outages can be **acked** (`ack-check.sh <id> <hours> [reason]`,
+   `--list`, `--clear`): an acked check keeps running and being recorded but
+   is excluded from paging until the ack auto-expires.
 
     **Two tiers (since 2026-07-09)**: the full sweep runs daily at 07:15 PT
     (`verification.timer`), and the cheap `--host url` subset runs **hourly**
@@ -91,8 +97,15 @@ Four layers:
   `enabled: false` checks, and never touches the daily state. There is no
   per-check flag; for one check, execute its `cmd` by hand — it's plain
   YAML, nothing hidden. `--json` prints results; `--notify`/`--no-notify`
-  control ntfy. **Don't run it as root** (ssh-based checks falsely fail —
-  the runner warns).
+  control ntfy. **Root runs are REFUSED** (since 2026-07-10): ssh-based
+  checks falsely fail as root and the garbage run both pages a fake outage
+  and poisons the transition state — run as btabaska like the service, or
+  set `VERIFY_ALLOW_ROOT=1` deliberately.
+- **Silence a known outage**: `ack-check.sh <check-id> <hours> [reason]` on
+  mini (as btabaska). The check keeps running/recording, just doesn't page;
+  `--list` shows live acks, `--clear <id>` unmutes early, expiry is
+  automatic. Use for confirmed upstream outages (e.g. playit) instead of
+  disabling checks.
 - **Every session start (AI agents)**: run the sweep, diff against
   `progress.json`, reopen regressions *before* planning new work. No probe,
   no checkmark.

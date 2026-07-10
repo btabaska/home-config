@@ -1,0 +1,47 @@
+# Secrets — never commit
+.env
+**/.env
+
+# Runtime state / bind-mount data (back up separately, don't version)
+**/data/
+**/db/
+**/images/
+**/redis/
+**/conf/
+**/work/
+**/cache/
+**/lib/
+# Runtime config dirs — ignore live data, but ship starter/example files.
+**/config/*
+!**/config/*.example
+!**/config/services.yaml
+!**/config/widgets.yaml
+!**/config/settings.yaml
+!**/config/bookmarks.yaml
+!**/config/docker.yaml
+**/beszel_data/
+**/beszel_agent_data/
+**/beszel_socket/
+**/.admin-password
+**/media/
+**/downloads/
+uptime-kuma/scripts/
+
+# Wiki — built artifact (source lives in home-config foss-setup/wiki/)
+wiki/site/
+**/pgdata/
+# unbound DNSSEC trust anchor auto-updates (runtime state, not config)
+unbound/unbound/root.key
+unbound/unbound/var/root.key
+
+# Secrets/runtime files caught by the 2026-07-09 docs-debt audit — never track
+ntfy/.healthchecks-token
+ntfy/.phone-password
+**/.env.bak*
+**/*.pid
+
+# macOS AppleDouble/Finder turds — scp/rsync from a Mac drops these (crashed the checks runner 2026-07-10)
+._*
+**/._*
+.DS_Store
+**/.DS_Store
