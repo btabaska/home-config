@@ -48,7 +48,9 @@ def load_env_file(path):
 def load_checks(checks_dir):
     checks = []
     for fname in sorted(os.listdir(checks_dir)):
-        if not fname.endswith((".yaml", ".yml")):
+        # skip dotfiles — macOS scp can drop AppleDouble "._*.yaml" binaries
+        # here, which crashed the whole runner (2026-07-10)
+        if fname.startswith(".") or not fname.endswith((".yaml", ".yml")):
             continue
         domain = re.sub(r"\.ya?ml$", "", fname)
         with open(os.path.join(checks_dir, fname)) as f:
@@ -77,8 +79,11 @@ def run_check(check):
                 "output": f"unknown host '{host}'", "duration_s": 0.0}
     start = time.monotonic()
     try:
+        # errors="replace": one non-UTF-8 byte in any check's output (e.g. a
+        # docker log line) must not crash the whole sweep (bit us 2026-07-10
+        # via soularr's logs).
         proc = subprocess.run(argv, capture_output=True, text=True,
-                              timeout=CHECK_TIMEOUT)
+                              errors="replace", timeout=CHECK_TIMEOUT)
         out = (proc.stdout or "") + (proc.stderr or "")
         exit_code = proc.returncode
         stdout = proc.stdout or ""

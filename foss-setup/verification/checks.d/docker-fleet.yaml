@@ -99,6 +99,27 @@ checks:
     runbook: wiki/runbooks/verification.md
     enabled: true
 
+  # Job-level check: soularr's PROCESS stays "running" while the job inside
+  # crash-loops (wrapper retries every 300s). Found 2026-07-10: [Slskd]
+  # download_dir pointed at betty's local path (doesn't exist in-container),
+  # so every completed download killed the run at import — 11 crash-loops,
+  # broken since the 07-02 deploy, zero alerts. Same class as the musicseerr
+  # v1.4.2 crypto bug: healthy container, dead job. This greps recent logs
+  # for the fatal marker instead of trusting container state.
+  - id: soularr-not-crashlooping
+    name: "nas: soularr job completes cycles (no Fatal error in recent logs)"
+    host: mini
+    cmd: >-
+      n=$(printf '%s\n' "$NAS_SUDO_PASSWORD"
+      | ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "sudo -S -p '' /usr/local/bin/docker logs soularr --since 2h 2>&1" 2>/dev/null
+      | grep -c 'Fatal error'); echo "fatal_errors=$n"
+    expect: '^fatal_errors=0$'
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
   # Native-service blanket: any failed systemd unit = something stopped working.
   - id: systemd-failed-mini
     name: "mini: no failed systemd units"

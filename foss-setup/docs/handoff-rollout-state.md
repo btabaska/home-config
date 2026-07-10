@@ -1,5 +1,14 @@
 # Rollout handoff state
 
+### Soularr import leg fixed + backlog drained; runner hardened; playit upstream OUTAGE ongoing (2026-07-10 morning)
+
+- **Soularr fixed and validated end-to-end**: `[Slskd] download_dir` was betty's local path (nonexistent in-container) → every completed download crashed the run at import; broken since the 07-02 deploy, zero alerts (healthy container, dead job — same class as musicseerr). Fix: `download_dir = /seedbox/slskd` (backup: config.ini.bak-wrong-path). Watched live: mgk ×3 + Eminem imported through Lidarr's DownloadedAlbumsScan; overnight the whole stranded backlog drained to "No releases wanted". One album (MMLP soulseek copy) ended "Skipping failed import" after a junk .m3u requeue loop — bounded, correct. Stranded leftovers on betty `~/files/slskd` = disk cruft, clean opportunistically.
+- **New job-level check `soularr-not-crashlooping`** (docker-fleet.yaml): greps 2h of soularr logs for "Fatal error" — catches the healthy-container/dead-job class hourly.
+- **Verification runner hardened, two real bugs**: (1) `subprocess` strict UTF-8 → one bad byte in any check output kills the sweep — now `errors="replace"`; (2) macOS AppleDouble junk (`._mini-services.yaml`, binary) in checks.d crashed yaml load — **the sweep was dead ~13h overnight and the `verification-quick-mini` dead-man CAUGHT it** (phone alert ~01:15). Loader now skips dotfiles; junk file removed. If scp-ing checks from a Mac, watch for `._*` droppings.
+- **Failed-unit checks earned their keep on first real run**: rig `restic-backup.service` failed (stale repo lock from 07-09 15:22 interrupt) → `restic unlock` + rerun = success, backup window recovered. mini `etckeeper.service` = transient index.lock races with the concurrent docs session's /etc commits — reset, not a defect, may recur while both sessions run.
+- **PLAYIT UPSTREAM OUTAGE (unresolved, not ours)**: the claim-leg degradation from last night progressed to hard failure — agent control plane fine, tunnels "loaded", but claim host 69.9.181.2:4378x drops ~50% of TCP connects (measured from mini AND rig; WAN 0% loss incl. to the edge IP) and ALL end-to-end game pings fail. Container restart (last night's fix) no longer helps. playit status page still green. Friends cannot join Java or Bedrock. Checks `playit-java-public`/`playit-bedrock-public` correctly red. ACTION: report to playit support (evidence above); re-test periodically — nothing fixable locally.
+- git-stacks-clean failing = concurrent docs session's WIP on mini /opt/stacks (theirs to commit).
+
 ### MusicSeerr "Couldn't sync the library" — v1.4.2 crypto bug, fixed via env key (2026-07-10 early)
 
 - **Symptom**: library sync Failed since 07-09 00:37, search dead, yet settings page said "Connected to Lidarr". Logs: every Lidarr call 401, circuit breaker 'lidarr' stuck OPEN (which is what killed search).
