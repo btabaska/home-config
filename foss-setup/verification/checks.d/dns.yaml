@@ -1,6 +1,7 @@
 # DNS resolution chain checks.
 # Primary resolver: AdGuard Home on mini (192.168.10.2:53) -> unbound upstream (127.0.0.1:5335).
-# Secondary resolver expected on NAS (192.168.10.4:53) — currently DOWN, guards reopened dns-02.
+# Secondary resolver: AdGuard Home on NAS (192.168.10.4:53) — live since dns-02 closed;
+# these checks guard against regression (the header's old "currently DOWN" era is over).
 checks:
   - id: dns-mini-internal
     name: "AdGuard (mini) resolves internal name home.tabaska.us"

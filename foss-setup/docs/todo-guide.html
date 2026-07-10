@@ -65,16 +65,15 @@
 <div class="tier">Do first — unblocks the most</div>
 
 <div class="task">
-  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 01</div><h2 class="ttitle">Confirm the ntfy phone alert arrived</h2></div></div>
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 01</div><h2 class="ttitle">Confirm the ntfy phone alert arrived — DONE ✅ (2026-07-09)</h2></div></div>
   <div class="chips"><span class="chip eff">2 min</span><span class="chip unb">closes: alerting</span></div>
   <div class="body">
     <p class="why">I sent a test notification titled <b>“Homelab alerts are working” ✅</b> to the <code>verification</code> topic. The whole monitoring stack has never reached your phone until now — this confirms it does.</p>
     <ol class="steps">
-      <li>Check your phone for the test notification.</li>
-      <li><b>If it arrived</b> — you're done; every verification sweep, backup result, and dead-man alert now reaches you. Check this off.</li>
-      <li><b>If it didn't</b> — open the ntfy app → make sure your server is added as <code>https://ntfy.tabaska.us</code> (not the default ntfy.sh), the topics <code>verification, backups, diun, healthchecks, homelab-alerts, wake-rig</code> are subscribed under <em>that</em> server, and iOS Settings → ntfy → Notifications is allowed. The server side is confirmed working, so it's a client nudge.</li>
+      <li><b>Confirmed 2026-07-09</b> — the alert reached your phone and you signed off on the coverage matrix at the monitoring session close. Every sweep, backup result, and dead-man alert now reaches you.</li>
+      <li><em>Reference for re-setting up a phone:</em> ntfy app → add server <code>https://ntfy.tabaska.us</code> (not the default ntfy.sh) → subscribe <code>verification, backups, diun, healthchecks, homelab-alerts, wake-rig</code> under that server; iOS Settings → ntfy → Notifications allowed.</li>
     </ol>
-    <div class="ping">Then ping Claude only if it didn't arrive — otherwise nothing needed.</div>
+    <div class="ping">Nothing needed.</div>
   </div>
 </div>
 
@@ -84,11 +83,12 @@
   <div class="body">
     <p class="why"><b>Live and verified.</b> <code>MinecraftCross</code> runs Paper 26.1.2 with Geyser + Floodgate; Java and Bedrock handshakes both tested from the LAN. Both the AMP panel and the server now auto-start after a rig reboot (the “white screen” cause is fixed). A Kuma monitor watches it. Runbook: <code>configs/gaming/minecraft-crossplay-finish.md</code>.</p>
     <ul class="plain">
-      <li><b>Java</b> (PC): connect to <code>192.168.10.12:25565</code></li>
-      <li><b>Bedrock</b> (phone/PC): server <code>192.168.10.12</code>, port <code>19132</code></li>
-      <li><b>Switch 2</b>: needs BedrockConnect — that's Task 09's decision.</li>
+      <li><b>Java</b> (anywhere): <code>minecraft.tabaska.us</code> (portless — SRV)</li>
+      <li><b>Bedrock</b> (anywhere): <code>bedrock.tabaska.us</code>, port <code>1111</code></li>
+      <li><b>Switch at home</b>: any featured-server tile → BedrockConnect list (Task 09, done)</li>
+      <li><em>LAN fallback if DNS is down:</em> Java <code>192.168.10.12:25565</code>, Bedrock <code>192.168.10.12:19132</code></li>
     </ul>
-    <div class="ping">Optional follow-ups, just say the word: whitelist on, mc.tabaska.us name (Task 10), BedrockConnect for the Switch (Task 09).</div>
+    <div class="ping">Friendly domains (Task 10) and BedrockConnect (Task 09) are done. Optional on request: whitelist.</div>
   </div>
 </div>
 
@@ -113,7 +113,7 @@
 <div class="tier">API keys — one sitting</div>
 
 <div class="task">
-  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 04</div><h2 class="ttitle">Get a TMDb API key</h2></div></div>
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 04</div><h2 class="ttitle">Get a TMDb API key — DONE ✅ (2026-07-09)</h2></div></div>
   <div class="chips"><span class="chip eff">5 min</span><span class="chip unb">finishes: Kometa</span></div>
   <div class="body">
     <p class="why"><b>✓ Done (2026-07-09)</b> — you dropped the key in the vault (<code>tmdb.api_key</code>); I validated it against TMDb (live lookup OK) and wired it into Kometa's config on the mini. Kometa's nightly run at 05:00 now has what it needs. Nothing left for you here.</p>
@@ -122,17 +122,17 @@
 </div>
 
 <div class="task">
-  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 05</div><h2 class="ttitle">Create your RomM admin account (retro library is live)</h2></div></div>
+  <div class="thead"><div class="chk" role="checkbox" tabindex="0"></div><div><div class="tnum">TASK 05</div><h2 class="ttitle">Create your RomM admin account — DONE ✅ (2026-07-09)</h2></div></div>
   <div class="chips"><span class="chip eff">2 min UI</span><span class="chip unb">retro library</span></div>
   <div class="body">
-    <p class="why"><b>✓ Deployed 2026-07-09</b> — you added the IGDB client ID + secret to the vault; I validated them against Twitch/IGDB (live game lookup OK) and stood up <b>RomM</b> on the mini at <a href="https://romm.tabaska.us">romm.tabaska.us</a> (real cert, IGDB metadata enabled). ROMs live on the NAS <code>games</code> share. Only the first-run wizard is left.</p>
+    <p class="why"><b>✓ Deployed 2026-07-09</b> — you added the IGDB client ID + secret to the vault; I validated them against Twitch/IGDB (live game lookup OK) and stood up <b>RomM</b> on the mini at <a href="https://romm.tabaska.us">romm.tabaska.us</a> (real cert, IGDB metadata enabled). ROMs live on the NAS <code>games</code> share.</p>
     <ol class="steps">
-      <li>Open <a href="https://romm.tabaska.us">romm.tabaska.us</a> → the setup wizard prompts you to <b>create the first admin user</b> (pick a username + password; save it — tell me and I'll vault it).</li>
+      <li><b>Done</b> — admin account created (user <code>tabaska</code>; credentials vaulted as <code>romm.admin_username</code>/<code>admin_password</code>, login verified 2026-07-09).</li>
       <li>Drop ROM files into the matching platform folder on the NAS games share: <code>/mnt/share/Games/romm/roms/&lt;platform&gt;/</code> (folders already made for gb, gbc, gba, nes, snes, n64, genesis, psx, psp, nds).</li>
       <li>In RomM, click <b>Scan</b> — IGDB fills in box art and metadata automatically.</li>
     </ol>
     <div class="vault">already in vault: igdb.client_id · igdb.client_secret · romm.*</div>
-    <div class="ping">Then ping Claude with your RomM admin creds — I'll vault them, add the RomM Homepage widget (rom/platform counts), and wire the EmulatorJS in-browser player. Retro handheld/EmuDeck steps are separate (tracker retro-03..07).</div>
+    <div class="ping">Creds are vaulted. Optional extras on request: the RomM Homepage widget (rom/platform counts) and the EmulatorJS in-browser player. Retro handheld/EmuDeck steps are separate (tracker retro-03..07). Dropping ROMs + Scan is ongoing use, not a task.</div>
   </div>
 </div>
 
