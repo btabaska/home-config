@@ -1,0 +1,17 @@
+# Media library data-quality checks — same philosophy as the container
+# manifest: the LIBRARY's invariants get probed, not just the services around
+# it. Hourly via verification-quick.service (--host media --notify).
+checks:
+  # Duplicate album folders = something imported around Lidarr (the single
+  # door). 3 pre-Lidarr orphans found+removed 2026-07-10; this pages if any
+  # collision ever reappears. Script fails loudly if the mount is down/empty
+  # (a vacuous pass would hide exactly the failures we care about).
+  - id: music-library-dupes
+    name: "music library has no duplicate album folders (year/case/unicode collisions)"
+    host: mini
+    cmd: python3 /opt/verification/bin/music-dupes.py /mnt/nas/music
+    expect: '^DUPES_OK'
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true

@@ -45,10 +45,12 @@ checks:
     enabled: true
 
   - id: alert-healthchecks-checks-defined
-    name: "Healthchecks has the 6 dead-man checks and ntfy channel"
+    name: "Healthchecks has its dead-man checks (>=6) and ntfy channel"
     host: mini
     cmd: docker exec healthchecks python3 /opt/healthchecks/manage.py shell -c "from hc.api.models import Check, Channel; print('checks='+str(Check.objects.count()), 'ntfy='+str(Channel.objects.filter(kind='ntfy').count()))"
-    expect: 'checks=[6-9].* ntfy=[1-9]'
+    # floor, not a fixed count — dead-mans grow with the fleet (10 as of
+    # 2026-07-10: +recyclarr, ai-stack-rig, verification-quick, music-mirror).
+    expect: 'checks=([6-9]|[1-9][0-9]+) ntfy=[1-9]'
     severity: warn
     task_id: sec-03
     runbook: wiki/runbooks/alerting.md

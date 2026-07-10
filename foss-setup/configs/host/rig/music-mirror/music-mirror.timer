@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily NAS->rig music mirror
+
+[Timer]
+# 05:30 ET: after the nightly import/cron window on the NAS side.
+OnCalendar=*-*-* 05:30:00 America/New_York
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

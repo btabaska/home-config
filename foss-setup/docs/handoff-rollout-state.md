@@ -1,5 +1,13 @@
 # Rollout handoff state
 
+### Music library dedup + duplicate tripwire + NAS→rig mirror (2026-07-10 midday)
+
+- **3 duplicate album folders removed from the NAS master** (pre-Lidarr manual copies coexisting with Lidarr's year-suffixed folders): Olivia Rodrigo GUTS + SOUR, Chappell Roan Midwest Princess. Deleted the no-year orphans (verified media-only contents first, and that Lidarr's DB indexes ONLY the year-suffixed folders → invisible to pipeline). ~460MB reclaimed; orphans were mostly lower-quality (SOUR orphan 69MB lossy vs 193MB FLAC kept).
+- **Duplicate-library TRIPWIRE** `verification/bin/music-dupes.py` + check `music-library-dupes` (checks.d/media.yaml, host mini against ro CIFS `/mnt/nas/music`): normalizes each artist/album folder (NFC-unicode → strip trailing `(YYYY)` → casefold) and fails listing any collision. Skips `#recycle`/`@eaDir`/`YouTube`. Fails LOUDLY if mount empty (no vacuous pass). Negative-tested: caught all 3 dupes pre-deletion (exit 1), went DUPES_OK albums=63 after. Hourly via new `--host media` line in verification-quick.service. Rationale: Lidarr is the single door and can't dup itself, so any collision = something wrote around Lidarr.
+- **NAS→rig music mirror** `configs/host/rig/music-mirror/{service,timer}` (daily 05:30 ET): `rsync -rt --delete-after` from `/mnt/nas-music-ro/` → `~/Music/` makes the Rhythmbox/iPod source a true mirror (additions AND deletions propagate → no drift/dupes downstream). `-rt` not `-a` (CIFS has no owners/symlinks). Dead-manned healthchecks `music-mirror-rig` (vault `healthchecks.music_mirror_rig_ping_url`). First runs applied the dedup to `~/Music` (SMB cache lagged one run; now consistent across NAS/mini-mount/rig-mount/rig-local). NOTE the NAS `YouTube/` (beets rips) DOES sync to rig — user may want excluded.
+- **iPod**: still needs a one-time wipe+resync from the now-clean `~/Music` (runbook `scripts/media/ipod-sync-cachyos.md`), user-driven.
+- Fixed stale `alert-healthchecks-checks-defined` (hardcoded `[6-9]` ceiling; now 10 dead-mans → floor regex). Sweep 76/76.
+
 ### Sweep back to 75/75 + alerting hardened (root-guard, transition paging, acks); AMP licence RCA'd to random MACs (2026-07-10 midday)
 
 - **User was being re-paged for the same 4 failures** (alert-kuma-none-down, git-stacks-clean, playit-java/bedrock-public) and mandated fix + hardening ("failures like this are unacceptable"). All four cleared; full sweep **75/75**, one "all recovered" ntfy confirmed sent. Two of today's pages were agent-inflicted (a root sweep → 14 false failures incl. 3 fake crits; see hardening below).
