@@ -7,6 +7,7 @@ Navidrome — self-hosted music streaming (Subsonic/OpenSubsonic API)
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://music.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/navidrome/compose.yaml` |
+| **Notes** | Subsonic-compatible music streaming. |
 | **Upstream docs** | <https://www.navidrome.org/docs/installation/docker/> |
 
 ## Containers

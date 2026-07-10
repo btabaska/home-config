@@ -7,6 +7,7 @@ Dockge — lightweight Docker Compose stack manager (SIMPLE DEFAULT)
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://dockge.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/dockge/compose.yaml` |
+| **Notes** | Compose stack manager. |
 | **Upstream docs** | <https://github.com/louislam/dockge> |
 
 ## Containers

@@ -5,8 +5,9 @@ Healthchecks — dead-man's-switch monitoring for cron/backup jobs
 | | |
 |---|---|
 | **Host** | [mini](../hosts/mini.md) |
-| **URL** | https://healthchecks.tabaska.us |
+| **URL** | https://health.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/healthchecks/compose.yaml` |
+| **Notes** | Cron/backup dead-man's-switch. Container port 8000. (2026-07-07 unhealthy flap resolved; healthy as of 2026-07-09.) |
 | **Upstream docs** | <https://healthchecks.io/docs/self_hosted_docker/> |
 
 ## Containers

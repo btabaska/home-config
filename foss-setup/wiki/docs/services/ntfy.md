@@ -7,6 +7,7 @@ ntfy — self-hosted push notifications (the notification backbone)
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://ntfy.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/ntfy/compose.yaml` |
+| **Notes** | Push notifications. Container port 80. |
 | **Upstream docs** | <https://docs.ntfy.sh/install/> · <https://docs.ntfy.sh/config/> |
 
 ## Containers

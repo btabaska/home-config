@@ -7,6 +7,7 @@ MusicSeerr — music request & discovery portal (Lidarr integration)
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://musicseerr.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/musicseerr/compose.yaml` |
+| **Notes** | Album request portal (feeds Lidarr). |
 | **Upstream docs** | <https://musicseerr.com/docs/getting-started/> |
 
 ## Containers

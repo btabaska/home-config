@@ -1,50 +1,81 @@
 # Services
 
-34 compose stacks, generated from the repo (`configs/docker-stack/` and `configs/nas/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+41 compose stacks, generated from the repo (`configs/docker-stack/`, `configs/nas/`, `configs/gaming/`, `configs/git/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 
 | Stack | Host | URL |
 |---|---|---|
-| [frigate](frigate.md) | mini | https://frigate.tabaska.us |
-| [litellm](litellm.md) | mini | https://litellm.tabaska.us |
+| [frigate](frigate.md) *(not deployed)* | mini | — |
+
+## AI & Gaming
+
+| Stack | Host | URL |
+|---|---|---|
+| [amp](amp.md) | rig | https://amp.tabaska.us |
+| [bedrock-connect](bedrock-connect.md) | mini | — |
+| [litellm](litellm.md) *(not deployed)* | mini | — |
+| [palworld](palworld.md) | rig | — |
+| [playit](playit.md) | rig | — |
+| [romm](romm.md) | mini | https://romm.tabaska.us |
 
 ## Documents & Life
 
 | Stack | Host | URL |
 |---|---|---|
-| [mealie](mealie.md) | mini | https://recipes.tabaska.us |
 | [paperless-ngx](paperless-ngx.md) | mini | https://paperless.tabaska.us |
+
+## Infrastructure & Ops
+
+| Stack | Host | URL |
+|---|---|---|
+| [beszel](beszel.md) | mini | https://status.tabaska.us |
+| [caddy](caddy.md) | mini | — |
+| [dependency-track](dependency-track.md) | nas | https://deptrack.tabaska.us |
+| [diun](diun.md) | mini | — |
+| [dockge](dockge.md) | mini | https://dockge.tabaska.us |
+| [forgejo](forgejo.md) | mini | https://git.tabaska.us |
+| [healthchecks](healthchecks.md) | mini | https://health.tabaska.us |
+| [homepage](homepage.md) | mini | https://home.tabaska.us |
+| [ntfy](ntfy.md) | mini | https://ntfy.tabaska.us |
+| [unbound](unbound.md) | mini | — |
+| [uptime-kuma](uptime-kuma.md) | mini | https://uptime.tabaska.us |
+| [vaultwarden](vaultwarden.md) | mini | https://vault.tabaska.us |
+
+## Life
+
+| Stack | Host | URL |
+|---|---|---|
+| [mealie](mealie.md) | mini | https://recipes.tabaska.us |
+
+## Media
+
+| Stack | Host | URL |
+|---|---|---|
+| [kometa](kometa.md) | mini | — |
+| [metube](metube.md) | mini | https://metube.tabaska.us |
+| [pinchflat](pinchflat.md) | mini | https://pinchflat.tabaska.us |
 
 ## Media & Acquisition
 
 | Stack | Host | URL |
 |---|---|---|
-| [kometa](kometa.md) | mini | — |
-| [libreseerr](libreseerr.md) | mini | https://libreseerr.tabaska.us (LAN: http://192.168.10.2:8789) |
-| [maintainerr](maintainerr.md) | mini | https://maintainerr.tabaska.us |
 | [media-automation](media-automation.md) | nas | — |
-| [musicseerr](musicseerr.md) | mini | https://musicseerr.tabaska.us |
-| [pinchflat](pinchflat.md) | mini | https://pinchflat.tabaska.us |
-| [recyclarr](recyclarr.md) | mini | — |
-| [seerr](seerr.md) | mini | https://seerr.tabaska.us |
-| [stash](stash.md) | nas | https://stash.tabaska.us |
-| [tautulli](tautulli.md) | mini | https://tautulli.tabaska.us |
-| [tdarr](tdarr.md) | mini | https://tdarr.tabaska.us |
+| [tdarr](tdarr.md) *(removed from plan)* | mini | — |
 
-## Monitoring & Ops
+## Media Automation
 
 | Stack | Host | URL |
 |---|---|---|
-| [beszel](beszel.md) | mini | https://beszel.tabaska.us |
-| [dependency-track](dependency-track.md) | mini | https://deptrack.tabaska.us |
-| [diun](diun.md) | mini | — |
-| [dockge](dockge.md) | mini | https://dockge.tabaska.us |
-| [healthchecks](healthchecks.md) | mini | https://healthchecks.tabaska.us |
-| [homepage](homepage.md) | mini | https://home.tabaska.us |
-| [ntfy](ntfy.md) | mini | https://ntfy.tabaska.us |
-| [uptime-kuma](uptime-kuma.md) | mini | https://uptime.tabaska.us |
-| [vaultwarden](vaultwarden.md) | mini | https://vault.tabaska.us |
+| [maintainerr](maintainerr.md) *(removed from plan)* | mini | — |
+| [recyclarr](recyclarr.md) | mini | — |
+| [tautulli](tautulli.md) | mini | https://tautulli.tabaska.us |
+
+## Music
+
+| Stack | Host | URL |
+|---|---|---|
+| [navidrome](navidrome.md) | mini | https://music.tabaska.us |
 
 ## Networking & Access
 
@@ -52,25 +83,41 @@
 |---|---|---|
 | [adguard](adguard.md) | mini | https://dns.tabaska.us |
 | [adguard-nas](adguard-nas.md) | nas | http://192.168.10.4:3000 (LAN; secondary DNS itself is :53) |
-| [caddy](caddy.md) | mini | — |
-| [unbound](unbound.md) | mini | — |
 
-## Photos & Reading
+## Photos
 
 | Stack | Host | URL |
 |---|---|---|
-| [calibre-web-automated](calibre-web-automated.md) | nas | http://192.168.10.4:8083 (deliberately LAN/VPN-only) |
-| [immich](immich.md) | nas | https://immich.tabaska.us (LAN: http://192.168.10.4:2283) |
+| [immich](immich.md) | nas | https://immich.tabaska.us |
+
+## Private
+
+| Stack | Host | URL |
+|---|---|---|
+| [stash](stash.md) | nas | https://stash.tabaska.us |
+
+## Reading & Docs
+
+| Stack | Host | URL |
+|---|---|---|
+| [calibre-web-automated](calibre-web-automated.md) | nas | https://books.tabaska.us |
 | [miniflux](miniflux.md) | mini | https://rss.tabaska.us |
-| [navidrome](navidrome.md) | mini | https://music.tabaska.us |
 | [wallabag](wallabag.md) | mini | https://wallabag.tabaska.us |
+
+## Requests
+
+| Stack | Host | URL |
+|---|---|---|
+| [libreseerr](libreseerr.md) | mini | https://libreseerr.tabaska.us |
+| [musicseerr](musicseerr.md) | mini | https://musicseerr.tabaska.us |
+| [seerr](seerr.md) | mini | https://seerr.tabaska.us |
 
 ## Uncategorized
 
 | Stack | Host | URL |
 |---|---|---|
-| [metube](metube.md) | mini | https://metube.tabaska.us |
+| [bgutil-pot](bgutil-pot.md) | mini | — |
 
-Not compose-managed (so not listed above): **Plex** (native NAS package), **slskd + Deluge** (seedbox, provider-managed/native — see [seedbox](../hosts/seedbox.md)), **Forgejo** (runs from `/opt/stacks` on the mini).
+Not compose-managed in this repo (so not listed above): **Plex** (native NAS package), **slskd + Deluge** (seedbox — see [seedbox](../hosts/seedbox.md)), and the **rig AI stack** (litellm, open-webui, mcpo — compose lives in the separate `local-ai-tooling` repo; see [rig](../hosts/rig.md)).
 
 *Generated — do not edit by hand.*

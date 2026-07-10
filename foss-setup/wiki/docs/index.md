@@ -20,7 +20,7 @@ Three documents divide the world:
 | Document | Role |
 |---|---|
 | `foss-setup-plan-2.md` (repo root) | The **why** — the full design narrative |
-| `foss-setup/docs/index.html` | The **what/when** — Plan v3 rollout tracker, 194 tasks in 8 staged runs |
+| `foss-setup/docs/index.html` | The **what/when** — Plan v3 rollout tracker (223 tasks as of 2026-07-09; grows as runs add work) |
 | **This wiki** (`foss-setup/wiki/`) | The **how to operate** — stable reference + runbooks |
 
 Guiding rule: the wiki is **generated from the repo wherever possible** so it
@@ -33,7 +33,7 @@ compose files). Hand-written prose lives only where judgment is needed.
 |---|---|---|---|---|
 | [mini](hosts/mini.md) | `mini` · 192.168.10.2 | Ubuntu Docker host — the always-on web/management stack, Caddy, primary DNS, Forgejo | 24/7 (~12 W) | ansible-pull + Dockge |
 | [nas](hosts/nas.md) | `nas` · 192.168.10.4 | Synology DS920+ — storage, Immich, Plex, CWA, *arr stack, secondary DNS | 24/7 | DSM UI (Container Manager) |
-| [rig](hosts/rig.md) | `rig` · 192.168.10.12 | CachyOS — local LLMs, Apollo streaming (Sunshine fork), heavy game servers | 24/7 (~130 W idle; WoL kept for recovery) | ansible-pull (pending: glue-08) |
+| [rig](hosts/rig.md) | `rig` · 192.168.10.12 | CachyOS — the full LLM stack (Ollama+LiteLLM+Open WebUI), Apollo streaming (Sunshine fork), game servers (AMP, Palworld + playit public paths) | 24/7 (~130 W idle; WoL kept for recovery) | ansible-pull + pacman/chezmoi |
 | [seedbox](hosts/seedbox.md) | `seedbox` (Betty) | Off-site Bytesized box — Deluge + slskd, all P2P off the home network | Managed 24/7 | user-space only (no root) |
 | [gateway](hosts/gateway.md) | 192.168.10.1 | UniFi Dream Wall — routing, VLANs, firewall, WiFi, DHCP | 24/7 | UniFi GUI only |
 | [home-assistant](hosts/home-assistant.md) | 192.168.10.50 | HA Green — smart-home hub | 24/7 (~3 W) | HA itself (appliance) |

@@ -4,12 +4,11 @@ The framework that keeps "done" meaning *still working*. Born from the
 2026-07-07 audit finding: several tracker tasks were checked and had silently
 regressed — **nothing verified that done stays done.**
 
-!!! note "Status: being built (pending: verify-01…05)"
-    A concurrent work stream is implementing this under
-    `foss-setup/verification/` (config may land as
-    `configs/verification/checks.d/`). This page documents the design from
-    Plan v3 so operators and agents know the shape; update paths/commands
-    when the framework lands.
+!!! success "Status: LIVE (verify-01…05 shipped)"
+    Deployed on the mini at `/opt/verification/` (source of truth:
+    `foss-setup/verification/` in the repo — keep them in sync). 74 checks
+    across 10 `checks.d/*.yaml` domains as of 2026-07-09. Run it:
+    `ssh mini '/opt/verification/bin/run-checks.sh'`.
 
 ## The design
 
@@ -19,12 +18,16 @@ Four layers:
    service/host. Each check has:
 
     ```yaml
-    id: dns-nas-secondary
-    host: nas            # where the probe targets
-    cmd: dig @192.168.10.4 example.com +time=2 +tries=1
-    expect: NOERROR      # what "pass" means
-    severity: critical
-    runbook: https://wiki.tabaska.us/runbooks/dns-outage/
+    # a real check, verbatim from checks.d/dns.yaml
+    id: dns-mini-internal
+    name: "AdGuard (mini) resolves internal name home.tabaska.us"
+    host: mini                 # where the probe targets (or use the file-stem domain)
+    cmd: dig +short +time=3 +tries=1 @192.168.10.2 home.tabaska.us
+    expect: '^192\.168\.10\.[0-9]+$'   # regex over stdout; omit = exit-code only
+    severity: crit             # crit | warn
+    task_id: dns-01            # tracker task this check guards (auto-reopen)
+    runbook: wiki/runbooks/dns.md
+    enabled: true
     ```
 
     Everything the fleet audit found by hand becomes a repeatable check;
@@ -78,24 +81,35 @@ Four layers:
    `docs/progress.json` — a checked task whose probe fails gets reopened
    rather than silently lying. This closes the tracker trust gap.
 
-## Operating it (once live)
+## Operating it
 
-- **Read results**: latest results JSON on the mini (path set by verify-02);
-  regressions arrive on ntfy.
-- **Re-run one check**: `run-checks --only <check-id>` (or execute the
-  check's `cmd` by hand — it's plain YAML, nothing hidden).
+- **Read results**: `mini:/var/lib/verification/results.json` (daily sweep);
+  filtered runs write `results-<host>.json` alongside (e.g. `results-url.json`
+  hourly, `results-docker-fleet.json`). Regressions arrive on ntfy.
+- **Re-run a subset**: `run-checks.sh --host <host-or-domain>` — matches a
+  check's `host` field or its file-stem domain, includes that domain's
+  `enabled: false` checks, and never touches the daily state. There is no
+  per-check flag; for one check, execute its `cmd` by hand — it's plain
+  YAML, nothing hidden. `--json` prints results; `--notify`/`--no-notify`
+  control ntfy. **Don't run it as root** (ssh-based checks falsely fail —
+  the runner warns).
 - **Every session start (AI agents)**: run the sweep, diff against
   `progress.json`, reopen regressions *before* planning new work. No probe,
   no checkmark.
 - **Add a check with every new service** — step 7 of
-  [Add a service](add-a-service.md).
+  [Add a service](add-a-service.md) — and update
+  `verification/coverage/<host>.containers` with every deploy/retire, or
+  the docker-fleet tripwire fails the sweep by design.
 
-## Until then
+## The other monitoring layers
 
-The interim verification layer is: Uptime Kuma (HTTP monitors + ntfy),
-Healthchecks (dead-man's switch for scheduled jobs), Diun (image awareness),
-Beszel (host metrics), and the standalone drill scripts
-(`scripts/network/dns-resilience-verify.sh` and friends).
+Alongside the sweep: Uptime Kuma (53 monitors as of 2026-07-09 — liveness
+plus keyword/functional, e.g. the authenticated LiteLLM model-list check),
+Healthchecks (9 dead-man switches for scheduled jobs), Diun (image
+awareness), Beszel (host metrics), and the standalone drill scripts
+(`scripts/network/dns-resilience-verify.sh` and friends). Known standing
+gap: **all alerting lives on the mini** — if the mini dies, everything is
+silent (external watcher recommended; user decision pending).
 
 ## Human approval gate (policy — added 2026-07-08 at the operator's request)
 

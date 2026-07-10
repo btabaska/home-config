@@ -7,6 +7,7 @@ Recyclarr — sync TRaSH Guides quality profiles + naming to NAS Sonarr/Radarr
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | — (no web UI / not proxied) |
 | **Source** | `foss-setup/configs/docker-stack/stacks/recyclarr/compose.yaml` |
+| **Notes** | TRaSH-guides sync — weekly cron (`docker compose run`), not a long-running container; dead-manned via healthchecks `recyclarr-sync-mini`. |
 
 ## Containers
 

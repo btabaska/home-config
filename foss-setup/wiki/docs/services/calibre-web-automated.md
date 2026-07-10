@@ -5,8 +5,9 @@ Calibre-Web-Automated (CWA) on Synology DS920+ (Container Manager / Docker Compo
 | | |
 |---|---|
 | **Host** | [nas](../hosts/nas.md) |
-| **URL** | http://192.168.10.4:8083 (deliberately LAN/VPN-only) |
+| **URL** | https://books.tabaska.us |
 | **Source** | `foss-setup/configs/nas/calibre-web-automated/docker-compose.yml` |
+| **Notes** | Ebook library (CWA). |
 | **Upstream docs** | <https://github.com/new-usemame/Calibre-Web-NextGen/releases/tag/v4.0.7> |
 
 ## Containers

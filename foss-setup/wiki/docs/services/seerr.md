@@ -7,6 +7,7 @@ Seerr — unified successor to Overseerr + Jellyseerr (media request portal)
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://seerr.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/seerr/compose.yaml` |
+| **Notes** | Movie/TV request portal (Jellyseerr/Overseerr-compatible API). |
 | **Upstream docs** | <https://docs.seerr.dev/getting-started/docker/> · <https://docs.seerr.dev/migration-guide/> |
 
 ## Containers

@@ -7,13 +7,14 @@ Pinchflat — "Sonarr for YouTube": automated, self-hosted YouTube archiving
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://pinchflat.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/pinchflat/compose.yaml` |
+| **Notes** | YouTube channel archiving ("Sonarr for YouTube"). |
 | **Upstream docs** | <https://github.com/kieraneglin/pinchflat> |
 
 ## Containers
 
 | Service | Image (pinned) | Ports |
 |---|---|---|
-| `pinchflat` | `ghcr.io/kieraneglin/pinchflat:v2025.6.6` | `8945:8945` |
+| `pinchflat` | `pinchflat-bgutil:local` | `8945:8945` |
 
 ## Volumes
 

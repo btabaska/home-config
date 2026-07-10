@@ -34,13 +34,18 @@ PSU, hung board) — go press the button.
 ## After recovery — what to expect
 
 - Tailscale reconnects on its own; `ssh rig` works via alias.
-- Ollama serves once up; LiteLLM on the mini resumes routing big-model
-  requests to the rig automatically (it will have been on the small
-  mini-fallback model while the rig was down).
-- `gpu-power-tune.service` should cap the GPU at 300 W — currently failing at
-  boot (pending: game-10); check `nvidia-smi` if the room gets warm.
-- Once rig ansible-pull lands (pending: glue-08), `Persistent=true` catches
-  up any converge window missed while the box was down.
+- The AI stack (native Ollama + the litellm/open-webui/mcpo containers,
+  `restart: unless-stopped`) comes back by itself — ai.tabaska.us /
+  llm.tabaska.us were **down** the whole outage (there is no fallback; the
+  planned mini fallback was never deployed). `ai-stack-watchdog.timer`
+  re-confirms container→host Ollama within ~10 min.
+- Game servers (AMP, Palworld, playit) also self-start; if friends still
+  can't join after everything is green, restart the playit container
+  (tunnel-claim wedge — see [services/playit](../services/playit.md)).
+- `gpu-power-tune.service` caps the GPU at 300 W at boot (verified
+  2026-07-09); check `nvidia-smi` if the room gets warm.
+- ansible-pull is deployed here; `Persistent=true` catches up any converge
+  window missed while the box was down.
 
 ## Verify
 
@@ -48,6 +53,7 @@ PSU, hung board) — go press the button.
 ping -c1 192.168.10.12 && ssh rig 'uptime && nvidia-smi --query-gpu=power.limit --format=csv'
 ```
 
-Host answers, SSH works, power limit reads 300 W (or you've found game-10
-still open). Then ask *why* it was down — a 24/7 host going dark deserves a
-root cause, not just a wake.
+Host answers, SSH works, power limit reads 300 W. Then ask *why* it was
+down — a 24/7 host going dark deserves a root cause, not just a wake (check
+`pcie-aer-monitor` history first: the OS NVMe's marginal PCIe link has
+frozen this box before, 2026-07-08).

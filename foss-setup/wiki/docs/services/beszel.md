@@ -5,8 +5,9 @@ Beszel — ultra-light monitoring (hub + agent)
 | | |
 |---|---|
 | **Host** | [mini](../hosts/mini.md) |
-| **URL** | https://beszel.tabaska.us |
+| **URL** | https://status.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/beszel/compose.yaml` |
+| **Notes** | Host/container metrics hub (beszel-agent on mini feeds it; agent has no UI). |
 | **Upstream docs** | <https://beszel.dev/guide/hub-installation> |
 
 ## Containers

@@ -26,9 +26,10 @@ ha-01 and the whole ha-* track — integrations, backups, tailnet join).
   dongle for fully cloud-free
 - **UniFi Protect** cameras (local, needs a Protect API key + RTSP enabled)
 - **Zigbee** backbone later: coordinator stick + Zigbee2MQTT + Mosquitto
-- **Voice/LLM**: Assist pipeline pointed at LiteLLM on the mini (rig model
-  normally — the rig is 24/7; the mini's small-model fallback is pure
-  resilience, and landing on it means the rig is down: an incident)
+- **Voice/LLM**: Assist pipeline pointed at the rig's LiteLLM
+  (`llm.tabaska.us`, OpenAI-compatible; the rig is 24/7 — it being down is
+  an incident). *Earlier drafts said "LiteLLM on the mini" — that mini
+  front-door/fallback was never deployed.*
 
 ## Maintenance channel
 

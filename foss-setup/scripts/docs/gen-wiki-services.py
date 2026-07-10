@@ -66,6 +66,14 @@ URL_OVERRIDES = {
     "libreseerr": "https://libreseerr.tabaska.us (LAN: http://192.168.10.2:8789)",
     "media-automation": None,  # multi-app stack; per-service ports below
     "vaultwarden": "https://vault.tabaska.us",
+    "forgejo": "https://git.tabaska.us",
+    "beszel": "https://status.tabaska.us",
+    "healthchecks": "https://health.tabaska.us",
+    "amp": "https://amp.tabaska.us",
+    "palworld": None,   # game server (UDP; public path via playit) — no web UI
+    "playit": None,     # tunnel agent
+    "bedrock-connect": None,  # UDP 19132 console gateway
+    "bgutil-pot": None,  # PO-token sidecar for metube/pinchflat
 }
 
 CATEGORIES = {
@@ -89,25 +97,39 @@ FALLBACK_CATEGORY = "Uncategorized"
 # ------------------------------------------------------------ compose parse
 
 
+STATUS_RE = re.compile(r"^(REMOVED FROM PLAN|RETIRED|NOT DEPLOYED|DEPRECATED)\b", re.I)
+
+
 def parse_header(text):
-    """First comment block -> (description, [doc urls])."""
-    desc, urls = "", []
+    """First comment block -> (status, description, [doc urls]).
+
+    A leading REMOVED FROM PLAN / RETIRED / NOT DEPLOYED / DEPRECATED line is
+    the stack's status banner, kept separate so the page still gets the real
+    one-line description underneath it.
+    """
+    status, desc, urls = "", "", []
     for line in text.splitlines():
         if not line.startswith("#"):
             if line.strip():
                 break
             continue
         body = line.lstrip("#").strip()
+        if not status and not desc and STATUS_RE.match(body):
+            status = body
+            continue
         if not desc and re.search(r"[A-Za-z]", body):
             desc = body
-        urls += re.findall(r"https?://[^\s)\"']+", body)
+        urls += [
+            u for u in re.findall(r"https?://[^\s)\"']+", body)
+            if "<" not in u and "{" not in u  # skip placeholder hosts
+        ]
     # de-dup, keep order
     seen, out = set(), []
     for u in urls:
         if u not in seen:
             seen.add(u)
             out.append(u)
-    return desc, out[:3]
+    return status, desc, out[:3]
 
 
 def parse_compose_yaml(text):
@@ -197,8 +219,13 @@ def load_catalog():
             data = yaml.safe_load(text) or {}
         else:
             return {}
-        # accept either {services: {name: {...}}} or {name: {...}}
+        # accept {services: [{name: ..}, ..]} (the real service-catalog.yaml
+        # schema), {services: {name: {...}}}, or {name: {...}}
         services = data.get("services", data)
+        if isinstance(services, list):
+            services = {
+                e["name"]: e for e in services if isinstance(e, dict) and e.get("name")
+            }
         return services if isinstance(services, dict) else {}
     except Exception as exc:  # tolerate a malformed/partial catalog
         print(f"[gen-wiki-services] WARN: could not read {CATALOG}: {exc}", file=sys.stderr)
@@ -214,6 +241,7 @@ def discover():
         (REPO / "configs" / "docker-stack" / "stacks", "compose.yaml", "mini"),
         (REPO / "configs" / "docker-stack", "docker-compose.yml", "mini"),
         (REPO / "configs" / "nas", "docker-compose.yml", "nas"),
+        (REPO / "configs" / "gaming", "compose.yaml", "rig"),
     ]
     for base, fname, host in patterns:
         if not base.is_dir():
@@ -225,6 +253,11 @@ def discover():
             if f.exists():
                 h = "nas" if d.name.endswith("-nas") else host
                 stacks.append({"name": d.name, "path": f, "host": h})
+    # Forgejo lives outside the stack trees (configs/git/) but is a normal
+    # compose stack on the mini (/opt/stacks/forgejo).
+    f = REPO / "configs" / "git" / "docker-compose.yml"
+    if f.exists():
+        stacks.append({"name": "forgejo", "path": f, "host": "mini"})
     return stacks
 
 
@@ -234,12 +267,19 @@ def discover():
 def render_page(st, catalog):
     name, path, host = st["name"], st["path"], st["host"]
     text = path.read_text()
-    desc, doc_urls = parse_header(text)
+    status, desc, doc_urls = parse_header(text)
     services = parse_compose_yaml(text) if HAVE_YAML else parse_compose_regex(text)
     env_names = parse_env_example(path.parent / ".env.example")
     cat_entry = catalog.get(name, {}) if isinstance(catalog.get(name, {}), dict) else {}
 
-    if "url" in cat_entry:
+    # The catalog describes the LIVE deployment; for a stack that is not
+    # deployed (status banner), the dir location is the only truth we have.
+    if not status and cat_entry.get("host"):
+        host = str(cat_entry["host"])
+
+    if status:
+        url = None  # a not-deployed/removed stack has no live URL
+    elif "url" in cat_entry:
         url = cat_entry["url"]
     elif name in URL_OVERRIDES:
         url = URL_OVERRIDES[name]
@@ -248,17 +288,21 @@ def render_page(st, catalog):
     desc = cat_entry.get("description", desc) or name
     rel = path.relative_to(REPO)
 
-    lines = [
-        f"# {name}",
-        "",
+    lines = [f"# {name}", ""]
+    if status:
+        lines += [f"**{status}**", ""]
+    host_link = f"[{host}](../hosts/{host}.md)" if host in ("mini", "nas", "rig") else host
+    lines += [
         f"{desc}",
         "",
         "| | |",
         "|---|---|",
-        f"| **Host** | [{host}](../hosts/{'mini' if host == 'mini' else 'nas'}.md) |",
+        f"| **Host** | {host_link} |",
         f"| **URL** | {url if url else '— (no web UI / not proxied)'} |",
         f"| **Source** | `foss-setup/{rel}` |",
     ]
+    if cat_entry.get("notes"):
+        lines.append(f"| **Notes** | {cat_entry['notes']} |")
     if doc_urls:
         links = " · ".join(f"<{u}>" for u in doc_urls)
         lines.append(f"| **Upstream docs** | {links} |")
@@ -294,11 +338,12 @@ def render_page(st, catalog):
         "",
         "```bash",
     ]
-    if host == "mini":
+    if host in ("mini", "rig"):
+        dc = "sudo docker compose" if host == "rig" else "docker compose"
         lines += [
-            f"ssh mini 'cd /opt/stacks/{name} && docker compose ps'",
-            f"ssh mini 'cd /opt/stacks/{name} && docker compose logs --tail 50'",
-            f"ssh mini 'cd /opt/stacks/{name} && docker compose pull && docker compose up -d'",
+            f"ssh {host} 'cd /opt/stacks/{name} && {dc} ps'",
+            f"ssh {host} 'cd /opt/stacks/{name} && {dc} logs --tail 50'",
+            f"ssh {host} 'cd /opt/stacks/{name} && {dc} pull && {dc} up -d'",
         ]
     else:
         lines += [
@@ -333,7 +378,8 @@ def render_index(stacks, catalog, by_cat):
         "# Services",
         "",
         f"{len(stacks)} compose stacks, generated from the repo "
-        "(`configs/docker-stack/` and `configs/nas/`) by "
+        "(`configs/docker-stack/`, `configs/nas/`, `configs/gaming/`, "
+        "`configs/git/`) by "
         "`scripts/docs/gen-wiki-services.py`. If a page here disagrees with a "
         "compose file, regenerate — the compose file wins.",
         "",
@@ -344,15 +390,30 @@ def render_index(stacks, catalog, by_cat):
         for st in by_cat[cat]:
             name = st["name"]
             entry = catalog.get(name, {}) if isinstance(catalog.get(name, {}), dict) else {}
-            url = entry.get("url", URL_OVERRIDES.get(name, f"https://{name}.tabaska.us"))
-            url = url if url else "—"
-            lines.append(f"| [{name}]({name}.md) | {st['host']} | {url} |")
+            status = st.get("status", "")
+            if status:
+                m = STATUS_RE.match(status)
+                marker = f" *({m.group(1).lower()})*" if m else ""
+                url = "—"
+                host = st["host"]
+            else:
+                marker = ""
+                if "url" in entry:
+                    url = entry["url"]
+                elif name in URL_OVERRIDES:
+                    url = URL_OVERRIDES[name]
+                else:
+                    url = f"https://{name}.tabaska.us"
+                url = url or "—"
+                host = entry.get("host", st["host"])
+            lines.append(f"| [{name}]({name}.md){marker} | {host} | {url} |")
         lines.append("")
     lines += [
-        "Not compose-managed (so not listed above): **Plex** (native NAS "
-        "package), **slskd + Deluge** (seedbox, provider-managed/native — see "
-        "[seedbox](../hosts/seedbox.md)), **Forgejo** (runs from `/opt/stacks` "
-        "on the mini).",
+        "Not compose-managed in this repo (so not listed above): **Plex** "
+        "(native NAS package), **slskd + Deluge** (seedbox — see "
+        "[seedbox](../hosts/seedbox.md)), and the **rig AI stack** (litellm, "
+        "open-webui, mcpo — compose lives in the separate `local-ai-tooling` "
+        "repo; see [rig](../hosts/rig.md)).",
         "",
         "*Generated — do not edit by hand.*",
         "",
@@ -387,6 +448,7 @@ def main():
 
     by_cat = {}
     for st in stacks:
+        st["status"], _, _ = parse_header(st["path"].read_text())
         by_cat.setdefault(category_of(st["name"], catalog), []).append(st)
     for cat in by_cat:
         by_cat[cat].sort(key=lambda s: s["name"])

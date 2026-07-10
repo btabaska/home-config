@@ -1,6 +1,6 @@
-# AMP (CubeCoders) game panel — containerized (ImageGenius image), so it never
-# touches the CachyOS workstation host. License activates non-interactively via
-# LICENCE. ADS module = the panel that provisions/monitors game instances.
+# AMP (CubeCoders) game panel — containerized so it never touches the CachyOS host (ImageGenius image).
+# License activates non-interactively via LICENCE. ADS module = the panel that
+# provisions/monitors game instances.
 #
 # 2026-07-09 additions (see handoff):
 # - hostname pinned: AMP licence activations are machine-id-bound; without a

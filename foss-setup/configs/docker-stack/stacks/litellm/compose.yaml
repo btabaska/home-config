@@ -1,3 +1,5 @@
+# NOT DEPLOYED — never ran here; the live LiteLLM is a different deployment on the rig (llm.tabaska.us → rig:4000, local-ai-tooling repo). Decision pending (2026-07-09 audit): deploy this as the resilience fallback described below, or remove the dir.
+#
 # LiteLLM — OpenAI-compatible AI gateway with automatic fallback
 # Phase 2. Docs: https://docs.litellm.ai/docs/proxy/reliability
 #

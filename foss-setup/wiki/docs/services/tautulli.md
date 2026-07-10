@@ -7,6 +7,7 @@ Tautulli — Plex monitoring, history & analytics
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://tautulli.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/tautulli/compose.yaml` |
+| **Notes** | Plex analytics/history. |
 | **Upstream docs** | <https://github.com/Tautulli/Tautulli/wiki> |
 
 ## Containers

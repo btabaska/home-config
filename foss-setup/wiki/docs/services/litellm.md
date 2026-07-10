@@ -1,13 +1,16 @@
 # litellm
 
+**NOT DEPLOYED — never ran here; the live LiteLLM is a different deployment on the rig (llm.tabaska.us → rig:4000, local-ai-tooling repo). Decision pending (2026-07-09 audit): deploy this as the resilience fallback described below, or remove the dir.**
+
 LiteLLM — OpenAI-compatible AI gateway with automatic fallback
 
 | | |
 |---|---|
 | **Host** | [mini](../hosts/mini.md) |
-| **URL** | https://litellm.tabaska.us |
+| **URL** | — (no web UI / not proxied) |
 | **Source** | `foss-setup/configs/docker-stack/stacks/litellm/compose.yaml` |
-| **Upstream docs** | <https://docs.litellm.ai/docs/proxy/reliability> · <http://<mac-mini>:4000> |
+| **Notes** | OpenAI-compatible gateway (/ui admin), always-on on the rig. (A mini-fallback stack dir exists in the repo but was NEVER deployed — decision pending, 2026-07-09 audit.) |
+| **Upstream docs** | <https://docs.litellm.ai/docs/proxy/reliability> |
 
 ## Containers
 

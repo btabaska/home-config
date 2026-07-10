@@ -7,6 +7,7 @@ Kometa — Plex metadata, collections, overlays & playlists (formerly PMM)
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | — (no web UI / not proxied) |
 | **Source** | `foss-setup/configs/docker-stack/stacks/kometa/compose.yaml` |
+| **Notes** | Plex collections/metadata batch job — no web UI, runs on schedule. |
 | **Upstream docs** | <https://kometa.wiki/> |
 
 ## Containers

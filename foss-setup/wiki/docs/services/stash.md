@@ -7,6 +7,7 @@ Stash on Synology DS920+ (Container Manager / Docker Compose)
 | **Host** | [nas](../hosts/nas.md) |
 | **URL** | https://stash.tabaska.us |
 | **Source** | `foss-setup/configs/nas/stash/docker-compose.yml` |
+| **Notes** | Adult media organizer. LAN/Tailscale only. No API key in vault — no widget. |
 | **Upstream docs** | <https://github.com/stashapp/stash> · <https://docs.stashapp.cc/installation/docker/> · <https://github.com/stashapp/stash/blob/develop/docker/production/docker-compose.yml> |
 
 ## Containers

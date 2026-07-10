@@ -7,6 +7,7 @@ Mealie — self-hosted recipe manager + meal planner + shopping list
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://recipes.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/mealie/compose.yaml` |
+| **Notes** | Recipes & meal planning. (Healthcheck flap seen 2026-07-07 resolved — healthy as of 2026-07-09.) |
 | **Upstream docs** | <https://docs.mealie.io/> |
 
 ## Containers

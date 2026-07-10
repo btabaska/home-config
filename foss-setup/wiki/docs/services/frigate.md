@@ -1,11 +1,13 @@
 # frigate
 
+**NOT DEPLOYED — stack dir staged but no Frigate container has ever run (no detector hardware chosen yet; the caddy frigate vhost is commented out).**
+
 Frigate — local, real-time object-detection NVR for IP cameras
 
 | | |
 |---|---|
 | **Host** | [mini](../hosts/mini.md) |
-| **URL** | https://frigate.tabaska.us |
+| **URL** | — (no web UI / not proxied) |
 | **Source** | `foss-setup/configs/docker-stack/stacks/frigate/compose.yaml` |
 | **Upstream docs** | <https://docs.frigate.video/> · <https://docs.frigate.video/configuration/camera_specific> |
 

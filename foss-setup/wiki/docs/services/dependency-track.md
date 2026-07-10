@@ -4,9 +4,10 @@ OWASP Dependency-Track — SBOM analysis + vulnerability intelligence platform
 
 | | |
 |---|---|
-| **Host** | [mini](../hosts/mini.md) |
+| **Host** | [nas](../hosts/nas.md) |
 | **URL** | https://deptrack.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/dependency-track/compose.yaml` |
+| **Notes** | SBOM/vuln dashboard; API on :9011 (Caddy routes /api/* there). |
 | **Upstream docs** | <https://docs.dependencytrack.org/getting-started/deploy-docker/> |
 
 ## Containers
@@ -36,9 +37,8 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 ## Operations
 
 ```bash
-ssh mini 'cd /opt/stacks/dependency-track && docker compose ps'
-ssh mini 'cd /opt/stacks/dependency-track && docker compose logs --tail 50'
-ssh mini 'cd /opt/stacks/dependency-track && docker compose pull && docker compose up -d'
+# NAS stack — manage via DSM Container Manager (project: dependency-track)
+# or over SSH (sudo required): cd /volume1/docker/dependency-track && sudo docker compose ps
 ```
 
 Update procedure: [Runbooks → Update images](../runbooks/update-images.md). Full add/change loop: [Runbooks → Add a service](../runbooks/add-a-service.md).

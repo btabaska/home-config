@@ -7,7 +7,7 @@ AdGuard Home — network-wide DNS filtering (PRIMARY pick over Pi-hole)
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://dns.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/adguard/compose.yaml` |
-| **Upstream docs** | <https://github.com/AdguardTeam/AdGuardHome/wiki/Docker> · <http://<host>:3000> |
+| **Upstream docs** | <https://github.com/AdguardTeam/AdGuardHome/wiki/Docker> |
 
 ## Containers
 

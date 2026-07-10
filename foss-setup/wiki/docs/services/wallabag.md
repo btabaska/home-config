@@ -7,6 +7,7 @@ Wallabag — self-hosted read-it-later (replaces Pocket)
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://wallabag.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/wallabag/docker-compose.yml` |
+| **Notes** | Read-it-later. Container port 80. |
 | **Upstream docs** | <https://github.com/wallabag/docker> · <https://doc.wallabag.org/admin/installation/installation/> · <https://doc.wallabag.org/admin/parameters/> |
 
 ## Containers

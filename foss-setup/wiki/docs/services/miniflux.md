@@ -7,6 +7,7 @@ Miniflux — minimalist RSS reader (Go binary + PostgreSQL)
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://rss.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/miniflux/compose.yaml` |
+| **Notes** | RSS reader. Container port 8080. |
 | **Upstream docs** | <https://miniflux.app/docs/docker.html> · <https://hub.docker.com/_/postgres> |
 
 ## Containers

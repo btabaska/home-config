@@ -7,7 +7,7 @@ The ISP never sees a swarm.
 |---|---|
 | **Provider** | Bytesized "Stream +3" AppBox — 3000 GB, **no root**, shared IP `185.162.184.38` |
 | **Home dir** | `/home/hd34/btabaska` |
-| **Access** | Tailscale SSH as `btabaska` — **currently blocked by the tailnet ACL** (pending: human queue — add an SSH rule in the Tailscale admin console) |
+| **Access** | Tailscale SSH as `btabaska` — working (`ssh seedbox` → `seedbox.tailb31641.ts.net`; the early tailnet-ACL block was fixed) |
 | **Power / uptime** | Managed by the provider, always on |
 
 ## What runs here
@@ -15,6 +15,9 @@ The ISP never sees a swarm.
 - **Deluge** (torrents) — sorts completed downloads into label folders under
   `files/`: `tv`, `movies`, `music`, `books`, `manual`
 - **slskd** (Soulseek) — **native binary**, not Docker; writes to `files/slskd/`
+- **deluge-reaper** — daily 05:00 cron (`~/scripts/deluge-reaper.py --live`,
+  repo copy `configs/host/seedbox/deluge-reaper.py`): prunes dead/aged
+  torrents per label rules
 
 Nothing else. No *arr apps, no qBittorrent, no sync agents — the full *arr
 stack lives on the [NAS](nas.md).
@@ -39,7 +42,8 @@ If imports stall fleet-wide, suspect the mount first — see
 panel handles the OS. Keys-only SSH; the provider box is the one
 internet-exposed surface, treat credentials accordingly.
 
-!!! warning "Currently unverifiable"
-    Until the Tailscale ACL is fixed, nothing on Betty can be inspected or
-    managed from the operator's machines. The NAS mount showing files is the
-    only liveness signal.
+!!! note "Liveness signals"
+    `ssh seedbox` works (Tailscale). Kuma watches the Deluge and slskd web
+    UIs via `deluge.tabaska.us` / `slskd.tabaska.us`; the NAS rclone mount
+    showing fresh files is the functional end-to-end signal. There is no
+    root, so host-level monitoring is the provider's job.

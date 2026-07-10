@@ -1,14 +1,15 @@
 # maintainerr
 
-**REMOVED FROM PLAN 2026-07-08** — no auto-deletion wanted. Page kept for reference.
+**REMOVED FROM PLAN 2026-07-08 — kept for reference. No auto-deletion wanted.**
 
 Maintainerr — rule-based Plex library pruning ("Seerr in reverse")
 
 | | |
 |---|---|
 | **Host** | [mini](../hosts/mini.md) |
-| **URL** | https://maintainerr.tabaska.us |
+| **URL** | — (no web UI / not proxied) |
 | **Source** | `foss-setup/configs/docker-stack/stacks/maintainerr/compose.yaml` |
+| **Notes** | REMOVED FROM PLAN 2026-07-08 — no auto-deletion wanted. Compose kept for reference. (Caddy vhost lingered until 2026-07-09; now removed.) |
 | **Upstream docs** | <https://docs.maintainerr.info/> |
 
 ## Containers

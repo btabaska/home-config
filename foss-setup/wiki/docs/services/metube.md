@@ -7,13 +7,14 @@ MeTube — web UI for yt-dlp: paste a URL, get the video/audio
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://metube.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/metube/compose.yaml` |
+| **Notes** | One-off YouTube downloads (host-network; proxied via HOST_IP). |
 | **Upstream docs** | <https://github.com/alexta69/metube> |
 
 ## Containers
 
 | Service | Image (pinned) | Ports |
 |---|---|---|
-| `metube` | `ghcr.io/alexta69/metube:latest` | `8081:8081` |
+| `metube` | `metube-bgutil:local` | `8081:8081` |
 
 ## Volumes
 
@@ -21,6 +22,7 @@ MeTube — web UI for yt-dlp: paste a URL, get the video/audio
 |---|---|
 | `metube` | `${METUBE_DOWNLOADS:-./downloads}:/downloads` |
 | `metube` | `./state:/state` |
+| `metube` | `/mnt/nas-music-rw/YouTube:/audio` |
 
 ## Environment (`.env`)
 

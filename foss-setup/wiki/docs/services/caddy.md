@@ -7,6 +7,7 @@ Caddy — reverse proxy with automatic HTTPS
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | — (no web UI / not proxied) |
 | **Source** | `foss-setup/configs/docker-stack/stacks/caddy/compose.yaml` |
+| **Notes** | The reverse proxy itself — no UI vhost. |
 | **Upstream docs** | <https://hub.docker.com/_/caddy> · <https://caddyserver.com/docs/> |
 
 ## Containers

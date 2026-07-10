@@ -7,6 +7,7 @@ Homepage — the household front door + dashboard/observability layer
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://home.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/homepage/compose.yaml` |
+| **Notes** | This dashboard. Container port 3000. |
 | **Upstream docs** | <https://gethomepage.dev/> · <https://gethomepage.dev/installation/#homepage_allowed_hosts> |
 
 ## Containers

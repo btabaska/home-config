@@ -1,13 +1,13 @@
 # tdarr
 
-**REMOVED FROM PLAN 2026-07-08** — re-encoding conflicts with the TRaSH quality automation and storage is not scarce. Page kept for reference.
+**REMOVED FROM PLAN 2026-07-08 — kept for reference. Re-encoding conflicts with TRaSH quality automation; storage not scarce.**
 
 Tdarr — distributed audio/video transcoding automation (server + local node)
 
 | | |
 |---|---|
 | **Host** | [mini](../hosts/mini.md) |
-| **URL** | https://tdarr.tabaska.us |
+| **URL** | — (no web UI / not proxied) |
 | **Source** | `foss-setup/configs/docker-stack/stacks/tdarr/compose.yaml` |
 | **Upstream docs** | <https://docs.tdarr.io/> |
 

@@ -62,45 +62,60 @@ nav:
       - Overview: services/index.md
       - AI & Cameras:
           - frigate: services/frigate.md
+      - AI & Gaming:
+          - amp: services/amp.md
+          - bedrock-connect: services/bedrock-connect.md
           - litellm: services/litellm.md
+          - palworld: services/palworld.md
+          - playit: services/playit.md
+          - romm: services/romm.md
       - Documents & Life:
-          - mealie: services/mealie.md
           - paperless-ngx: services/paperless-ngx.md
-      - Media & Acquisition:
-          - kometa: services/kometa.md
-          - libreseerr: services/libreseerr.md
-          - maintainerr: services/maintainerr.md
-          - media-automation: services/media-automation.md
-          - musicseerr: services/musicseerr.md
-          - pinchflat: services/pinchflat.md
-          - recyclarr: services/recyclarr.md
-          - seerr: services/seerr.md
-          - stash: services/stash.md
-          - tautulli: services/tautulli.md
-          - tdarr: services/tdarr.md
-      - Monitoring & Ops:
+      - Infrastructure & Ops:
           - beszel: services/beszel.md
+          - caddy: services/caddy.md
           - dependency-track: services/dependency-track.md
           - diun: services/diun.md
           - dockge: services/dockge.md
+          - forgejo: services/forgejo.md
           - healthchecks: services/healthchecks.md
           - homepage: services/homepage.md
           - ntfy: services/ntfy.md
+          - unbound: services/unbound.md
           - uptime-kuma: services/uptime-kuma.md
           - vaultwarden: services/vaultwarden.md
+      - Life:
+          - mealie: services/mealie.md
+      - Media:
+          - kometa: services/kometa.md
+          - metube: services/metube.md
+          - pinchflat: services/pinchflat.md
+      - Media & Acquisition:
+          - media-automation: services/media-automation.md
+          - tdarr: services/tdarr.md
+      - Media Automation:
+          - maintainerr: services/maintainerr.md
+          - recyclarr: services/recyclarr.md
+          - tautulli: services/tautulli.md
+      - Music:
+          - navidrome: services/navidrome.md
       - Networking & Access:
           - adguard: services/adguard.md
           - adguard-nas: services/adguard-nas.md
-          - caddy: services/caddy.md
-          - unbound: services/unbound.md
-      - Photos & Reading:
-          - calibre-web-automated: services/calibre-web-automated.md
+      - Photos:
           - immich: services/immich.md
+      - Private:
+          - stash: services/stash.md
+      - Reading & Docs:
+          - calibre-web-automated: services/calibre-web-automated.md
           - miniflux: services/miniflux.md
-          - navidrome: services/navidrome.md
           - wallabag: services/wallabag.md
+      - Requests:
+          - libreseerr: services/libreseerr.md
+          - musicseerr: services/musicseerr.md
+          - seerr: services/seerr.md
       - Uncategorized:
-          - metube: services/metube.md
+          - bgutil-pot: services/bgutil-pot.md
       # END GENERATED SERVICES NAV
   - Runbooks:
       - DNS outage: runbooks/dns-outage.md

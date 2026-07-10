@@ -5,15 +5,16 @@ Libreseerr — book request portal (Readarr / Bookshelf / LazyLibrarian)
 | | |
 |---|---|
 | **Host** | [mini](../hosts/mini.md) |
-| **URL** | https://libreseerr.tabaska.us (LAN: http://192.168.10.2:8789) |
+| **URL** | https://libreseerr.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/libreseerr/compose.yaml` |
+| **Notes** | Book request portal (feeds Readarr). Container port 5000. |
 | **Upstream docs** | <https://github.com/zamnzim/Libreseerr> |
 
 ## Containers
 
 | Service | Image (pinned) | Ports |
 |---|---|---|
-| `libreseerr` | `ghcr.io/zamnzim/libreseerr@sha256:820134e44279c964ddf54090ab45b444a28e7f562256baaadf20fffaf36911f3` | `8789:5000` |
+| `libreseerr` | `ghcr.io/zamnzim/libreseerr@sha256:c2dbf74a5ab6b72b4f7083c646ac2fa0d8db5a7291b0fb0e0e9f481bccad179b` | `8789:5000` |
 
 ## Volumes
 

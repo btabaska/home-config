@@ -7,6 +7,7 @@ Vaultwarden — self-hosted Bitwarden-compatible password manager server.
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://vault.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/vaultwarden/compose.yaml` |
+| **Notes** | Passwords (Bitwarden-compatible server). Edge network only — no host port; Caddy proxies vaultwarden:80. |
 | **Upstream docs** | <https://github.com/dani-garcia/vaultwarden/wiki> · <https://github.com/dani-garcia/vaultwarden/releases> · <https://hub.docker.com/r/vaultwarden/server/tags> |
 
 ## Containers

@@ -7,6 +7,7 @@ Uptime Kuma — service uptime monitoring & status pages
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://uptime.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/uptime-kuma/compose.yaml` |
+| **Notes** | Uptime checks. No published status page yet, so Homepage uses siteMonitor not the widget. |
 | **Upstream docs** | <https://github.com/louislam/uptime-kuma> |
 
 ## Containers

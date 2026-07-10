@@ -13,14 +13,15 @@ Caddy, primary DNS, and Forgejo all live here.
 
 ## What runs here
 
-The **light always-on web/management stack** (~28 containers) under
-`/opt/stacks`, one directory per compose stack, managed by Dockge:
+The **light always-on web/management stack** (38 containers as of
+2026-07-09) under `/opt/stacks`, one directory per compose stack, managed by
+Dockge:
 
 - **Edge**: Caddy (owns 80/443, `edge` network, `*.tabaska.us` TLS), AdGuard + Unbound (primary DNS)
-- **Life apps**: Miniflux, Wallabag, Navidrome, Mealie, Paperless-ngx, Pinchflat, Seerr, MusicSeerr, Libreseerr
-- **Media polish**: Tautulli, Kometa, Maintainerr, Recyclarr
-- **Ops**: Homepage, Uptime Kuma, Beszel, ntfy, Diun, Healthchecks, Dockge, Dependency-Track (until the NAS RAM upgrade)
-- **Infra**: Forgejo (git — HTTP :3030, `http://macmini.tailb31641.ts.net:3030`), LiteLLM (stable LLM endpoint; its small-model fallback is resilience only now — the rig is 24/7, so no wake-proxy workflow, though the mini keeps its WoL-relay role for rig recovery)
+- **Life apps**: Miniflux, Wallabag, Navidrome, Mealie, Paperless-ngx, MeTube, Pinchflat, Seerr, MusicSeerr, Libreseerr, RomM (retro-game library)
+- **Media polish**: Tautulli, Kometa, Recyclarr (weekly cron, not a resident container). *Maintainerr was removed from the plan 2026-07-08 and never runs here.*
+- **Ops**: Homepage, Uptime Kuma, Beszel (+agent), ntfy, Diun, Healthchecks, Dockge
+- **Infra**: Forgejo (git — HTTP :3030, `http://macmini.tailb31641.ts.net:3030`), BedrockConnect (console gateway for the Switch, UDP 19132). The mini is also the WoL relay for rig recovery. *No LLM runs here — LiteLLM lives on the [rig](rig.md); the planned mini fallback was never deployed (decision pending).*
 - **This wiki**: static site at `/opt/stacks/wiki/site`, served by Caddy at <https://wiki.tabaska.us>
 
 Full generated inventory: [Services](../services/index.md).
@@ -34,10 +35,10 @@ anything here, check `free -m` first.
 
 ## Maintenance channel
 
-- **ansible-pull** (glue-08): systemd timer, daily 04:20 ± 30 min jitter,
-  pulls Forgejo `home/homelab` into `~/.ansible-pull` and applies `site.yml`
-  against itself. First green converge 2026-07-07 (ok=34 failed=0, apply
-  mode). See [Operations → Ansible](../operations/ansible.md).
+- **ansible-pull** (glue-08): systemd timer, daily ~04:20 **UTC** (~00:20 ET)
+  ± jitter, pulls Forgejo `home/homelab` into `~/.ansible-pull` and applies
+  `site.yml` against itself; dead-manned via Healthchecks `ansible-pull-mini`.
+  See [Operations → Ansible](../operations/ansible.md).
 - **Dockge** for day-to-day compose stack management; `/opt/stacks` is itself
   a git repo (Forgejo `home/docker-stacks`) — **commit drift immediately**.
 - `etckeeper` tracks `/etc`.

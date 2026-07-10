@@ -7,6 +7,7 @@ Diun — Docker Image Update Notifier (NOTIFY-ONLY; no auto-update)
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | — (no web UI / not proxied) |
 | **Source** | `foss-setup/configs/docker-stack/stacks/diun/compose.yaml` |
+| **Notes** | Image-update notifier → ntfy. No web UI. |
 | **Upstream docs** | <https://crazymax.dev/diun/> · <https://crazymax.dev/diun/providers/docker/> |
 
 ## Containers

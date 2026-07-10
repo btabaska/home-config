@@ -3,6 +3,8 @@
 # https://<name>.tabaska.us front door (Caddy on the mini, 192.168.10.2).
 #
 # Verified live 2026-07-07 (docker ps on mini + HTTP probes from mini).
+# Re-verified + backfilled 2026-07-09 (docs-debt audit): gaming stack (rig),
+# romm/bedrock-connect/bgutil-pot (mini), NAS workers, recyclarr cron.
 # hosts: mini=192.168.10.2, nas=192.168.10.4, rig=192.168.10.12 (24/7),
 #        ha=192.168.10.50, seedbox=100.119.134.94 (Tailscale, "Betty")
 #
@@ -120,10 +122,50 @@ services:
     category: Media Automation
     host: mini
     port: 6246
-    url: https://maintainerr.tabaska.us
+    url: null
     on_demand: false
     status: removed
-    notes: REMOVED FROM PLAN 2026-07-08 — no auto-deletion wanted. Compose kept for reference.
+    notes: REMOVED FROM PLAN 2026-07-08 — no auto-deletion wanted. Compose kept for reference. (Caddy vhost lingered until 2026-07-09; now removed.)
+  - name: recyclarr
+    category: Media Automation
+    host: mini
+    port: null
+    url: null
+    ui: false
+    on_demand: false
+    notes: TRaSH-guides sync — weekly cron (`docker compose run`), not a long-running container; dead-manned via healthchecks `recyclarr-sync-mini`.
+  - name: beets
+    category: Media Automation
+    host: nas
+    port: null
+    url: null
+    ui: false
+    on_demand: false
+    notes: Music tagger/importer worker — no UI; watch for hung one-off `-run-` containers.
+  - name: soularr
+    category: Media Automation
+    host: nas
+    port: null
+    url: null
+    ui: false
+    on_demand: false
+    notes: Lidarr↔slskd bridge worker — no UI.
+  - name: unpackerr
+    category: Media Automation
+    host: nas
+    port: null
+    url: null
+    ui: false
+    on_demand: false
+    notes: Archive extraction for *arr imports — no UI.
+  - name: rreading-glasses
+    category: Media Automation
+    host: nas
+    port: null
+    url: null
+    ui: false
+    on_demand: false
+    notes: Readarr metadata proxy (own postgres sidecar) — no UI.
   - name: deluge
     category: Media Automation
     host: seedbox
@@ -194,7 +236,7 @@ services:
     port: 9000
     url: https://recipes.tabaska.us
     on_demand: false
-    notes: Recipes & meal planning. Container health flapping (unhealthy in docker ps) but serving.
+    notes: Recipes & meal planning. (Healthcheck flap seen 2026-07-07 resolved — healthy as of 2026-07-09.)
 
   # --- Smart Home -----------------------------------------------------------------
   - name: home-assistant
@@ -219,7 +261,7 @@ services:
     port: 4000
     url: https://llm.tabaska.us
     on_demand: false
-    notes: OpenAI-compatible gateway (/ui admin). Always-on; mini fallback kept for resilience.
+    notes: OpenAI-compatible gateway (/ui admin), always-on on the rig. (A mini-fallback stack dir exists in the repo but was NEVER deployed — decision pending, 2026-07-09 audit.)
   - name: ollama
     category: AI & Gaming
     host: rig
@@ -241,6 +283,44 @@ services:
     url: https://apollo.tabaska.us
     on_demand: false
     notes: Game-stream host UI (Apollo — a maintained Sunshine fork, AUR `apollo`; chosen over stock Sunshine for headless/virtual-display support + per-client permissions on the 24/7 headless rig). Drop-in for Moonlight clients — same ports. Self-signed HTTPS upstream on :47990. Rig runs 24/7.
+  - name: amp
+    category: AI & Gaming
+    host: rig
+    port: 8080
+    url: https://amp.tabaska.us
+    on_demand: false
+    notes: CubeCoders AMP game panel (MinecraftCross Java+Bedrock instance). Licence is hostname-pinned — never change the compose hostname casually.
+  - name: palworld
+    category: AI & Gaming
+    host: rig
+    port: 8211
+    url: null
+    ui: false
+    on_demand: false
+    notes: Palworld dedicated server "Robits Farm" (UDP 8211; public = palworld.tabaska.us:1105 via playit; REST admin :8212).
+  - name: playit
+    category: AI & Gaming
+    host: rig
+    port: null
+    url: null
+    ui: false
+    on_demand: false
+    notes: playit.gg tunnel agent — public game paths on dedicated IP 69.9.181.17 (Java SRV:1105, Bedrock :1111, Palworld :1105). Restart the container after tunnel changes (claim-wedge gotcha).
+  - name: bedrock-connect
+    category: AI & Gaming
+    host: mini
+    port: 19132
+    url: null
+    ui: false
+    on_demand: false
+    notes: BedrockConnect gateway (UDP 19132) — consoles reach LAN/playit Minecraft via AdGuard featured-server rewrites.
+  - name: romm
+    category: AI & Gaming
+    host: mini
+    port: 8998
+    url: https://romm.tabaska.us
+    on_demand: false
+    notes: RomM retro-game library (container port 8080; mariadb sidecar).
 
   # --- Infrastructure & Ops --------------------------------------------------------
   - name: homepage
@@ -278,7 +358,7 @@ services:
     port: 8001
     url: https://health.tabaska.us
     on_demand: false
-    notes: Cron/backup dead-man's-switch. Container reports unhealthy but web UI serves. Container port 8000.
+    notes: Cron/backup dead-man's-switch. Container port 8000. (2026-07-07 unhealthy flap resolved; healthy as of 2026-07-09.)
   - name: dependency-track
     category: Infrastructure & Ops
     host: nas
@@ -345,7 +425,7 @@ services:
     port: null
     url: https://wiki.tabaska.us
     on_demand: false
-    notes: Static site served by Caddy from /opt/stacks/wiki/site (built by the wiki task; 404 until populated).
+    notes: Static site served by Caddy from /opt/stacks/wiki/site — live; rebuild/publish via scripts/docs/build-wiki.sh.
 
   # --- Private -----------------------------------------------------------------
   - name: stash
@@ -356,8 +436,9 @@ services:
     on_demand: false
     notes: Adult media organizer. LAN/Tailscale only. No API key in vault — no widget.
 
-# Dead / not running on 2026-07-07 (vhosts commented out in Caddyfile pending fix-18):
+# Dead / not running (vhosts commented out in the Caddyfile):
 #   tdarr   — REMOVED FROM PLAN 2026-07-08: re-encoding conflicts with TRaSH quality
 #             automation and storage isn't scarce. Compose kept for reference.
-#   frigate — NAS :8971 unreachable
-#   recyclarr — stack dir exists on mini but no container (batch job anyway, no UI)
+#   frigate — NOT DEPLOYED (stack dir staged, no container has ever run)
+#   maintainerr — REMOVED FROM PLAN 2026-07-08 (vhost lingered until the
+#             2026-07-09 docs-debt audit)

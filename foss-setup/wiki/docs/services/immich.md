@@ -5,8 +5,9 @@ Immich on Synology DS920+ (Container Manager / Docker Compose)
 | | |
 |---|---|
 | **Host** | [nas](../hosts/nas.md) |
-| **URL** | https://immich.tabaska.us (LAN: http://192.168.10.4:2283) |
+| **URL** | https://immich.tabaska.us |
 | **Source** | `foss-setup/configs/nas/immich/docker-compose.yml` |
+| **Notes** | Photo library + mobile backup. Vhost verified 2026-07-07. |
 | **Upstream docs** | <https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml> · <https://docs.immich.app/install/docker-compose> · <https://docs.immich.app/features/hardware-transcoding> |
 
 ## Containers

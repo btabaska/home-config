@@ -7,6 +7,7 @@ Unbound — recursive, validating, DNSSEC-aware resolver (the upstream for AdGua
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | — (no web UI / not proxied) |
 | **Source** | `foss-setup/configs/docker-stack/stacks/unbound/compose.yaml` |
+| **Notes** | Recursive DNS resolver behind AdGuard — no web UI. |
 | **Upstream docs** | <https://docs.pi-hole.net/guides/dns/unbound/> |
 
 ## Containers
