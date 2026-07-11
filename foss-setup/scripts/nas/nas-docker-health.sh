@@ -27,7 +27,6 @@ CHECKS=(
   "prowlarr:127.0.0.1:9696:200,302"
   "flaresolverr:127.0.0.1:8191:200"
   "immich:127.0.0.1:2283:200"
-  "deptrack:127.0.0.1:9010:200"
   "stash:127.0.0.1:9999:200"
   "cwa:127.0.0.1:8083:200,302"
   "plex:127.0.0.1:32400:200,401"
@@ -93,7 +92,7 @@ bring_up_stacks() {
   compose_up_dir /volume1/docker/immich
   compose_up_dir /volume1/docker/stash
   compose_up_dir /volume1/docker/calibre-web-automated
-  compose_up_dir /volume1/docker/dependency-track
+  # dependency-track RETIRED 2026-07-11 — do not auto-recover it
 }
 
 code_ok() {
