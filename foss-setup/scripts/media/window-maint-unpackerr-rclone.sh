@@ -101,7 +101,7 @@ done
 [ "$ok" = "1" ] || fail "phase-A dockerd restart" "Only ${c:-0} containers came back (wanted >= $TARGET of $BEFORE_COUNT) after the dockerd restart."
 
 log "PHASE A: applying compose (recreates unpackerr with healthcheck+webserver)…"
-nas_sudo "cd $COMPOSE_DIR && $DOCKER compose up -d" 2>&1 | tee -a "$LOG"
+nas_sudo "$DOCKER compose -f $COMPOSE_DIR/docker-compose.yml up -d" 2>&1 | tee -a "$LOG"
 
 log "PHASE A: waiting for unpackerr to report healthy (up to 3 min)…"
 ok=0
@@ -142,7 +142,7 @@ CACHEMODE=$(nas_sudo "grep -oE 'vfs-cache-mode [a-z]+' /proc/\$(pgrep -f 'rclone
 log "PHASE B: running rclone cmdline cache-mode: ${CACHEMODE:-unknown}"
 
 log "PHASE B: restarting download-touching containers to bind the fresh mount…"
-nas_sudo "cd $COMPOSE_DIR && $DOCKER compose restart sonarr radarr lidarr readarr unpackerr" 2>&1 | tee -a "$LOG"
+nas_sudo "$DOCKER compose -f $COMPOSE_DIR/docker-compose.yml restart sonarr radarr lidarr readarr unpackerr" 2>&1 | tee -a "$LOG"
 sleep 15
 
 # verify a container actually SEES the mount content (end-to-end)
