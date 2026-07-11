@@ -22,9 +22,9 @@ Grounded in [foss-setup-plan-2.md](../../../foss-setup-plan-2.md) Sections 0, 4,
 
 | Host | Specs | Role (per plan) | Game-server fit |
 |---|---|---|---|
-| **Mac mini** → Ubuntu Server | i5-4278U, **8 GB** (fixed), ~12 W | Always-on Docker stack (Seerr, Miniflux, Navidrome, Caddy, AdGuard, LiteLLM ≤1B, Forgejo, etc.) + **one light game server** | **24/7 light servers only** — ~2–3 GB headroom after stack |
-| **DS920+ NAS** | J4125, **20 GB** (after RAM upgrade) | Storage, Immich, Plex, CWA, Paperless-ngx, Dependency-Track, Frigate, Tdarr server, backups | **Avoid for game processes** — RAM headroom exists but CPU is weak and the box is already committed to ML indexing, Java (Paperless/DT), and live video; **use NAS for world/save storage**, not the server binary |
-| **CachyOS rig** | 12th-gen i7, **64 GB RAM**, RTX 3090 Ti, ~90–130 W idle | 24/7 (decision 2026-07-08): Apollo (Sunshine fork), Ollama, **heavy game servers**, Tdarr transcode node | **Default for anything heavy** — 24/7 (~$23/mo idle accepted; idle-power-tuning task open); WoL kept for recovery only |
+| **Mac mini** → Ubuntu Server | i5-4278U, **8 GB** (fixed), ~12 W | Always-on Docker stack (Seerr, Miniflux, Navidrome, Caddy, AdGuard, Forgejo, RomM, etc.) + **one light game server** — *no LLM here; LiteLLM/Ollama live on the rig* | **24/7 light servers only** — ~2–3 GB headroom after stack |
+| **DS920+ NAS** | J4125, **20 GB** (upgraded) | Storage, Immich, Plex, CWA, Paperless-ngx, *arr suite, Stash, Dependency-Track, backups (Tdarr/Frigate were dropped from the plan) | **Avoid for game processes** — RAM headroom exists but CPU is weak and the box is already committed to ML indexing + Java; **use NAS for world/save storage**, not the server binary |
+| **CachyOS rig** | 12th-gen i7, **64 GB RAM**, RTX 3090 Ti, ~90–130 W idle | 24/7 (decision 2026-07-08): Apollo (Sunshine fork), the LLM stack (Ollama + LiteLLM + Open WebUI), **game servers** (AMP MinecraftCross, Palworld) | **Default for anything heavy** — 24/7 (~$23/mo idle accepted; idle-power-tuning task open); WoL kept for recovery only |
 
 **Host tags used per game:** `Yes` = fits the plan's load budget · `Marginal` = technically possible but fights existing services · `No` = wrong tool (RAM, CPU, Wine, or DSM limits).
 

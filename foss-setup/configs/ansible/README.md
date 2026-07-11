@@ -84,10 +84,10 @@ ansible/
 │   └── on_demand.yml        # the rig: wake-gating instead of a wall clock
 ├── roles/
 │   ├── base/               # admin user + key, unattended-upgrades, sysctl, package convergence
-│   ├── docker/             # engine + sec-04 log caps + the shared 'edge' network
+│   ├── docker/             # engine + sec-02 log caps + the shared 'edge' network
 │   ├── tailscale/          # tailscale up --ssh with net-13 tags
-│   ├── backup/             # restic timer (rig-wake-gated)
-│   ├── sbom/               # Syft/Grype + the sbom-02 nightly units
+│   ├── backup/             # restic timer (standard schedule; rig runs 24/7)
+│   ├── sbom/               # RETIRED 2026-07-09 — NOT in site.yml (kept for reference)
 │   └── state/              # installs + bootstraps etckeeper and chezmoi themselves
 ├── ansible-pull.service     # systemd unit: clone repo + run site.yml on localhost
 ├── ansible-pull.timer       # schedule (wall clock on always_on; wake hook on the rig)

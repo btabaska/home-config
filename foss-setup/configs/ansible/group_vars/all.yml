@@ -28,7 +28,8 @@ restic_timer_oncalendar: "02:30"        # local time; rig is wake-gated (see on_
 # volumes). The backup role appends these to /home, so backup and restore match.
 extra_backup_paths: "/opt/stacks /var/lib/docker/volumes"
 
-# --- sbom role (sbom-02) ---
+# --- sbom role (sbom-02) — RETIRED 2026-07-09; role no longer in site.yml.
+#     These vars are inert (kept for reference / possible revival). ---
 dtrack_url: "https://deptrack.tabaska.us"
 # PIN these to the current releases and verify their checksums on install
 # (the actual lesson of the March-2026 trivy-action / CVE-2026-33634 compromise).

@@ -159,10 +159,11 @@ ssh -t nas 'sudo /usr/local/bin/docker exec sonarr ls /seedbox/'
 
 ### Remaining risks
 
-- **DSM OOM (4 GB RAM)**: rclone with `--vfs-cache-mode reads` can cache up to
-  `--buffer-size` per file. With 4 GB RAM and many concurrent imports, this
-  could trigger the OOM killer. If you see rclone killed unexpectedly, reduce
-  `--buffer-size` to `16M` in the mount script, or upgrade NAS RAM.
+- **DSM OOM**: rclone with `--vfs-cache-mode reads` can cache up to
+  `--buffer-size` per file. This was an acute risk on the stock **4 GB** NAS;
+  since the **20 GB upgrade** (done 2026-07-09) it's low, but with many
+  concurrent imports it's still the thing to watch. If you see rclone killed
+  unexpectedly, reduce `--buffer-size` to `16M` in the mount script.
 - **Inherent FUSE fragility on DSM**: Synology's kernel is not a mainstream
   distro. FUSE mounts can drop after DSM software updates or kernel panics with
   no warning. The two-strike watchdog bounds the outage to ≤10 min but cannot

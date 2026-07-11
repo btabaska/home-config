@@ -99,12 +99,12 @@ chezmoi init --apply <git@forgejo:home/dotfiles.git>
 # crontabs (per user) — review hosts/<hostname>/crontabs.txt then reinstall:
 crontab hosts/<hostname>/<user>.crontab   # if you split them out
 
-# systemd timers shipped from the repo (inventory, sbom, backups):
-sudo install -D -m 0755 scripts/inventory/sbom-nightly.sh      /opt/scripts/inventory/sbom-nightly.sh
+# systemd timers shipped from the repo (inventory, backups):
+# NOTE: sbom-nightly is RETIRED (2026-07-09) — do NOT reinstall it on a rebuild.
 sudo install -D -m 0755 scripts/inventory/export-manifests.sh  /opt/scripts/inventory/export-manifests.sh
-sudo cp scripts/inventory/*.service scripts/inventory/*.timer  /etc/systemd/system/
+sudo cp scripts/inventory/export-manifests.{service,timer}  /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now sbom-nightly.timer export-manifests.timer
+sudo systemctl enable --now export-manifests.timer
 # Cross-check against the captured list:
 cat hosts/<hostname>/systemd-timers.txt
 ```

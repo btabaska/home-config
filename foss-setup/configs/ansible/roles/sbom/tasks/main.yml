@@ -1,8 +1,14 @@
 ---
-# roles/sbom — ensure the nightly Syft/Grype SBOM job is present (glue-08).
+# roles/sbom — RETIRED 2026-07-09 (user decision): the SBOM/Dependency-Track
+# feature was abandoned (Syft OOM'd the 8 GB mini; overkill for a home net).
+# This role is NO LONGER in site.yml, so convergence never runs it — the file
+# is kept only for reference/revival. Do not re-add it to the play without
+# re-deciding. sbom-01/02/04 sit in progress.json's `retired` block.
+#
+# (historical) ensure the nightly Syft/Grype SBOM job is present (glue-08).
 # Thin wrapper around sbom-02: it makes sure Syft + Grype exist (PINNED +
 # checksum-verified, the CVE-2026-33634 lesson) and installs the existing
-# nightly units from scripts/inventory/. Wake-gated on the rig.
+# nightly units from scripts/inventory/.
 
 - name: Install Syft (pinned)
   ansible.builtin.shell:

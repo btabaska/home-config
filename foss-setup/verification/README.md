@@ -13,8 +13,11 @@ verification.timer (daily 07:15)
             ├─ bin/run-checks.sh  → bin/checks_runner.py   (verify-01/02/05)
             │    • loads checks.d/*.yaml (PyYAML 5.4.1, stock on mini)
             │    • runs enabled checks: local/url/mini = on mini,
-            │      nas = ssh nas (dedicated mini→nas key), rig = ssh rig
-            │      (currently blocked by tailnet ACL → rig checks are HTTP probes)
+            │      nas = ssh nas (dedicated mini→nas key). rig checks are
+            │      HTTP probes (host: url) by design — they test the endpoints
+            │      clients hit; mini→rig SSH works, the container→host hop is
+            │      watched rig-locally (ai-stack-watchdog). Only mini→seedbox
+            │      SSH is ACL-blocked (that check stays disabled).
             │    • writes results.json, last-summary.md, reopen-suggestions.json
             │    • ONE ntfy summary to topic `verification` ONLY when failures
             │      exist or a previous failure recovered (diff vs prior results.json)

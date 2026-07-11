@@ -1,9 +1,12 @@
-# rig (CachyOS gaming/AI box, 3090 Ti 24GB, NO sudo).
+# rig (CachyOS gaming/AI box, 3090 Ti 24GB).
 # 24/7 host (decision 2026-07-08): the rig now runs continuously, so these
 # checks are enabled and a rig that is down/unreachable is an INCIDENT.
-# All checks are HTTP probes executed from mini: mini->rig SSH is blocked by
-# tailnet ACL policy ("tailnet policy does not permit you to SSH to this node"),
-# so host: url (curl from mini) is used instead of host: rig.
+# These are HTTP probes (host: url, curl from mini) BY DESIGN — they test the
+# actual service endpoints clients reach over the tailnet. (mini->rig SSH works
+# now; the old "blocked by tailnet ACL" note was stale as of 2026-07-09 — that
+# ACL rule only ever blocked mini->seedbox, a different node.) The container->
+# host Ollama hop, which HTTP-from-mini can't see, is covered separately by the
+# rig-local ai-stack-watchdog.timer.
 # Recovery if the rig is down: wakeonlan -i 192.168.10.255 50:eb:f6:b5:82:c6
 # (llm-triage.sh attempts this automatically as the recovery path).
 checks:

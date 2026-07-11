@@ -3,8 +3,11 @@
 Alerts if the OS NVMe (WD Blue SN570, PCI `0000:74:00.0`, hosts root btrfs + /boot)
 resumes PCIe AER errors after the 2026-07-09 fix. See handoff RCA "rig freeze".
 
-**Why rig-local (not in the mini verification runner):** tailnet ACL blocks mini→rig SSH,
-so the runner can't read rig's journal. This is a self-contained systemd timer on rig that
+**Why rig-local (not in the mini verification runner):** AER counters + SMART live in the
+rig's kernel log / sysfs and need privileged local access — an HTTP probe from the mini
+can't see them (the "which vantage sees this break?" rule). (mini→rig SSH does work now, so
+the runner *could* shell in, but a self-contained rig-local watcher is the right vantage.)
+This is a self-contained systemd timer on rig that
 counts AER on the current boot and POSTs to ntfy (`verification` topic, same one the runner
 uses → same iOS push) only when errors climb (threshold 25 new/interval) or go fatal, or
 SMART critical warning != 0x00. Quiet when healthy.
