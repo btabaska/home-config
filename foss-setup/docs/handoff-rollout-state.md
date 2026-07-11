@@ -25,12 +25,14 @@
 - **`dependency-track` is a monitored zombie**: 3 containers running on NAS + Kuma "NAS DepTrack" + `deptrack.tabaska.us` vhost + homepage tile + coverage manifest, but the SBOM pipeline feeding it is retired → decision #1.
 - **HA Assist points at the phantom mini:4000** in `scripts/docs/task-overrides.json` + `generate-task-overrides.py` (should be the rig's `llm.tabaska.us`). This is HA-task content = **Run 5's turf** — flagged, NOT edited (per charter). Run 5 should fix the endpoint.
 
-**DECISIONS I NEED FROM YOU (all destructive/one-way — docs are already truthful either way; nothing below is done yet):**
-1. **dependency-track** — retire fully (I stop+remove the 3 NAS containers, prune the Kuma monitor + caddy vhost + homepage tile + nas.containers manifest, mark retired in progress.json — frees NAS RAM) **OR** keep it with a documented purpose (ad-hoc BOM uploads / vuln dashboard)?
-2. **mini `litellm` stack dir** — deploy it as the rig-AI **fallback** (adds the resilience the AI surface currently lacks; costs ~small-model RAM on the 8 GB mini) **OR** delete the never-deployed dir **OR** keep it bannered as-is?
-3. **Inert mini stack dirs `tdarr` + `maintainerr`** (REMOVED FROM PLAN) — delete the dirs, or keep them bannered for reference?
-4. **`frigate` stack dir** (NOT DEPLOYED) — keep as a genuine future plan (cameras), or delete? *(my lean: keep.)*
-5. **Retired `sbom` ansible role + `scripts/inventory/sbom-nightly.sh` + its units** — delete the dead code, or keep bannered?
+**DECISIONS — asked and EXECUTED same session (commits 2bd356c · 253909c + mini `/opt/stacks` b5054c7; final sweep 81/81, 0 failed):**
+1. **dependency-track → RETIRE FULLY (done).** Removed the 3 NAS containers, Kuma "NAS DepTrack" monitor, caddy vhost, homepage tile, nas.containers manifest entries (mini+repo), the stack dirs, `configs/inventory/homepage-deptrack-widget.yaml`, and the service-catalog/wiki pages. **⚠️ GOTCHA (new live-state finding): the DSM-scheduled `nas-docker-health.sh` watchdog was re-running `compose up` on `/volume1/docker/dependency-track` every cycle — it recreated the containers ~11 min after the first `compose down`.** Retiring a NAS stack requires editing that watchdog too (removed its `compose_up_dir` line + `deptrack:9010` port probe; redeployed to `/volume1/scripts/nas/`; verified it runs clean and no longer recreates dtrack). **Residual for you (GUI): if a DSM Container Manager "dependency-track" project is still registered, it may try to autostart on the next NAS reboot — delete it in Container Manager UI to be fully clean.**
+2. **mini `litellm` dir → DELETED** (never-deployed phantom fallback; recoverable from git). The AI-stack SPOF stands — no fallback deployed.
+3. **`tdarr` + `maintainerr` dirs → DELETED.**
+4. **`frigate` dir → KEPT** (bannered NOT DEPLOYED; genuine future plan).
+5. **`sbom` ansible role + `scripts/inventory/sbom-nightly.*` → DELETED** (+ cleaned refs in site.yml, group_vars, ansible/README).
+
+**Still your call (unchanged):** deploy a mini litellm fallback to kill the AI-stack SPOF (litellm dir now deleted, but recoverable) — vs accept the SPOF. And the Run-5 HA-Assist mini:4000 endpoint fix.
 
 **Process note (hazard hit this session)**: a concurrent session shares this same working tree + branch, so our commits interleaved and git parent-pointers zig-zagged (my intermediate commits ended up dangling while their trees were folded into the concurrent session's commit). Net result verified clean — HEAD contains the union of both sessions' work, `git status` clean, FF-push safe. But: **two agents on one working directory is a footgun**; prefer worktrees for concurrent runs.
 
