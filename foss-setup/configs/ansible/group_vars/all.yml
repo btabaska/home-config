@@ -28,15 +28,8 @@ restic_timer_oncalendar: "02:30"        # local time; rig is wake-gated (see on_
 # volumes). The backup role appends these to /home, so backup and restore match.
 extra_backup_paths: "/opt/stacks /var/lib/docker/volumes"
 
-# --- sbom role (sbom-02) — RETIRED 2026-07-09; role no longer in site.yml.
-#     These vars are inert (kept for reference / possible revival). ---
-dtrack_url: "https://deptrack.tabaska.us"
-# PIN these to the current releases and verify their checksums on install
-# (the actual lesson of the March-2026 trivy-action / CVE-2026-33634 compromise).
-# Verified current GA releases (June 2026): github.com/anchore/{syft,grype}/releases.
-# Keep in lockstep with scripts/inventory/sbom-nightly.sh + sbom.env.example.
-syft_version: "1.45.1"
-grype_version: "0.114.0"
+# --- sbom role vars removed 2026-07-11: the sbom role + Dependency-Track were
+#     fully retired (SBOM feature abandoned). Recover from git history if revived. ---
 
 # --- state role ---
 # chezmoi source repo (the dotfiles half of the control repo, glue-04).

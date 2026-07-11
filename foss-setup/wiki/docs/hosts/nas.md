@@ -31,8 +31,9 @@ Tier 1 rides snapshots + off-site backup (pending: B2). Authoritative spec:
 - **media-automation stack**: Sonarr, Radarr, Lidarr, Readarr (+ rreading-glasses), Prowlarr, FlareSolverr, Soularr, beets, Unpackerr — the full *arr suite, co-located with the library
 - **adguard-nas** — the secondary DNS (`:53`, UI `:3000`); must stay up for the fail-open chain
 - **Stash** (`:9999`, LAN/Tailscale-only)
-- **Dependency-Track v5** (`:9010`/`:9011` → <https://deptrack.tabaska.us>) — the SBOM *pipeline* feeding it was retired 2026-07-09; the containers are still up pending a retire-or-keep decision
 - **Agents**: beszel-agent (metrics), diun (image-update notifier)
+
+*(Dependency-Track was fully **retired 2026-07-11** — the SBOM feature was abandoned; its 3 containers, Kuma monitor, caddy vhost, homepage tile, and coverage-manifest entries were all removed.)*
 - **rclone SFTP mount** of the seedbox: `/volume1/mounts/seedbox-files`, bound into every download-touching container at `/seedbox` — *a dropped mount silently stalls every import*; a watchdog remounts it (Task Scheduler, every 5 min)
 
 ## Maintenance channel

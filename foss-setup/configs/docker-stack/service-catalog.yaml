@@ -359,13 +359,6 @@ services:
     url: https://health.tabaska.us
     on_demand: false
     notes: Cron/backup dead-man's-switch. Container port 8000. (2026-07-07 unhealthy flap resolved; healthy as of 2026-07-09.)
-  - name: dependency-track
-    category: Infrastructure & Ops
-    host: nas
-    port: 9010
-    url: https://deptrack.tabaska.us
-    on_demand: false
-    notes: SBOM/vuln dashboard; API on :9011 (Caddy routes /api/* there).
   - name: adguard-home
     category: Infrastructure & Ops
     host: mini
@@ -440,5 +433,8 @@ services:
 #   tdarr   — REMOVED FROM PLAN 2026-07-08: re-encoding conflicts with TRaSH quality
 #             automation and storage isn't scarce. Compose kept for reference.
 #   frigate — NOT DEPLOYED (stack dir staged, no container has ever run)
-#   maintainerr — REMOVED FROM PLAN 2026-07-08 (vhost lingered until the
-#             2026-07-09 docs-debt audit)
+#   maintainerr — REMOVED FROM PLAN 2026-07-08 (vhost retired 2026-07-09;
+#             stack dir deleted 2026-07-11)
+#   dependency-track — RETIRED 2026-07-11 (SBOM feature abandoned; the 3 NAS
+#             containers, Kuma monitor, caddy vhost, homepage tile, coverage
+#             manifest entries + stack dirs all removed)

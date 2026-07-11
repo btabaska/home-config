@@ -65,7 +65,6 @@ nav:
       - AI & Gaming:
           - amp: services/amp.md
           - bedrock-connect: services/bedrock-connect.md
-          - litellm: services/litellm.md
           - palworld: services/palworld.md
           - playit: services/playit.md
           - romm: services/romm.md
@@ -74,7 +73,6 @@ nav:
       - Infrastructure & Ops:
           - beszel: services/beszel.md
           - caddy: services/caddy.md
-          - dependency-track: services/dependency-track.md
           - diun: services/diun.md
           - dockge: services/dockge.md
           - forgejo: services/forgejo.md
@@ -92,9 +90,7 @@ nav:
           - pinchflat: services/pinchflat.md
       - Media & Acquisition:
           - media-automation: services/media-automation.md
-          - tdarr: services/tdarr.md
       - Media Automation:
-          - maintainerr: services/maintainerr.md
           - recyclarr: services/recyclarr.md
           - tautulli: services/tautulli.md
       - Music:

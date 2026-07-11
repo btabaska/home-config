@@ -87,8 +87,8 @@ ansible/
 │   ├── docker/             # engine + sec-02 log caps + the shared 'edge' network
 │   ├── tailscale/          # tailscale up --ssh with net-13 tags
 │   ├── backup/             # restic timer (standard schedule; rig runs 24/7)
-│   ├── sbom/               # RETIRED 2026-07-09 — NOT in site.yml (kept for reference)
 │   └── state/              # installs + bootstraps etckeeper and chezmoi themselves
+│       # (sbom/ role RETIRED + deleted 2026-07-11 — recover from git if revived)
 ├── ansible-pull.service     # systemd unit: clone repo + run site.yml on localhost
 ├── ansible-pull.timer       # schedule (wall clock on always_on; wake hook on the rig)
 ├── .ansible-lint            # CI lint profile

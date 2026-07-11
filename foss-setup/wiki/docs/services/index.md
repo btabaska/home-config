@@ -1,6 +1,6 @@
 # Services
 
-41 compose stacks, generated from the repo (`configs/docker-stack/`, `configs/nas/`, `configs/gaming/`, `configs/git/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+37 compose stacks, generated from the repo (`configs/docker-stack/`, `configs/nas/`, `configs/gaming/`, `configs/git/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 
@@ -14,7 +14,6 @@
 |---|---|---|
 | [amp](amp.md) | rig | https://amp.tabaska.us |
 | [bedrock-connect](bedrock-connect.md) | mini | — |
-| [litellm](litellm.md) *(not deployed)* | mini | — |
 | [palworld](palworld.md) | rig | — |
 | [playit](playit.md) | rig | — |
 | [romm](romm.md) | mini | https://romm.tabaska.us |
@@ -31,7 +30,6 @@
 |---|---|---|
 | [beszel](beszel.md) | mini | https://status.tabaska.us |
 | [caddy](caddy.md) | mini | — |
-| [dependency-track](dependency-track.md) | nas | https://deptrack.tabaska.us |
 | [diun](diun.md) | mini | — |
 | [dockge](dockge.md) | mini | https://dockge.tabaska.us |
 | [forgejo](forgejo.md) | mini | https://git.tabaska.us |
@@ -61,13 +59,11 @@
 | Stack | Host | URL |
 |---|---|---|
 | [media-automation](media-automation.md) | nas | — |
-| [tdarr](tdarr.md) *(removed from plan)* | mini | — |
 
 ## Media Automation
 
 | Stack | Host | URL |
 |---|---|---|
-| [maintainerr](maintainerr.md) *(removed from plan)* | mini | — |
 | [recyclarr](recyclarr.md) | mini | — |
 | [tautulli](tautulli.md) | mini | https://tautulli.tabaska.us |
 

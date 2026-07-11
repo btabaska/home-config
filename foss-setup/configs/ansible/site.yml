@@ -31,8 +31,8 @@
       when: "'docker_hosts' in group_names"
     - role: tailscale   # tailscale up --ssh with net-13 tags
     - role: backup      # restic timer (standard OnCalendar fleet-wide; wake_gated is false since 2026-07-08)
-    # - role: sbom      # RETIRED 2026-07-09 (user decision): Syft nightly OOM'd the 8GB mini
-    #                     nightly (Jul 04-08) and rig failed on a missing env file; SBOM/Dependency-Track
-    #                     judged overkill for a home network. Timers disabled on mini+rig. Re-enable this
-    #                     role only if the vuln-tracking objective (sbom-01/02/04) is revived.
+    # sbom role RETIRED 2026-07-09 + role dir DELETED 2026-07-11 (user decision):
+    #   Syft nightly OOM'd the 8GB mini; SBOM/Dependency-Track judged overkill for a
+    #   home net. Dependency-Track fully retired 2026-07-11. Recover from git history
+    #   if the vuln-tracking objective (sbom-01/02/04) is ever revived.
     - role: state       # installs + bootstraps etckeeper and chezmoi themselves
