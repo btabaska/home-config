@@ -39,8 +39,10 @@ Memory written: [[nas-plex-share-acl]], [[libreseerr-edition-selection]] (extend
 
 **Done:** #1 Pinchflat→Plex · #2 Libreseerr→CWA · #3 MusicSeerr · #7 book acceptance test · #8 album acceptance test · #9 pinchflat acceptance test.
 
+**Automation:** the remaining work is broken into ordered handoff prompts in `docs/prompts/` and tracked by `docs/prompts/HANDOFF-QUEUE.md`. Paste `docs/prompts/00-MASTER.md` into a fresh session — it does the next eligible queue item, checks it off, commits, and stops; re-run to advance. `needs-user`/`collaborative` items pause the loop.
+
 **Next up (recommended order):**
-1. **#5 Design the e2e acceptance-test framework** — formalize the pattern above into a documented framework + journey catalog. *Prompt ready: `docs/prompts/acceptance-test-framework.md`.*
+1. **#5 Design the e2e acceptance-test framework** — formalize the pattern above into a documented framework + journey catalog. *Prompt ready: `docs/prompts/01-acceptance-test-framework.md`.*
 2. **#6 Acceptance test: movie/TV request → served in Plex** (blocked by #5).
 3. **#10 Re-audit the 140/223 "done" for real correctness** (blocked by #6; treat green as liveness-only, re-verify user-facing services).
 
