@@ -216,3 +216,25 @@ checks:
     task_id: verify-06
     runbook: wiki/runbooks/verification.md
     enabled: true
+
+  # ---------------------------------------------------------------------------
+  # MUSICSEERR phantom "downloading" requests (added 2026-07-13). 3 Owl City
+  # albums sat "Downloading 0%" for 2 days: MusicSeerr's batch add left them
+  # monitored=False in Lidarr, so Lidarr never grabbed them while MusicSeerr's
+  # request_history stayed 'downloading' and polled forever. The page + API were
+  # healthy throughout — only the delivery hung. This flags the exact signature
+  # (request 'downloading' but Lidarr album unmonitored + fileless) and ignores
+  # monitored-but-unavailable albums, so there are no false positives on "no
+  # release found yet". Reads request_history straight from the DB (no app auth).
+  # ---------------------------------------------------------------------------
+  - id: musicseerr-phantom-requests
+    name: "musicseerr: no request stuck 'downloading' while unmonitored in Lidarr"
+    host: mini
+    cmd: >-
+      LIDARR_URL="$LIDARR_URL" LIDARR_API_KEY="$LIDARR_API_KEY"
+      python3 /opt/verification/bin/musicseerr-phantom-requests.py
+    expect: '^PHANTOM_OK'
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
