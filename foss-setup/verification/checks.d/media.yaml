@@ -171,3 +171,48 @@ checks:
     task_id: verify-06
     runbook: wiki/runbooks/verification.md
     enabled: true
+
+  # ---------------------------------------------------------------------------
+  # LIBRESEERR -> READARR -> CWA book pipeline (added 2026-07-13). Requested
+  # books grabbed+imported fine in Readarr but never reached the CWA reading
+  # library: the Readarr custom script that copies imports into /cwa-book-ingest
+  # trimmed whitespace with `xargs`, which does shell-quote processing and
+  # STRIPPED apostrophes ("Kushiel's Chosen" -> "Kushiels Chosen"), so every
+  # apostrophe title failed the file test and was silently dropped — only
+  # "Miranda and Caliban" got through. libreseerr->Readarr was healthy the whole
+  # time. These guard both halves of the Readarr->CWA handoff.
+  # ---------------------------------------------------------------------------
+
+  # THE bug's direct signature: the copy script dropped a book (path didn't
+  # resolve). Any such error means a requested book never reached CWA. crit.
+  - id: readarr-cwa-copy-drops
+    name: "readarr->cwa copy script dropped no books (no path-resolution errors)"
+    host: mini
+    cmd: >-
+      c=$(printf '%s\n' "$NAS_SUDO_PASSWORD"
+      | ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "sudo -S -p '' grep -cE 'ERROR - (Not a file|.*no name match)' /volume1/docker/readarr/config/logs/readarr-copy-to-cwa-ingest.log 2>/dev/null"
+      2>/dev/null); [ "${c:-0}" = "0" ] && echo drops=0 || echo drops=$c
+    expect: '^drops=0$'
+    severity: crit
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  # The CWA side: files copied into the ingest folder must get consumed. A book
+  # sitting in ingest >20 min means CWA's auto-import stalled (conversion error,
+  # permissions) — the requested book is on the NAS but not in the reading
+  # library. warn (a large PDF conversion can briefly sit).
+  - id: cwa-ingest-not-stuck
+    name: "cwa: book-ingest folder is being consumed (nothing stuck >20m)"
+    host: mini
+    cmd: >-
+      n=$(printf '%s\n' "$NAS_SUDO_PASSWORD"
+      | ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "sudo -S -p '' find /volume1/docker/calibre-web-automated/ingest -type f -mmin +20 2>/dev/null | wc -l"
+      2>/dev/null); n=$(echo "$n" | tr -d ' '); [ "${n:-1}" = "0" ] && echo ingest=ok || echo ingest=STUCK:$n
+    expect: '^ingest=ok$'
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
