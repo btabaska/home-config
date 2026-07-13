@@ -43,6 +43,8 @@ services:
       - DIFFICULTY=Hard
       - PAL_DAMAGE_RATE_DEFENSE=0.8    # pals take 0.8x damage (tankier than Hard default)
       - ENEMY_DROP_ITEM_RATE=2.0       # dropped-items multiplier 2x
+      - PAL_EGG_DEFAULT_HATCHING_TIME=1.0   # egg hatch time 1 hour (was 72)
+      - BASE_CAMP_MAX_NUM_IN_GUILD=6         # per-guild base cap (was 4)
     volumes:
       - ./game:/palworld
     healthcheck:
