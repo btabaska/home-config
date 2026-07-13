@@ -26,6 +26,7 @@ services:
       # Local patch: rank Readarr lookup candidates + retry-until-accepted
       # (fixes junk-edition 400s / stuck books). Re-derive app.py on image bump.
       - ./app.py:/app/app.py:ro
+      - ./readarr.py:/app/readarr.py:ro
     networks:
       - edge
 
