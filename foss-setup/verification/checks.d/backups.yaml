@@ -49,3 +49,32 @@ checks:
     task_id: nas-08
     runbook: wiki/runbooks/backups.md
     enabled: true
+
+  # nas-02: NAS Tier-1 Hyper Backup → Backblaze B2. Verified live 2026-07-13:
+  # task "S3 Backup 1" (repo_2) targets s3.us-east-005.backblazeb2.com bucket
+  # "bucket-hyper-backup" / TabaskaNAS_1.hbk, covering /backups /docker /docs
+  # /homes /photo (so Immich app data + its DB dumps under /docker, Synology
+  # Photos under /photo, docs, homes, and the HA off-eMMC backups under /backups
+  # are all included). Transfer is TLS-encrypted (trans_encrypt=true) but
+  # client-side DATA-AT-REST encryption is OFF (enable_data_encrypt=false) — see
+  # the runbook; changing it requires re-creating the task (destructive).
+  #
+  # Success signal: last_version_inodedb in the client image cache is rewritten
+  # only when a backup version COMPLETES, so its mtime = last successful run
+  # (a failed run leaves the previous good version's mtime, which is what a
+  # dead-man wants). It is world-readable under a 0777 dir, so the btabaska ssh
+  # user (no sudo) can stat it — same non-sudo pattern as the immich checks.
+  # Window 50h (3000m): the DSM Hyper Backup schedule cadence is kept in-package
+  # and isn't exposed on the CLI; last observed success 2026-07-12 19:28. Tighten
+  # to ~30h once the schedule is confirmed daily in the DSM UI. Negative-tested
+  # 2026-07-13 (fresh->ok; -mmin -1 and a bogus path both ->BAD).
+  - id: nas-hyperbackup-b2-fresh
+    name: "NAS Tier-1 Hyper Backup -> B2 succeeded within 50h"
+    host: nas
+    cmd: >-
+      find /volume1/@img_bkp_cache/ClientCache_cloud_image_aws_s3.*/last_version_inodedb -mmin -3000 2>/dev/null | grep -q . && echo tok=ok || echo tok=BAD
+    expect: '^tok=ok$'
+    severity: crit
+    task_id: nas-02
+    runbook: wiki/runbooks/backups.md
+    enabled: true
