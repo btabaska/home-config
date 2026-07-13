@@ -11,14 +11,15 @@ Tier 2 (re-acquirable media) gets local redundancy only.
     `restic-backup-rig`, green; re-probed 2026-07-13: mini snapshot 17.7h old,
     rig 13.8h — both FRESH). The nightly Immich pg_dump is live and
     dead-manned (`immich-dump-nas`).
-    **NAS Tier 1 → B2 via Hyper Backup (nas-02) is now confirmed DONE** — the
-    2026-07-13 re-probe found the "S3 Backup 1" Hyper Backup task alive and
-    succeeding (last version 2026-07-12 19:28), so the earlier "pending" was
-    stale. Still pending: the optional Hetzner second off-site (nas-06) and,
-    historically, HA backups (ha track — now also done, see the HA host page).
-    ⚠️ **Caveat:** the Hyper Backup task has **client-side data encryption OFF**
-    (`enable_data_encrypt=false`); transfer is TLS-encrypted but data-at-rest in
-    B2 is not client-encrypted. See the Hyper Backup row below.
+    **NAS Tier 1 → B2 via Hyper Backup (nas-02) is DONE and now CLIENT-SIDE
+    ENCRYPTED.** The 2026-07-13 re-probe found the task alive and succeeding, so
+    the earlier "pending" was stale; the task was then **re-created with
+    client-side encryption ON** ("S3 Backup enc" → `TabaskaNAS_2.hbk`,
+    `enable_data_encrypt=true`, first full encrypted backup completed
+    2026-07-13 13:45; key in vault `hosts.nas.hyperbackup_password` + Bitwarden).
+    The old unencrypted `S3 Backup 1` / `TabaskaNAS_1.hbk` is being retired.
+    nas-06 (optional Hetzner 2nd off-site) was **retired** in the 2026-07-13
+    roadmap prune — one off-site (B2) is the accepted design.
 
 ## What is backed up where (current + planned)
 
@@ -30,7 +31,7 @@ Tier 2 (re-acquirable media) gets local redundancy only.
 | Dotfiles | chezmoi | Live |
 | mini → B2 | restic daily timer: `/opt/stacks /etc ~/.ssh ~/.config ~/.docker` (env `/etc/restic/env`) | **Live**, dead-manned |
 | rig → B2 | restic daily timer: `/etc /home/btabaska` + Palworld saves + the AMP `MinecraftCross01` instance (gap closed — was missing until 2026-07-09) | **Live**, dead-manned |
-| NAS Tier 1 → B2 | Hyper Backup task "S3 Backup 1" → S3-compat `s3.us-east-005.backblazeb2.com` / `bucket-hyper-backup` / `TabaskaNAS_1.hbk`; selects `/backups /docker /docs /homes /photo` (covers all shares with real data — `vault`/`appdata` are empty 28K shells superseded by `/docker`); smart-recycle rotation; notify on | **Live** (nas-02, verified 2026-07-13; last success 2026-07-12 19:28), dead-manned (`nas-hyperbackup-b2-fresh`, crit, 50h). ⚠️ `enable_data_encrypt=false` — **no client-side encryption** (TLS-in-transit only); toggling it on requires re-creating the task (full re-upload) — user decision |
+| NAS Tier 1 → B2 | Hyper Backup task "S3 Backup enc" → S3-compat `s3.us-east-005.backblazeb2.com` / `bucket-hyper-backup` / `TabaskaNAS_2.hbk`; selects `/backups /docker /docs /homes /photo` (covers all shares with real data — `vault`/`appdata` are empty 28K shells superseded by `/docker`); smart-recycle rotation; notify on | **Live + client-side ENCRYPTED** (nas-02; re-created encrypted 2026-07-13, first full backup 13:45; `enable_data_encrypt=true` + TLS in transit; key in vault `hosts.nas.hyperbackup_password` + Bitwarden), dead-manned (`nas-hyperbackup-b2-fresh`, crit, 50h). Old unencrypted `TabaskaNAS_1.hbk` being retired. |
 | 2nd off-site → Hetzner | borgmatic (optional) | pending: nas-06 |
 | HA full backups → NAS | HA Settings → Backups (key in Bitwarden) | pending: ha track |
 | NAS snapshots | Btrfs Snapshot Replication on Tier 1 shares | DSM |

@@ -51,13 +51,16 @@ checks:
     enabled: true
 
   # nas-02: NAS Tier-1 Hyper Backup → Backblaze B2. Verified live 2026-07-13:
-  # task "S3 Backup 1" (repo_2) targets s3.us-east-005.backblazeb2.com bucket
-  # "bucket-hyper-backup" / TabaskaNAS_1.hbk, covering /backups /docker /docs
+  # task "S3 Backup enc" (repo_3) targets s3.us-east-005.backblazeb2.com bucket
+  # "bucket-hyper-backup" / TabaskaNAS_2.hbk, covering /backups /docker /docs
   # /homes /photo (so Immich app data + its DB dumps under /docker, Synology
   # Photos under /photo, docs, homes, and the HA off-eMMC backups under /backups
-  # are all included). Transfer is TLS-encrypted (trans_encrypt=true) but
-  # client-side DATA-AT-REST encryption is OFF (enable_data_encrypt=false) — see
-  # the runbook; changing it requires re-creating the task (destructive).
+  # are all included). Both TLS-in-transit (trans_encrypt=true) AND client-side
+  # DATA-AT-REST encryption ON (enable_data_encrypt=true; re-created 2026-07-13,
+  # key in vault hosts.nas.hyperbackup_password + Bitwarden). The old unencrypted
+  # "S3 Backup 1" / TabaskaNAS_1.hbk is being retired now that this completed.
+  # NB the check globs ClientCache_cloud_image_aws_s3.* so it tracks whichever
+  # task's cache is freshest — task-agnostic across re-creations.
   #
   # Success signal: last_version_inodedb in the client image cache is rewritten
   # only when a backup version COMPLETES, so its mtime = last successful run
