@@ -7,6 +7,9 @@ Items marked `needs-user` or `collaborative` PAUSE the loop (report to the user)
 
 Status: `[ ]` pending · `[x]` done · `[~]` in progress / partial (see note).
 
+> **Open action items** blocked/parked/waiting-on-operator are mirrored in
+> [`todos.md`](todos.md) (all-sessions quick reference; this queue stays authoritative).
+
 - [~] **01** — Acceptance-test framework + movie/TV test + done-audit (#5/#6/#10) · **autonomous** · deps: none · `01-acceptance-test-framework.md`
   - **#5 design doc DONE** (`wiki/docs/runbooks/acceptance-testing.md` — framework + journey catalog + conventions, in nav). **#6 movie/TV check + #10 done-audit BLOCKED:** Plex on the NAS is returning **HTTP 503 to all clients** (metadata-analysis storm on §4/YouTube, a side effect of today's 1363-item Pinchflat ingest) — can't live-validate/negative-test a Plex journey while Plex 503s. User decision 2026-07-13: **let Plex drain on its own** (no restart). Resume #6 + #10 once Plex serves 200 again (re-check `pinchflat-plex-visible`; see memory [[plex-bulk-ingest-analysis-storm]]).
 - [x] **02** — HA reliability: backups + Assist endpoint (#11/#12) · **autonomous** · deps: none · `02-ha-reliability.md` — DONE 2026-07-13: off-eMMC encrypted NAS backups (agent `hassio.nas_backups`, daily 04:45, retention 3, validated landing on NAS) + Assist wired to rig Ollama (`conversation.rig_ollama_assist`, live completion). 2 negative-tested checks. **User action:** confirm the backup encryption key (vault `hosts.ha.backup_password`) is in Bitwarden.
