@@ -6,12 +6,13 @@
 
 services:
   libreseerr:
-    # Upstream publishes no version tags — pinned by digest to the image running
-    # on the mini as of 2026-07-09 (was :latest). Bump the digest deliberately.
-    # NOTE: the 2026-07-07 pin (sha256:820134e4…) was never deployed to
-    # mini:/opt/stacks and the container had moved on to a newer image; re-pinned
-    # to the digest actually running (docs-debt audit 2026-07-09).
-    image: ghcr.io/zamnzim/libreseerr@sha256:c2dbf74a5ab6b72b4f7083c646ac2fa0d8db5a7291b0fb0e0e9f481bccad179b
+    # Upstream publishes no version tags and garbage-collects old digests, so a
+    # stale pin fails `compose pull` with "manifest unknown". Pinned to the
+    # image MANIFEST digest (820134e4 == the running image RepoDigest). NB: the
+    # 2026-07-09 audit mistakenly pinned the local image *ID* (c2dbf74a) here,
+    # which is not pullable; corrected 2026-07-12. Recreate offline after an
+    # app.py change:  docker compose up -d --pull never
+    image: ghcr.io/zamnzim/libreseerr@sha256:820134e44279c964ddf54090ab45b444a28e7f562256baaadf20fffaf36911f3
     container_name: libreseerr
     restart: unless-stopped
     environment:
@@ -22,6 +23,9 @@ services:
       - "8789:5000" # LAN/Tailscale; front with Caddy on the edge network if desired
     volumes:
       - ./data:/app/data
+      # Local patch: rank Readarr lookup candidates + retry-until-accepted
+      # (fixes junk-edition 400s / stuck books). Re-derive app.py on image bump.
+      - ./app.py:/app/app.py:ro
     networks:
       - edge
 
