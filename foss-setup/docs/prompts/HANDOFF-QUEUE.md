@@ -21,4 +21,4 @@ Not queued (do not auto-start):
 - **#19** NAS parity — **backlog**, no new spend now.
 
 _Completion log (append one line per finished item):_
-- 2026-07-13 · **01 partial [~]** · #5 acceptance-test framework design doc shipped (`wiki/docs/runbooks/acceptance-testing.md` + nav) — framework, two check shapes, conventions, journey catalog w/ ✅/gaps. #6/#10 blocked on live Plex 503 (analysis storm; user chose let-it-drain). Commit `<pending>`.
+- 2026-07-13 · **01 partial [~]** · #5 acceptance-test framework design doc shipped (`wiki/docs/runbooks/acceptance-testing.md` + nav) — framework, two check shapes, conventions, journey catalog w/ ✅/gaps. #6/#10 blocked on live Plex 503 (analysis storm; user chose let-it-drain). Commit `fd197ae` / fj `839fd06`.
