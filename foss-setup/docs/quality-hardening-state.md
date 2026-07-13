@@ -48,7 +48,9 @@ Memory written: [[nas-plex-share-acl]], [[libreseerr-edition-selection]] (extend
 2. **#6 Acceptance test: movie/TV request → served in Plex** (blocked by #5).
 3. **#10 Re-audit the 140/223 "done" for real correctness** (blocked by #6; treat green as liveness-only, re-verify user-facing services).
 
-**Reliability / DR (P1–P2):** #11 HA backups (HIGH) · #12 HA-Assist endpoint mini:4000→rig llm.tabaska.us · #13 close ansible backup SOPS gate · #14 verify NAS Tier-1→B2 (nas-02).
+**Reliability / DR (P1–P2):** ✅ #11 HA backups (DONE 2026-07-13) · ✅ #12 HA-Assist endpoint (DONE 2026-07-13) · #13 close ansible backup SOPS gate · #14 verify NAS Tier-1→B2 (nas-02).
+
+**#11/#12 (queue item 02) — DONE 2026-07-13:** re-probe showed HA backups were still eMMC-only (`hassio.local`), and HA Assist had **no** LLM agent at all (the "mini:4000 LiteLLM" target was always a phantom — LiteLLM/Ollama are rig-only). Fixed: (a) dedicated least-priv Synology SMB user `ha-backup` + Supervisor CIFS mount `nas_backups`→`//192.168.10.4/backups` (agent `hassio.nas_backups`), **daily 04:45 automatic ENCRYPTED backups to both agents, retention 3**; validated a triggered backup landed encrypted on the NAS (`/volume1/backups/…tar`, 7-member listable archive = restore path). Key in vault `hosts.ha.backup_password` (+ Bitwarden TODO). (b) HA native `ollama` integration → **rig Ollama `192.168.10.12:11434`**, agent `conversation.rig_ollama_assist` (llama3.2:3b); a live `/api/conversation/process` returned a real completion. Default pipeline left on the intent engine to preserve device control. New negative-tested checks in `ha.yaml`: `ha-backup-offsite-fresh` (crit dead-man) + `ha-assist-rig-llm-reachable` (warn). Stdlib HA WS client committed at `scripts/ha/haws.py`. Memory [[ha-control-plane]] updated.
 
 **Infrastructure / planning (P3):** #15 re-audit real VLAN/zone-firewall/device-migration state · #16 DNS tail dns-03/04/05 (blocked by #15) · #17 walk unbuilt roadmap & prune (review together).
 

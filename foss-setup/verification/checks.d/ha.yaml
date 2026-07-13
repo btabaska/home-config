@@ -35,3 +35,58 @@ checks:
     task_id: ha-05
     runbook: wiki/runbooks/docker.md
     enabled: true
+
+  # BACKUP DEAD-MAN (added 2026-07-13, #11). HAOS ran with backups ONLY on the
+  # local eMMC agent — a dead eMMC lost every automation. Fixed: a dedicated
+  # least-priv Synology SMB user (ha-backup) + a Supervisor CIFS mount
+  # "nas_backups" -> //192.168.10.4/backups (agent hassio.nas_backups), daily
+  # 04:45 automatic ENCRYPTED backups to BOTH agents, retention 3. This check is
+  # the dead-man: the newest HA backup .tar in the OFF-eMMC NAS location must be
+  # < 48h old. It proves freshness AND off-eMMC presence in one probe (an
+  # encrypted archive on disk = the outcome, not liveness). Fails loudly if the
+  # NAS is unreachable (empty -> STALE), never a vacuous pass. crit: no fresh
+  # off-eMMC backup = one eMMC failure from total loss. Restore/runbook: the
+  # encryption key is vault hosts.ha.backup_password (also Bitwarden) — a backup
+  # without its key is not a backup.
+  - id: ha-backup-offsite-fresh
+    name: "HA has an off-eMMC (NAS) backup < 48h old (dead-man)"
+    host: mini
+    cmd: >-
+      c=$(printf '%s\n' "$NAS_SUDO_PASSWORD"
+      | ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "sudo -S -p '' bash -c 'find /volume1/backups -maxdepth 1 -name \"*.tar\" -mmin -2880 2>/dev/null | wc -l'"
+      2>/dev/null); c=$(echo "$c" | tr -d ' ');
+      [ "${c:-0}" -ge 1 ] && echo backup=fresh || echo backup=STALE
+    expect: '^backup=fresh$'
+    severity: crit
+    task_id: ha-11
+    runbook: wiki/runbooks/backup-restore.md
+    enabled: true
+
+  # ASSIST LLM ENDPOINT (added 2026-07-13, #12). HA Assist had NO LLM
+  # conversation agent — the "point Assist at mini:4000 (LiteLLM)" plan was never
+  # deployed and mini:4000 never existed (a phantom; LiteLLM/Ollama are rig-only,
+  # see memory ai-stack-topology). Fixed: added HA's native `ollama` integration
+  # -> the rig's Ollama at http://192.168.10.12:11434 with a conversation agent
+  # `conversation.rig_ollama_assist` (model llama3.2:3b); a live
+  # /api/conversation/process call returns a real completion. This check guards
+  # the seam that broke — the LLM backend HA Assist points at must be REAL and
+  # reachable and still serve the configured model (catches a phantom/dead
+  # endpoint or a pulled model). Lightweight (Ollama /api/tags, no generation) so
+  # it never spurious-pages on cold-model latency. warn: the AI-stack SPOF (rig
+  # down) is an accepted condition, not a data-loss crit.
+  - id: ha-assist-rig-llm-reachable
+    name: "HA Assist LLM backend (rig Ollama) reachable + serves the configured model"
+    host: mini
+    cmd: >-
+      curl -sm 15 http://192.168.10.12:11434/api/tags
+      | python3 -c "import sys,json;
+      d=json.load(sys.stdin);
+      ms=[m.get('name') for m in d.get('models',[])];
+      print('assist_llm=ok' if 'llama3.2:3b' in ms else 'assist_llm=MISSING')"
+      2>/dev/null || echo assist_llm=UNREACHABLE
+    expect: '^assist_llm=ok$'
+    severity: warn
+    task_id: ha-12
+    runbook: wiki/runbooks/docker.md
+    enabled: true

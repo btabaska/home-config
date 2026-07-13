@@ -561,7 +561,7 @@ O["ha-05"] = {"steps": [P("ha-02"), "Settings → Devices → Add Integration �
 O["ha-06"] = {"steps": [P("ha-02"), "Google Cloud: enable Smart Device Management API; create OAuth client", "HA: Add Google Nest integration; complete OAuth", "Store refresh token backup in Bitwarden"], "commands": [], "files": [], "verify": "Nest climate visible in HA."}
 O["ha-07"] = {"steps": [P("ha-04"), "HACS → midea_ac_lan or official integration", "Add each Midea device by IP on IoT VLAN", "BACK UP integration config to NAS", "Test local control without cloud"], "commands": [], "files": ["configs/homeassistant/midea-local-setup.md"], "verify": "Midea AC responds from HA."}
 O["ha-08"] = {"steps": [P("ha-07"), "Flash ESPHome on SLWF-01Pro per configs/homeassistant/esphome-midea-slwf01.yaml", "Add ESPHome integration; adopt device on IoT", "Disable cloud Midea dongle after cutover"], "commands": [], "files": ["configs/homeassistant/esphome-midea-slwf01.yaml"], "verify": "AC controlled via ESPHome only."}
-O["ha-09"] = {"steps": [P("ha-02"), "Install Whisper + Piper add-ons for Assist", "Settings → Voice assistants → pipeline", "Point conversation agent to LiteLLM (ha-17) for complex queries", "Test wake word on phone Companion app"], "commands": [], "files": [], "verify": "Voice command triggers automation."}
+O["ha-09"] = {"steps": [P("ha-02"), "Install Whisper + Piper add-ons for Assist", "Settings → Voice assistants → pipeline", "DONE 2026-07-13: conversation agent = native `ollama` integration -> rig Ollama http://192.168.10.12:11434 (agent conversation.rig_ollama_assist, model llama3.2:3b); a live /api/conversation/process returns a real completion. The old 'LiteLLM on mini:4000' target was a phantom (never deployed; LiteLLM/Ollama are rig-only). Guarded by check ha-assist-rig-llm-reachable. Default pipeline left on the intent engine to preserve device control.", "Test wake word on phone Companion app"], "commands": [], "files": [], "verify": "Assist conversation agent returns a real completion from the rig LLM."}
 O["ha-10"] = {"steps": [P("ha-05", "ha-07"), "Settings → Dashboards → Energy", "Add grid, solar if any, device monitors from Hue/Nest/Midea"], "commands": [], "files": [], "verify": "Energy dashboard shows live usage."}
 O["ha-11"] = {"steps": [
     P("ha-02"),
@@ -599,7 +599,7 @@ O["ha-17"] = {
     **ustack("litellm", 4000, "LITELLM_MASTER_KEY + Ollama upstream"),
 }
 O["ha-17"]["steps"] = O["ha-17"]["steps"] + [
-    "Point HA Assist conversation agent to http://192.168.10.2:4000 (LiteLLM)",
+    "SUPERSEDED 2026-07-13: HA Assist now uses the native `ollama` integration -> rig Ollama http://192.168.10.12:11434 directly (see ha-09). 'LiteLLM on mini:4000' was never deployed and mini:4000 never existed; this ha-17 LiteLLM-on-mini task is a phantom to reconcile in the roadmap prune (#17).",
     "On rig: set OLLAMA_KEEP_ALIVE=0 so VRAM frees between requests (game-13)",
 ]
 
