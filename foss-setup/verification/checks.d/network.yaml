@@ -1,0 +1,27 @@
+# Network / VLAN-segmentation invariants (item 04 re-audit, #15 / net-05).
+#
+# The LAN is zone-segmented on the UniFi Dream Wall — Trusted (VLAN 10,
+# 192.168.10.0/24) / IoT (20, .20/24) / Cameras (30) / Work (40) / Guest (50),
+# all six gateway SVIs confirmed live from the fleet 2026-07-13, plus a
+# zone-based firewall. The router config itself is OPERATOR-MANAGED and is NOT
+# machine-audited here (the operator declined UniFi controller/SSH access
+# 2026-07-13 and confirmed the subnets + zone rules are implemented as directed).
+#
+# This guards the one cross-zone policy observable from a Trusted host: the
+# zone-matrix rule **Trusted -> IoT = Allow**, which is what lets phones / Home
+# Assistant on Trusted control smart-home gear on IoT. If a ZBF change breaks it
+# (a common footgun when tightening policies), smart-home control silently dies;
+# this catches that. warn, not crit: it also trips if the Hue bridge itself is
+# down/moved, which is a device blip, not a firewall regression.
+# Negative-tested 2026-07-13: Hue .20.100:80 -> ok; a nonexistent IoT IP -> BAD.
+checks:
+  - id: net-trusted-to-iot-reachable
+    name: "Trusted->IoT control path open (Hue bridge 192.168.20.100:80 reachable)"
+    host: mini
+    cmd: >-
+      timeout 4 bash -c 'echo > /dev/tcp/192.168.20.100/80' 2>/dev/null && echo tok=ok || echo tok=BAD
+    expect: '^tok=ok$'
+    severity: warn
+    task_id: net-05
+    runbook: wiki/runbooks/verification.md
+    enabled: true
