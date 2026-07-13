@@ -45,12 +45,14 @@ Keep this in sync when an item's state changes. Last updated: **2026-07-13**.
 
 ## 🔬 Active initiative (commissioned)
 
-- [ ] **Local-AI build (ai-01, expanded)** — `docs/local-ai-build-plan.md`. Operator
-  wants a first-class local-first AI dev + Q&A stack on the rig (RTX 3090 Ti 24 GB):
-  OWUI + opencode as best-in-class local coding tools, a skills library, and
-  home-ops agents (e.g. "why is service X down?"). **Deep research commissioned
-  2026-07-13** (2026-grounded, hardware-grounded) → phased build plan → its own
-  workstream. OWUI/LiteLLM/Ollama/mcpo already run on the rig.
+- [ ] **Local-AI build (ai-01, expanded)** — `docs/local-ai-build-plan.md`. First-class
+  local-first AI dev + Q&A stack on the rig (RTX 3090 Ti 24 GB): OWUI + opencode,
+  skills library, home-ops agents. **Deep research DONE 2026-07-13 → phased plan
+  drafted.** Verdict: 24 GB ≈ 80 % of daily coding, no frontier parity; stay on
+  llama.cpp/Ollama GGUF; model choice > size; ops agent via ollmcp (HITL).
+  **Next:** operator to greenlight turning the plan into a tracked workstream, and
+  run the 4 validation spikes (GPU-coexistence, RAG stack, exl2/Tabby vs GGUF, the
+  best code+tool-calling model bake-off) before building.
 
 ## 🤝 Collaborative (done / on tap)
 
