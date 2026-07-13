@@ -37,7 +37,9 @@ Memory written: [[nas-plex-share-acl]], [[libreseerr-edition-selection]] (extend
 
 ## Task board (19 tasks; IDs match the session task list)
 
-**Done:** #1 Pinchflat→Plex · #2 Libreseerr→CWA · #3 MusicSeerr · #7 book acceptance test · #8 album acceptance test · #9 pinchflat acceptance test.
+**Done:** #1 Pinchflat→Plex · #2 Libreseerr→CWA · #3 MusicSeerr · #5 acceptance-test framework design doc (`wiki/docs/runbooks/acceptance-testing.md`) · #7 book acceptance test · #8 album acceptance test · #9 pinchflat acceptance test.
+
+**Blocked on live Plex:** #6 movie/TV→Plex acceptance check and #10 done-audit — Plex on the NAS is returning **HTTP 503 to all clients** (metadata-analysis storm on §4/YouTube, triggered by today's 1363-item Pinchflat ingest; process up, worker pool saturated). Can't live-validate/negative-test a Plex journey while Plex 503s. **User decision 2026-07-13: let Plex drain on its own** (no restart). Resume when Plex serves 200 (re-check `pinchflat-plex-visible`). Memory [[plex-bulk-ingest-analysis-storm]].
 
 **Automation:** the remaining work is broken into ordered handoff prompts in `docs/prompts/` and tracked by `docs/prompts/HANDOFF-QUEUE.md`. Paste `docs/prompts/00-MASTER.md` into a fresh session — it does the next eligible queue item, checks it off, commits, and stops; re-run to advance. `needs-user`/`collaborative` items pause the loop.
 
@@ -99,3 +101,4 @@ Then **negative-test**: force the underlying outcome broken and confirm the chec
 - MusicSeerr "Maybe I'm Dreaming" (2008) is monitored but has no torrent release — legitimately waiting (Soulseek/RSS), not a phantom; the check ignores it.
 - Naamah trilogy files are metadata-mislabeled by Readarr (separate pre-existing bug, see [[libreseerr-edition-selection]]) — not the apostrophe bug.
 - The giant `docs/handoff-rollout-state.md` is shared with a concurrent account; this workstream is tracked here instead to avoid conflicts.
+- **Plex 503 (open, 2026-07-13):** Plex is returning HTTP 503 to all clients — worker pool saturated by a `none`-agent metadata-analysis storm on §4 (YouTube), a side effect of the 1363-item Pinchflat ACL fix. Process is "running" (liveness green); `pinchflat-plex-visible` correctly fails `PLEX_UNREACHABLE`. Backlog drains but glacially. User chose **let it drain** (no restart). This blocks #6/#10. Diagnosis + candidate "Plex-responsive" check in memory [[plex-bulk-ingest-analysis-storm]]. Framework anti-pattern ("producer flood → consumer storm") captured in the acceptance-testing runbook.

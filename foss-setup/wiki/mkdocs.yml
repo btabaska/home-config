@@ -121,6 +121,7 @@ nav:
       - Recover the rig (WoL): runbooks/wake-the-rig.md
       - Update images: runbooks/update-images.md
       - Verification: runbooks/verification.md
+      - Acceptance testing: runbooks/acceptance-testing.md
   - Operations:
       - Ansible & convergence: operations/ansible.md
       - Secrets policy: operations/secrets.md
