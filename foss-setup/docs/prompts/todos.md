@@ -44,10 +44,20 @@ Keep this in sync when an item's state changes. Last updated: **2026-07-13**.
   BOTH Trusted+IoT, IGMP snooping off, + a firewall allow. Then an on-device Apple
   Home add-hub check. See `configs/network/mdns-multicast-checklist.md`.
 
-## 🤝 Collaborative (needs a working session with the operator)
+## 🔬 Active initiative (commissioned)
 
-- [ ] **#17 — Walk & prune the unbuilt roadmap** — queue item 07, `07-roadmap-prune.md`.
-  Review the not-yet-built roadmap together and cut/keep/defer each item.
+- [ ] **Local-AI build (ai-01, expanded)** — `docs/local-ai-build-plan.md`. Operator
+  wants a first-class local-first AI dev + Q&A stack on the rig (RTX 3090 Ti 24 GB):
+  OWUI + opencode as best-in-class local coding tools, a skills library, and
+  home-ops agents (e.g. "why is service X down?"). **Deep research commissioned
+  2026-07-13** (2026-grounded, hardware-grounded) → phased build plan → its own
+  workstream. OWUI/LiteLLM/Ollama/mcpo already run on the rig.
+
+## 🤝 Collaborative (done / on tap)
+
+- [x] **#17 — Roadmap prune** — DONE 2026-07-13 (walked with operator): `progress.json`
+  reconciled (closed 5 drift, retired 7, deferred 4, kept the rest); ai-01 expanded
+  (above).
 
 ## 🗓️ Deferred / backlog (do not auto-start)
 
