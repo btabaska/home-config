@@ -11,7 +11,7 @@
 
 **Working style / access:**
 - Secrets: `foss-setup/.handoff-secrets.yaml` (gitignored). Host sudo + HA token + Plex/Lidarr/etc. keys live there.
-- mini has **passwordless sudo**; NAS sudo needs the vault password (`Wbef#90332`); NAS `docker` = `/usr/local/bin/docker`, `synoacltool` = `/usr/syno/bin/synoacltool`.
+- mini has **passwordless sudo**; NAS sudo needs the vault password (`<vault: sudo.nas_password>`); NAS `docker` = `/usr/local/bin/docker`, `synoacltool` = `/usr/syno/bin/synoacltool`.
 - Repo-first: edit `foss-setup/…`, deploy live, validate, commit to `origin` (GitHub `btabaska/home-config`) **and** `./foss-setup/scripts/docs/publish-deploy.sh` (subtree → forgejo `home/homelab`, hosts ansible-pull from it).
 - Verification framework: checks in `foss-setup/verification/checks.d/*.yaml`, primitives in `verification/bin/`, deployed to mini `/opt/verification/`, env in mini `/etc/verification/env`, run hourly via `verification-quick`, page via ntfy. Validate each new check live **and negative-test it**.
 - `scp` to the NAS fails (sftp closed) — deploy to NAS via base64-over-ssh. `scp` to mini works.
@@ -56,7 +56,7 @@ Memory written: [[nas-plex-share-acl]], [[libreseerr-edition-selection]] (extend
 
 ## Operational cheatsheet (so a fresh session is self-sufficient)
 
-**Host access (SSH aliases over Tailscale):** `ssh nas` (DSM; sudo needs vault pw `Wbef#90332`), `ssh mini` (Ubuntu; **passwordless sudo**), `ssh rig` (CachyOS), `ssh seedbox` (betty; no root).
+**Host access (SSH aliases over Tailscale):** `ssh nas` (DSM; sudo needs vault pw `<vault: sudo.nas_password>`), `ssh mini` (Ubuntu; **passwordless sudo**), `ssh rig` (CachyOS), `ssh seedbox` (betty; no root).
 - **HA has NO ssh** — not a tailnet node. Drive it via REST at `http://192.168.10.50:8123`, token in vault `hosts.ha.api_token` (see [[ha-control-plane]]).
 - NAS specifics: `docker` = `/usr/local/bin/docker`; `synoacltool` = `/usr/syno/bin/synoacltool`; **`sqlite3` CLI absent in app containers** → read their DBs with the container's `python3`.
 - NAS ssh prints a post-quantum banner — strip it: `| grep -v 'post-quantum\|store now\|may need\|openssh.com\|WARNING'`.
@@ -85,7 +85,7 @@ Then **negative-test**: force the underlying outcome broken and confirm the chec
 
 **Deploy:**
 - mini (scp works): `scp f mini:/tmp/ && ssh mini 'sudo install -m 0755 /tmp/f /opt/verification/bin/f'` (yaml: `-m 0644` → `/opt/verification/checks.d/`).
-- NAS (scp/sftp BLOCKED — use base64): `B64=$(base64 < f | tr -d '\n'); ssh nas "echo 'Wbef#90332' | sudo -S -p '' bash -c 'echo $B64 | base64 -d > /path && chmod 0755 /path'"`.
+- NAS (scp/sftp BLOCKED — use base64): `B64=$(base64 < f | tr -d '\n'); ssh nas "echo '<vault: sudo.nas_password>' | sudo -S -p '' bash -c 'echo $B64 | base64 -d > /path && chmod 0755 /path'"`.
 - env additions: `printf 'KEY=val\n' | ssh mini 'sudo tee -a /etc/verification/env'` (guard first with `sudo grep -q '^KEY='`).
 - ship: `git add … && git commit && git push origin main && ./foss-setup/scripts/docs/publish-deploy.sh`.
 
