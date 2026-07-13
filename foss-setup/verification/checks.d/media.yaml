@@ -123,3 +123,51 @@ checks:
     task_id: verify-06
     runbook: wiki/runbooks/verification.md
     enabled: true
+
+  # ---------------------------------------------------------------------------
+  # PINCHFLAT -> PLEX visibility (added 2026-07-13). The producer worked and the
+  # container was healthy, but the OUTCOME was broken: Pinchflat had archived
+  # 1363 videos to the NAS `youtube` share while Plex's YouTube library showed 0
+  # items — the `youtube` shared folder was missing the `user:PlexMediaServer`
+  # ACL entry every other Plex library folder carries, so the Plex service
+  # account could not traverse/read it. Nothing liveness-based saw it. These two
+  # checks probe (a) the user-visible outcome and (b) the exact ACL invariant
+  # that broke and WILL recur (MeTube writes the same share; every new DSM
+  # shared folder starts WITHOUT the Plex ACE).
+  # ---------------------------------------------------------------------------
+
+  # OUTCOME: the archived media is actually visible in Plex. Compares media
+  # files on disk to items the Plex library reports (flat 1:1 personal-media
+  # library, so counts are directly comparable). Fails loudly if the mount is
+  # down (never a vacuous pass). crit — archived content invisible to the user.
+  - id: pinchflat-plex-visible
+    name: "pinchflat: archived YouTube videos are visible in Plex (disk vs library)"
+    host: mini
+    cmd: >-
+      PLEX_URL="$PLEX_URL" PLEX_TOKEN="$PLEX_TOKEN"
+      python3 /opt/verification/bin/plex-flat-library-coverage.py
+      --disk /mnt/nas-youtube/pinchflat --section 4 --min-ratio 0.8
+    expect: '^COVERAGE_OK'
+    severity: crit
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  # CAUSE: the specific ACL invariant. The Plex service user must be able to
+  # traverse the youtube share — the precise thing that was NO before the fix.
+  # Fires early and points straight at the root cause (re-add the
+  # user:PlexMediaServer ACE, see runbook). Same ssh+sudo pattern as
+  # seedbox-mount-listable.
+  - id: plex-youtube-readable
+    name: "nas: Plex service user can traverse the youtube share (ACL invariant)"
+    host: mini
+    cmd: >-
+      r=$(printf '%s\n' "$NAS_SUDO_PASSWORD"
+      | ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "sudo -S -p '' sudo -u PlexMediaServer test -x /volume1/youtube && echo yes"
+      2>/dev/null); [ "$r" = "yes" ] && echo plexacl=ok || echo plexacl=BAD
+    expect: '^plexacl=ok$'
+    severity: crit
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
