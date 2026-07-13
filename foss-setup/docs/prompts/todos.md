@@ -16,11 +16,11 @@ Keep this in sync when an item's state changes. Last updated: **2026-07-13**.
 
 - [x] **Encrypted NAS Hyper Backup — VERIFIED 2026-07-13.** New task "S3 Backup enc"
   → `TabaskaNAS_2.hbk`, `enable_data_encrypt=true`, first full encrypted backup
-  completed 13:45; dead-man `nas-hyperbackup-b2-fresh` re-armed (pass). Remaining
-  operator steps: **(a)** delete the old unencrypted `S3 Backup 1` task + its
-  `TabaskaNAS_1.hbk` folder in B2 (in progress); **(b)** save the passphrase
-  (vault `hosts.nas.hyperbackup_password`) to Bitwarden + paper — losing it =
-  the backup is unrecoverable.
+  completed 13:45; dead-man `nas-hyperbackup-b2-fresh` re-armed (pass). Old
+  unencrypted `S3 Backup 1` / `TabaskaNAS_1.hbk` **deleted 2026-07-13** — only the
+  encrypted task remains. **Remaining operator step:** save the passphrase (vault
+  `hosts.nas.hyperbackup_password`) to Bitwarden + paper — losing it = the backup
+  is unrecoverable.
 
 - [ ] **Confirm the HA backup key is in Bitwarden** — vault `hosts.ha.backup_password`
   (from queue item 02). Required for HA restore.
