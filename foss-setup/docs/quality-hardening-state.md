@@ -54,6 +54,45 @@ Memory written: [[nas-plex-share-acl]], [[libreseerr-edition-selection]] (extend
 
 ---
 
+## Operational cheatsheet (so a fresh session is self-sufficient)
+
+**Host access (SSH aliases over Tailscale):** `ssh nas` (DSM; sudo needs vault pw `Wbef#90332`), `ssh mini` (Ubuntu; **passwordless sudo**), `ssh rig` (CachyOS), `ssh seedbox` (betty; no root).
+- **HA has NO ssh** — not a tailnet node. Drive it via REST at `http://192.168.10.50:8123`, token in vault `hosts.ha.api_token` (see [[ha-control-plane]]).
+- NAS specifics: `docker` = `/usr/local/bin/docker`; `synoacltool` = `/usr/syno/bin/synoacltool`; **`sqlite3` CLI absent in app containers** → read their DBs with the container's `python3`.
+- NAS ssh prints a post-quantum banner — strip it: `| grep -v 'post-quantum\|store now\|may need\|openssh.com\|WARNING'`.
+
+**Memory:** `MEMORY.md` auto-loads each session; the `[[slug]]` notes referenced here are recalled automatically — but verify a named file/flag still exists before acting on it.
+
+**Check schema** (`foss-setup/verification/checks.d/*.yaml`):
+```yaml
+- id: <slug>
+  name: "<what it proves>"
+  host: mini                 # where cmd runs (mini | url | ...)
+  cmd: >-                    # shell; vars from /etc/verification/env are in scope
+    ... ; echo tok=ok || echo tok=BAD
+  expect: '^tok=ok$'         # regex stdout must match to PASS
+  severity: warn             # warn | crit
+  task_id: verify-06
+  runbook: wiki/runbooks/verification.md
+  enabled: true
+```
+
+**Run a single check exactly as the runner does** (as btabaska on mini, env loaded):
+```bash
+ssh mini 'set -a; . <(sudo cat /etc/verification/env); set +a; <the check cmd>'
+```
+Then **negative-test**: force the underlying outcome broken and confirm the check FAILs (non-zero / non-matching), then restore. A check isn't done until it's negative-tested.
+
+**Deploy:**
+- mini (scp works): `scp f mini:/tmp/ && ssh mini 'sudo install -m 0755 /tmp/f /opt/verification/bin/f'` (yaml: `-m 0644` → `/opt/verification/checks.d/`).
+- NAS (scp/sftp BLOCKED — use base64): `B64=$(base64 < f | tr -d '\n'); ssh nas "echo 'Wbef#90332' | sudo -S -p '' bash -c 'echo $B64 | base64 -d > /path && chmod 0755 /path'"`.
+- env additions: `printf 'KEY=val\n' | ssh mini 'sudo tee -a /etc/verification/env'` (guard first with `sudo grep -q '^KEY='`).
+- ship: `git add … && git commit && git push origin main && ./foss-setup/scripts/docs/publish-deploy.sh`.
+
+**Facts for #6 (movie/TV):** Plex `http://192.168.10.4:32400` (token in env `PLEX_TOKEN`), sections **Movies=1, TV Shows=2, Music=3, YouTube=4**. Sonarr nas:8989, Radarr nas:7878, Lidarr nas:8686, Readarr nas:8787, CWA nas:8083, Navidrome mini:4533. API keys in `/etc/verification/env` (`SONARR_API_KEY`/`RADARR_API_KEY`/`LIDARR_API_KEY`/`PLEX_*`) and vault `arr_api_keys.*`. `media.yaml` currently has **11 checks**.
+
+**Task state:** the live session TaskList does NOT persist across sessions — **this doc's task board is authoritative**; update it here as tasks complete. Recreate session tasks from it if you want a live board.
+
 ## Notes / loose ends
 - MusicSeerr "Maybe I'm Dreaming" (2008) is monitored but has no torrent release — legitimately waiting (Soulseek/RSS), not a phantom; the check ignores it.
 - Naamah trilogy files are metadata-mislabeled by Readarr (separate pre-existing bug, see [[libreseerr-edition-selection]]) — not the apostrophe bug.
