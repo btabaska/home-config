@@ -65,8 +65,15 @@ Keep this in sync when an item's state changes. Last updated: **2026-07-13**.
 - **#18 credential rotations** — deferred until the operator says the build phase is
   done (also: `sudo.nas_password` sits in git history — rotate here).
 - **#19 NAS parity** — backlog, no new spend now.
-- **Plex 503 (open):** analysis-storm draining glacially (1026→730 live as of
-  2026-07-13); operator chose let-it-drain (no restart). Blocks #6/#10 (queue item 01).
+- **Plex 503 — RESOLVED 2026-07-14** (storm drained on its own 1026→3 live; Plex
+  serves 200; unblocked + completed #6/#10, queue item 01).
+- **Movie watchability remediation backlog (2026-07-14):** 7 movies where Radarr
+  imported a junk sample file (watchable=no despite `hasFile=True`): American
+  Hustle, Take Me to the River, Spider-Man: Homecoming, Intruders, Rampage, xXx:
+  Return of Xander Cage, American Reunion — fix = delete sample movieFile +
+  re-search (slow/indexer-dependent). Plus 2 `.iso` (Plex won't play) + 1 wrong-
+  file map (All About My Mother). Guarded above the seam line by `radarr-movies-in-plex`;
+  a remediation pass would re-grab real files. **Ask the operator if/when to run it.**
 
 ---
 

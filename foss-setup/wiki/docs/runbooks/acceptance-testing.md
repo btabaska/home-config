@@ -123,13 +123,14 @@ unguarded.
 | **YouTube** | Pinchflat / MeTube → Plex (§4) | share ACL for `PlexMediaServer`; scan/visibility | ✅ `pinchflat-plex-visible` (coverage) + `plex-youtube-readable` (ACL invariant) |
 | **Book** | Libreseerr → Readarr → CWA | Readarr→ingest copy (path drops); CWA ingest consumption | ✅ `readarr-cwa-copy-drops` + `cwa-ingest-not-stuck` |
 | **Album** | MusicSeerr → Lidarr → Navidrome | request→Lidarr monitor state (phantom); import→library | ⚠️ `musicseerr-phantom-requests` (request seam) + `music-library-dupes`; **gap:** no Lidarr-imported→visible-in-Navidrome outcome check |
-| **Movie / TV** | Seerr → Radarr/Sonarr → Plex (§1/§2) | grab→import queue clog; **import→visible/playable in Plex** | ⚠️ `sonarr-queue-stuck` / `radarr-queue-stuck` / `*-pipeline-health` / `seedbox-mount-listable` (all seams); **gap → task #6:** imported item actually served in Plex (item count ≠ file count, so use a handoff/journey check, not a disk ratio) |
+| **Movie / TV** | Seerr → Radarr/Sonarr → Plex (§1/§2) | grab→import queue clog; **import→visible/playable in Plex** | ✅ `radarr-movies-in-plex` + `sonarr-tv-in-plex` (2026-07-14, #6: external-id `tmdb`/`tvdb` coverage of arr-items-with-files vs Plex — immune to item≠file count; crit @ 0.85 = gross-seam guard) + `sonarr-queue-stuck` / `radarr-queue-stuck` / `*-pipeline-health` / `seedbox-mount-listable` (upstream seams). **Known data-quality gap (not a seam break):** ~12/197 movies unwatchable — 7 sample-file imports, 2 `.iso` disc images, 1 wrong-file map, 2 Plex-mismatch — tracked for remediation, kept above the 0.85 line so it doesn't page. |
 | **Photos** | phone / upload → Immich | upload→library indexing; thumbnail/ML backlog | ❌ liveness-only (`nas-immich`); no outcome check |
 | **Documents** | scan / upload → Paperless | consume folder → OCR → searchable index | ❌ liveness-only (`mini-paperless`); no ingest-consumed / OCR-complete check |
 | **Smart-home** | HA automations → lights / HomePod HomeKit | HA→hub bridge; automation actually fires the device | ⚠️ `ha-hue-lights` (state readable); **gap:** HomePod↔HA HomeKit hub (queue #06) + automation-fired-outcome |
 
 **Reusable primitives** (`verification/bin/`): `plex-flat-library-coverage.py`
-(flat coverage), `musicseerr-phantom-requests.py` (phantom-request signature),
+(flat coverage), `arr-plex-journey.py` (Radarr/Sonarr→Plex external-id coverage,
+tmdb/tvdb), `musicseerr-phantom-requests.py` (phantom-request signature),
 `music-dupes.py` (library collisions). New journeys should add a primitive when
 the logic is non-trivial and reuse these when the shape matches.
 
@@ -173,3 +174,18 @@ A tracker item that touches a user-facing pipeline is **not "done" on liveness**
 negative-tested acceptance check guarding it. Treat every existing green/"done"
 on the *seerr / *arr / media / photos / documents pipelines as *liveness only*
 until re-verified against this bar.
+
+**Audit run 2026-07-14 (once Plex recovered):** the full media journey suite is
+**13/13 green after remediation**. Two real user-facing defects surfaced that
+liveness never showed:
+- **Movie pipeline data quality** — 12/197 movies were `hasFile=True` in Radarr
+  but not watchable in Plex: **7 sample-file imports** (Radarr grabbed the 6–24 MB
+  `sample.*` instead of the movie), **2 `.iso` disc images** (Plex won't play raw
+  ISOs), **1 wrong-file map** (All About My Mother ← a Mamma Mia file), 2 Plex
+  agent-mismatch. Seam is healthy (0.94 ≥ 0.85); this is a **remediation backlog**,
+  not a monitoring gap — see `quality-hardening-state.md`.
+- **MusicSeerr phantom recurred** — a "3OH!3" album sat request-`downloading`
+  while unmonitored+fileless in Lidarr (same class as #3); `musicseerr-phantom-requests`
+  caught it live. **Fixed** (Lidarr monitor + AlbumSearch on album 6037).
+Everything else (Pinchflat→Plex now 1364/1364, Book→CWA, mounts, pipeline health)
+verified green.

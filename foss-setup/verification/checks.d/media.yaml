@@ -218,6 +218,48 @@ checks:
     enabled: true
 
   # ---------------------------------------------------------------------------
+  # MOVIE / TV -> PLEX journey (#6, added 2026-07-14). The *arr queue/health/mount
+  # checks above prove the pipeline's PLUMBING works; these prove the OUTCOME — that
+  # what Radarr/Sonarr actually imported is visible/playable in Plex. Matched by
+  # EXTERNAL ID (tmdb:// for movies, tvdb:// for shows) so it is immune to the
+  # item-vs-file-count problem (a show = many episodes; a raw file ratio is wrong).
+  # Pass = coverage ratio (arr-items-with-files present in Plex) >= min; fails LOUDLY
+  # if either API is down (never a vacuous pass). Mirrors pinchflat-plex-visible:
+  # crit + 0.85 catches a GROSS seam break (whole movies/TV library invisible via an
+  # ACL/path/dead-scan failure), NOT per-title data quality.
+  # KNOWN BASELINE 2026-07-14: movies ~0.94 (12/197 unwatchable — 7 sample-file
+  # imports, 2 .iso disc images, 1 wrong-file map, 2 Plex-mismatch), TV ~0.96. That
+  # residual gap is a data-quality remediation backlog tracked in the done-audit
+  # (quality-hardening-state.md), deliberately ABOVE this 0.85 seam-break line so it
+  # doesn't page hourly. Tighten min-ratio once the sample-imports are re-grabbed.
+  # Recent imports (< 6h, by Radarr movieFile.dateAdded) are excluded for Plex scan lag.
+  - id: radarr-movies-in-plex
+    name: "radarr: imported movies are actually served in Plex (tmdb-id coverage)"
+    host: mini
+    cmd: >-
+      python3 /opt/verification/bin/arr-plex-journey.py --kind radarr
+      --arr-url http://192.168.10.4:7878 --arr-key "$RADARR_API_KEY"
+      --plex-url "$PLEX_URL" --plex-token "$PLEX_TOKEN" --section 1 --min-ratio 0.85
+    expect: '^COVERAGE_OK'
+    severity: crit
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  - id: sonarr-tv-in-plex
+    name: "sonarr: imported series are actually served in Plex (tvdb-id coverage)"
+    host: mini
+    cmd: >-
+      python3 /opt/verification/bin/arr-plex-journey.py --kind sonarr
+      --arr-url http://192.168.10.4:8989 --arr-key "$SONARR_API_KEY"
+      --plex-url "$PLEX_URL" --plex-token "$PLEX_TOKEN" --section 2 --min-ratio 0.85
+    expect: '^COVERAGE_OK'
+    severity: crit
+    task_id: verify-06
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
+  # ---------------------------------------------------------------------------
   # MUSICSEERR phantom "downloading" requests (added 2026-07-13). 3 Owl City
   # albums sat "Downloading 0%" for 2 days: MusicSeerr's batch add left them
   # monitored=False in Lidarr, so Lidarr never grabbed them while MusicSeerr's
