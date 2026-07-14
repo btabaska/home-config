@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**157/234 done** · **50 open** · **18 deferred** · 11 retired.
+**158/234 done** · **49 open** · **18 deferred** · 11 retired.
 
 ---
 
@@ -75,7 +75,6 @@
 - [ ] **`ha-32`** HA ops glue: SSH add-on, git-backed /config, nightly backups verify, checks.d/ha.yaml, Homepage _(est 1 h)_
 
 ### wiki
-- [ ] **`wiki-05`** Wiki-in-the-loop — every change updates the wiki in the same commit _(est 30 min)_
 - [ ] **`wiki-06`** Build out the wiki as the master source of truth (document EVERYTHING in the repo) _(est multi-wave / ongoing)_
 
 ---

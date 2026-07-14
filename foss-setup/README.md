@@ -79,6 +79,26 @@ Regenerate after any change: `gen-todo.py`, `gen-roadmap-pages.py`,
 `build-wiki.sh`. (The old `docs/index.html` HTML tracker was retired 2026-07-14;
 its data was extracted to `docs/tasks.json` + `docs/tracker-meta.json`.)
 
+**The same-commit rule (wiki-05):** any change to a *source* that feeds a
+generated page — `docs/tasks.json`/`progress.json` (roadmap + todo),
+`verification/checks.d/*.yaml` (checks reference), the
+`configs/docker-stack/` service catalog + enrichment (service pages), or a
+**script** under `scripts/` (script man-pages) — must regenerate the affected
+page **in the same commit**. Which generator maps to what:
+
+| Change a… | Regenerate | Which pages |
+|---|---|---|
+| task (tasks.json / progress.json) | `gen-todo.py` + `gen-roadmap-pages.py` | `todo.md`, `wiki/…/roadmap/` |
+| verification check (`checks.d/*.yaml`) | `gen-checks-pages.py` | `wiki/…/reference/checks/` |
+| service (catalog / enrichment) | `gen-wiki-services.py` | `wiki/…/services/` |
+| script (`scripts/**`) | `gen-script-pages.py` | `wiki/…/reference/scripts/` |
+
+Enforced by the `wiki-drift` verification check (`checks.d/git-hygiene.yaml` →
+`scripts/wiki/wiki-drift-check.sh`): it re-runs every generator against the
+current committed HEAD and fails if any generated page would change — i.e. a
+source was committed without its page. When in doubt, run all the generators +
+`build-wiki.sh`; regeneration is deterministic, so a no-op change is free.
+
 ---
 
 ## Phased rollout

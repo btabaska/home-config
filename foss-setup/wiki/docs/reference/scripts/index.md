@@ -16,5 +16,6 @@ Man-pages for every operational script in `foss-setup/scripts/`, generated from 
 | **Reading stack** | 1 | [open](reading/index.md) |
 | **Host setup** | 4 | [open](setup/index.md) |
 | **Uptime Kuma** | 3 | [open](uptime-kuma/index.md) |
+| **wiki** | 1 | [open](wiki/index.md) |
 
-_Total: 61 scripts across 12 categories._
+_Total: 62 scripts across 13 categories._

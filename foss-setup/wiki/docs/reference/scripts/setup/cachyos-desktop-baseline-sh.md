@@ -13,7 +13,9 @@
  What it sets up:
    * A browser (default: Firefox from the official repo). Optionally LibreWolf
      (hardened) and/or Zen (Firefox-based, polished) from the AUR.
-   * LibreOffice 25.8 ("still" maintenance branch) for offline office work.
+   * LibreOffice (default: libreoffice-fresh, the 26.2 current branch) for
+     offline office work. Set LIBREOFFICE_PKG=libreoffice-still for the prior
+     (more conservative) maintenance branch, or =none to skip.
 
  Setting Kagi as the default search engine is a per-profile *browser* action and
  cannot be reliably scripted — it's documented at the end and printed on finish.

@@ -1,6 +1,6 @@
 # Checks — git-hygiene
 
-`foss-setup/verification/checks.d/git-hygiene.yaml` — 3 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/git-hygiene.yaml` — 4 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `git-stacks-clean`
 
@@ -33,6 +33,17 @@ sudo git -C /opt/foss-setup status --porcelain | wc -l
 
 ```bash
 sudo etckeeper unclean
+```
+
+## `wiki-drift`
+
+wiki generated pages in sync with sources (same-commit rule)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `wiki-05` · **enabled:** True
+- **expects:** `0`
+
+```bash
+D=/var/lib/verification/wiki-drift-repo; { [ -d "$D/.git" ] || git clone -q forgejo:home/homelab "$D"; } && git -C "$D" fetch -q origin main && git -C "$D" reset --hard -q FETCH_HEAD && git -C "$D" worktree prune 2>/dev/null && bash "$D/scripts/wiki/wiki-drift-check.sh"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

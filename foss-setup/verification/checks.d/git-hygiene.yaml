@@ -31,3 +31,27 @@ checks:
     task_id: glue-01
     runbook: wiki/runbooks/git-hygiene.md
     enabled: true
+
+  # wiki-05 "same-commit rule": any change to a source that feeds a generated wiki
+  # page (tasks/progress JSON, checks.d/*.yaml, the docker-stack service catalog +
+  # enrichment, or a script) must regenerate that page IN THE SAME COMMIT. This
+  # proves it against the CURRENT forgejo HEAD: a cache clone (forgejo is on this
+  # host, so fetch is local + fast) is fast-forwarded to HEAD, then
+  # wiki-drift-check.sh checks HEAD out into a throwaway worktree, re-runs every
+  # page generator, and diffs. exit 1 (=> check fail) means a source changed but its
+  # generated page did not. Heavier than a probe (clone/regenerate) — daily sweep.
+  - id: wiki-drift
+    name: "wiki generated pages in sync with sources (same-commit rule)"
+    host: mini
+    cmd: >-
+      D=/var/lib/verification/wiki-drift-repo;
+      { [ -d "$D/.git" ] || git clone -q forgejo:home/homelab "$D"; } &&
+      git -C "$D" fetch -q origin main &&
+      git -C "$D" reset --hard -q FETCH_HEAD &&
+      git -C "$D" worktree prune 2>/dev/null &&
+      bash "$D/scripts/wiki/wiki-drift-check.sh"
+    expect_exit: 0
+    severity: warn
+    task_id: wiki-05
+    runbook: wiki/runbooks/git-hygiene.md
+    enabled: true

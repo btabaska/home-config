@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **95 checks across 12 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **96 checks across 12 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -8,7 +8,7 @@ Every acceptance/regression check the fleet runs — **95 checks across 12 domai
 | [backups](backups.md) | 5 | 3 | 2 |
 | [dns](dns.md) | 5 | 4 | 1 |
 | [docker-fleet](docker-fleet.md) | 9 | 0 | 9 |
-| [git-hygiene](git-hygiene.md) | 3 | 0 | 3 |
+| [git-hygiene](git-hygiene.md) | 4 | 0 | 4 |
 | [ha](ha.md) | 5 | 2 | 3 |
 | [media](media.md) | 13 | 6 | 7 |
 | [mini-services](mini-services.md) | 18 | 6 | 12 |
@@ -17,4 +17,4 @@ Every acceptance/regression check the fleet runs — **95 checks across 12 domai
 | [rig](rig.md) | 8 | 0 | 8 |
 | [system](system.md) | 8 | 4 | 4 |
 
-_Total: 95 checks._
+_Total: 96 checks._
