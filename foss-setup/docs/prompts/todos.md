@@ -60,6 +60,21 @@ Keep this in sync when an item's state changes. Last updated: **2026-07-13**.
   reconciled (closed 5 drift, retired 7, deferred 4, kept the rest); ai-01 expanded
   (above).
 
+## 🗺️ Roadmap walk — DONE 2026-07-14 (all 66 remaining tasks reviewed)
+
+Task-by-task walk with the operator: **156/223 done** now (was 146). Closed 10
+already-done, retired 1 (dns-05), deferred 14, kept 41 as active roadmap. Full
+disposition + scope notes in `progress.json` `_meta`. **Hardware to buy is
+compiled in [`../hardware-shopping-list.md`](../hardware-shopping-list.md)** —
+Phase 1 is just a ~$20 Zigbee dongle (`ha-12`) which unblocks the sensor wave.
+
+**Quick wins I can execute autonomously whenever you want (kept, low-effort):**
+- `glue-02` — install LibreOffice on the rig (one command).
+- `ebook-06` — run the end-to-end ebook round-trip acceptance test.
+- `wiki-05` — build the wiki-drift check + same-commit rule (fights doc-drift).
+- `sec-03` — check/enable B2 Object Lock on the backup buckets (narrowed scope).
+- `game-13` — set Ollama `keep_alive=0` on the rig (GPU-coexistence; feeds local-AI).
+
 ## 🗓️ Deferred / backlog (do not auto-start)
 
 - **#18 credential rotations** — deferred until the operator says the build phase is
