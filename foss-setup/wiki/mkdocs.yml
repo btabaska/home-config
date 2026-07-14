@@ -127,6 +127,38 @@ nav:
       - Secrets policy: operations/secrets.md
       - Tracker & AI sessions: operations/tracker.md
   - Hardware to buy: reference/hardware.md
+  - Reference:
+      - Network:
+          - Overview: reference/network/index.md
+          - Device onboarding & VLAN migration: reference/network/device-onboarding.md
+          - DNS resilience (fail-open): reference/network/dns-resilience.md
+          - Firewall policy checklist: reference/network/firewall-checklist.md
+          - Firewall policy order: reference/network/firewall-order.md
+          - Firewall policy walkthrough: reference/network/firewall-walkthrough.md
+          - mDNS / multicast checklist: reference/network/mdns-multicast.md
+          - SSH & maintenance access: reference/network/ssh-access.md
+          - VLAN / zone / firewall plan: reference/network/vlan-zone-firewall.md
+      - Home Assistant:
+          - Overview: reference/home-assistant/index.md
+          - HA backup checklist: reference/home-assistant/backup-checklist.md
+          - Midea local (midea_ac_lan) setup: reference/home-assistant/midea-local.md
+          - Nest SDM OAuth checklist: reference/home-assistant/nest-sdm-oauth.md
+      - Gaming:
+          - Overview: reference/gaming/index.md
+          - Minecraft crossplay finish: reference/gaming/minecraft-crossplay.md
+          - Game server guide: reference/gaming/server-guide.md
+      - NAS:
+          - Overview: reference/nas/index.md
+          - NAS backup architecture: reference/nas/backup-architecture.md
+          - NAS volume schema: reference/nas/volume-schema.md
+  - Guides:
+      - Overview: guides/index.md
+      - Apollo autostart notes: guides/apollo-autostart.md
+      - chezmoi dotfiles quickstart: guides/chezmoi.md
+      - immich-go import: guides/immich-go.md
+      - iPod sync (CachyOS): guides/ipod-sync.md
+      - KOReader + CWA + Wallabag wiring: guides/koreader-cwa-wallabag.md
+      - LinuxGSM quickstart: guides/linuxgsm.md
   - Verification checks:
       # BEGIN GENERATED CHECKS NAV (managed by scripts/docs/gen-checks-pages.py)
       - Overview: reference/checks/index.md

@@ -1,0 +1,95 @@
+# mDNS / multicast checklist
+
+> The one-stop checklist for making `*.local` service discovery (AirPlay, Cast, HomeKit, printers) work across UniFi VLANs — and knowing when NOT to.
+_Source: `foss-setup/configs/network/mdns-multicast-checklist.md` · migrated + validated 2026-07-14._
+
+mDNS (`*.local` service discovery: AirPlay, Chromecast/Google Cast, HomeKit, Matter,
+AirPrint, Sonos, Moonlight/Apollo) is **link-local** — it does not cross VLANs on its
+own. The UniFi Gateway **mDNS Proxy** rebroadcasts it between VLANs.
+
+## The one rule that matters for gaming
+
+- **Keep Apollo (host) and Moonlight (clients) on the SAME network (Trusted).**
+  Same subnet → mDNS just works, no proxy, no router hop, lowest latency. This is the
+  whole reason gaming/streaming is NOT its own VLAN.
+
+## When you DO need the mDNS proxy (cross-VLAN)
+
+Example: phone on **Trusted** needs to cast to / control a Chromecast, AirPlay
+speaker, HomeKit hub, or Sonos on **IoT**.
+
+- [ ] **Enable Gateway mDNS Proxy on BOTH VLANs** (the source *and* the destination).
+      Enabling only one side is the most common failure. (Settings → Networks → select
+      the VLAN → toggle mDNS / mDNS Proxy.)
+- [ ] Mode:
+  - **Auto** = rebroadcast common services across all VLANs (simplest).
+  - **Custom** = pick exact services (AirPlay, Google Cast, HomeKit, printers)
+    and the VLAN scope — tighter, recommended once it works. **Do NOT add Matter
+    here** (see the Matter caveat below).
+  - **Off** = no rebroadcast.
+- [ ] Add the matching **firewall policy** for the actual unicast control traffic
+      (the proxy handles *discovery* only — control still needs an allow rule).
+      See `firewall-policy-order.md` rule #4 (mDNS reflect Trusted↔IoT, control ports).
+- [ ] Custom service strings use the form `_service._protocol.local`. Add the ones
+      your devices actually use, e.g.:
+  - `_airplay._tcp.local`, `_raop._tcp.local` — AirPlay / AirPlay audio
+  - `_googlecast._tcp.local` — Chromecast / Google Cast
+  - `_hap._tcp.local` — HomeKit (HA HomeKit Bridge; live on HA `2026.6.4`)
+  - `_esphome._tcp.local` — **ESPHome devices**, so HA on Trusted discovers them on
+        the IoT VLAN. (No ESPHome device is deployed yet — the Midea SLWF-01Pro dongle
+        is roadmap item `ha-08`, currently deferred; add this string only once such a
+        device exists.)
+  - `_ipp._tcp.local`, `_ipps._tcp.local`, `_pdl-datastream._tcp.local` — printers
+  - **Matter is intentionally absent here — do NOT add `_matter._tcp.local` or
+        `_matterc._udp.local`.** See the Matter caveat below.
+- [ ] Do **not** enable mDNS proxy on mgmt / Work / Guest VLANs (no benefit, more noise).
+
+## ⚠️ Matter caveat — do NOT forward Matter via the mDNS proxy
+
+Matter is **actively in use** on this network (HA runs the `matter` + `matter_server`
+integrations and a `thread` border router), so this caveat is load-bearing, not
+hypothetical.
+
+- [ ] **Never add Matter service strings (`_matter._tcp.local`,
+      `_matterc._udp.local`) to the mDNS proxy.** Official Matter guidance is that
+      mDNS *reflectors/forwarders* corrupt Matter/Thread commissioning and operational
+      discovery (they rewrite/relay records that Matter expects untouched), causing
+      intermittent commissioning failures and dropped devices.
+- [ ] **Keep Matter devices on the same VLAN as Home Assistant** (its controller).
+      If a Matter device and HA must be on different VLANs, use HA's native Matter
+      server / a Thread border router reachable on HA's VLAN — NOT the gateway mDNS
+      proxy. Plan the topology so Matter never has to cross a reflected boundary.
+- [ ] Mind the per-gateway limit on how many networks can have mDNS enabled (UDM/UDW-class
+      gateways allow many; only enable where needed to keep forwarded traffic down).
+
+## IGMP snooping
+
+- [ ] **Turn IGMP Snooping OFF** (Settings → Networks → the VLAN, or switch settings).
+      UniFi's IGMP-snooping implementation is **aggressive and drops the discovery
+      packets that Apple TVs / HomePods / Matter devices depend on** — the single most
+      common cause of "casting/HomeKit stopped working after segmentation." IGMP snooping
+      does NOT move multicast across VLANs (that's the mDNS proxy's job); it only limits
+      multicast flooding *within* a VLAN. On a home-scale network that flooding is
+      negligible, so disabling it is the right tradeoff for reliable discovery.
+- [ ] Only re-enable it on a specific VLAN if you have **many** chattering multicast
+      devices *and* you've confirmed discovery still works with it on.
+
+## Multicast filtering (WiFi)
+
+- APs forward all multicast from wired→wireless clients unless **Multicast Filtering**
+  is enabled in WiFi settings. If wireless cast/AirPlay is flaky, check this toggle.
+
+## Verify
+
+- [ ] On a Trusted phone, open the cast/AirPlay picker → the IoT device appears.
+- [ ] Casting/playback actually starts (confirms the firewall control rule, not just
+      discovery).
+- [ ] Moonlight on a Trusted client auto-discovers the Apollo host (same subnet).
+
+## Authoritative docs
+
+- UniFi Gateway mDNS Proxy — https://help.ui.com/hc/en-us/articles/12648701398807-UniFi-Gateway-Multicast-DNS-mDNS-Proxy
+- Sonos across VLANs (mDNS proxy + scoped rules, practitioner write-up) — https://existentia.net/blog/sonos-across-vlans-udm-pro/
+
+---
+[← Network reference](index.md)
