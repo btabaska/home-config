@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**156/234 done** · **51 open** · **18 deferred** · 11 retired.
+**157/234 done** · **50 open** · **18 deferred** · 11 retired.
 
 ---
 
@@ -24,7 +24,6 @@
 - [ ] **`ai-01`** (Optional) Local AI extras: ComfyUI, a coding assistant, and Open WebUI RAG _(est 1-2 hrs)_
 - [ ] **`game-09`** Rig idle-power tuning (24/7 baseline) _(est 20-30 min)_
 - [ ] **`game-12`** Save-game sync with Ludusavi + Syncthing _(est 30 min)_
-- [ ] **`game-13`** GPU contention policy (one 3090 Ti shared by stream/servers/AI) _(est 15 min)_
 - [ ] **`retro-03`** Save/state sync mesh (Syncthing) _(est 60 min)_ — ⛔ gate: device pairing approvals
 - [ ] **`retro-04`** SteamDeck: EmuDeck/RetroDeck wiring _(est 45 min)_ — ⛔ gate: on-device steps
 - [ ] **`retro-05`** Rig: emulation frontend + RomM integration _(est 60 min)_

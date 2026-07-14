@@ -50,6 +50,27 @@ checks:
     runbook: wiki/runbooks/rig.md
     enabled: true    # rig is 24/7 — failure here is an incident
 
+  # game-13 GPU-contention policy: the single 3090 Ti is shared by the Apollo
+  # stream, the game servers, and Ollama inference. OLLAMA_KEEP_ALIVE=0 makes
+  # each model unload immediately after its request so VRAM frees between
+  # requests (validated 2026-07-14: llama3.2:3b loaded to ~5 GB during a request,
+  # back to the 724 MiB baseline within 1s). This SSH check guards against the
+  # setting silently reverting — e.g. re-running an old 01-ollama-tune.sh, or a
+  # hand-edit without a daemon-reload (systemctl show reflects the merged drop-in
+  # config, so it also catches "edited the file but forgot to reload"). Source of
+  # truth: local-ai-tooling scripts/01-ollama-tune.sh (separate repo, NOT this
+  # one). host: rig => the mini runner SSHes to the rig (mini->rig SSH confirmed
+  # working 2026-07-09); the regex rejects any nonzero value incl. 0m/0s/-1.
+  - id: rig-ollama-keepalive
+    name: "ollama KEEP_ALIVE=0 on rig (VRAM frees after each request — GPU contention)"
+    host: rig
+    cmd: systemctl show ollama -p Environment
+    expect: 'OLLAMA_KEEP_ALIVE=0(?![0-9a-zA-Z])'
+    severity: warn
+    task_id: game-13
+    runbook: wiki/runbooks/rig.md
+    enabled: true    # rig is 24/7 — a reverted keep-alive contends VRAM with gaming/streaming
+
   # Public game paths through the playit edge (dedicated IP). Real protocol
   # pings, NOT port probes: when the agent's claim leg wedges (seen live
   # 2026-07-09, TCP variant of the known UDP claim gotcha), the agent logs

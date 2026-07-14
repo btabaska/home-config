@@ -17,7 +17,7 @@
 | `game-10` | GPU power-limit + (optional) undervolt the 3090 Ti, persistent across reboot | ✅ done | 30-45 min |
 | `game-11` | Headless display for Apollo (HDMI dummy plug + display-policy service) | ✅ done | 20-45 min |
 | `game-12` | Save-game sync with Ludusavi + Syncthing | ⬜ open | 30 min |
-| `game-13` | GPU contention policy (one 3090 Ti shared by stream/servers/AI) | ⬜ open | 15 min |
+| `game-13` | GPU contention policy (one 3090 Ti shared by stream/servers/AI) | ✅ done | 15 min |
 | `game-14` | Game launcher (Heroic/Lutris) + RomM retro library | ⏸️ deferred | 45 min |
 | `retro-01` | NAS ROM library layout | ✅ done | 30 min |
 | `retro-02` | RomM — self-hosted ROM manager | ✅ done | 60-90 min |
