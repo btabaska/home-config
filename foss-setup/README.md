@@ -64,13 +64,20 @@ foss-setup/
 
 ---
 
-## How to use the HTML guide (`docs/`)
+## Source of truth
 
-`docs/` holds a single self-contained HTML build of the full *Going Analogue*
-guide — open `docs/index.html` in any browser, no server needed. It's the
-human-readable narrative (the *why* and the decisions); this repo's `configs/`
-and `scripts/` are the machine-actionable *how* it points at. Read the relevant
-section in the HTML, then run the matching script / bring up the matching stack.
+The **wiki is the single source of truth** — <https://wiki.tabaska.us> (MkDocs,
+source in `foss-setup/wiki/`): every service, setting, config, script, check,
+runbook, and the roadmap. The **todo list** lives in two generated views from the
+same data (`docs/tasks.json` definitions + `docs/progress.json` status):
+
+- **`todo.md`** (repo root) — the working list of remaining tasks.
+- **Wiki → Roadmap** — the full browsable tracker.
+
+Regenerate after any change: `gen-todo.py`, `gen-roadmap-pages.py`,
+`gen-script-pages.py`, `gen-checks-pages.py`, `gen-wiki-services.py`, then
+`build-wiki.sh`. (The old `docs/index.html` HTML tracker was retired 2026-07-14;
+its data was extracted to `docs/tasks.json` + `docs/tracker-meta.json`.)
 
 ---
 

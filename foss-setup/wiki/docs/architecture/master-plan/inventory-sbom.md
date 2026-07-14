@@ -1,6 +1,6 @@
 # 8. Inventory, SBOMs & rebuildable state
 
-By the end of this build you run ~25 services across 4-5 boxes (NAS, Mac mini, rig, HA, Dream Wall) plus an off-site seedbox. [Section 6](backup.md) saves your **data**; [Section 7](set-and-forget.md)'s config-as-code saves your **compose files**. This section closes the last two gaps:
+By the end of this build you run ~25 services across 4-5 boxes (NAS, Mac mini, rig, HA, Dream Wall) plus an off-site seedbox. Section 6 (backup) saves your **data**; Section 7's config-as-code saves your **compose files**. This section closes the last two gaps:
 
 1. A live inventory that answers "what's installed, on which host, what version, and is any of it now vulnerable?"
 2. Complete state-in-Git — `/etc`, dotfiles, cron/timers, app configs, device exports — so a wiped box is a `git clone` + restore away.
@@ -51,10 +51,10 @@ homelab/
 - **`/etc` → etckeeper.** Puts `/etc` in Git, **auto-commits on every apt/pacman operation**, preserves file **metadata** (permissions that matter for `/etc/shadow`). Add a **`systemd.path` unit watching `/etc`** for near-real-time commits, set **`PUSH_REMOTE`** to the control repo. **Warning: `/etc` contains real secrets — this remote MUST be private and ideally encrypted.** Works on CachyOS (pacman hooks) and Ubuntu (apt hooks).
 - **Dotfiles (`~`) → chezmoi.** Track `~/.config`, shell/theme, editor config, with **templating + built-in `age` encryption** and the `~/.zshrc.local` override pattern. A rig rebuild becomes `chezmoi init --apply <repo>`. Keep the files next to the compose files in the same control repo.
 - **Cron + systemd timers.** etckeeper captures `/etc/cron.d`, `/etc/cron.*`, `/etc/systemd/system`; the nightly job also exports **per-user crontabs**, `systemctl list-timers`, and `~/.config/systemd/user/`.
-- **Home Assistant.** Its own full backups go to the NAS ([Section 3](smart-home.md)) — also put `/config` under Git via the Git pull/push add-on or a commit job. (And the **backup encryption key** goes in the password manager.)
+- **Home Assistant.** Its own full backups go to the NAS (Section 3, smart-home) — also put `/config` under Git via the Git pull/push add-on or a commit job. (And the **backup encryption key** goes in the password manager.)
 - **UniFi Dream Wall.** Pull the **`.unf`** export into `network/` on a schedule.
 - **DS920+ / DSM.** DSM is locked down — don't fight it with etckeeper. Use **Control Panel → Update & Restore → Configuration Backup** on a schedule + Hyper Backup's config export + the installed-package list.
-- **Docker volumes / databases.** [Section 6](backup.md) owns the **data**; the control repo owns the **recipe**. Together: `git clone` + `docker compose up` + restore the volume = the service is back.
+- **Docker volumes / databases.** Section 6 (backup) owns the **data**; the control repo owns the **recipe**. Together: `git clone` + `docker compose up` + restore the volume = the service is back.
 
 ## Secrets, the right way
 
@@ -63,12 +63,12 @@ homelab/
 1. The control-repo remote is **private** (self-hosted Forgejo on the NAS/Mac mini, or private GitHub).
 2. Encrypt the sensitive bits **at rest** with **SOPS + age** (or git-crypt); chezmoi has native `age` encryption for the dotfile half.
 
-Keep the **age/SOPS key in your password manager + a printed copy** — the same discipline [Section 6](backup.md) demands. (A backup you can't decrypt after the fire is not a backup.)
+Keep the **age/SOPS key in your password manager + a printed copy** — the same discipline Section 6 (backup) demands. (A backup you can't decrypt after the fire is not a backup.)
 
 ## The "at a glance" dashboard
 
 - ~~Dependency-Track *is* the software-inventory dashboard.~~ **Retired** — see banner.
-- **Homepage** ([Section 7](set-and-forget.md)) rolls up **Beszel** (health) + **Uptime Kuma** (uptime). *(The DT risk-widget is gone.)*
+- **Homepage** (Section 7, set-and-forget) rolls up **Beszel** (health) + **Uptime Kuma** (uptime). *(The DT risk-widget is gone.)*
 - **`inventory.md`**, auto-generated from the plain manifests, makes the repo itself a readable "what / where / version / status" table — useful precisely when the dashboards are down.
 - **Alerts via ntfy:** the nightly manifest job pings ntfy on failure; **Diun** covers "a new image is available."
 

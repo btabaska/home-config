@@ -44,7 +44,7 @@ Hue/Nest/Midea are WiFi/cloud-ish appliances. The cheap **local** sensors that d
 
 **HA's HomeKit Bridge** (built-in) exposes HA entities to **Apple Home**, so everyone keeps Siri and the Home app while HA does the real work. **Live:** the `HASS Bridge:21064` config entry is loaded (`ha-16` done). (`home-assistant-matter-hub` is the Matter alternative.) Expose a curated set of entities, not everything.
 
-> **Open follow-up (`#4`):** HomePod ↔ HA HomeKit hub pairing — the gate is which VLAN the HomePods are on + mDNS-proxy/IGMP state (operator UI) + an on-device Apple Home add-hub check. See [Network](network.md).
+> **Open follow-up (`#4`):** HomePod ↔ HA HomeKit hub pairing — the gate is which VLAN the HomePods are on + mDNS-proxy/IGMP state (operator UI) + an on-device Apple Home add-hub check. See Section 1, network.
 
 ## Tie-ins worth doing
 
@@ -53,7 +53,7 @@ Hue/Nest/Midea are WiFi/cloud-ish appliances. The cheap **local** sensors that d
 - **Node-RED — visual automations:** install the HA add-on once automations outgrow the built-in editor. Flows live in `/config` and ride the HA backup.
 - **HA backups — concrete method + live status:** Settings → System → **Backups**. **✅ Live (queue item 02, `ha-11`):** a dedicated least-priv Synology SMB user `ha-backup` + Supervisor CIFS mount `nas_backups` → `//192.168.10.4/backups` (agent `hassio.nas_backups`); **daily 04:45 automatic ENCRYPTED backups to both the local eMMC agent and the NAS, retention 3**. Validated a triggered backup landed encrypted on the NAS as a listable 7-member archive (a real restore path). Key in vault `hosts.ha.backup_password` (+ Bitwarden). Also separately back up the Midea `.json` token files.
 - **Energy dashboard:** with a smart plug / whole-home monitor, HA tracks per-device power — feeds the 24/7 power question in Power.
-- HA on Trusted reaches Hue + Midea on IoT via the Trusted → IoT allow rule; no extra config beyond the mDNS settings in [Network](network.md).
+- HA on Trusted reaches Hue + Midea on IoT via the Trusted → IoT allow rule; no extra config beyond the mDNS settings in Section 1 (network).
 
 ---
 [← index](index.md)

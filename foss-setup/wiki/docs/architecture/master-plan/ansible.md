@@ -1,8 +1,8 @@
 # 9. Fleet automation with Ansible (make the runbooks executable)
 
-[Sections 7](set-and-forget.md) and [8](inventory-sbom.md) get you *rebuildable* — config-as-code, manifests, chezmoi, etckeeper, per-host `restore.md`. But most of that is **descriptive** or **hand-run**. Ansible turns it **executable and self-converging**: one idempotent definition of every fully-owned host, applied the same way, on a schedule, with drift you can preview.
+Sections 7 (set-and-forget) and 8 (inventory) get you *rebuildable* — config-as-code, manifests, chezmoi, etckeeper, per-host `restore.md`. But most of that is **descriptive** or **hand-run**. Ansible turns it **executable and self-converging**: one idempotent definition of every fully-owned host, applied the same way, on a schedule, with drift you can preview.
 
-The discipline: an Ansible run is **idempotent**, and `--check --diff` *shows* exactly what would change before anything does — the same "no blind auto-updates" philosophy as [Section 7](set-and-forget.md), applied to host config.
+The discipline: an Ansible run is **idempotent**, and `--check --diff` *shows* exactly what would change before anything does — the same "no blind auto-updates" philosophy as Section 7 (set-and-forget), applied to host config.
 
 > **Live status:** Ansible convergence is deployed and green on the mini + rig — `ansible-pull` converges `ok=30 failed=0`, fleet pings green (`glue-08` re-closed 2026-07-09). Note that after the SBOM retirement the **`sbom` role was removed from `site.yml`** (won't redeploy the abandoned pipeline), and `fix-19` restored `default-address-pools` in `daemon.json` + the docker role.
 
@@ -36,7 +36,7 @@ Either way Ansible owns the host *underneath* the containers; only one tool owns
 
 ## The control node and where it all lives
 
-Ansible lives **inside the same Forgejo control repo** from [Section 8](inventory-sbom.md) — a `git clone` of `homelab/` gives both the state *and* the engine. Run it from the **always-on Mac mini** (+ your laptop). Layout:
+Ansible lives **inside the same Forgejo control repo** from Section 8 (inventory) — a `git clone` of `homelab/` gives both the state *and* the engine. Run it from the **always-on Mac mini** (+ your laptop). Layout:
 
 ```
 homelab/
@@ -84,7 +84,7 @@ cachyos
 macmini
 ```
 
-It reuses the **`~/.ssh/config` aliases** from [Section 7](set-and-forget.md) (each `ansible_host` resolves over **Tailscale MagicDNS + key-less Tailscale SSH**) — no new access layer. `fleet` is what `site.yml` converges; `docker_hosts` gates the `docker` role.
+It reuses the **`~/.ssh/config` aliases** from Section 7 (set-and-forget) (each `ansible_host` resolves over **Tailscale MagicDNS + key-less Tailscale SSH**) — no new access layer. `fleet` is what `site.yml` converges; `docker_hosts` gates the `docker` role.
 
 > **Live caveat:** the **rig had no Ansible installed at all** at last DR probe (its pull path is unvalidatable there) — a known gap in the DR-reproducibility work (`#13`, blocked). The mini pull path converges green.
 
@@ -95,7 +95,7 @@ Use **both**:
 - **`ansible-pull` on a systemd timer per host = the set-and-forget default.** Each box periodically clones the control repo and **converges itself**. No central scheduler, keeps working if the mini is down, naturally corrects drift.
 - **Push (`ansible-playbook` from the mini/laptop) = orchestration that needs ordering.** Rolling patches with `serial: 1`, reboot + health gate, coordinated multi-host redeploys.
 
-The safe default (mirrors [Section 7](set-and-forget.md)'s "no blind updates"): run pull in **`--check` (report-only) for *config*** — ping **ntfy** on drift, wait for your deliberate push — while **auto-applying only OS security patches** (same scope as `unattended-upgrades`).
+The safe default (mirrors Section 7's "no blind updates"): run pull in **`--check` (report-only) for *config*** — ping **ntfy** on drift, wait for your deliberate push — while **auto-applying only OS security patches** (same scope as `unattended-upgrades`).
 
 ## Secrets — reuse SOPS + age, don't add ansible-vault
 
@@ -133,7 +133,7 @@ Keep it honest with cheap CI in Forgejo Actions: **`ansible-lint`** and **`ansib
 
 ## Bottom line
 
-Ansible doesn't replace anything in [Sections 7](set-and-forget.md)-[8](inventory-sbom.md) — it **operationalizes** them. chezmoi owns `~`, etckeeper audits `/etc`, Dockge runs containers, SOPS+age holds secrets, and the NAS/HA/UniFi keep native backups. Ansible is the idempotent engine that installs and wires all of it the same way on the rig and the Mac mini, on a timer, with previewable drift.
+Ansible doesn't replace anything in Sections 7-8 — it **operationalizes** them. chezmoi owns `~`, etckeeper audits `/etc`, Dockge runs containers, SOPS+age holds secrets, and the NAS/HA/UniFi keep native backups. Ansible is the idempotent engine that installs and wires all of it the same way on the rig and the Mac mini, on a timer, with previewable drift.
 
 ---
 [← index](index.md)

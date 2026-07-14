@@ -58,7 +58,7 @@ HA, Chromecast, AirPlay, Matter, and Sonos all rely on mDNS/multicast, which doe
 - **Encrypt the DNS that leaves the house:** point AdGuard at **Unbound** (local recursive resolver + DNSSEC), or at minimum DoT/DoH to Quad9/Cloudflare.
 - **Fail-open DNS chain:** DHCP lists **three** resolvers — primary AdGuard on the mini, **secondary AdGuard on the NAS** (independent DoT upstream), and **tertiary UniFi gateway** for bare internet when both filter boxes are down. A single-DNS deployment is a house-wide outage when the mini reboots (incident 2026-07-03). See `configs/network/dns-resilience-plan.md`.
   - **⚠️ Corrected:** the plan's *anti-bypass* step (NAT-redirect outbound :53 + block DoH) was **retired** (`dns-05`, 2026-07-14) — the NAT :53 redirect kills the gateway fallback, and the operator prefers AdGuard-down clients bypass to the gateway over a house-wide DNS blackhole (**fail-open by design**).
-- Once Hue is fully local in HA, you can block the Hue bridge from the internet. (Nest needs Google's cloud; Midea can be made fully local with an ESPHome dongle — see [Smart home](smart-home.md).)
+- Once Hue is fully local in HA, you can block the Hue bridge from the internet. (Nest needs Google's cloud; Midea can be made fully local with an ESPHome dongle — see Section 3, smart-home.)
 - Use WPA3 where supported; map one SSID each to Trusted, IoT, Guest, and Work.
 
 ## Speed

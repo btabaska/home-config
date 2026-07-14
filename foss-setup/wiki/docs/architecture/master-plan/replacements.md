@@ -12,7 +12,7 @@ For each: the pick, the runners-up, and what's new. **Bold = recommended.**
 ## Music — library + streaming (Apple Music / iTunes library)
 
 - **Navidrome** — self-hosted music server (Subsonic API). Mobile clients: **Symfonium** (Android), **play:Sub** / **Amperfy** (iOS); desktop: **Feishin** or **Supersonic**. **Live on the mini.**
-- *Getting music in:* CD rips drop straight in; automated acquisition (the "music half") uses **Lidarr** and feeds this same library — see [Media acquisition](#media-acquisition--private-off-site) below.
+- *Getting music in:* CD rips drop straight in; automated acquisition (the "music half") uses **Lidarr** and feeds this same library — see *Media acquisition* below.
 
 ## iPod Classic
 

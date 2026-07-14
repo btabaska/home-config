@@ -14,7 +14,7 @@ Do a phase before starting the next; each leaves you better off. **Status notes 
 
 4. **Home Assistant** (HA Green): add Hue (local), Midea (local via `midea_ac_lan`), Nest (SDM API). Move smart devices onto IoT. Build the backbone: Zigbee coordinator + Zigbee2MQTT + Mosquitto, HA Companion app + presence, UniFi Protect integration, HomeKit Bridge, scheduled HA backups to the NAS (key in Bitwarden), Node-RED if needed. **✅ Live:** HA Green v2026.6.4, Hue (14 entities), HomeKit Bridge, encrypted daily NAS backups. **⚠️ Corrected:** point local voice **directly at the rig's Ollama** (`conversation.rig_ollama_assist`) — the LiteLLM/mini-fallback path is retired. Zigbee sensor rollout is deferred (hardware, staged).
 
-5. **Seedbox pipeline:** sign up for the **Bytesized** seedbox, run the acquisition stack, put the seedbox on Tailscale, sync to the NAS library, then decommission the old NAS dual-LAN/Gluetun setup. **✅ Live — corrected architecture:** the seedbox ("Betty") runs **Deluge + slskd only**; the **full *arr suite runs on the NAS**, reading completed downloads via an rclone SFTP mount. See [Media acquisition](replacements.md).
+5. **Seedbox pipeline:** sign up for the **Bytesized** seedbox, run the acquisition stack, put the seedbox on Tailscale, sync to the NAS library, then decommission the old NAS dual-LAN/Gluetun setup. **✅ Live — corrected architecture:** the seedbox ("Betty") runs **Deluge + slskd only**; the **full *arr suite runs on the NAS**, reading completed downloads via an rclone SFTP mount. See Section 2 (`replacements.md`).
    - **Music:** **Lidarr** on the NAS; torrents via Deluge, Soulseek via slskd (Betty) + Soularr (NAS) → Navidrome. **✅ E2E validated** (`seed-10`).
 
 6. **Immich** with phone auto-backup; import the mirrorless SD card via immich-go / pbak. **✅ Live** (v2.7.5).
@@ -34,7 +34,7 @@ Do a phase before starting the next; each leaves you better off. **Status notes 
 14. **Media companion layer:** **Tautulli** + **Kometa** on the mini. **✅ Live.** *(~~Maintainerr~~ + ~~Tdarr~~ removed 2026-07-08.)* **Frigate deferred** (Protect judged sufficient).
 15. **Harden it:** MFA/2FA everywhere, Docker log rotation, immutable backups (B2 Object Lock), a Healthchecks.io dead-man's-switch, CrowdSec/forward-auth on the seedbox + public ports. **Partial:** Healthchecks live; B2 Object Lock scoped to `sec-03`; credential rotations deferred (`#18`).
 16. Push all compose files + configs to **Git**. **✅ Done** (dual remotes: GitHub `btabaska/home-config` + Forgejo `home/homelab`).
-17. **Inventory/SBOM layer:** self-host **Forgejo**, turn on **etckeeper** + **chezmoi** + the nightly manifest job, commit the **`ansible/`** playbooks, ~~stand up Dependency-Track v5~~, encrypt secrets with **SOPS + age**, write + drill restore runbooks. **⚠️ Corrected:** **Dependency-Track / SBOM is fully retired** (see [Section 8](inventory-sbom.md)). Forgejo + etckeeper + chezmoi + Ansible are the surviving pieces; the rebuild-drill capstone is deferred.
+17. **Inventory/SBOM layer:** self-host **Forgejo**, turn on **etckeeper** + **chezmoi** + the nightly manifest job, commit the **`ansible/`** playbooks, ~~stand up Dependency-Track v5~~, encrypt secrets with **SOPS + age**, write + drill restore runbooks. **⚠️ Corrected:** **Dependency-Track / SBOM is fully retired** (see Section 8, `inventory-sbom.md`). Forgejo + etckeeper + chezmoi + Ansible are the surviving pieces; the rebuild-drill capstone is deferred.
 
 ## Phase 5 — Play
 

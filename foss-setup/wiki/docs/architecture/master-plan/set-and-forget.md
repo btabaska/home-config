@@ -31,7 +31,7 @@ Goal: rebuildable, self-updating-but-not-recklessly, quiet until something needs
 
 ## Remote access
 
-- **Tailscale** — mesh VPN, near-zero config. Install on NAS, Ubuntu box, rig, laptop, and phone; reach services remotely with nothing exposed. Also the path for remote Moonlight and inviting friends to game servers. *(Note: the game servers actually use playit for friends — see [Gaming](gaming.md).)*
+- **Tailscale** — mesh VPN, near-zero config. Install on NAS, Ubuntu box, rig, laptop, and phone; reach services remotely with nothing exposed. Also the path for remote Moonlight and inviting friends to game servers. *(Note: the game servers actually use playit for friends — see Section 4, gaming.)*
 - *Full control:* self-host **Headscale** or use **Netbird**. Tailscale's hosted control plane is the pragmatic pick.
 
 ## SSH & maintenance access
@@ -56,7 +56,7 @@ Host rig
   HostName rig.tailnet-name.ts.net
 ```
 
-Maintenance is `ssh nas` / `ssh mini` / `ssh rig`. **Live:** these aliases work (`net-14` done); `ssh mini` has **passwordless sudo**, `ssh nas` needs the vault password. **HA has no SSH** (not a tailnet node) — drive it via REST at `http://192.168.10.50:8123`. Keep `ForwardAgent no` by default. The keypair + config are tracked by **chezmoi** ([Inventory](inventory-sbom.md)).
+Maintenance is `ssh nas` / `ssh mini` / `ssh rig`. **Live:** these aliases work (`net-14` done); `ssh mini` has **passwordless sudo**, `ssh nas` needs the vault password. **HA has no SSH** (not a tailnet node) — drive it via REST at `http://192.168.10.50:8123`. Keep `ForwardAgent no` by default. The keypair + config are tracked by **chezmoi** (Section 8, inventory).
 
 - **Per-host quirks:**
   - **Synology DSM** — SSH is off by default; enable it, make it key-based, behind DSM 2FA; don't SSH as `admin`/`root`. DSM resets `sshd_config` on updates, so treat deep SSH customization as non-persistent.
@@ -98,7 +98,7 @@ Maintenance is `ssh nas` / `ssh mini` / `ssh rig`. **Live:** these aliases work 
 
 ## Config-as-code (makes "rebuild in an hour" true)
 
-Put **all compose files + configs in Git** — self-hosted **Forgejo**, or a private GitHub repo. Disk dies or you migrate → `git clone` + `docker compose up`. Secrets encrypted in-repo with **SOPS + age** ([Inventory](inventory-sbom.md)).
+Put **all compose files + configs in Git** — self-hosted **Forgejo**, or a private GitHub repo. Disk dies or you migrate → `git clone` + `docker compose up`. Secrets encrypted in-repo with **SOPS + age** (Section 8, inventory).
 
 ## Power resilience
 
