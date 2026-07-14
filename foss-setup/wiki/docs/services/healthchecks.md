@@ -10,6 +10,10 @@ Healthchecks — dead-man's-switch monitoring for cron/backup jobs
 | **Notes** | Cron/backup dead-man's-switch. Container port 8000. (2026-07-07 unhealthy flap resolved; healthy as of 2026-07-09.) |
 | **Upstream docs** | <https://healthchecks.io/docs/self_hosted_docker/> |
 
+## About
+
+Self-hosted Healthchecks (`healthchecks/healthchecks:v3.10` + `postgres:17-alpine`) providing dead-man's-switch monitoring for scheduled jobs across the fleet — restic/borgmatic backups, seedbox-sync, sbom-nightly, and cron tasks each ping a unique check URL on success, and if a ping doesn't arrive on schedule an alert fires. It runs on `mini` in `/opt/stacks/healthchecks`, published on host port `8001` (mapped to container `8000`, offset from the default to avoid clashing with Paperless) and fronted by Caddy at https://health.tabaska.us. The critical config decision is `INTEGRATIONS_ALLOW_PRIVATE_IPS=True`: alert targets (the ntfy container at `192.168.10.x`) are on the LAN, and without this every notification silently fails with "Connections to private IP addresses are not allowed" — a defect discovered 2026-07-09 where the dead-man alerts had never actually fired. Public ping URLs are built from `SITE_ROOT`/`HC_SITE_ROOT`, and the first superuser is bootstrapped on boot via `HC_SUPERUSER_EMAIL`/`HC_SUPERUSER_PASSWORD`.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -35,6 +39,12 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `HC_DB_PASSWORD`
 - `HC_SUPERUSER_EMAIL`
 - `HC_SUPERUSER_PASSWORD`
+
+## Troubleshooting
+
+- **Dead-man alerts never fire even though checks go red — notifications to the ntfy container silently fail with "Connections to private IP addresses are not allowed".** — Ensure `INTEGRATIONS_ALLOW_PRIVATE_IPS=True` is set in the healthchecks compose environment (it is, as of 2026-07-09). ntfy/webhook integration targets live on the LAN (`192.168.10.x`), so this flag is mandatory; restart with `ssh mini 'cd /opt/stacks/healthchecks && docker compose up -d'` after changing it.
+- **A LAN job (cron/restic/borgmatic agent) pings but the check stays down / the ping doesn't register.** — In-LAN agents must ping the PRIVATE-IP ping URL (e.g. http://192.168.10.2:8001/ping/<uuid>), not the public https://health.tabaska.us one; the public HTTPS path can fail to register from inside the network. Live logs confirm working LAN pings hit the `/ping/<uuid>` endpoint from `172.25.0.x` and return 200.
+- **Container reports unhealthy / flapping.** — Healthcheck queries `http://localhost:8000/api/v3/status/` (a DB test query returning 200). A transient unhealthy flap was seen 2026-07-07 and resolved (healthy since 2026-07-09); if it recurs, check the `db` (postgres:17-alpine) container is healthy via `ssh mini 'cd /opt/stacks/healthchecks && docker compose ps'` since healthchecks depends on `service_healthy` for db.
 
 ## Operations
 

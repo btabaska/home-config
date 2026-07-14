@@ -9,6 +9,10 @@ AMP (CubeCoders) game panel — containerized so it never touches the CachyOS ho
 | **Source** | `foss-setup/configs/gaming/amp/compose.yaml` |
 | **Notes** | CubeCoders AMP game panel (MinecraftCross Java+Bedrock instance). Licence is hostname-pinned — never change the compose hostname casually. |
 
+## About
+
+CubeCoders AMP game panel running on the 24/7 `rig` (192.168.10.12) as the ImageGenius container `ghcr.io/imagegenius/amp:latest`, deployed from `foss-setup/configs/gaming/amp/compose.yaml` at `/opt/stacks/amp` and fronted by Caddy at https://amp.tabaska.us. It runs the ADS module (the panel that provisions/monitors game instances) plus a `MinecraftCross01` Java+Bedrock (Geyser) instance, exposing `8080` (web panel), `25565/tcp` (Java), `19132/udp` (Bedrock) and `8000-8010/udp` for provisioned games. Runs as the `abc` user and driven via the `ampinstmgr` CLI; the base Alpine image ships no Java, so `openjdk21-jre-headless` is added via the `linuxserver/mods:universal-package-install` DOCKER_MOD and Minecraft 26.x additionally uses a persisted Temurin musl Java 25 at `/config/java/jdk-25.0.3+9-jre` behind a `java25-paperfix.sh` wrapper. The critical decision: AMP's licence is machine-id-bound, so both `hostname: c5f46f35aee3` AND `mac_address: 5e:c4:36:bf:b4:43` are pinned in compose — and empty-server sleep-mode is disabled because Bedrock clients cannot wake a sleeping server.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -20,6 +24,13 @@ AMP (CubeCoders) game panel — containerized so it never touches the CachyOS ho
 | Service | Volume |
 |---|---|
 | `amp` | `./config:/config` |
+
+## Troubleshooting
+
+- **After a `compose up` recreate or a Docker daemon restart both instances die with NoMatchingMachineId / exit 32 NO_LICENCE despite Start-on-Boot.** — AMP's machine fingerprint includes BOTH hostname and MAC; Docker 26+ assigns a random MAC per (re)start. Keep `hostname: c5f46f35aee3` and `mac_address: 5e:c4:36:bf:b4:43` pinned in compose (never change casually). If the licence still breaks, reactivate: `ssh rig 'sudo docker exec -u abc amp ampinstmgr reactivate <Instance> <key>'` (key: vault `cubecoders_amp.license_key`).
+- **Server appears to go to sleep and Bedrock clients cannot reconnect / wake it.** — AMP's empty-server sleep-mode is a trap for Bedrock — it must stay disabled. The rig is 24/7 so there is no reason to sleep; leave sleep-mode off in the instance settings.
+- **Minecraft (Paper 26.x) instance fails to launch or logs a bad-flag error about `--log-strip-color`.** — Paper 26.x removed `--log-strip-color` but AMP's module still passes it. The instance's Java.JavaVersion must point at the wrapper `/config/java/java25-paperfix.sh` (which strips the flag and invokes the persisted Temurin musl Java 25 at `/config/java/jdk-25.0.3+9-jre`), not at a raw jdk binary.
+- **`ampinstmgr: /usr/lib/libstdc++.so.6: no version information available` spam in the logs.** — Benign — this is a cosmetic linker warning from the ImageGenius Alpine build and does not affect AMP or the instances (both Main and MinecraftCross01 run normally alongside it). No action needed.
 
 ## Operations
 

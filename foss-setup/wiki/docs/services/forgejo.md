@@ -10,6 +10,10 @@ Forgejo — self-hosted Git forge (the "rebuild in an hour" backbone)
 | **Notes** | Git forge / control repo. SSH on host :2222. Container port 3000. |
 | **Upstream docs** | <https://forgejo.org/docs/latest/admin/installation/docker/> · <https://forgejo.org/docs/latest/admin/config-cheat-sheet/> · <https://forgejo.org/docs/latest/admin/release-schedule/> |
 
+## About
+
+Forgejo is a self-hosted Git forge running on the always-on Mac mini (`192.168.10.2`) at https://git.tabaska.us, fronted by Caddy on the shared external `edge` docker network. Its compose lives OUTSIDE the stacks tree at `foss-setup/configs/git/docker-compose.yml` (deployed to `/opt/stacks/forgejo` on the host) and pairs `codeberg.org/forgejo/forgejo:15.0.1` (pinned to the 15.0 LTS, supported until 2027-07-15) with a `postgres:17-alpine` backend; the web UI is published on host `:3030` (avoiding AdGuard's `:3000`) and git-over-SSH on host `:2222` (host `:22` is the box's own sshd). Beyond being a code host it is the deploy control plane: `publish-deploy.sh` does a `git subtree split --prefix=foss-setup` and pushes to the `forgejo:home/homelab` repo, which every host then `ansible-pull`s against, so the `foss-setup/` subtree IS the deploy repo root (`configs/`, `scripts/`, `wiki/`, ...). Critical app.ini settings (DB, domain, SSH port, LFS, `DISABLE_REGISTRATION=true`, `REQUIRE_SIGNIN_VIEW=true`) are injected via `FORGEJO__*` env vars from `.env` rather than a tracked app.ini.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -38,6 +42,12 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `FORGEJO_SSH_PORT`
 - `FORGEJO_DISABLE_REGISTRATION`
 - `FORGEJO_REQUIRE_SIGNIN`
+
+## Troubleshooting
+
+- **After a --force publish (git subtree split has an unrelated lineage), host ansible-pull clones diverge and stop fast-forwarding.** — Refresh the stale clone so it re-clones on the next timer fire: ssh mini 'rm -rf ~/.ansible-pull'. The subtree split is deterministic, so normal (non-force) publishes fast-forward and need no cleanup.
+- **Bind-mounted ./data/forgejo ends up root-owned or Forgejo can't write to /data.** — The container chowns /data to USER_UID/USER_GID on start; set FORGEJO_UID / FORGEJO_GID in /opt/stacks/forgejo/.env to the host user's real id -u / id -g (1000/1000) so the bind mount is owned correctly, then docker compose up -d.
+- **Major-version bump (e.g. 15.x -> 16.x) risks breaking the instance.** — Only patch bumps within 15.0.x are safe/auto (Diun notifies). A major requires a manual, human-verified upgrade: read the Forgejo release notes first, back up ./data/db and ./data/forgejo, then pull. See https://forgejo.org/docs/latest/admin/release-schedule/.
 
 ## Operations
 

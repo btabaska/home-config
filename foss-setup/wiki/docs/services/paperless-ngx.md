@@ -9,6 +9,10 @@ Paperless-ngx — document management / OCR archive (scan once, find forever)
 | **Source** | `foss-setup/configs/docker-stack/stacks/paperless-ngx/compose.yaml` |
 | **Upstream docs** | <https://docs.paperless-ngx.com/setup/#docker> · <https://hub.docker.com/_/postgres> |
 
+## About
+
+Paperless-ngx is a document-management and OCR archive (scan once, find forever) running on the MINI (`192.168.10.2`) at https://paperless.tabaska.us, fronted by Caddy on the `edge` network and also reachable directly on LAN port 8000. It runs as a five-container stack from `foss-setup/configs/docker-stack/stacks/paperless-ngx/compose.yaml`: `webserver` (the app + web UI + Celery/OCR pipeline, pinned `ghcr.io/paperless-ngx/paperless-ngx:2.20.11`), `broker` = PostgreSQL 17-alpine, `redis` = Redis 7 task queue/cache, plus `gotenberg` (office-doc→PDF conversion) and `tika` (text/metadata extraction), the latter two enabled via `PAPERLESS_TIKA_ENABLED=1`. NOTE a local naming inversion: this compose names the Postgres service `broker` and Redis `redis`, the opposite of upstream (upstream calls Redis the "broker") — `PAPERLESS_DBHOST=broker` and all `depends_on`/`exec` references are consistent with the local naming. This is Tier-1 irreplaceable data: the bind-mounted `./data`, `./media`, `./consume` dirs hold documents + the search index, and Postgres must be backed up with a logical `pg_dump` (file-copying a live PGDATA is not a safe backup); Postgres is pinned to `17-alpine` because pg18 changed the PGDATA path and would break the `./pgdata:/var/lib/postgresql/data` mount.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -42,6 +46,13 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `PAPERLESS_URL`
 - `PAPERLESS_ADMIN_USER`
 - `PAPERLESS_ADMIN_PASSWORD`
+
+## Troubleshooting
+
+- **docker compose commands warn "PAPERLESS_ADMIN_PASSWORD variable is not set. Defaulting to a blank string" and secrets look empty.** — This appears when compose is run without the `.env` sourced (e.g. an ad-hoc `ssh mini 'docker compose ps'`). The real values live in `.env` next to the compose file on the host (from the vault) and ARE loaded on normal `up`; run compose from `/opt/stacks/paperless-ngx` so it auto-loads `.env`. It is cosmetic when just inspecting a running stack — confirm the app itself is healthy with `ssh mini 'cd /opt/stacks/paperless-ngx && docker compose ps'`.
+- **The Postgres data volume must be dumped for backup — a raw copy of ./pgdata is not restorable.** — Run a nightly logical dump: `ssh mini 'cd /opt/stacks/paperless-ngx && docker compose exec -T broker pg_dump -U paperless paperless | gzip > paperless-$(date +%F).sql.gz'`, and back up the bind-mounted `./data`, `./media`, `./consume` dirs alongside it. Do not rely on file-copying the live `./pgdata` dir.
+- **Upgrading PostgreSQL to 18 (bumping the `broker` image) breaks the container / data won't mount.** — Postgres is intentionally pinned to `postgres:17-alpine` because pg18 changed the default PGDATA path. If moving to pg18, adjust the `./pgdata:/var/lib/postgresql/data` volume mount to the new path and perform a proper dump-and-restore migration rather than an in-place image bump.
+- **Admin login fails or PAPERLESS_ADMIN_USER/PASSWORD changes don't take effect.** — `PAPERLESS_ADMIN_USER`/`PAPERLESS_ADMIN_PASSWORD` create the superuser only on FIRST boot (empty DB). To reset an existing admin password, use the Django shell instead: `ssh mini 'cd /opt/stacks/paperless-ngx && docker compose exec -T webserver python3 manage.py changepassword admin'`.
 
 ## Operations
 

@@ -10,6 +10,10 @@ Tautulli — Plex monitoring, history & analytics
 | **Notes** | Plex analytics/history. |
 | **Upstream docs** | <https://github.com/Tautulli/Tautulli/wiki> |
 
+## About
+
+Tautulli is the Plex usage-analytics and notification engine for the homelab, running as a single container (`ghcr.io/tautulli/tautulli:v2.17.2`) on the always-on Mac mini (`192.168.10.2`) and reached at https://tautulli.tabaska.us (Caddy on the shared external `edge` network) or directly on `:8181`. It connects over WebSocket to the Plex Media Server (a separate host/LAN IP, configured through Tautulli's first-run wizard, not via env) to record watch history, per-user/per-library stats, and to drive notification rules; all state — including the Plex token and history DB — lives under the bind-mounted `./config` (`/opt/stacks/tautulli/config` on mini). The only compose env vars are `PUID`/`PGID`/`TZ`; there is a `curl http://localhost:8181/status` healthcheck.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -29,6 +33,11 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `PUID`
 - `PGID`
 - `TZ`
+
+## Troubleshooting
+
+- **Logs show 'Tautulli WebSocket :: Connection timed out' / 'Plex server is down' then 'The Plex Media Server is back up' seconds later — history/streams briefly stop updating.** — Usually transient and self-healing: Tautulli reconnects on a 60s backoff and reschedules its refresh tasks (observed live 2026-07-14). It coincides with Plex being unresponsive — during a bulk-ingest/none-agent metadata analysis storm Plex returns 503 to all clients (see the Plex bulk-ingest memory), so treat repeated timeouts as a Plex-side symptom, not a Tautulli fault. Confirm Plex health before acting; only re-check the Plex connection under Settings > Plex Media Server if it stays disconnected for many minutes.
+- **After moving/reprovisioning, Tautulli shows no users/libraries or can't reach Plex.** — Plex is not configured via env — re-run the connection in the web UI (Settings > Plex Media Server) and re-authenticate to mint a fresh Plex token, which is persisted in `/opt/stacks/tautulli/config`. Verify the container is up with `ssh mini 'cd /opt/stacks/tautulli && docker compose ps'`.
 
 ## Operations
 

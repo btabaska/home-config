@@ -10,11 +10,15 @@ RomM — self-hosted ROM manager + web library (retro-02 / game-14)
 | **Notes** | RomM retro-game library (container port 8080; mariadb sidecar). |
 | **Upstream docs** | <https://docs.romm.app> |
 
+## About
+
+RomM is a self-hosted retro-ROM manager and web library (retro-01/retro-02, tracker id game-14) running on the mini at `/opt/stacks/romm`, fronted by Caddy at https://romm.tabaska.us and reachable directly on the LAN at `mini:8998` (container port 8080). The stack is just two containers — `rommapp/romm:4.9.2` (pinned 2026-07-14, deliberately held below the 5.0 redesign/beta whose sync API changed) with Redis bundled inside the image, plus a `mariadb:11` sidecar (`romm-db`). The ROM library lives on the NAS `games` share, mounted rw on the mini via CIFS (uid=1000) at `/mnt/share/Games`; RomM's root is the `romm/` subfolder (`/mnt/share/Games/romm` → `/romm/library`) kept separate so Synology `#recycle`/`@eaDir` cruft stays out of view, and expects a `roms/<platform-slug>/` + `bios/<platform>/` tree. Metadata/covers come from IGDB (Twitch app creds `igdb.client_id`/`igdb.client_secret` from the vault) with `HASHEOUS_API_ENABLED=true` as a supplementary matcher; saves/states/config stay on local disk under `./assets` and `./config`.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
 |---|---|---|
-| `romm` | `rommapp/romm:latest` | `8998:8080` |
+| `romm` | `rommapp/romm:4.9.2` | `8998:8080` |
 | `romm-db` | `mariadb:11` | — |
 
 ## Volumes
@@ -38,6 +42,13 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `ROMM_AUTH_SECRET_KEY`
 - `IGDB_CLIENT_ID`
 - `IGDB_CLIENT_SECRET`
+
+## Troubleshooting
+
+- **The internal `romm-internal` network fails to come up or squats the LAN/IoT VLAN (192.168.16.0/20 overlapping IoT 192.168.20.x) when Docker auto-allocates a subnet.** — The subnet is explicitly pinned to `172.19.30.0/24` in compose.yaml because the mini's default 172.x pools are exhausted. Do not remove the `ipam.config.subnet` block until the fleet-wide fix-19 (default-address-pools) lands; new stacks with private nets on the mini must each pin a free slice.
+- **New ROMs dropped on the NAS don't appear, or IGDB matching misses/mislabels games.** — ROMs must go under `/mnt/share/Games/romm/roms/<platform-slug>/` using RomM's exact platform slugs (see https://docs.romm.app/latest/Getting-Started/Folder-Structure/), then trigger a Scan in the web UI. Covers/metadata come from IGDB on scan; fix mismatches manually via the per-game match dialog.
+- **Library shows empty or scan errors after a NAS/CIFS hiccup — `/romm/library` unreadable.** — The library is a CIFS mount of the NAS `games` share on the mini (`/mnt/share/Games`, uid=1000). Verify the mount from the mini (`mountpoint /mnt/share/Games`) and that `/mnt/share/Games/romm/roms` is listable before re-scanning; a stale/dropped CIFS mount is the usual cause.
+- **Accidental upgrade onto RomM 5.0 breaks the sync API / existing behavior.** — The image is intentionally pinned to `rommapp/romm:4.9.2` (was `:latest`). Diun watches for updates but do not bump to 5.x without reviewing the redesign/sync-API migration; keep the pin in compose.yaml.
 
 ## Operations
 

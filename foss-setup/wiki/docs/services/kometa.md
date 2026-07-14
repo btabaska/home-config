@@ -10,6 +10,10 @@ Kometa — Plex metadata, collections, overlays & playlists (formerly PMM)
 | **Notes** | Plex collections/metadata batch job — no web UI, runs on schedule. |
 | **Upstream docs** | <https://kometa.wiki/> |
 
+## About
+
+Kometa (formerly Plex-Meta-Manager) is a scheduled batch job that builds collections, overlays, and playlists across the Plex libraries, pinned at `kometateam/kometa:v2.3.1` and running on `mini` from `foss-setup/configs/docker-stack/stacks/kometa/compose.yaml`. It has no web UI, no port, and joins no shared network — the container stays up (`restart: unless-stopped`) and runs itself daily at `KOMETA_TIME` (05:00), or one-shot via `docker compose run --rm kometa --run` / `KOMETA_RUN=True`. All behaviour is driven by `./config/config.yml` (bind-mounted `./config:/config`), which points Plex at the NAS server `http://192.168.10.4:32400` and enumerates the `Movies`, `TV Shows`, `Music`, and `YouTube` libraries; artwork overlays live under `config/overlays/`. It sits downstream of the *arr/Plex pipeline as pure cosmetic enrichment — it never ingests media, only decorates what Plex already has.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -31,6 +35,13 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `TZ`
 - `KOMETA_TIME`
 - `KOMETA_RUN`
+
+## Troubleshooting
+
+- **Error Summary in logs shows blank apikey/token/client_id for notifiarr, gotify, ntfy, omdb, mdblist, trakt, mal, radarr, sonarr, tautulli.** — These are optional integrations intentionally left blank in config.yml — they do not stop the core Plex/TMDb run and can be ignored. Only fill in a service's key under its block in /opt/stacks/kometa/config/config.yml if you actually want that data source; MDBList also 401s ('Authentication required') for the same reason.
+- **Log error: "Plex Library 'Anime' not found. Options: ['Movies', 'TV Shows', 'Music', 'YouTube']".** — config.yml references an 'Anime' library that no longer exists in Plex. Remove or rename that libraries: entry in /opt/stacks/kometa/config/config.yml to match a real library name.
+- **Log error: "File does not exist /config/Music.yml" and "Path does not exist: /config/assets".** — A library block references a Music.yml collection_file and an assets path that were never created. Either create /opt/stacks/kometa/config/Music.yml (and config/assets/) or drop those references from config.yml.
+- **Kometa v2.3.1.4 reports "Newest Version: 2.4.4" — image is behind upstream.** — Version is pinned in compose.yaml on purpose. To update, bump image: kometateam/kometa:<tag> in compose.yaml, then ssh mini 'cd /opt/stacks/kometa && docker compose pull && docker compose up -d'; review upstream changelog since overlay/collection schema can shift between minors.
 
 ## Operations
 

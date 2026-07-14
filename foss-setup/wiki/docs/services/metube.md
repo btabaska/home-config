@@ -10,6 +10,10 @@ MeTube — web UI for yt-dlp: paste a URL, get the video/audio
 | **Notes** | One-off YouTube downloads (host-network; proxied via HOST_IP). |
 | **Upstream docs** | <https://github.com/alexta69/metube> |
 
+## About
+
+MeTube is a web UI for `yt-dlp` (paste a URL, get the video/audio) that serves as the one-off download companion to Pinchflat (which handles YouTube channel subscriptions). It runs on `mini` at `/opt/stacks/metube` from a locally-built image `metube-bgutil:local` (Dockerfile layers `bgutil-ytdlp-pot-provider` and a nightly pre-release `yt-dlp` onto `ghcr.io/alexta69/metube:latest`), exposed on `8081:8081` and fronted by Caddy at https://metube.tabaska.us. It joins the shared external `edge` bridge network so it can reach the `bgutil-pot` PO-token provider at `http://bgutil-pot:4416` (wired via `YTDL_OPTIONS`) — the same 2026-07-08 YouTube JS-challenge/403 workaround also forces `player_client: ["default","tv","web_safari"]`. Downloads land on the NAS via CIFS (`METUBE_DOWNLOADS=/mnt/nas-youtube/metube`, with an `/audio` path bound to `/mnt/nas-music-rw/YouTube`) so they index alongside Pinchflat archives; critically `STATE_DIR=/state` is kept on local disk because MeTube's dbm/shelve queue database does not work on CIFS.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -30,6 +34,13 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 
 - `TZ`
 - `METUBE_DOWNLOADS`
+
+## Troubleshooting
+
+- **Downloads fail with HTTP 403 / 'Sign in to confirm you're not a bot' / n-signature errors from YouTube.** — This is the recurring YouTube JS-challenge; the fix is already wired (bgutil PO-token provider + forced tv/web_safari player clients). If it recurs, the bundled yt-dlp has aged out of the current signature solver — rebuild the image to pull the nightly: ssh mini 'cd /opt/stacks/metube && docker compose build --pull && docker compose up -d'. Also confirm the shared bgutil-pot container is up: ssh mini 'docker ps | grep bgutil-pot'.
+- **MeTube starts but the download queue is empty / corrupt after a restart, or write errors on the state DB.** — MeTube's queue is a Python dbm/shelve database that breaks on CIFS. Ensure STATE_DIR stays on the local ./state bind mount (never point it at the NAS). Check ssh mini 'cd /opt/stacks/metube && docker compose logs --tail 50' for dbm errors.
+- **Container fails to start with 'network edge not found'.** — The edge network is external and owned by another stack (Caddy/dockge). Bring up the owning stack first; the network must already exist before metube can join it.
+- **Downloads don't appear in Plex/on the NAS.** — Downloads write to the CIFS mount /mnt/nas-youtube (via METUBE_DOWNLOADS) — verify the mount is live on mini: ssh mini 'mountpoint /mnt/nas-youtube && ls /mnt/nas-youtube/metube'. A stale/dropped CIFS mount silently fails writes.
 
 ## Operations
 

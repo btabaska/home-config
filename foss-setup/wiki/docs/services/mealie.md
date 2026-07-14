@@ -10,6 +10,10 @@ Mealie — self-hosted recipe manager + meal planner + shopping list
 | **Notes** | Recipes & meal planning. (Healthcheck flap seen 2026-07-07 resolved — healthy as of 2026-07-09.) |
 | **Upstream docs** | <https://docs.mealie.io/> |
 
+## About
+
+Mealie is a self-hosted recipe manager, meal planner, and shopping-list app running as a single container (`ghcr.io/mealie-recipes/mealie:v3.4.0`) on `mini`, defined at `foss-setup/configs/docker-stack/stacks/mealie/compose.yaml`. It listens on `9000:9000` for direct LAN access and is also fronted by Caddy at https://recipes.tabaska.us (that public URL is passed into the container via `BASE_URL=${MEALIE_BASE_URL:-...}` — the host-side var is `MEALIE_BASE_URL`, remapped to Mealie's own `BASE_URL` env). It uses the default embedded SQLite store persisted to the `./data` bind mount (i.e. `/opt/stacks/mealie/data` on the host), which must be included in the Tier-1 backup set since there is no external database; PostgreSQL is available upstream only if it ever needs to scale out. `ALLOW_SIGNUP=false` is hardcoded in the compose so accounts are admin-created only, and `MEALIE_SECRET` (a long random token signing sessions/tokens) is sourced from the vault-backed `.env`. It joins the shared external `edge` Docker network so Caddy can reach it.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -31,6 +35,12 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `PGID`
 - `MEALIE_BASE_URL`
 - `MEALIE_SECRET`
+
+## Troubleshooting
+
+- **Healthcheck flapping / container shown unhealthy (seen 2026-07-07).** — Resolved and stable since 2026-07-09 — the healthcheck curls `http://localhost:9000/api/app/about` every 30s (start_period 30s). Confirm with `ssh mini 'cd /opt/stacks/mealie && docker compose ps'` (expect Up ... healthy) and check for repeated 200 OK on `/api/app/about` in `docker compose logs`.
+- **Share links / OAuth-style API URLs point at localhost instead of the public domain.** — Set `MEALIE_BASE_URL` in `/opt/stacks/mealie/.env` to `https://recipes.tabaska.us` (it feeds the container's `BASE_URL`), then `docker compose up -d` to recreate. Do not confuse the host var name (`MEALIE_BASE_URL`) with the in-container var (`BASE_URL`).
+- **`./data` owned by root or Mealie cannot write its SQLite DB.** — Container runs with `PUID=1000`/`PGID=1000`; ensure `/opt/stacks/mealie/data` is owned by that host user (`chown -R 1000:1000`) so ownership stays sane across restarts.
 
 ## Operations
 

@@ -10,6 +10,10 @@ Navidrome — self-hosted music streaming (Subsonic/OpenSubsonic API)
 | **Notes** | Subsonic-compatible music streaming. |
 | **Upstream docs** | <https://www.navidrome.org/docs/installation/docker/> |
 
+## About
+
+Navidrome is the self-hosted music-streaming server (Subsonic/OpenSubsonic API) running on `mini` from `foss-setup/configs/docker-stack/stacks/navidrome/compose.yaml` as `deluan/navidrome:0.62.0`, fronted by Caddy at https://music.tabaska.us and also exposed directly on `4533` for LAN Subsonic clients (Symfonium/Amperfy). It reads the NAS music library read-only via `${MUSIC_FOLDER}` (`/mnt/nas/music`, a `vers=3.0` CIFS mount of `//192.168.10.4/music`) at `/music`, while its own SQLite DB and backups live under `./data`; the container runs as `${PUID}:${PGID}` (1000:1000, which must own `./data`). The load-bearing config decisions are `ND_SCANNER_SCHEDULE="@every 1h"` (the 0.62 new-scanner key — the legacy `ND_SCANSCHEDULE`/`ND_SCANNER_WATCHERWAIT` semantics changed) driving a periodic full scan, and `ND_SCANNER_WATCHERWAIT=0` disabling the fs-watcher because it is unreliable over CIFS. New tracks are ingested onto the NAS by MeTube/Pinchflat into `/volume1/music/YouTube` and picked up on the next hourly scan.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -32,6 +36,12 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `MUSIC_FOLDER`
 - `TZ`
 - `ND_BASEURL`
+
+## Troubleshooting
+
+- **New music never appears in Navidrome; logs show "Periodic scan is DISABLED".** — 0.62 ignores the legacy `ND_SCANSCHEDULE` key. Ensure `ND_SCANNER_SCHEDULE: "@every 1h"` is set in the compose environment (already the case in `stacks/navidrome/compose.yaml`), then `ssh mini 'cd /opt/stacks/navidrome && docker compose up -d'`. Confirm with `docker compose logs --tail 20` — you should see hourly "Scanner: Starting scan" / "Finished scanning all libraries" lines.
+- **Relying on the filesystem watcher to pick up NAS-side writes, but new files still do not show up until much later (or scans error).** — The CIFS fs-watcher is unreliable — it misses NAS-side writes and dies on mount EBADF — so it is intentionally disabled via `ND_SCANNER_WATCHERWAIT: "0"`. Do not re-enable it; the hourly full scan is the source of truth. To force an immediate pickup, trigger a scan from the web UI (Settings) or restart the container.
+- **After a NAS reboot the container throws EBADF / stale-handle errors reading `/music` and the library goes empty.** — The read-only music mount uses `x-systemd.automount` in `/etc/fstab` on mini (`//192.168.10.4/music /mnt/nas/music cifs ...,ro,nofail,_netdev,x-systemd.automount`) so the autofs mount self-heals on next access. If it is still stale, remount with `ssh mini 'sudo systemctl restart mnt-nas-music.automount'` (or `sudo mount /mnt/nas/music`), then restart Navidrome: `ssh mini 'cd /opt/stacks/navidrome && docker compose restart'`.
 
 ## Operations
 

@@ -1,0 +1,593 @@
+# service-enrichment.yaml — wiki prose for the GENERATED service pages (wiki-06, wave 3).
+#
+# Keyed by STACK name (the dir name gen-wiki-services.py discovers). load_catalog()
+# merges this OVER service-catalog.yaml, so only the two wiki-prose fields live here;
+# all homepage-surface facts (host / url / notes / category) stay in service-catalog.yaml.
+#   about:        prose            -> renders as the page's '## About' section
+#   troubleshoot: [{symptom, fix}] -> renders as the page's '## Troubleshooting' section
+#
+# Built from a live-validated enrichment pass 2026-07-14 (one agent per service, each
+# read the compose + validated the container on its host). Edit freely, then rerun
+# scripts/docs/gen-wiki-services.py. Do NOT put [markdown](links) in these fields —
+# the wiki builds with `mkdocs build --strict` and a broken link fails the build.
+
+services:
+- name: adguard
+  about: |-
+    AdGuard Home is the fleet's PRIMARY network-wide DNS filter/resolver (chosen over Pi-hole for its single-container design, built-in DoT/DoH/DoQ, and per-client rules), running as `adguard/adguardhome:v0.107.77` on `mini` from `foss-setup/configs/docker-stack/stacks/adguard/compose.yaml`. It publishes DNS on host `:53` (tcp+udp) plus DoT on `:853`, while its admin UI (container `:80`) is reached only through Caddy at https://dns.tabaska.us — host `:80`/`:3000` are deliberately NOT bound (`:80` collides with Caddy; `:3000` is break-glass for the first-run wizard). Upstream is the sibling Unbound recursive+DNSSEC resolver over the shared external `edge` network, referenced as `unbound:5335` (NOT `127.0.0.1:5335`, which inside the container is AdGuard's own loopback). Config is not env-driven — everything lives in `./conf/AdGuardHome.yaml`; the only env var is `TZ`. This host is the first entry in the fleet's fail-open DHCP nameserver chain (192.168.10.2 → .4 → .1) so a single resolver being down never takes DNS out for the whole fleet.
+  troubleshoot:
+  - symptom: |-
+      Admin UI unreachable / first-run wizard needed but https://dns.tabaska.us does not respond.
+    fix: |-
+      The UI is only exposed through Caddy at dns.tabaska.us (adguardhome:80 on the edge network). Do NOT bind host :80 (collides with Caddy). To break-glass into the initial wizard, temporarily publish 3000 in compose.yaml, then move config back behind Caddy afterward.
+  - symptom: All resolution fails / upstream errors after pointing AdGuard at 127.0.0.1:5335.
+    fix: |-
+      Inside the container 127.0.0.1 is AdGuard's own loopback, not the host — Unbound is unreachable. In Settings → DNS → Upstream servers use unbound:5335 (both containers share the external edge network).
+  - symptom: |-
+      Log spam: 'dnsproxy: reading msg proto=tcp err="reading len: read: connection reset by peer"' (frequently from 192.168.10.186).
+    fix: |-
+      Benign — a TCP-DNS client (192.168.10.186) is closing idle/aborted connections before AdGuard finishes reading; queries still resolve. No action needed; investigate that client only if it correlates with actual resolution failures via 'ssh mini "cd /opt/stacks/adguard && docker compose logs --tail 100"'.
+  - symptom: DNS outage for the fleet if mini/AdGuard is down.
+    fix: |-
+      By design the DHCP-handed nameserver chain is 192.168.10.2 (mini/AdGuard) → 192.168.10.4 (nas) → 192.168.10.1 (gateway), so clients fail open to the next resolver. If mini is down, filtering is bypassed but resolution continues; restore with 'ssh mini "cd /opt/stacks/adguard && docker compose up -d"'.
+- name: adguard-nas
+  about: |-
+    AdGuard Home running as the **secondary** network DNS resolver on the NAS (`192.168.10.4`, eth1 on the Trusted VLAN), deployed via Synology Container Manager from `foss-setup/configs/docker-stack/stacks/adguard-nas/` as container `adguardhome-nas` (`adguard/adguardhome:v0.107.77`), serving DNS on `:53` with break-glass admin at http://192.168.10.4:3000. It is DHCP DNS **#2** in the fail-open chain (`192.168.10.2` mini primary → `192.168.10.4` NAS secondary → `192.168.10.1` gateway fallback), so a mini reboot never becomes a house-wide outage. The critical design decision: its upstream is **public DoT** (`tls://1.1.1.1` / `tls://9.9.9.9`, live it resolves via Quad9), deliberately **not** mini Unbound, so it keeps resolving when the mini is offline; it mirrors the mini's `*.tabaska.us → 192.168.10.2` rewrites (verified live: returns `192.168.10.2` for `plex.tabaska.us`). This is task dns-02, done and validated 2026-07-14; config state lives in the bind-mounted `./work` and `./conf` dirs under `/volume1/docker/adguard-nas/`.
+  troubleshoot:
+  - symptom: |-
+      Upstream DNS resolution intermittently fails; logs show `dnsproxy: exchange failed upstream=https://dns10.quad9.net:443/dns-query ... err="...unexpected EOF"`.
+    fix: |-
+      Transient DoH/DoT hiccup against the public upstream — AdGuard retries and other upstreams answer, so it is usually self-healing. Configure multiple upstreams (Settings → DNS → tls://1.1.1.1 AND tls://9.9.9.9) so one flaky provider does not stall lookups. Verify resolution still works: `sudo docker exec adguardhome-nas nslookup google.com 127.0.0.1`. Do NOT switch the upstream to mini Unbound — the secondary must resolve independently when the mini is down.
+  - symptom: |-
+      Internal `*.tabaska.us` names resolve via the mini but not via the NAS secondary (client on NAS DNS gets wrong/no address for e.g. vault/plex/wiki).
+    fix: |-
+      The rewrites drifted from the mini. Re-mirror them: on mini AdGuard Settings → DNS rewrites → Export, then import into the NAS instance at http://192.168.10.4:3000 (Settings → DNS rewrites). Confirm with `sudo docker exec adguardhome-nas nslookup plex.tabaska.us 127.0.0.1` — must return `192.168.10.2`.
+  - symptom: Container won't (re)start because `:53` is already bound on the NAS.
+    fix: |-
+      Synology's own services or a stale bind can hold UDP/TCP 53. Check with `ssh nas` then `sudo netstat -tulnp | grep :53`; free the port or stop the conflicting service, then `cd /volume1/docker/adguard-nas && sudo docker compose up -d`.
+  - symptom: |-
+      Whole-house DNS outage symptom: WiFi shows connected but some devices have no internet.
+    fix: |-
+      This is the dns-03 gap — the UniFi fail-open DHCP chain (`192.168.10.2, 192.168.10.4, 192.168.10.1`) is not yet applied to all client VLANs, so a client may sit on a single dead resolver. Immediate fix: UniFi → set affected VLAN DHCP DNS to `192.168.10.1` (gateway), renew leases. Long-term: complete dns-03 so the NAS secondary is actually second in the client chain. Do NOT enable the dns-05 NAT :53 redirect until dns-03 is verified.
+- name: amp
+  about: |-
+    CubeCoders AMP game panel running on the 24/7 `rig` (192.168.10.12) as the ImageGenius container `ghcr.io/imagegenius/amp:latest`, deployed from `foss-setup/configs/gaming/amp/compose.yaml` at `/opt/stacks/amp` and fronted by Caddy at https://amp.tabaska.us. It runs the ADS module (the panel that provisions/monitors game instances) plus a `MinecraftCross01` Java+Bedrock (Geyser) instance, exposing `8080` (web panel), `25565/tcp` (Java), `19132/udp` (Bedrock) and `8000-8010/udp` for provisioned games. Runs as the `abc` user and driven via the `ampinstmgr` CLI; the base Alpine image ships no Java, so `openjdk21-jre-headless` is added via the `linuxserver/mods:universal-package-install` DOCKER_MOD and Minecraft 26.x additionally uses a persisted Temurin musl Java 25 at `/config/java/jdk-25.0.3+9-jre` behind a `java25-paperfix.sh` wrapper. The critical decision: AMP's licence is machine-id-bound, so both `hostname: c5f46f35aee3` AND `mac_address: 5e:c4:36:bf:b4:43` are pinned in compose — and empty-server sleep-mode is disabled because Bedrock clients cannot wake a sleeping server.
+  troubleshoot:
+  - symptom: |-
+      After a `compose up` recreate or a Docker daemon restart both instances die with NoMatchingMachineId / exit 32 NO_LICENCE despite Start-on-Boot.
+    fix: |-
+      AMP's machine fingerprint includes BOTH hostname and MAC; Docker 26+ assigns a random MAC per (re)start. Keep `hostname: c5f46f35aee3` and `mac_address: 5e:c4:36:bf:b4:43` pinned in compose (never change casually). If the licence still breaks, reactivate: `ssh rig 'sudo docker exec -u abc amp ampinstmgr reactivate <Instance> <key>'` (key: vault `cubecoders_amp.license_key`).
+  - symptom: Server appears to go to sleep and Bedrock clients cannot reconnect / wake it.
+    fix: |-
+      AMP's empty-server sleep-mode is a trap for Bedrock — it must stay disabled. The rig is 24/7 so there is no reason to sleep; leave sleep-mode off in the instance settings.
+  - symptom: |-
+      Minecraft (Paper 26.x) instance fails to launch or logs a bad-flag error about `--log-strip-color`.
+    fix: |-
+      Paper 26.x removed `--log-strip-color` but AMP's module still passes it. The instance's Java.JavaVersion must point at the wrapper `/config/java/java25-paperfix.sh` (which strips the flag and invokes the persisted Temurin musl Java 25 at `/config/java/jdk-25.0.3+9-jre`), not at a raw jdk binary.
+  - symptom: |-
+      `ampinstmgr: /usr/lib/libstdc++.so.6: no version information available` spam in the logs.
+    fix: |-
+      Benign — this is a cosmetic linker warning from the ImageGenius Alpine build and does not affect AMP or the instances (both Main and MinecraftCross01 run normally alongside it). No action needed.
+- name: bedrock-connect
+  about: |-
+    BedrockConnect (Pugmatt project, `strausmann/minecraft-bedrock-connect:latest`, currently v1.68.0) is a UDP `19132` gateway on the mini (`/opt/stacks/bedrock-connect`) that lets Minecraft consoles — which cannot type an arbitrary server IP and can only reach servers via the built-in "featured server" tiles — join Brandon's self-hosted Bedrock worlds. AdGuard on the LAN rewrites the featured-server (Hive/etc.) domains to this container, so when a console opens any featured tile it lands in a server-list UI pre-seeded from `./config/custom_servers.json` with two entries: "MinecraftCross (Home)" → `192.168.10.12:19132` (the rig's Geyser/Paper server) and "MinecraftCross (Remote/playit)" → `bedrock.tabaska.us:1111` (the playit tunnel). It runs `NODB=true` (file-based player storage, no external DB) on the external `edge` docker network, so no console-side settings are needed — the LAN's AdGuard DNS does all the redirection.
+  troubleshoot:
+  - symptom: |-
+      Console opens a featured-server tile but never sees the MinecraftCross list (times out or shows the vendor's real server).
+    fix: |-
+      This depends entirely on the LAN AdGuard rewrites hijacking the featured-server domains to the mini. Confirm the console is using AdGuard as its DNS resolver, and that the featured-server rewrite rules still exist in AdGuard. Verify the gateway itself is up: ssh mini 'cd /opt/stacks/bedrock-connect && docker compose ps' (should show Up/healthy on 0.0.0.0:19132->19132/udp).
+  - symptom: The server list appears but connecting to an entry fails.
+    fix: |-
+      The two target addresses in ./config/custom_servers.json must be reachable: Home = 192.168.10.12:19132 (rig Geyser must be running) and Remote = bedrock.tabaska.us:1111 (playit tunnel). Bedrock ignores SRV records so the port 1111 is significant. Edit config/custom_servers.json and restart with docker compose up -d if an address/port changed.
+- name: beszel
+  about: |-
+    Beszel is an ultra-lightweight server monitoring hub + agent stack running on `mini` from `foss-setup/configs/docker-stack/stacks/beszel/compose.yaml`. The `henrygd/beszel:0.18.7` hub serves the dashboard/REST API on `8090:8090` (fronted by Caddy at https://status.tabaska.us via the external `edge` network), while the `henrygd/beszel-agent:0.18.7` container runs `network_mode: host` and reports this box's CPU/memory/disk/network plus per-container stats (it mounts `/var/run/docker.sock:ro`). The hub and local agent communicate over a shared unix socket (`./beszel_socket/beszel.sock`, `LISTEN`/`HUB_URL`) rather than an exposed port; additional hosts are onboarded by deploying just the agent elsewhere with the per-system `TOKEN`/`KEY` the hub emits from its "Add System" UI (values kept in `.env` from the vault as `BESZEL_AGENT_TOKEN`/`BESZEL_AGENT_KEY`, never committed). Data persists in `./beszel_data` (PocketBase-backed).
+  troubleshoot:
+  - symptom: |-
+      Agent logs show `WebSocket connection failed err="...connection reset by peer"` on startup, then no data appears for the local host.
+    fix: |-
+      This is a benign race: the agent boots before the hub's socket/WS listener is ready and retries — it reconnects seconds later (look for the following `INFO WebSocket connected host=127.0.0.1:8090`). No action needed unless the connected line never appears; then `ssh mini 'cd /opt/stacks/beszel && docker compose restart beszel-agent'`.
+  - symptom: |-
+      A remote host (nas/rig) shows offline in the hub, or a newly added system never connects.
+    fix: |-
+      Each system needs its own `TOKEN`/`KEY` pair generated by the hub's Add System dialog — reusing mini's values fails. On the remote host deploy only the agent with `HUB_URL` pointing at the hub and the fresh `KEY`, then confirm the agent log shows `WebSocket connected`.
+  - symptom: |-
+      Dashboard unreachable at https://status.tabaska.us even though the container is Up.
+    fix: |-
+      The hub only binds `8090` locally; public access is via Caddy on the `edge` network. Verify the container: `ssh mini 'cd /opt/stacks/beszel && docker compose ps'`, then check Caddy is routing status.tabaska.us to `beszel:8090`. `BESZEL_APP_URL` must be set to the public https URL so links/notifications resolve correctly.
+- name: bgutil-pot
+  about: |-
+    `bgutil-pot` is a headless PO-token (proof-of-origin) provider sidecar running the `brainicism/bgutil-ytdlp-pot-provider:latest` image (currently server v1.3.1) on `mini`, defined by `foss-setup/configs/docker-stack/stacks/bgutil-pot/compose.yaml`. It joins the external `edge` Docker network and listens on port `4416` with no published host port and no web UI; the yt-dlp bgutil plugin inside the MeTube and Pinchflat containers reaches it at `http://bgutil-pot:4416` to fetch YouTube PO tokens. It was added 2026-07-08 to stop yt-dlp getting HTTP 403 on YouTube's JS/GVS bot challenge, and runs with `init: true` and `restart: unless-stopped`. There are no env vars or `.env`; the compose is a single minimal service block.
+  troubleshoot:
+  - symptom: |-
+      MeTube/Pinchflat downloads start returning HTTP 403 on YouTube's JS/GVS challenge again
+    fix: |-
+      Confirm the provider is up and reachable on the edge network: `ssh mini 'cd /opt/stacks/bgutil-pot && docker compose ps'` (expect Up, port 4416/tcp) and `docker compose logs --tail 50` (expect 'Started POT server' and 'Generating POT'/'poToken' lines). Then verify the consuming container is on the same `edge` network and its yt-dlp bgutil plugin points at `http://bgutil-pot:4416`.
+  - symptom: Consumers cannot resolve the bgutil-pot hostname / connection refused
+    fix: |-
+      The service has no published host port and relies on Docker DNS over the external `edge` network. Ensure MeTube/Pinchflat are attached to the same `edge` network; if the network was recreated, `docker compose up -d` this stack so it re-registers, and restart the consumer containers.
+  - symptom: Image is pinned to :latest, so a pull can regress token minting
+    fix: |-
+      Update via `ssh mini 'cd /opt/stacks/bgutil-pot && docker compose pull && docker compose up -d'`; if a new tag breaks POT generation, roll back by pinning the previous digest in compose.yaml. Also keep the yt-dlp bgutil plugin version in the consumer containers in sync with this provider version.
+- name: caddy
+  about: |-
+    Caddy is the single reverse proxy for the whole homelab, running on the Mac mini (`/opt/stacks/caddy`) and terminating TLS for every `https://*.tabaska.us` vhost defined in `caddy/Caddyfile`. It is a custom `xcaddy` build (`./Dockerfile`, `caddy:2.11.4` + `github.com/caddy-dns/cloudflare`) because the shipped Caddyfile's `local_tls` snippet uses `dns cloudflare` for DNS-01 wildcard certs — the stock image would fail to parse it and the proxy would never start. As of 2026-07-08 `local_tls` issues real, publicly-trusted Let's Encrypt certs via Cloudflare DNS-01 (NS delegated to Cloudflare, `CLOUDFLARE_API_TOKEN` in `.env`), so LAN-only services get valid certs without any inbound port; it also sets HSTS and access logging. Routing is mixed: mini-local services are reached by container name over the shared external `edge` Docker network, while NAS/rig/seedbox/HA/host-network services are proxied by IP via `{$NAS_IP}`/`{$RIG_IP}`/`{$SEEDBOX_IP}`/`{$HA_IP}`/`{$HOST_IP}`. It also serves the static wiki from `/opt/stacks/wiki/site` mounted read-only at `/srv/wiki`, and hardens Vaultwarden by 403-ing `/admin` from non-private/tailnet IPs.
+  troubleshoot:
+  - symptom: |-
+      Caddy container will not start / Caddyfile fails to parse ("unrecognized directive: dns").
+    fix: |-
+      The stock `caddy` image lacks the Cloudflare DNS module the `local_tls` snippet needs. Use the custom build: `compose.yaml` must keep `build: .` (not the stock `image:` line). Rebuild with `ssh mini 'cd /opt/stacks/caddy && docker compose up -d --build'`.
+  - symptom: A specific vhost returns 502 Bad Gateway.
+    fix: |-
+      This is an INCIDENT, not expected. It means the upstream is down or unreachable, not Caddy. Check `ssh mini 'cd /opt/stacks/caddy && docker compose logs --tail 50'` for `dial tcp`/`no such host`. For container-name upstreams (mini-local) confirm the target shares the `edge` network (`docker network inspect edge`); for IP upstreams confirm the right `{$NAS_IP}`/`{$RIG_IP}`/`{$SEEDBOX_IP}`/`{$HOST_IP}` in `.env` and that the remote service/host is up (rig AI + game stacks are on-demand; seedbox is over Tailscale).
+  - symptom: TLS certs fail to issue/renew or Caddy falls back to untrusted internal CA.
+    fix: |-
+      DNS-01 depends on a valid `CLOUDFLARE_API_TOKEN` (Zone:DNS:Edit) in `.env`. If the token is missing/expired, ACME fails. The `caddy_data` volume holds certs & keys — never wipe it (Let's Encrypt rate limits). Verify with `ssh mini 'cd /opt/stacks/caddy && docker compose logs | grep -i acme'`.
+  - symptom: ha.tabaska.us returns 400 Bad Request.
+    fix: |-
+      Home Assistant rejects the proxied request until its `http.use_x_forwarded_for` + `trusted_proxies` include the mini's Docker network ranges (configured in run-5 on the HA host at 192.168.10.50).
+  - symptom: wiki.tabaska.us returns 404.
+    fix: |-
+      Expected until the wiki build populates `/opt/stacks/wiki/site` (mounted read-only at `/srv/wiki`). Rebuild the wiki stack to populate the static site; no Caddy change needed.
+- name: calibre-web-automated
+  about: |-
+    Calibre-Web-Automated (CWA) is the ebook library and reading server running as the `calibre-web-automated` container on the Synology NAS (`192.168.10.4`), pinned to the community fork `ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7` (the fork carries the CVE-2026-7713 Kobo auth-token IDOR fix that never shipped to the upstream `crocodilestick/calibre-web-automated` Docker Hub image, which stops at v4.0.6). It auto-ingests ebooks dropped into `/volume1/docker/calibre-web-automated/ingest` (mounted `/cwa-book-ingest`, where Readarr's Connect script deposits imports) into the Calibre library at `/volume1/books` (mounted `/calibre-library`, holding `metadata.db`), and serves the web UI, OPDS, Kobo sync, and KOSync on `:8083`. It runs `PUID=1026`/`PGID=100` to match the DSM `btabaska:users` owner of the volumes, and is kept LAN/Tailscale-only (never a raw public `:8083`); the public `https://books.tabaska.us` name is fronted via the reverse-proxy/Tailscale path. The key operational decision: the live container runs `NETWORK_SHARE_MODE=false` even though the compose file declares `true`, because the CIFS/SMB inotify watcher is unreliable — ingest is instead driven by a scheduled/manual Library Refresh.
+  troubleshoot:
+  - symptom: |-
+      Redeploying from the on-disk compose file silently re-enables the flaky CIFS inotify watcher (compose sets NETWORK_SHARE_MODE=true, but the live-correct value is false).
+    fix: |-
+      After any `docker compose up -d`, re-apply the override so the live container runs NETWORK_SHARE_MODE=false. Verify with: ssh nas then `sudo /usr/local/bin/docker inspect calibre-web-automated --format '{{range .Config.Env}}{{println .}}{{end}}' | grep NETWORK_SHARE_MODE`. Do not trust the compose file's `true` as effective.
+  - symptom: An ebook sits in the ingest folder and is never imported into the library.
+    fix: |-
+      Because the inotify watcher is off (NETWORK_SHARE_MODE=false), ingest relies on Library Refresh. Click Library Refresh in the CWA navbar (or wait for the scheduled refresh). Confirm the file landed in `/volume1/docker/calibre-web-automated/ingest` (owner btabaska:users) and is a completed file, not a partial download.
+  - symptom: Kobo sync fails to authenticate or drops on a large library.
+    fix: |-
+      Kobo uses per-device CWA users and the store-passthrough must stay ON (it carries the OAuth flow) — do not disable it. For big libraries, use SYNC_ITEM_LIMIT to batch. Kobo sync is only safe on v4.0.7+ (CVE-2026-7713 fixed); if ever falling back to crocodilestick/...:v4.0.6, disable Kobo sync.
+  - symptom: Never accidentally publish CWA on a raw public :8083.
+    fix: |-
+      Keep :8083 LAN/Tailscale-only. Access is via LAN http://192.168.10.4:8083 or Tailscale; the public https://books.tabaska.us is proxied, not a direct port exposure.
+- name: diun
+  about: |-
+    Diun (Docker Image Update Notifier, `crazymax/diun:4.33.0`) runs on mini from `foss-setup/configs/docker-stack/stacks/diun/compose.yaml` (deployed at `/opt/stacks/diun`). It mounts the Docker socket read-only and, with `DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=true`, watches every running container's pinned tag/digest, running a cron scan daily at 06:00 (`DIUN_WATCH_SCHEDULE=0 6 * * *`) — currently analyzing 35 images. It is strictly NOTIFY-ONLY: it never pulls or restarts anything, so it complements (does not replace) the deliberate manual update procedure in the Update-images runbook. Notifications go to the self-hosted ntfy (`DIUN_NOTIF_NTFY_*`), and it deliberately joins the `edge` network to reach ntfy over plain http (`http://ntfy:80`) because ntfy's https vhost serves an internal-CA cert that Diun's Go client rejects.
+  troubleshoot:
+  - symptom: |-
+      Diun sends no notifications / ntfy delivery silently fails with a TLS/x509 certificate error
+    fix: |-
+      Diun must reach ntfy over plain http, not https — the internal-CA cert on the https vhost is rejected by Diun's Go client. Keep `DIUN_NTFY_ENDPOINT` pointed at `http://ntfy:80` (via the shared `edge` external network) rather than the https URL.
+  - symptom: 'diun stack won''t start: network edge declared as external is not found'
+    fix: |-
+      The `edge` network is `external: true` and owned by another stack. Ensure the stack that creates `edge` is up first, or create it manually: `ssh mini 'docker network create edge'` before `docker compose up -d`.
+- name: dockge
+  about: |-
+    Dockge (`louislam/dockge:1.5.0`) is a lightweight self-hosted web UI for managing Docker Compose stacks, running on the `mini` (192.168.10.2) from `foss-setup/configs/docker-stack/stacks/dockge/compose.yaml` and fronted by Caddy at https://dockge.tabaska.us (direct port `5001:5001`). It mounts `/var/run/docker.sock` for Docker control and bind-mounts `/opt/stacks:/opt/stacks` — the same absolute path on both sides of the mount, matching `DOCKGE_STACKS_DIR=/opt/stacks`, which is the load-bearing convention: every compose stack on the mini lives under `/opt/stacks/<name>/` so Dockge can discover, edit, and (re)deploy them. It is the chosen SIMPLE DEFAULT compose manager for the fleet; Dockhand is documented as the "power option" (logs/metrics history, vuln scanning, safe pulls + rollback, Apprise) but is not deployed. State is a SQLite DB under the local `./data/` volume.
+  troubleshoot:
+  - symptom: Dockge writes stack files to the wrong location or cannot see existing stacks
+    fix: |-
+      The `/opt/stacks` bind-mount must use the SAME absolute path on host and container (`/opt/stacks:/opt/stacks`) and match `DOCKGE_STACKS_DIR=/opt/stacks`. Do not change either side independently; Dockge stores compose files at the container path but Docker executes them at the host path.
+  - symptom: New stack files created by Dockge are owned by the wrong user
+    fix: |-
+      Set `PUID`/`PGID` in `.env` on the mini to the owning user (run `id`); defaults are 1000:1000 via `.env.example`.
+- name: forgejo
+  about: |-
+    Forgejo is a self-hosted Git forge running on the always-on Mac mini (`192.168.10.2`) at https://git.tabaska.us, fronted by Caddy on the shared external `edge` docker network. Its compose lives OUTSIDE the stacks tree at `foss-setup/configs/git/docker-compose.yml` (deployed to `/opt/stacks/forgejo` on the host) and pairs `codeberg.org/forgejo/forgejo:15.0.1` (pinned to the 15.0 LTS, supported until 2027-07-15) with a `postgres:17-alpine` backend; the web UI is published on host `:3030` (avoiding AdGuard's `:3000`) and git-over-SSH on host `:2222` (host `:22` is the box's own sshd). Beyond being a code host it is the deploy control plane: `publish-deploy.sh` does a `git subtree split --prefix=foss-setup` and pushes to the `forgejo:home/homelab` repo, which every host then `ansible-pull`s against, so the `foss-setup/` subtree IS the deploy repo root (`configs/`, `scripts/`, `wiki/`, ...). Critical app.ini settings (DB, domain, SSH port, LFS, `DISABLE_REGISTRATION=true`, `REQUIRE_SIGNIN_VIEW=true`) are injected via `FORGEJO__*` env vars from `.env` rather than a tracked app.ini.
+  troubleshoot:
+  - symptom: |-
+      After a --force publish (git subtree split has an unrelated lineage), host ansible-pull clones diverge and stop fast-forwarding.
+    fix: |-
+      Refresh the stale clone so it re-clones on the next timer fire: ssh mini 'rm -rf ~/.ansible-pull'. The subtree split is deterministic, so normal (non-force) publishes fast-forward and need no cleanup.
+  - symptom: Bind-mounted ./data/forgejo ends up root-owned or Forgejo can't write to /data.
+    fix: |-
+      The container chowns /data to USER_UID/USER_GID on start; set FORGEJO_UID / FORGEJO_GID in /opt/stacks/forgejo/.env to the host user's real id -u / id -g (1000/1000) so the bind mount is owned correctly, then docker compose up -d.
+  - symptom: Major-version bump (e.g. 15.x -> 16.x) risks breaking the instance.
+    fix: |-
+      Only patch bumps within 15.0.x are safe/auto (Diun notifies). A major requires a manual, human-verified upgrade: read the Forgejo release notes first, back up ./data/db and ./data/forgejo, then pull. See https://forgejo.org/docs/latest/admin/release-schedule/.
+- name: frigate
+  about: |-
+    Frigate is a local, real-time object-detection NVR for IP cameras, staged (not deployed) as a Docker Compose stack on `mini` at `/opt/stacks/frigate` from source `foss-setup/configs/docker-stack/stacks/frigate/compose.yaml`, image `ghcr.io/blakeblackshear/frigate:0.17.1` (0.17.2 not yet published upstream). It is the ha-15 camera-detection piece: the intended design ingests UniFi Protect RTSP(S) substreams — a low-res substream for continuous detect plus the full-res stream for recording — and runs AI detection entirely locally with no cloud. The blocking decision is the detector hardware, which has not been chosen: the compose `devices:` list is an empty `[]` with commented options for a Google Coral USB/M.2 TPU (the recommended path) or an Intel Quick Sync iGPU via OpenVINO — notably the 2014 Mac mini's HD 5000 iGPU is called out as NOT a practical OpenVINO detector, so a Coral is required on that host. Config/recordings are bind-mounted (`./config`, `${FRIGATE_MEDIA:-./media}`) with a 1 GB tmpfs RAM cache, it runs `privileged` on the external `edge` network, and the authenticated UI on `8971` is intentionally not proxied yet (the caddy frigate vhost is commented out).
+- name: healthchecks
+  about: |-
+    Self-hosted Healthchecks (`healthchecks/healthchecks:v3.10` + `postgres:17-alpine`) providing dead-man's-switch monitoring for scheduled jobs across the fleet — restic/borgmatic backups, seedbox-sync, sbom-nightly, and cron tasks each ping a unique check URL on success, and if a ping doesn't arrive on schedule an alert fires. It runs on `mini` in `/opt/stacks/healthchecks`, published on host port `8001` (mapped to container `8000`, offset from the default to avoid clashing with Paperless) and fronted by Caddy at https://health.tabaska.us. The critical config decision is `INTEGRATIONS_ALLOW_PRIVATE_IPS=True`: alert targets (the ntfy container at `192.168.10.x`) are on the LAN, and without this every notification silently fails with "Connections to private IP addresses are not allowed" — a defect discovered 2026-07-09 where the dead-man alerts had never actually fired. Public ping URLs are built from `SITE_ROOT`/`HC_SITE_ROOT`, and the first superuser is bootstrapped on boot via `HC_SUPERUSER_EMAIL`/`HC_SUPERUSER_PASSWORD`.
+  troubleshoot:
+  - symptom: |-
+      Dead-man alerts never fire even though checks go red — notifications to the ntfy container silently fail with "Connections to private IP addresses are not allowed".
+    fix: |-
+      Ensure `INTEGRATIONS_ALLOW_PRIVATE_IPS=True` is set in the healthchecks compose environment (it is, as of 2026-07-09). ntfy/webhook integration targets live on the LAN (`192.168.10.x`), so this flag is mandatory; restart with `ssh mini 'cd /opt/stacks/healthchecks && docker compose up -d'` after changing it.
+  - symptom: |-
+      A LAN job (cron/restic/borgmatic agent) pings but the check stays down / the ping doesn't register.
+    fix: |-
+      In-LAN agents must ping the PRIVATE-IP ping URL (e.g. http://192.168.10.2:8001/ping/<uuid>), not the public https://health.tabaska.us one; the public HTTPS path can fail to register from inside the network. Live logs confirm working LAN pings hit the `/ping/<uuid>` endpoint from `172.25.0.x` and return 200.
+  - symptom: Container reports unhealthy / flapping.
+    fix: |-
+      Healthcheck queries `http://localhost:8000/api/v3/status/` (a DB test query returning 200). A transient unhealthy flap was seen 2026-07-07 and resolved (healthy since 2026-07-09); if it recurs, check the `db` (postgres:17-alpine) container is healthy via `ssh mini 'cd /opt/stacks/healthchecks && docker compose ps'` since healthchecks depends on `service_healthy` for db.
+- name: homepage
+  about: |-
+    Homepage (gethomepage.dev) is the household's single pane of glass — the "front door" at https://home.tabaska.us that gives the family friendly app tiles (Plex, Immich, Calibre-Web, Seerr) and the operator a live observability view (Beszel, Uptime Kuma, Dependency-Track, plus the *arr stack). It runs as one container `ghcr.io/gethomepage/homepage:v1.13.2` on `mini` from `foss-setup/configs/docker-stack/stacks/homepage/compose.yaml`, listening on 3000 in-container and published as host port `3010` (deliberately not 3000/3001 to avoid clashing with Forgejo and Uptime-Kuma on the same box), also fronted by Caddy at `home.tabaska.us`. Live service widgets are lit up by `HOMEPAGE_VAR_*` secrets sourced from the vault into `.env` and referenced as `{{HOMEPAGE_VAR_*}}` in `config/services.yaml`; the container uses `dns: 192.168.10.2` (AdGuard) so `*.tabaska.us` rewrites resolve for ping/widgets. Docker socket auto-discovery is intentionally DISABLED (home-03, 2026-07-07) — every tile is defined manually in `config/services.yaml` because the entrypoint drops to `PUID:PGID` and sheds groups, so the socket mount only produced repeating EACCES errors; the `/var/run/docker.sock:ro` mount remains but `config/docker.yaml` has no `local:` block.
+  troubleshoot:
+  - symptom: |-
+      Page won't load with "Host validation failed" after adding a new hostname or port.
+    fix: |-
+      Since v1.0 `HOMEPAGE_ALLOWED_HOSTS` is a required exact-match allowlist. Add the verbatim `host:port` (and the Caddy subdomain) you type in the browser to `HOMEPAGE_ALLOWED_HOSTS` in `.env` on mini, e.g. `home.tabaska.us,192.168.10.2:3010,localhost:3010`, then `ssh mini 'cd /opt/stacks/homepage && docker compose up -d'`.
+  - symptom: |-
+      Logs spam `<httpProxy> Error calling http://maintainerr:6246/ ... getaddrinfo EAI_AGAIN maintainerr` (500).
+    fix: |-
+      A `services.yaml` widget points at the bare container name `maintainerr`, but that container isn't on the `edge` network so Docker/AdGuard DNS can't resolve it. Either put maintainerr on the `edge` network, use its LAN IP/Caddy hostname in the widget href+url, or remove the widget block. Non-fatal — only that one tile's live status is broken.
+  - symptom: Widget shows a plain link tile instead of live stats, or shows an auth error.
+    fix: |-
+      The matching `HOMEPAGE_VAR_*_KEY`/`_TOKEN` in `.env` is blank or stale. Fill it from the vault and `docker compose up -d`. Blank values intentionally degrade to a plain link tile rather than erroring.
+  - symptom: Wanting Docker container auto-discovery back.
+    fix: |-
+      It is disabled by design — the app runs as PUID:PGID and can't read the socket even with group_add, producing EACCES spam. To re-enable, front the socket with docker-socket-proxy and point `config/docker.yaml` at a `tcp://` endpoint instead of the raw `/var/run/docker.sock`.
+- name: immich
+  about: |-
+    Immich is a self-hosted photo/video library and mobile-backup app running on the NAS (Synology DS920+, `192.168.10.4`) via DSM Container Manager / Docker Compose, project `immich`, reachable at https://immich.tabaska.us (LAN `http://192.168.10.4:2283`). The stack is four containers — `immich_server` (`2283:2283`), `immich_machine_learning` (OpenVINO variant for face/CLIP inference), a Valkey `redis`, and a VectorChord `postgres` database — pinned to Immich `v2.7.5` via `IMMICH_VERSION` in `.env` (compose uses `${IMMICH_VERSION:?...}` with no floating `release` fallback, so it refuses to start unpinned), with the Valkey and Postgres images digest-pinned to match that exact release. Originals live at `UPLOAD_LOCATION=/volume1/photo` (Tier-1 irreplaceable data, backed up via Hyper Backup) and the DB at `DB_DATA_LOCATION=/volume1/docker/immich/postgres` (with `DB_STORAGE_TYPE=HDD` since it sits on spinning Btrfs disks); `/dev/dri` is passed into both the server and ML containers to use the J4125's Intel Quick Sync iGPU for transcoding and inference. Mirrorless-camera SD cards are ingested from a workstation with `immich-go` rather than the mobile app.
+  troubleshoot:
+  - symptom: |-
+      immich-server or immich-machine-learning fails to start after a reboot or DSM update, complaining about /dev/dri
+    fix: |-
+      Confirm the iGPU device still exists on the host: ssh nas then `ls -l /dev/dri` (expect card0 + renderD128). If /dev/dri is missing, remove the `devices: [/dev/dri:/dev/dri]` blocks from docker-compose.yml (both server and ML services) and redeploy; hardware transcoding/OpenVINO will fall back to software.
+  - symptom: Compose refuses to start with an error about IMMICH_VERSION being unset
+    fix: |-
+      This is intentional (`${IMMICH_VERSION:?set IMMICH_VERSION in .env}` — no floating fallback). Ensure `.env` next to docker-compose.yml at /volume1/docker/immich sets `IMMICH_VERSION=v2.7.5` (or the intended release).
+  - symptom: |-
+      Version bump breaks the DB or the pinned Valkey/Postgres digests no longer match the release
+    fix: |-
+      When bumping IMMICH_VERSION, re-read the release notes and re-verify the redis (valkey) and database (VectorChord postgres) image digests against that release's official docker-compose.yml (https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml) — Postgres major upgrades are NOT automatic. Then `cd /volume1/docker/immich && sudo docker compose pull && sudo docker compose up -d`.
+  - symptom: Hardware transcoding not actually being used after deploy
+    fix: |-
+      The Quick Sync device is passed in but must also be enabled in-app: Admin > Settings > Video Transcoding > Hardware Acceleration = Quick Sync (OpenVINO ML acceleration works automatically via the `-openvino` image).
+- name: kometa
+  about: |-
+    Kometa (formerly Plex-Meta-Manager) is a scheduled batch job that builds collections, overlays, and playlists across the Plex libraries, pinned at `kometateam/kometa:v2.3.1` and running on `mini` from `foss-setup/configs/docker-stack/stacks/kometa/compose.yaml`. It has no web UI, no port, and joins no shared network — the container stays up (`restart: unless-stopped`) and runs itself daily at `KOMETA_TIME` (05:00), or one-shot via `docker compose run --rm kometa --run` / `KOMETA_RUN=True`. All behaviour is driven by `./config/config.yml` (bind-mounted `./config:/config`), which points Plex at the NAS server `http://192.168.10.4:32400` and enumerates the `Movies`, `TV Shows`, `Music`, and `YouTube` libraries; artwork overlays live under `config/overlays/`. It sits downstream of the *arr/Plex pipeline as pure cosmetic enrichment — it never ingests media, only decorates what Plex already has.
+  troubleshoot:
+  - symptom: |-
+      Error Summary in logs shows blank apikey/token/client_id for notifiarr, gotify, ntfy, omdb, mdblist, trakt, mal, radarr, sonarr, tautulli.
+    fix: |-
+      These are optional integrations intentionally left blank in config.yml — they do not stop the core Plex/TMDb run and can be ignored. Only fill in a service's key under its block in /opt/stacks/kometa/config/config.yml if you actually want that data source; MDBList also 401s ('Authentication required') for the same reason.
+  - symptom: |-
+      Log error: "Plex Library 'Anime' not found. Options: ['Movies', 'TV Shows', 'Music', 'YouTube']".
+    fix: |-
+      config.yml references an 'Anime' library that no longer exists in Plex. Remove or rename that libraries: entry in /opt/stacks/kometa/config/config.yml to match a real library name.
+  - symptom: |-
+      Log error: "File does not exist /config/Music.yml" and "Path does not exist: /config/assets".
+    fix: |-
+      A library block references a Music.yml collection_file and an assets path that were never created. Either create /opt/stacks/kometa/config/Music.yml (and config/assets/) or drop those references from config.yml.
+  - symptom: 'Kometa v2.3.1.4 reports "Newest Version: 2.4.4" — image is behind upstream.'
+    fix: |-
+      Version is pinned in compose.yaml on purpose. To update, bump image: kometateam/kometa:<tag> in compose.yaml, then ssh mini 'cd /opt/stacks/kometa && docker compose pull && docker compose up -d'; review upstream changelog since overlay/collection schema can shift between minors.
+- name: libreseerr
+  about: |-
+    Libreseerr is the book-request portal in Brandon's *arr media stack — the ebook/audiobook counterpart to Seerr (movies/TV) and MusicSeerr (music) — running as a single `ghcr.io/zamnzim/libreseerr` container on the Mac mini (`/opt/stacks/libreseerr`), exposed on `8789:5000` over the external `edge` (Caddy/Tailscale) network at https://libreseerr.tabaska.us. It fronts Readarr on the NAS (`http://192.168.10.4:8787`) to turn user book requests into monitored+searched Readarr additions, and pulls discovery/browse data from OpenLibrary. Two files are bind-mounted read-only as a local patch — `./app.py` and `./readarr.py` — that re-rank the Readarr/rreading-glasses lookup candidates (upstream blindly picks `readarr_books[0]`, which is often a junk user-uploaded ALL-CAPS edition with a phantom author ID that 404s → Readarr 400 / stuck book) so the canonical edition wins, then retry-until-accepted. The image is pinned by MANIFEST digest (`820134e4`), not by local image ID, because upstream publishes no version tags and garbage-collects old digests.
+  troubleshoot:
+  - symptom: |-
+      Book request fails with a 400 or gets "stuck" (never lands in Readarr); Readarr rejects the phantom author with a 404.
+    fix: |-
+      This is the junk-edition bug: upstream picks readarr_books[0] which can be a garbage rreading-glasses/Goodreads user edition. It is fixed by the bind-mounted ./app.py + ./readarr.py patch (candidate re-ranking + retry-until-accepted). Confirm both files are still mounted read-only in compose.yaml and present in the container; the ranking logic lives around app.py line ~1017.
+  - symptom: After an image bump, book requests regress to 400s / junk editions again.
+    fix: |-
+      The patch lives ONLY in the bind-mounted app.py/readarr.py, not in the upstream image. Every image bump can ship a new app.py signature — re-derive (re-apply) the local patch against the new upstream app.py before recreating. Marker comment in the code: "local patch (libreseerr-diagnosis 2026-07-12); re-derive on image bump."
+  - symptom: |-
+      `docker compose pull` fails with "manifest unknown", or `up -d` won't start after an app.py edit.
+    fix: |-
+      Do NOT pin the local image ID (the 2026-07-09 audit mistakenly pinned ID c2dbf74a, which is not pullable — corrected 2026-07-12 to manifest digest 820134e4). Keep the sha256 MANIFEST digest in compose.yaml. To recreate offline after an app.py change without pulling: `ssh mini 'cd /opt/stacks/libreseerr && docker compose up -d --pull never'`.
+  - symptom: Container won't start, complaining SECRET_KEY is unset.
+    fix: |-
+      `SECRET_KEY` is required (compose uses `${SECRET_KEY:?...}`). It must exist in /opt/stacks/libreseerr/.env on the mini (sourced from the vault). Generate once with `openssl rand -hex 32` — a stable value keeps sessions from invalidating on restart.
+  - symptom: Requests are accepted in Libreseerr but nothing downloads.
+    fix: |-
+      Libreseerr only hands off to Readarr on the NAS (http://192.168.10.4:8787). Check Readarr itself — confirm the book is monitored and searched, and that the indexer/download-client chain is healthy. Verify connectivity from the mini container: logs should show `GET /api/v1/book HTTP/1.1 200`.
+- name: mealie
+  about: |-
+    Mealie is a self-hosted recipe manager, meal planner, and shopping-list app running as a single container (`ghcr.io/mealie-recipes/mealie:v3.4.0`) on `mini`, defined at `foss-setup/configs/docker-stack/stacks/mealie/compose.yaml`. It listens on `9000:9000` for direct LAN access and is also fronted by Caddy at https://recipes.tabaska.us (that public URL is passed into the container via `BASE_URL=${MEALIE_BASE_URL:-...}` — the host-side var is `MEALIE_BASE_URL`, remapped to Mealie's own `BASE_URL` env). It uses the default embedded SQLite store persisted to the `./data` bind mount (i.e. `/opt/stacks/mealie/data` on the host), which must be included in the Tier-1 backup set since there is no external database; PostgreSQL is available upstream only if it ever needs to scale out. `ALLOW_SIGNUP=false` is hardcoded in the compose so accounts are admin-created only, and `MEALIE_SECRET` (a long random token signing sessions/tokens) is sourced from the vault-backed `.env`. It joins the shared external `edge` Docker network so Caddy can reach it.
+  troubleshoot:
+  - symptom: Healthcheck flapping / container shown unhealthy (seen 2026-07-07).
+    fix: |-
+      Resolved and stable since 2026-07-09 — the healthcheck curls `http://localhost:9000/api/app/about` every 30s (start_period 30s). Confirm with `ssh mini 'cd /opt/stacks/mealie && docker compose ps'` (expect Up ... healthy) and check for repeated 200 OK on `/api/app/about` in `docker compose logs`.
+  - symptom: |-
+      Share links / OAuth-style API URLs point at localhost instead of the public domain.
+    fix: |-
+      Set `MEALIE_BASE_URL` in `/opt/stacks/mealie/.env` to `https://recipes.tabaska.us` (it feeds the container's `BASE_URL`), then `docker compose up -d` to recreate. Do not confuse the host var name (`MEALIE_BASE_URL`) with the in-container var (`BASE_URL`).
+  - symptom: '`./data` owned by root or Mealie cannot write its SQLite DB.'
+    fix: |-
+      Container runs with `PUID=1000`/`PGID=1000`; ensure `/opt/stacks/mealie/data` is owned by that host user (`chown -R 1000:1000`) so ownership stays sane across restarts.
+- name: media-automation
+  about: |-
+    The full home `*arr` acquisition stack, running as the `media-automation` Compose project on the NAS (DS920+, Container Manager) and defined in `foss-setup/configs/nas/media-automation/docker-compose.yml`. It bundles `prowlarr` (indexer manager, with `flaresolverr` for Cloudflare) feeding `sonarr` (TV→`/volume3` `/tv`), `radarr` (movies→`/volume2` `/movies`), `lidarr` (music→`/volume1` `/music`), and the EOL-but-pinned `readarr` (books→`/readarr-library`, pointed at the self-hosted `rreading-glasses` + its `postgres:17.6` DB for metadata since Goodreads' provider died); `unpackerr` extracts archives, `soularr` bridges Lidarr's wants to slskd on the seedbox, and `beets` is an on-demand tag-only layer. The two halves connect off-site: home apps drive the seedbox "Betty" Deluge over its API (`185.162.184.38`) and READ completed downloads through an rclone SFTP mount (`seedbox:/home/hd34/btabaska/files` → `/volume1/mounts/seedbox-files`), which every download-touching container binds at the identical path `/seedbox`; each `*arr` needs a Remote Path Mapping (`/home/hd34/btabaska/files/` → `/seedbox/`) so Deluge-reported paths resolve inside the container. The critical DSM constraint is that `fuse.rclone` cannot satisfy `:rslave` propagation, so the seedbox is a plain bind and download-touching containers must be restarted after any watchdog remount; imports feed downstream to Plex, the CWA book pipeline, and the iPod/Rhythmbox music sync.
+  troubleshoot:
+  - symptom: |-
+      Radarr shows a movie as imported (hasFile=True) but the file is only ~6-24 MB and Plex shows nothing — a release's junk `sample.*` was imported as the feature.
+    fix: |-
+      Delete the sample-sized file, blocklist/re-grab the release, and confirm Radarr's Minimum size / sample-rejection quality rules are set so tiny files are filtered. The `arr-plex-journey.py` #6 check (tmdb/tvdb external-id coverage) is what surfaces this 'green but not watchable' gap.
+  - symptom: |-
+      Sonarr search UI freezes / interactive search returns ~0 grabs; app becomes unresponsive.
+    fix: |-
+      SQLite-lock search-freeze class — restart sonarr (`sudo docker restart sonarr` on the NAS) to clear the wedged DB lock. Note IPT-only indexers legitimately return near-zero grabs; verify Prowlarr has additional capable indexers + the FlareSolverr proxy (`http://flaresolverr:8191`) attached before assuming a freeze.
+  - symptom: |-
+      Downloads sit in *arr queues forever waiting on extraction, but the unpackerr container still reports 'Up'.
+    fix: |-
+      unpackerr can silently wedge its poller while the process stays up. The compose already adds a healthcheck probing `http://localhost:5656/metrics` so a fully-wedged process flips the container to 'unhealthy' (paged via containers-health-nas); if wedged, `sudo docker restart unpackerr`. Confirm the `[webserver]` block stays enabled in `./unpackerr/unpackerr.conf` or the healthcheck can't fire.
+  - symptom: |-
+      After a seedbox rclone remount, *arr imports fail with I/O / EBADF errors even though `/seedbox` looks mounted.
+    fix: |-
+      The fuse.rclone bind cannot use rslave propagation, so containers hold a stale mount after a watchdog remount. Restart every download-touching container (`sudo docker restart sonarr radarr lidarr readarr unpackerr`) — the remount watchdog normally does this automatically.
+  - symptom: |-
+      Readarr book searches 400 / metadata lookups fail, or the rreading-glasses container errors on credential generation.
+    fix: |-
+      rreading-glasses ships only rolling tags and is pinned by digest; Goodreads auth changes can break credential generation. Refresh the digest deliberately: `docker buildx imagetools inspect blampe/rreading-glasses:latest`, update the `@sha256:` pin in the compose, then `docker compose up -d rreading-glasses`. Ensure Readarr's Metadata Provider Source (Settings > Development, hidden page) points at `http://rreading-glasses:8788`.
+- name: metube
+  about: |-
+    MeTube is a web UI for `yt-dlp` (paste a URL, get the video/audio) that serves as the one-off download companion to Pinchflat (which handles YouTube channel subscriptions). It runs on `mini` at `/opt/stacks/metube` from a locally-built image `metube-bgutil:local` (Dockerfile layers `bgutil-ytdlp-pot-provider` and a nightly pre-release `yt-dlp` onto `ghcr.io/alexta69/metube:latest`), exposed on `8081:8081` and fronted by Caddy at https://metube.tabaska.us. It joins the shared external `edge` bridge network so it can reach the `bgutil-pot` PO-token provider at `http://bgutil-pot:4416` (wired via `YTDL_OPTIONS`) — the same 2026-07-08 YouTube JS-challenge/403 workaround also forces `player_client: ["default","tv","web_safari"]`. Downloads land on the NAS via CIFS (`METUBE_DOWNLOADS=/mnt/nas-youtube/metube`, with an `/audio` path bound to `/mnt/nas-music-rw/YouTube`) so they index alongside Pinchflat archives; critically `STATE_DIR=/state` is kept on local disk because MeTube's dbm/shelve queue database does not work on CIFS.
+  troubleshoot:
+  - symptom: |-
+      Downloads fail with HTTP 403 / 'Sign in to confirm you're not a bot' / n-signature errors from YouTube.
+    fix: |-
+      This is the recurring YouTube JS-challenge; the fix is already wired (bgutil PO-token provider + forced tv/web_safari player clients). If it recurs, the bundled yt-dlp has aged out of the current signature solver — rebuild the image to pull the nightly: ssh mini 'cd /opt/stacks/metube && docker compose build --pull && docker compose up -d'. Also confirm the shared bgutil-pot container is up: ssh mini 'docker ps | grep bgutil-pot'.
+  - symptom: |-
+      MeTube starts but the download queue is empty / corrupt after a restart, or write errors on the state DB.
+    fix: |-
+      MeTube's queue is a Python dbm/shelve database that breaks on CIFS. Ensure STATE_DIR stays on the local ./state bind mount (never point it at the NAS). Check ssh mini 'cd /opt/stacks/metube && docker compose logs --tail 50' for dbm errors.
+  - symptom: Container fails to start with 'network edge not found'.
+    fix: |-
+      The edge network is external and owned by another stack (Caddy/dockge). Bring up the owning stack first; the network must already exist before metube can join it.
+  - symptom: Downloads don't appear in Plex/on the NAS.
+    fix: |-
+      Downloads write to the CIFS mount /mnt/nas-youtube (via METUBE_DOWNLOADS) — verify the mount is live on mini: ssh mini 'mountpoint /mnt/nas-youtube && ls /mnt/nas-youtube/metube'. A stale/dropped CIFS mount silently fails writes.
+- name: miniflux
+  about: |-
+    Miniflux is a minimalist, single-binary Go RSS/Atom reader backed by PostgreSQL, running on `mini` (192.168.10.2) from `foss-setup/configs/docker-stack/stacks/miniflux/compose.yaml` and served at https://rss.tabaska.us. It is a two-container stack: `miniflux/miniflux:2.3.1` (host port `8082`→container `8080`) and a private `postgres:17-alpine` db, connected via a bridge `miniflux` network for the DB plus the shared external `edge` network so Caddy fronts it (the container also stays directly reachable on LAN port 8082). `DATABASE_URL` uses `sslmode=disable` over the internal network and `RUN_MIGRATIONS=1` auto-migrates on boot; the admin account is bootstrapped once via `CREATE_ADMIN=1` + `ADMIN_USERNAME`/`ADMIN_PASSWORD` (safe to leave, only acted on when no user exists). Postgres is deliberately pinned to `17-alpine` because pg18 moved the data path — the `./db:/var/lib/postgresql/data` mount would break on an unadjusted major bump.
+  troubleshoot:
+  - symptom: |-
+      DATABASE_URL fails to parse / miniflux can't reach the DB after setting a password
+    fix: |-
+      MINIFLUX_DB_PASSWORD must be URL-safe — a `/` or `+` in the password breaks the `postgres://...@db/miniflux` connection string. Regenerate with `openssl rand -hex 24` (hex-only) and update `.env` on the host.
+  - symptom: Postgres won't start after bumping the `db` image to Postgres 18
+    fix: |-
+      pg18 changed PGDATA from `/var/lib/postgresql/data` to `/var/lib/postgresql`. The stack pins `postgres:17-alpine` for this reason; if moving to 18, update the volume mount in `compose.yaml` accordingly (and dump/restore across a major version — data dirs are not forward-compatible).
+- name: musicseerr
+  about: |-
+    MusicSeerr is the album-request and music-discovery portal (a Seerr-style front end for Lidarr), running as the `ghcr.io/habirabbu/musicseerr:v1.4.2` container on the Mac mini (`192.168.10.2`) from `foss-setup/configs/docker-stack/stacks/musicseerr/compose.yaml`, exposed on `8688` and fronted by Caddy at https://musicseerr.tabaska.us via the external `edge` network. It is the music counterpart to Seerr (movies/TV): user requests are forwarded to Lidarr on the NAS at `192.168.10.4:8686`, which handles the actual grab/download, while a read-only `${MUSIC_FOLDER:-/mnt/nas/music}:/music` mount (same path as Navidrome) enables local-file playback/browsing. Key config decision: the Lidarr API key MUST be supplied via the `LIDARR_API_KEY` env var and kept ABSENT from `config.json` — v1.4.2 encrypts the key on save but never decrypts it on load, so a key stored in config causes a 401 against Lidarr on every restart; env wins only while the config value is empty.
+  troubleshoot:
+  - symptom: |-
+      A batch album request shows a phantom "Downloading 0%" in MusicSeerr that never progresses or completes.
+    fix: |-
+      Batch requests can land in Lidarr with monitored=False, so Lidarr never searches for them. Open Lidarr (http://192.168.10.4:8686), find the affected album/artist, toggle Monitor ON, and trigger a manual Search. The MusicSeerr status resolves once Lidarr actually grabs the release. Re-check after batch requests as a regression guard.
+  - symptom: |-
+      MusicSeerr repeatedly 401s against Lidarr after a container restart even though the key was set once.
+    fix: |-
+      The key was saved into config.json, which v1.4.2 encrypts-on-save but cannot decrypt-on-load. Ensure LIDARR_API_KEY is set in ./.env (gitignored) and remove/blank the Lidarr API key field from ./config/config.json, then `ssh mini 'cd /opt/stacks/musicseerr && docker compose up -d --force-recreate'`. The env var wins as long as the key is absent from config.
+  - symptom: Need to inspect MusicSeerr's SQLite DB from inside the container.
+    fix: |-
+      The `sqlite3` CLI is not installed in the image. Copy the DB out and inspect on the host instead (`docker cp musicseerr:/app/config/<db> ./` then use a local sqlite3), or use a temporary container that bundles sqlite mounting ./config.
+- name: navidrome
+  about: |-
+    Navidrome is the self-hosted music-streaming server (Subsonic/OpenSubsonic API) running on `mini` from `foss-setup/configs/docker-stack/stacks/navidrome/compose.yaml` as `deluan/navidrome:0.62.0`, fronted by Caddy at https://music.tabaska.us and also exposed directly on `4533` for LAN Subsonic clients (Symfonium/Amperfy). It reads the NAS music library read-only via `${MUSIC_FOLDER}` (`/mnt/nas/music`, a `vers=3.0` CIFS mount of `//192.168.10.4/music`) at `/music`, while its own SQLite DB and backups live under `./data`; the container runs as `${PUID}:${PGID}` (1000:1000, which must own `./data`). The load-bearing config decisions are `ND_SCANNER_SCHEDULE="@every 1h"` (the 0.62 new-scanner key — the legacy `ND_SCANSCHEDULE`/`ND_SCANNER_WATCHERWAIT` semantics changed) driving a periodic full scan, and `ND_SCANNER_WATCHERWAIT=0` disabling the fs-watcher because it is unreliable over CIFS. New tracks are ingested onto the NAS by MeTube/Pinchflat into `/volume1/music/YouTube` and picked up on the next hourly scan.
+  troubleshoot:
+  - symptom: New music never appears in Navidrome; logs show "Periodic scan is DISABLED".
+    fix: |-
+      0.62 ignores the legacy `ND_SCANSCHEDULE` key. Ensure `ND_SCANNER_SCHEDULE: "@every 1h"` is set in the compose environment (already the case in `stacks/navidrome/compose.yaml`), then `ssh mini 'cd /opt/stacks/navidrome && docker compose up -d'`. Confirm with `docker compose logs --tail 20` — you should see hourly "Scanner: Starting scan" / "Finished scanning all libraries" lines.
+  - symptom: |-
+      Relying on the filesystem watcher to pick up NAS-side writes, but new files still do not show up until much later (or scans error).
+    fix: |-
+      The CIFS fs-watcher is unreliable — it misses NAS-side writes and dies on mount EBADF — so it is intentionally disabled via `ND_SCANNER_WATCHERWAIT: "0"`. Do not re-enable it; the hourly full scan is the source of truth. To force an immediate pickup, trigger a scan from the web UI (Settings) or restart the container.
+  - symptom: |-
+      After a NAS reboot the container throws EBADF / stale-handle errors reading `/music` and the library goes empty.
+    fix: |-
+      The read-only music mount uses `x-systemd.automount` in `/etc/fstab` on mini (`//192.168.10.4/music /mnt/nas/music cifs ...,ro,nofail,_netdev,x-systemd.automount`) so the autofs mount self-heals on next access. If it is still stale, remount with `ssh mini 'sudo systemctl restart mnt-nas-music.automount'` (or `sudo mount /mnt/nas/music`), then restart Navidrome: `ssh mini 'cd /opt/stacks/navidrome && docker compose restart'`.
+- name: ntfy
+  about: |-
+    ntfy is the fleet's self-hosted push-notification server — the alert bus that backup jobs, the AER/NVMe monitor, net-selfheal watchdogs, Diun image-update checks, and other cron/scripts publish to, with the ntfy phone app subscribing per-topic. It runs as a single `binwiederhier/ntfy:v2.19.2` container on `mini` (port `8080`→`80` internally), fronted by Caddy at `https://ntfy.tabaska.us` on the external `edge` network, with `cache.db` and `auth.db`/attachments persisted in the bind-mounted `./cache` and `./lib` dirs. It is locked down: `NTFY_AUTH_DEFAULT_ACCESS=deny-all` with `NTFY_ENABLE_LOGIN=true`, so anonymous publish/subscribe is denied and publishers authenticate with per-user tokens created via the `ntfy` CLI (`ntfy user add`, `ntfy token add`). `NTFY_BEHIND_PROXY=true` is set because Caddy terminates TLS; `init: true` is required alongside the `/v1/health` healthcheck to reap zombie processes.
+  troubleshoot:
+  - symptom: |-
+      A publisher (backup job, AER monitor, watchdog) gets HTTP 403 / 401 when posting to a topic.
+    fix: |-
+      Server is deny-all by design; the client needs a valid token with write access. Create/rotate one with `ssh mini 'cd /opt/stacks/ntfy && docker compose exec ntfy ntfy token list'` and grant access via `ntfy access <user> <topic> write`. Confirm the script sends `Authorization: Bearer <token>`.
+  - symptom: Container won't start or messages/users vanish after a restart.
+    fix: |-
+      State lives in the bind mounts `./cache` (cache.db) and `./lib` (auth.db, attachments) owned by `PUID:PGID` (1000:1000). If perms drift, `ssh mini 'sudo chown -R 1000:1000 /opt/stacks/ntfy/cache /opt/stacks/ntfy/lib'` then `docker compose up -d`.
+  - symptom: Topic URLs or iOS Web Push (PWA) break after a domain/proxy change.
+    fix: |-
+      `NTFY_BASE_URL` in `.env` must exactly match the public Caddy domain (`https://ntfy.tabaska.us`); Web Push and topic links are derived from it. Also keep `NTFY_BEHIND_PROXY=true` since Caddy terminates TLS. Fix `.env`, then `docker compose up -d`.
+- name: palworld
+  about: |-
+    Dedicated Palworld server ("Robits Farm") running as the single `palworld` container (`ghcr.io/thijsvanloef/palworld-server-docker:latest`) on the 24/7 rig under `/opt/stacks/palworld`, with the world mounted at `./game:/palworld`. It deliberately runs on this standard glibc image rather than AMP, because AMP's minimal Alpine/musl container can't run the SteamCMD/Palworld binaries; the image self-manages the steamcmd install and daily updates (`AUTO_UPDATE_ENABLED=true` at 4AM ET, `AUTO_REBOOT_ENABLED=false`). Public play is UDP-only over a shared playit.gg tunnel (game port `8211/udp` -> `127.0.0.1:8211`, exposed as `palworld.tabaska.us:1105`) with the router left closed; the REST admin API (`8212/tcp`) is LAN-only and RCON (`25575/tcp`) is bound to localhost. Crucially `COMMUNITY=false` keeps the home IP out of the in-game community browser, and gameplay is tuned to Hard difficulty with softened pal damage (`PAL_DAMAGE_RATE_DEFENSE=0.8`) and 2x enemy drops.
+  troubleshoot:
+  - symptom: |-
+      Palworld world saves would not be backed up by default — the rig's restic only covers /etc + /home, but saves live under /opt.
+    fix: |-
+      Already handled: `/etc/restic/env` explicitly adds `/opt/stacks/palworld/game/Pal/Saved` and `/opt/stacks/palworld/game/backups` to `BACKUP_PATHS` (see `env.bak-prepalworld` for the pre-change snapshot). The image also runs its own hourly local snapshot (`BACKUP_ENABLED=true`, `BACKUP_CRON_EXPRESSION=0 * * * *`, pruned after 30 days). If saves stop being captured, verify those two paths are still in `BACKUP_PATHS` on the rig.
+  - symptom: Home/public IP leaking into the in-game community server browser.
+    fix: |-
+      Keep `COMMUNITY=false` in `compose.yaml`. It is currently set; do not enable the community listing or the rig's public IP is advertised.
+  - symptom: |-
+      Container shows unhealthy for up to ~15 minutes on a fresh boot or after an image pull.
+    fix: |-
+      Expected: `start_period` is 900s because the first boot downloads the server via steamcmd. The healthcheck curls `http://127.0.0.1:8212/v1/api/info` with the admin password. Wait it out; only investigate if it stays unhealthy past ~20 min. Check `ssh rig 'cd /opt/stacks/palworld && sudo docker compose logs --tail 50'`.
+  - symptom: Players get disconnected / server restarts unexpectedly around 4AM ET.
+    fix: |-
+      That is the daily `AUTO_UPDATE` window (`AUTO_UPDATE_CRON_EXPRESSION=0 4 * * *`), which restarts the process to apply Steam updates and clears accumulated memory. `AUTO_REBOOT_ENABLED=false` so it won't reboot mid-session outside that window; `stop_grace_period: 30s` allows a clean save on shutdown.
+  - symptom: Public UDP tunnel drops after a playit agent restart.
+    fix: |-
+      Palworld shares the playit.gg agent at `/opt/stacks/playit`; a playit UDP-claim can need re-establishing after the agent restarts. Confirm the UDP 8211 tunnel -> `127.0.0.1:8211` mapping is still active in the playit dashboard rather than opening the router.
+- name: paperless-ngx
+  about: |-
+    Paperless-ngx is a document-management and OCR archive (scan once, find forever) running on the MINI (`192.168.10.2`) at https://paperless.tabaska.us, fronted by Caddy on the `edge` network and also reachable directly on LAN port 8000. It runs as a five-container stack from `foss-setup/configs/docker-stack/stacks/paperless-ngx/compose.yaml`: `webserver` (the app + web UI + Celery/OCR pipeline, pinned `ghcr.io/paperless-ngx/paperless-ngx:2.20.11`), `broker` = PostgreSQL 17-alpine, `redis` = Redis 7 task queue/cache, plus `gotenberg` (office-doc→PDF conversion) and `tika` (text/metadata extraction), the latter two enabled via `PAPERLESS_TIKA_ENABLED=1`. NOTE a local naming inversion: this compose names the Postgres service `broker` and Redis `redis`, the opposite of upstream (upstream calls Redis the "broker") — `PAPERLESS_DBHOST=broker` and all `depends_on`/`exec` references are consistent with the local naming. This is Tier-1 irreplaceable data: the bind-mounted `./data`, `./media`, `./consume` dirs hold documents + the search index, and Postgres must be backed up with a logical `pg_dump` (file-copying a live PGDATA is not a safe backup); Postgres is pinned to `17-alpine` because pg18 changed the PGDATA path and would break the `./pgdata:/var/lib/postgresql/data` mount.
+  troubleshoot:
+  - symptom: |-
+      docker compose commands warn "PAPERLESS_ADMIN_PASSWORD variable is not set. Defaulting to a blank string" and secrets look empty.
+    fix: |-
+      This appears when compose is run without the `.env` sourced (e.g. an ad-hoc `ssh mini 'docker compose ps'`). The real values live in `.env` next to the compose file on the host (from the vault) and ARE loaded on normal `up`; run compose from `/opt/stacks/paperless-ngx` so it auto-loads `.env`. It is cosmetic when just inspecting a running stack — confirm the app itself is healthy with `ssh mini 'cd /opt/stacks/paperless-ngx && docker compose ps'`.
+  - symptom: |-
+      The Postgres data volume must be dumped for backup — a raw copy of ./pgdata is not restorable.
+    fix: |-
+      Run a nightly logical dump: `ssh mini 'cd /opt/stacks/paperless-ngx && docker compose exec -T broker pg_dump -U paperless paperless | gzip > paperless-$(date +%F).sql.gz'`, and back up the bind-mounted `./data`, `./media`, `./consume` dirs alongside it. Do not rely on file-copying the live `./pgdata` dir.
+  - symptom: |-
+      Upgrading PostgreSQL to 18 (bumping the `broker` image) breaks the container / data won't mount.
+    fix: |-
+      Postgres is intentionally pinned to `postgres:17-alpine` because pg18 changed the default PGDATA path. If moving to pg18, adjust the `./pgdata:/var/lib/postgresql/data` volume mount to the new path and perform a proper dump-and-restore migration rather than an in-place image bump.
+  - symptom: Admin login fails or PAPERLESS_ADMIN_USER/PASSWORD changes don't take effect.
+    fix: |-
+      `PAPERLESS_ADMIN_USER`/`PAPERLESS_ADMIN_PASSWORD` create the superuser only on FIRST boot (empty DB). To reset an existing admin password, use the Django shell instead: `ssh mini 'cd /opt/stacks/paperless-ngx && docker compose exec -T webserver python3 manage.py changepassword admin'`.
+- name: pinchflat
+  about: |-
+    Pinchflat is a "Sonarr for YouTube" channel/playlist archiver — a single self-contained Elixir/Oban app built on `yt-dlp` — running on `mini` from `foss-setup/configs/docker-stack/stacks/pinchflat/compose.yaml` (container `pinchflat`, port `8945`, fronted by Caddy at https://pinchflat.tabaska.us on the external `edge` network). It subscribes to channels/playlists, downloads new uploads on a schedule, applies SponsorBlock, and writes clean NFO metadata + thumbnails into `${PINCHFLAT_DOWNLOADS}` (`/mnt/nas-youtube/pinchflat` → the NAS "YouTube" Plex library path) so Plex indexes the archive as a show. The image is NOT stock upstream: it is a locally-built `pinchflat-bgutil:local` (`Dockerfile` `FROM ghcr.io/kieraneglin/pinchflat:latest`) that layers the nightly `yt-dlp` zipapp plus a baked `/etc/yt-dlp.conf` (`--extractor-args "youtube:player_client=default,tv,web_safari"`) to defeat YouTube's 403/JS-challenge — the stock stable `yt-dlp` lags YouTube's player and 403s; refresh with `docker compose build --pull && docker compose up -d`.
+  troubleshoot:
+  - symptom: |-
+      A large bulk ingest from Pinchflat makes ALL Plex clients return 503 while the process shows "running" and drains glacially.
+    fix: |-
+      Bulk ingest floods Plex's none-agent metadata analysis and saturates the analysis worker pool. Diagnose via the Plex Media Server log (live analysis count / 408 trend); there is no fast fix — let it drain, or throttle Pinchflat's download concurrency and stage large channel back-catalogs in smaller batches rather than all at once.
+  - symptom: Plex shows 0 items in the YouTube library even though Pinchflat wrote the files.
+    fix: |-
+      Files written to the NAS CIFS/DSM share by Pinchflat lack the PlexMediaServer ACL ACE, so Plex cannot read them. Apply the synoacltool fix + enable inheritance on the share (same class of fix as the NAS Plex share ACL issue). Confirm inheritance so newly-downloaded files inherit the ACE automatically.
+  - symptom: |-
+      Downloads fail with HTTP 403 / "Sign in to confirm you're not a bot" / n-signature errors.
+    fix: |-
+      YouTube changed its player/JS challenge and the bundled yt-dlp is stale. Rebuild the image to pull the latest nightly zipapp: ssh mini 'cd /opt/stacks/pinchflat && docker compose build --pull && docker compose up -d'. If a specific video still 403s, wire the bgutil PO-token provider (bgutil-pot:4416) plugin + base_url arg per the note in yt-dlp.conf.
+- name: playit
+  about: |-
+    `playit` is the playit.gg tunnel agent (`ghcr.io/playit-cloud/playit-agent:latest`, `container_name: playit`, `network_mode: host`) running on the rig at `/opt/stacks/playit`, source at `foss-setup/configs/gaming/playit/compose.yaml`. It is the live public path for the rig's game servers: on a premium dedicated IP (69.9.181.17) it forwards NS-delegated hostnames (e.g. `minecraft.tabaska.us`) to localhost ports without opening the Dream Wall or leaking the home IP — Minecraft Java (SRV :1105), Bedrock (:1111), and Palworld (:1105). ONE agent serves MANY tunnels: tunnels are created in the playit.gg dashboard and only `SECRET_KEY` (a read-only agent key, vaulted as `playit.secret_key`, injected via `.env`, never committed) lives on the host. The agent maintains a persistent control session to playit's edge and periodically reconnects.
+  troubleshoot:
+  - symptom: |-
+      A newly-claimed UDP tunnel (e.g. a new Bedrock/Palworld port) does not carry traffic even though it shows in the dashboard.
+    fix: |-
+      Claiming a new UDP tunnel does not take effect until the agent process is restarted — the claim wedges until reload. Run `ssh rig 'cd /opt/stacks/playit && sudo docker compose up -d --force-recreate'` (or `sudo docker restart playit`).
+  - symptom: |-
+      Logs show repeated `WARN timeout waiting for pong` / `control session expired; reconnecting reason=Forced`.
+    fix: |-
+      Benign — the agent's control session to the playit edge times out and auto-reconnects (seen every few hours). No action needed as long as the container stays `Up` and `New TCP Client` lines keep appearing; only intervene if reconnects loop continuously without recovering.
+- name: recyclarr
+  about: |-
+    Recyclarr is a headless (no web UI) config-syncer that pushes TRaSH-Guides quality definitions, guide-backed quality profiles, and media-naming schemes into the *arr apps. It runs on `mini` (`/opt/stacks/recyclarr`) as a one-shot container (`ghcr.io/recyclarr/recyclarr:8.4.0`, `restart: "no"`), targeting Sonarr (`http://192.168.10.4:8989`) and Radarr (`http://192.168.10.4:7878`) on the NAS over LAN. It is not a long-running service: a weekly root crontab entry (`0 3 * * 0`) does `docker compose run --rm recyclarr sync`, appends to `config/logs/cron-sync.log`, and pings healthchecks (`recyclarr-sync-mini`, UUID `fb109ef5...`) as a dead-man's switch. The syncable behavior is entirely driven by `config/recyclarr.yml`: Sonarr uses TRaSH id `72dae194...` (WEB-1080p), Radarr uses `d1d67249...` (HD Bluray + WEB), both with `reset_unmatched_scores` enabled, and API keys live in that file on the host (not committed).
+  troubleshoot:
+  - symptom: |-
+      `docker compose ps` shows nothing / recyclarr appears "not running" and looks broken.
+    fix: |-
+      This is expected — recyclarr is a one-shot syncer (`restart: "no"`), not a daemon. It only runs via the weekly root crontab (`0 3 * * 0`). Verify health by reading `/opt/stacks/recyclarr/config/logs/cron-sync.log` or the healthchecks check `recyclarr-sync-mini`, not by `ps`. Force a run with `ssh mini 'cd /opt/stacks/recyclarr && docker compose run --rm recyclarr sync'`.
+  - symptom: |-
+      Radarr movie naming may not apply — live `config/recyclarr.yml` sets `movie.standard: plex-tmdb`, but the file's own header comment says `plex-tmdb` is NOT a valid `recyclarr list naming radarr` key and would be skipped/error.
+    fix: |-
+      Confirm valid keys with `ssh mini 'cd /opt/stacks/recyclarr && docker compose run --rm recyclarr list naming radarr'`; the TRaSH-recommended value is `default` (as already used for Sonarr series/season/episodes). Change `plex-tmdb` to a real key (e.g. `default`) if Radarr renames aren't taking effect.
+  - symptom: Sync fails with auth/connection errors against the *arr apps.
+    fix: |-
+      API keys are hard-coded in `/opt/stacks/recyclarr/config/recyclarr.yml` per instance (Sonarr `192.168.10.4:8989`, Radarr `192.168.10.4:7878`). If an *arr API key was rotated, or the NAS is unreachable, update the key / verify NAS reachability from mini before the next weekly run; a failed cron run also fails the healthchecks ping and will alert.
+- name: romm
+  about: |-
+    RomM is a self-hosted retro-ROM manager and web library (retro-01/retro-02, tracker id game-14) running on the mini at `/opt/stacks/romm`, fronted by Caddy at https://romm.tabaska.us and reachable directly on the LAN at `mini:8998` (container port 8080). The stack is just two containers — `rommapp/romm:4.9.2` (pinned 2026-07-14, deliberately held below the 5.0 redesign/beta whose sync API changed) with Redis bundled inside the image, plus a `mariadb:11` sidecar (`romm-db`). The ROM library lives on the NAS `games` share, mounted rw on the mini via CIFS (uid=1000) at `/mnt/share/Games`; RomM's root is the `romm/` subfolder (`/mnt/share/Games/romm` → `/romm/library`) kept separate so Synology `#recycle`/`@eaDir` cruft stays out of view, and expects a `roms/<platform-slug>/` + `bios/<platform>/` tree. Metadata/covers come from IGDB (Twitch app creds `igdb.client_id`/`igdb.client_secret` from the vault) with `HASHEOUS_API_ENABLED=true` as a supplementary matcher; saves/states/config stay on local disk under `./assets` and `./config`.
+  troubleshoot:
+  - symptom: |-
+      The internal `romm-internal` network fails to come up or squats the LAN/IoT VLAN (192.168.16.0/20 overlapping IoT 192.168.20.x) when Docker auto-allocates a subnet.
+    fix: |-
+      The subnet is explicitly pinned to `172.19.30.0/24` in compose.yaml because the mini's default 172.x pools are exhausted. Do not remove the `ipam.config.subnet` block until the fleet-wide fix-19 (default-address-pools) lands; new stacks with private nets on the mini must each pin a free slice.
+  - symptom: |-
+      New ROMs dropped on the NAS don't appear, or IGDB matching misses/mislabels games.
+    fix: |-
+      ROMs must go under `/mnt/share/Games/romm/roms/<platform-slug>/` using RomM's exact platform slugs (see https://docs.romm.app/latest/Getting-Started/Folder-Structure/), then trigger a Scan in the web UI. Covers/metadata come from IGDB on scan; fix mismatches manually via the per-game match dialog.
+  - symptom: |-
+      Library shows empty or scan errors after a NAS/CIFS hiccup — `/romm/library` unreadable.
+    fix: |-
+      The library is a CIFS mount of the NAS `games` share on the mini (`/mnt/share/Games`, uid=1000). Verify the mount from the mini (`mountpoint /mnt/share/Games`) and that `/mnt/share/Games/romm/roms` is listable before re-scanning; a stale/dropped CIFS mount is the usual cause.
+  - symptom: Accidental upgrade onto RomM 5.0 breaks the sync API / existing behavior.
+    fix: |-
+      The image is intentionally pinned to `rommapp/romm:4.9.2` (was `:latest`). Diun watches for updates but do not bump to 5.x without reviewing the redesign/sync-API migration; keep the pin in compose.yaml.
+- name: seerr
+  about: |-
+    Seerr is the unified successor to Overseerr + Jellyseerr — a media request/discovery portal that lets users browse movies/TV and file requests that flow through to Radarr/Sonarr for automated grabbing. It runs on `mini` as a single container (`ghcr.io/seerr-team/seerr:v3.2.0`) defined in `foss-setup/configs/docker-stack/stacks/seerr/compose.yaml`, published on port `5055`, joined to the external `edge` Docker network, and fronted by Caddy at https://seerr.tabaska.us. All persistent state (settings, users, DB) lives in the bind mount `./config:/app/config`; existing Jellyseerr/Overseerr data migrates automatically on first start if that dir holds the old config. Two non-obvious deploy details: the image ships NO internal init process so `init: true` is required, and the only env var of note is `TZ` (defaults to `America/New_York`). Live logs show it integrated with Plex — running scheduled Plex Recently Added Scans and Plex Watchlist Sync jobs against the Movies and TV Shows libraries.
+  troubleshoot:
+  - symptom: |-
+      Container restart-loops or exits immediately with a zombie/PID-1 signal-handling error after a version bump
+    fix: |-
+      The Seerr image bundles no init process. Ensure `init: true` remains under the `seerr` service in compose.yaml (it is already set); do not remove it. Redeploy with `ssh mini 'cd /opt/stacks/seerr && docker compose up -d'`.
+  - symptom: |-
+      Requests are approved in Seerr but nothing downloads / titles never appear in Plex
+    fix: |-
+      This is a downstream integration gap, not Seerr itself. Verify the Radarr/Sonarr connections under Settings and confirm the arr's are grabbing — the arr-plex-journey check (see arr sample-file imports memory) catches 'green but not watchable' cases where an arr imports a junk sample instead of the real file.
+- name: stash
+  about: |-
+    Stash (`stashapp/stash:v0.31.1`) is an adult-media organizer running as a single Docker container on the Synology DS920+ NAS (`192.168.10.4`), deployed via DSM Container Manager from `foss-setup/configs/nas/stash/docker-compose.yml` at `/volume1/docker/stash/` on the host. It reuses a pre-existing library tree at `/volume1/stash` (`STASH_ROOT`), with `root/` as the ~915 GB media dir mounted to `/data`, plus sibling `metadata/` (SQLite DB), `generated/`, `blobs/`, and `cache/` dirs; scrapers/plugins/config live separately under `CONFIG_DIR` (`/volume1/docker/stash/config` → `/root/.stash`). It listens on host port 9999 (`STASH_PORT`) and is fronted by Caddy on mini at `stash.tabaska.us`, but is deliberately kept LAN/Tailscale-only with no public vhost given the content. No API key is stored in the vault, so it has no dashboard widget.
+  troubleshoot:
+  - symptom: |-
+      After the first launch the library is empty or tags/performers are missing, even though media files are present.
+    fix: |-
+      The migration from the prior install carried over media files and generated thumbnails but no SQLite DB was found in the old tree (a fresh `metadata/stash-go.sqlite` is created on first run). Re-index by running Settings -> Tasks -> Scan against `/data`; previously-scraped tags/performers from the old install are gone and must be re-scraped.
+  - symptom: |-
+      `docker compose` commands over SSH fail or Stash won't come up after editing the compose file.
+    fix: |-
+      The NAS requires root and the full docker path. Deploy/verify with `ssh -t nas 'cd /volume1/docker/stash && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'` and check with `ssh -t nas 'sudo /usr/local/bin/docker ps --filter name=stash'`.
+- name: tautulli
+  about: |-
+    Tautulli is the Plex usage-analytics and notification engine for the homelab, running as a single container (`ghcr.io/tautulli/tautulli:v2.17.2`) on the always-on Mac mini (`192.168.10.2`) and reached at https://tautulli.tabaska.us (Caddy on the shared external `edge` network) or directly on `:8181`. It connects over WebSocket to the Plex Media Server (a separate host/LAN IP, configured through Tautulli's first-run wizard, not via env) to record watch history, per-user/per-library stats, and to drive notification rules; all state — including the Plex token and history DB — lives under the bind-mounted `./config` (`/opt/stacks/tautulli/config` on mini). The only compose env vars are `PUID`/`PGID`/`TZ`; there is a `curl http://localhost:8181/status` healthcheck.
+  troubleshoot:
+  - symptom: |-
+      Logs show 'Tautulli WebSocket :: Connection timed out' / 'Plex server is down' then 'The Plex Media Server is back up' seconds later — history/streams briefly stop updating.
+    fix: |-
+      Usually transient and self-healing: Tautulli reconnects on a 60s backoff and reschedules its refresh tasks (observed live 2026-07-14). It coincides with Plex being unresponsive — during a bulk-ingest/none-agent metadata analysis storm Plex returns 503 to all clients (see the Plex bulk-ingest memory), so treat repeated timeouts as a Plex-side symptom, not a Tautulli fault. Confirm Plex health before acting; only re-check the Plex connection under Settings > Plex Media Server if it stays disconnected for many minutes.
+  - symptom: |-
+      After moving/reprovisioning, Tautulli shows no users/libraries or can't reach Plex.
+    fix: |-
+      Plex is not configured via env — re-run the connection in the web UI (Settings > Plex Media Server) and re-authenticate to mint a fresh Plex token, which is persisted in `/opt/stacks/tautulli/config`. Verify the container is up with `ssh mini 'cd /opt/stacks/tautulli && docker compose ps'`.
+- name: unbound
+  about: |-
+    Unbound is a recursive, validating, DNSSEC-aware DNS resolver running as the `mvance/unbound:1.22.0` container on `mini` (`/opt/stacks/unbound`), acting as the private upstream for AdGuard Home. Instead of AdGuard forwarding queries to Google/Cloudflare, it points its upstream at this resolver (`unbound:5335`), which then queries the DNS root and authoritative servers directly and validates DNSSEC itself, so no third-party resolver ever sees the household's queries. Reachability is container-to-container over the external `edge` bridge (both AdGuard and Unbound sit on it and address each other by container name); the `127.0.0.1:5335` host port is optional and exists only for host-side testing (`drill -p 5335 example.com @127.0.0.1`). Config is bind-mounted from `./unbound/unbound.conf` — RFC1918-only `access-control`, `prefetch`/`prefetch-key`, `serve-expired`, and `edns-buffer-size: 1232`. A healthcheck resolves `cloudflare.com` via drill every 30s; it is currently Up and healthy.
+  troubleshoot:
+  - symptom: |-
+      Logs repeatedly warn `so-rcvbuf 4194304 was not granted. Got 425984` at every start.
+    fix: |-
+      Benign — the container requests `so-rcvbuf: 4m` (in unbound.conf) but the host kernel caps it lower and Unbound falls back to the granted size. To silence it, either raise the host limit (`sysctl -w net.core.rmem_max=4194304`) or lower `so-rcvbuf` in `./unbound/unbound.conf` to match. Does not affect resolution.
+  - symptom: |-
+      AdGuard shows all upstream queries failing / no internet DNS after a compose change.
+    fix: |-
+      AdGuard cannot reach Unbound at `127.0.0.1` — that is AdGuard's own container loopback. Confirm both are on the external `edge` network (`docker network inspect edge`) and that AdGuard's upstream is set to `unbound:5335` (container name), not an IP or localhost.
+  - symptom: |-
+      `docker compose up -d` fails with `network edge declared as external, but could not be found`.
+    fix: |-
+      The `edge` bridge is owned by another stack (AdGuard). Bring that stack up first, or create it manually: `docker network create edge`, then re-run `cd /opt/stacks/unbound && docker compose up -d`.
+  - symptom: Verifying DNSSEC validation actually works from the host.
+    fix: |-
+      Run `ssh mini 'drill -p 5335 sigok.verteiltesysteme.net @127.0.0.1'` (should return an answer with the AD flag) and `drill -p 5335 sigfail.verteiltesysteme.net @127.0.0.1` (should SERVFAIL). SERVFAIL on sigfail confirms validation is on.
+- name: uptime-kuma
+  about: |-
+    Uptime Kuma is the homelab's self-hosted uptime/status monitor, running as the single `uptime-kuma` container (`louislam/uptime-kuma:2.1.1`) on `mini` from `foss-setup/configs/docker-stack/stacks/uptime-kuma/compose.yaml`, published at https://uptime.tabaska.us via Caddy (the container itself only exposes `3001:3001` on the external `edge` network). It runs 50+ monitors covering HTTP endpoints across the fleet (e.g. NAS Plex, Mini Navidrome/RoMM) plus TCP/HTTP probes of the game servers (e.g. `Rig Palworld` at `192.168.10.12:8212`). All state lives in the `./data:/app/data` bind mount; notably this instance uses Uptime Kuma v2's `embedded-mariadb` backend (see `data/db-config.json`) rather than the legacy SQLite `kuma.db` (which is present but empty), so the whole `data/` dir — including `data/mariadb/` — must be preserved on any move or restore. The only env var is `TZ` (defaults to `America/New_York`); there is no published status page yet, so Homepage integrates via `siteMonitor` rather than the status-page widget.
+  troubleshoot:
+  - symptom: |-
+      Logs show a mysql2 `PROTOCOL_CONNECTION_LOST` / `fatal: true` crash on startup, suggesting the DB backend is broken.
+    fix: |-
+      This is a one-time artifact from the embedded-MariaDB first-boot/init sequence and does not recur (zero occurrences in the last 48h during live check). Confirm the container is healthy with `ssh mini 'cd /opt/stacks/uptime-kuma && docker compose ps'` — if it stays `(healthy)` and the UI loads, ignore it. Only investigate if `PROTOCOL_CONNECTION_LOST` appears repeatedly in recent logs.
+  - symptom: |-
+      A monitor flaps to Pending with `read ECONNRESET` or `ECONNREFUSED` (e.g. Mini Navidrome, NAS Plex, Rig Palworld).
+    fix: |-
+      These are the monitored target being transiently unreachable, not an Uptime Kuma fault. Verify the target service directly (e.g. the Palworld game server on rig `192.168.10.12:8212`, or the DHCP-lease 'frozen mini' class of outage) before touching Uptime Kuma. The 3-retry / 60s-interval default means brief blips self-recover.
+  - symptom: |-
+      Data volume won't survive a migration or the DB appears empty (`kuma.db` is 0 bytes).
+    fix: |-
+      Do NOT rely on `kuma.db` — this instance runs the v2 `embedded-mariadb` backend, so real state lives in `data/mariadb/` and is described by `data/db-config.json` (`"type": "embedded-mariadb"`). Back up / move the entire `./data` directory. Also note the compose header warning: the data volume must NOT be on NFS (use the local bind mount as configured).
+  - symptom: Using the `:latest` image tag by mistake.
+    fix: |-
+      `:latest` still points to the deprecated v1 and is incompatible with this v2 embedded-mariadb data dir. Keep the pinned `louislam/uptime-kuma:2.1.1` (or a newer `:2`/`:2.x` tag) in `compose.yaml`; bump via the standard `docker compose pull && docker compose up -d` update loop.
+- name: vaultwarden
+  about: |-
+    Vaultwarden is a self-hosted, Bitwarden-compatible password-manager server (`vaultwarden/server:1.36.0`, shipping web vault v2026.4.1) running on `mini` from `foss-setup/configs/docker-stack/stacks/vaultwarden/compose.yaml` and reachable at https://vault.tabaska.us. It publishes no host port; Caddy fronts it over the shared external `edge` network (`reverse_proxy vaultwarden:80`, websockets handled automatically), so its `DOMAIN` env var must exactly match the public URL for links, invites, and WebAuthn to work. State is a small SQLite DB plus attachments under `./data` (bind-mounted `./data:/data`), intentionally INCLUDED in restic backups (see `/etc/restic/excludes.txt`). The `/admin` panel is gated by `ADMIN_TOKEN` (recorded in the operator vault, `.handoff-secrets.yaml`), and `SIGNUPS_ALLOWED` should be flipped to false once the operator has registered. Task foss-01 is the in-progress Bitwarden to Vaultwarden data cutover.
+  troubleshoot:
+  - symptom: Login links, invites, or WebAuthn/passkeys fail or point to the wrong host
+    fix: |-
+      Ensure `DOMAIN` in `/opt/stacks/vaultwarden/.env` is set to the exact public URL (`https://vault.tabaska.us`) that clients use; correct it then `ssh mini 'cd /opt/stacks/vaultwarden && docker compose up -d'`.
+  - symptom: Anyone can self-register a new account
+    fix: |-
+      After the operator has registered, set `SIGNUPS_ALLOWED=false` in `.env` and `docker compose up -d`; the compose default is already false but `.env.example` ships it true for initial setup.
+  - symptom: /admin panel unreachable or asks for a token that doesn't work
+    fix: |-
+      `ADMIN_TOKEN` must be present in `.env` (generate with `openssl rand -base64 48`); the live token is also in the operator vault `.handoff-secrets.yaml`.
+  - symptom: Container shows unhealthy after a restart
+    fix: |-
+      Healthcheck runs the image's `/healthcheck.sh` (curls /alive) with a 40s start_period; check `ssh mini 'cd /opt/stacks/vaultwarden && docker compose logs --tail 50'` and confirm `Rocket has launched from http://0.0.0.0:80`.
+- name: wallabag
+  about: |-
+    Wallabag is a self-hosted read-it-later / article archiver (a Pocket replacement) running on the Mac mini Docker stack at `/opt/stacks/wallabag`, reached via Caddy at https://wallabag.tabaska.us and directly on the LAN at `mini:8085`. The stack is three containers — `wallabag/wallabag:2.6.14` (app, port 80 internally), `mariadb:11.4` for storage, and `redis:7-alpine` for async import / 2FA throttling — wired to the shared external `edge` network for the Caddy reverse proxy plus a private `wallabag` bridge for DB/Redis. It sits alongside Miniflux and Navidrome in the reading/media stack and feeds the Kobo's KOReader Wallabag plugin (see `foss-setup/scripts/reading/koreader-cwa-wallabag-wiring.md` §F), which pulls saved articles over the API. Key config: DB migrations run on boot when `POPULATE_DATABASE=true`; the public URL is fixed by `SYMFONY__ENV__DOMAIN_NAME` (must match how it's actually reached, since it drives links/cookies) and secrets (`WALLABAG_SECRET`, DB passwords) come from `.env` sourced from the vault, never committed.
+  troubleshoot:
+  - symptom: KOReader Wallabag plugin can't authenticate or sync articles from the Kobo.
+    fix: |-
+      The plugin needs an API client, not just the login. Log into https://wallabag.tabaska.us, go to Settings -> API clients management, create a client, and put its client_id/secret plus the wallabag user credentials into the KOReader plugin config with server_url set to the full https domain. See foss-setup/scripts/reading/koreader-cwa-wallabag-wiring.md §F.
+  - symptom: Fresh install still has the default wallabag / wallabag login.
+    fix: |-
+      Default credentials on a new install are wallabag / wallabag. Log in and change the password immediately under User management before exposing it via Caddy.
+  - symptom: |-
+      Broken links, redirect loops, or session/cookie issues after changing how the site is reached.
+    fix: |-
+      SYMFONY__ENV__DOMAIN_NAME (from WALLABAG_DOMAIN_NAME in .env) must exactly match the public URL (https://wallabag.tabaska.us). If it drifts from the Caddy domain, fix .env on mini and `cd /opt/stacks/wallabag && docker compose up -d` to recreate the container.

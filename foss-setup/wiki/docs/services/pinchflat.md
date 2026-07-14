@@ -10,6 +10,10 @@ Pinchflat — "Sonarr for YouTube": automated, self-hosted YouTube archiving
 | **Notes** | YouTube channel archiving ("Sonarr for YouTube"). |
 | **Upstream docs** | <https://github.com/kieraneglin/pinchflat> |
 
+## About
+
+Pinchflat is a "Sonarr for YouTube" channel/playlist archiver — a single self-contained Elixir/Oban app built on `yt-dlp` — running on `mini` from `foss-setup/configs/docker-stack/stacks/pinchflat/compose.yaml` (container `pinchflat`, port `8945`, fronted by Caddy at https://pinchflat.tabaska.us on the external `edge` network). It subscribes to channels/playlists, downloads new uploads on a schedule, applies SponsorBlock, and writes clean NFO metadata + thumbnails into `${PINCHFLAT_DOWNLOADS}` (`/mnt/nas-youtube/pinchflat` → the NAS "YouTube" Plex library path) so Plex indexes the archive as a show. The image is NOT stock upstream: it is a locally-built `pinchflat-bgutil:local` (`Dockerfile` `FROM ghcr.io/kieraneglin/pinchflat:latest`) that layers the nightly `yt-dlp` zipapp plus a baked `/etc/yt-dlp.conf` (`--extractor-args "youtube:player_client=default,tv,web_safari"`) to defeat YouTube's 403/JS-challenge — the stock stable `yt-dlp` lags YouTube's player and 403s; refresh with `docker compose build --pull && docker compose up -d`.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -29,6 +33,12 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 
 - `TZ`
 - `PINCHFLAT_DOWNLOADS`
+
+## Troubleshooting
+
+- **A large bulk ingest from Pinchflat makes ALL Plex clients return 503 while the process shows "running" and drains glacially.** — Bulk ingest floods Plex's none-agent metadata analysis and saturates the analysis worker pool. Diagnose via the Plex Media Server log (live analysis count / 408 trend); there is no fast fix — let it drain, or throttle Pinchflat's download concurrency and stage large channel back-catalogs in smaller batches rather than all at once.
+- **Plex shows 0 items in the YouTube library even though Pinchflat wrote the files.** — Files written to the NAS CIFS/DSM share by Pinchflat lack the PlexMediaServer ACL ACE, so Plex cannot read them. Apply the synoacltool fix + enable inheritance on the share (same class of fix as the NAS Plex share ACL issue). Confirm inheritance so newly-downloaded files inherit the ACE automatically.
+- **Downloads fail with HTTP 403 / "Sign in to confirm you're not a bot" / n-signature errors.** — YouTube changed its player/JS challenge and the bundled yt-dlp is stale. Rebuild the image to pull the latest nightly zipapp: ssh mini 'cd /opt/stacks/pinchflat && docker compose build --pull && docker compose up -d'. If a specific video still 403s, wire the bgutil PO-token provider (bgutil-pot:4416) plugin + base_url arg per the note in yt-dlp.conf.
 
 ## Operations
 

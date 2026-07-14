@@ -9,6 +9,10 @@ AdGuard Home — network-wide DNS filtering (PRIMARY pick over Pi-hole)
 | **Source** | `foss-setup/configs/docker-stack/stacks/adguard/compose.yaml` |
 | **Upstream docs** | <https://github.com/AdguardTeam/AdGuardHome/wiki/Docker> |
 
+## About
+
+AdGuard Home is the fleet's PRIMARY network-wide DNS filter/resolver (chosen over Pi-hole for its single-container design, built-in DoT/DoH/DoQ, and per-client rules), running as `adguard/adguardhome:v0.107.77` on `mini` from `foss-setup/configs/docker-stack/stacks/adguard/compose.yaml`. It publishes DNS on host `:53` (tcp+udp) plus DoT on `:853`, while its admin UI (container `:80`) is reached only through Caddy at https://dns.tabaska.us — host `:80`/`:3000` are deliberately NOT bound (`:80` collides with Caddy; `:3000` is break-glass for the first-run wizard). Upstream is the sibling Unbound recursive+DNSSEC resolver over the shared external `edge` network, referenced as `unbound:5335` (NOT `127.0.0.1:5335`, which inside the container is AdGuard's own loopback). Config is not env-driven — everything lives in `./conf/AdGuardHome.yaml`; the only env var is `TZ`. This host is the first entry in the fleet's fail-open DHCP nameserver chain (192.168.10.2 → .4 → .1) so a single resolver being down never takes DNS out for the whole fleet.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -27,6 +31,13 @@ AdGuard Home — network-wide DNS filtering (PRIMARY pick over Pi-hole)
 Variable names from `.env.example` — real values live in `.env` on the host, sourced from the vault (never committed):
 
 - `TZ`
+
+## Troubleshooting
+
+- **Admin UI unreachable / first-run wizard needed but https://dns.tabaska.us does not respond.** — The UI is only exposed through Caddy at dns.tabaska.us (adguardhome:80 on the edge network). Do NOT bind host :80 (collides with Caddy). To break-glass into the initial wizard, temporarily publish 3000 in compose.yaml, then move config back behind Caddy afterward.
+- **All resolution fails / upstream errors after pointing AdGuard at 127.0.0.1:5335.** — Inside the container 127.0.0.1 is AdGuard's own loopback, not the host — Unbound is unreachable. In Settings → DNS → Upstream servers use unbound:5335 (both containers share the external edge network).
+- **Log spam: 'dnsproxy: reading msg proto=tcp err="reading len: read: connection reset by peer"' (frequently from 192.168.10.186).** — Benign — a TCP-DNS client (192.168.10.186) is closing idle/aborted connections before AdGuard finishes reading; queries still resolve. No action needed; investigate that client only if it correlates with actual resolution failures via 'ssh mini "cd /opt/stacks/adguard && docker compose logs --tail 100"'.
+- **DNS outage for the fleet if mini/AdGuard is down.** — By design the DHCP-handed nameserver chain is 192.168.10.2 (mini/AdGuard) → 192.168.10.4 (nas) → 192.168.10.1 (gateway), so clients fail open to the next resolver. If mini is down, filtering is bypassed but resolution continues; restore with 'ssh mini "cd /opt/stacks/adguard && docker compose up -d"'.
 
 ## Operations
 

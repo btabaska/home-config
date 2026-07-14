@@ -10,6 +10,10 @@ Uptime Kuma — service uptime monitoring & status pages
 | **Notes** | Uptime checks. No published status page yet, so Homepage uses siteMonitor not the widget. |
 | **Upstream docs** | <https://github.com/louislam/uptime-kuma> |
 
+## About
+
+Uptime Kuma is the homelab's self-hosted uptime/status monitor, running as the single `uptime-kuma` container (`louislam/uptime-kuma:2.1.1`) on `mini` from `foss-setup/configs/docker-stack/stacks/uptime-kuma/compose.yaml`, published at https://uptime.tabaska.us via Caddy (the container itself only exposes `3001:3001` on the external `edge` network). It runs 50+ monitors covering HTTP endpoints across the fleet (e.g. NAS Plex, Mini Navidrome/RoMM) plus TCP/HTTP probes of the game servers (e.g. `Rig Palworld` at `192.168.10.12:8212`). All state lives in the `./data:/app/data` bind mount; notably this instance uses Uptime Kuma v2's `embedded-mariadb` backend (see `data/db-config.json`) rather than the legacy SQLite `kuma.db` (which is present but empty), so the whole `data/` dir — including `data/mariadb/` — must be preserved on any move or restore. The only env var is `TZ` (defaults to `America/New_York`); there is no published status page yet, so Homepage integrates via `siteMonitor` rather than the status-page widget.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -27,6 +31,13 @@ Uptime Kuma — service uptime monitoring & status pages
 Variable names from `.env.example` — real values live in `.env` on the host, sourced from the vault (never committed):
 
 - `TZ`
+
+## Troubleshooting
+
+- **Logs show a mysql2 `PROTOCOL_CONNECTION_LOST` / `fatal: true` crash on startup, suggesting the DB backend is broken.** — This is a one-time artifact from the embedded-MariaDB first-boot/init sequence and does not recur (zero occurrences in the last 48h during live check). Confirm the container is healthy with `ssh mini 'cd /opt/stacks/uptime-kuma && docker compose ps'` — if it stays `(healthy)` and the UI loads, ignore it. Only investigate if `PROTOCOL_CONNECTION_LOST` appears repeatedly in recent logs.
+- **A monitor flaps to Pending with `read ECONNRESET` or `ECONNREFUSED` (e.g. Mini Navidrome, NAS Plex, Rig Palworld).** — These are the monitored target being transiently unreachable, not an Uptime Kuma fault. Verify the target service directly (e.g. the Palworld game server on rig `192.168.10.12:8212`, or the DHCP-lease 'frozen mini' class of outage) before touching Uptime Kuma. The 3-retry / 60s-interval default means brief blips self-recover.
+- **Data volume won't survive a migration or the DB appears empty (`kuma.db` is 0 bytes).** — Do NOT rely on `kuma.db` — this instance runs the v2 `embedded-mariadb` backend, so real state lives in `data/mariadb/` and is described by `data/db-config.json` (`"type": "embedded-mariadb"`). Back up / move the entire `./data` directory. Also note the compose header warning: the data volume must NOT be on NFS (use the local bind mount as configured).
+- **Using the `:latest` image tag by mistake.** — `:latest` still points to the deprecated v1 and is incompatible with this v2 embedded-mariadb data dir. Keep the pinned `louislam/uptime-kuma:2.1.1` (or a newer `:2`/`:2.x` tag) in `compose.yaml`; bump via the standard `docker compose pull && docker compose up -d` update loop.
 
 ## Operations
 

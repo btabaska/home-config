@@ -10,17 +10,23 @@ Libreseerr — book request portal (Readarr / Bookshelf / LazyLibrarian)
 | **Notes** | Book request portal (feeds Readarr). Container port 5000. |
 | **Upstream docs** | <https://github.com/zamnzim/Libreseerr> |
 
+## About
+
+Libreseerr is the book-request portal in Brandon's *arr media stack — the ebook/audiobook counterpart to Seerr (movies/TV) and MusicSeerr (music) — running as a single `ghcr.io/zamnzim/libreseerr` container on the Mac mini (`/opt/stacks/libreseerr`), exposed on `8789:5000` over the external `edge` (Caddy/Tailscale) network at https://libreseerr.tabaska.us. It fronts Readarr on the NAS (`http://192.168.10.4:8787`) to turn user book requests into monitored+searched Readarr additions, and pulls discovery/browse data from OpenLibrary. Two files are bind-mounted read-only as a local patch — `./app.py` and `./readarr.py` — that re-rank the Readarr/rreading-glasses lookup candidates (upstream blindly picks `readarr_books[0]`, which is often a junk user-uploaded ALL-CAPS edition with a phantom author ID that 404s → Readarr 400 / stuck book) so the canonical edition wins, then retry-until-accepted. The image is pinned by MANIFEST digest (`820134e4`), not by local image ID, because upstream publishes no version tags and garbage-collects old digests.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
 |---|---|---|
-| `libreseerr` | `ghcr.io/zamnzim/libreseerr@sha256:c2dbf74a5ab6b72b4f7083c646ac2fa0d8db5a7291b0fb0e0e9f481bccad179b` | `8789:5000` |
+| `libreseerr` | `ghcr.io/zamnzim/libreseerr@sha256:820134e44279c964ddf54090ab45b444a28e7f562256baaadf20fffaf36911f3` | `8789:5000` |
 
 ## Volumes
 
 | Service | Volume |
 |---|---|
 | `libreseerr` | `./data:/app/data` |
+| `libreseerr` | `./app.py:/app/app.py:ro` |
+| `libreseerr` | `./readarr.py:/app/readarr.py:ro` |
 
 ## Environment (`.env`)
 
@@ -28,6 +34,14 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 
 - `TZ`
 - `SECRET_KEY`
+
+## Troubleshooting
+
+- **Book request fails with a 400 or gets "stuck" (never lands in Readarr); Readarr rejects the phantom author with a 404.** — This is the junk-edition bug: upstream picks readarr_books[0] which can be a garbage rreading-glasses/Goodreads user edition. It is fixed by the bind-mounted ./app.py + ./readarr.py patch (candidate re-ranking + retry-until-accepted). Confirm both files are still mounted read-only in compose.yaml and present in the container; the ranking logic lives around app.py line ~1017.
+- **After an image bump, book requests regress to 400s / junk editions again.** — The patch lives ONLY in the bind-mounted app.py/readarr.py, not in the upstream image. Every image bump can ship a new app.py signature — re-derive (re-apply) the local patch against the new upstream app.py before recreating. Marker comment in the code: "local patch (libreseerr-diagnosis 2026-07-12); re-derive on image bump."
+- **`docker compose pull` fails with "manifest unknown", or `up -d` won't start after an app.py edit.** — Do NOT pin the local image ID (the 2026-07-09 audit mistakenly pinned ID c2dbf74a, which is not pullable — corrected 2026-07-12 to manifest digest 820134e4). Keep the sha256 MANIFEST digest in compose.yaml. To recreate offline after an app.py change without pulling: `ssh mini 'cd /opt/stacks/libreseerr && docker compose up -d --pull never'`.
+- **Container won't start, complaining SECRET_KEY is unset.** — `SECRET_KEY` is required (compose uses `${SECRET_KEY:?...}`). It must exist in /opt/stacks/libreseerr/.env on the mini (sourced from the vault). Generate once with `openssl rand -hex 32` — a stable value keeps sessions from invalidating on restart.
+- **Requests are accepted in Libreseerr but nothing downloads.** — Libreseerr only hands off to Readarr on the NAS (http://192.168.10.4:8787). Check Readarr itself — confirm the book is monitored and searched, and that the indexer/download-client chain is healthy. Verify connectivity from the mini container: logs should show `GET /api/v1/book HTTP/1.1 200`.
 
 ## Operations
 

@@ -10,6 +10,10 @@ MusicSeerr — music request & discovery portal (Lidarr integration)
 | **Notes** | Album request portal (feeds Lidarr). |
 | **Upstream docs** | <https://musicseerr.com/docs/getting-started/> |
 
+## About
+
+MusicSeerr is the album-request and music-discovery portal (a Seerr-style front end for Lidarr), running as the `ghcr.io/habirabbu/musicseerr:v1.4.2` container on the Mac mini (`192.168.10.2`) from `foss-setup/configs/docker-stack/stacks/musicseerr/compose.yaml`, exposed on `8688` and fronted by Caddy at https://musicseerr.tabaska.us via the external `edge` network. It is the music counterpart to Seerr (movies/TV): user requests are forwarded to Lidarr on the NAS at `192.168.10.4:8686`, which handles the actual grab/download, while a read-only `${MUSIC_FOLDER:-/mnt/nas/music}:/music` mount (same path as Navidrome) enables local-file playback/browsing. Key config decision: the Lidarr API key MUST be supplied via the `LIDARR_API_KEY` env var and kept ABSENT from `config.json` — v1.4.2 encrypts the key on save but never decrypts it on load, so a key stored in config causes a 401 against Lidarr on every restart; env wins only while the config value is empty.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -32,6 +36,12 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `PGID`
 - `TZ`
 - `MUSIC_FOLDER`
+
+## Troubleshooting
+
+- **A batch album request shows a phantom "Downloading 0%" in MusicSeerr that never progresses or completes.** — Batch requests can land in Lidarr with monitored=False, so Lidarr never searches for them. Open Lidarr (http://192.168.10.4:8686), find the affected album/artist, toggle Monitor ON, and trigger a manual Search. The MusicSeerr status resolves once Lidarr actually grabs the release. Re-check after batch requests as a regression guard.
+- **MusicSeerr repeatedly 401s against Lidarr after a container restart even though the key was set once.** — The key was saved into config.json, which v1.4.2 encrypts-on-save but cannot decrypt-on-load. Ensure LIDARR_API_KEY is set in ./.env (gitignored) and remove/blank the Lidarr API key field from ./config/config.json, then `ssh mini 'cd /opt/stacks/musicseerr && docker compose up -d --force-recreate'`. The env var wins as long as the key is absent from config.
+- **Need to inspect MusicSeerr's SQLite DB from inside the container.** — The `sqlite3` CLI is not installed in the image. Copy the DB out and inspect on the host instead (`docker cp musicseerr:/app/config/<db> ./` then use a local sqlite3), or use a temporary container that bundles sqlite mounting ./config.
 
 ## Operations
 

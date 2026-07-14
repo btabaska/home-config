@@ -9,6 +9,10 @@ BedrockConnect — lets consoles (Switch 2) join self-hosted Bedrock servers.
 | **Source** | `foss-setup/configs/docker-stack/stacks/bedrock-connect/compose.yaml` |
 | **Notes** | BedrockConnect gateway (UDP 19132) — consoles reach LAN/playit Minecraft via AdGuard featured-server rewrites. |
 
+## About
+
+BedrockConnect (Pugmatt project, `strausmann/minecraft-bedrock-connect:latest`, currently v1.68.0) is a UDP `19132` gateway on the mini (`/opt/stacks/bedrock-connect`) that lets Minecraft consoles — which cannot type an arbitrary server IP and can only reach servers via the built-in "featured server" tiles — join Brandon's self-hosted Bedrock worlds. AdGuard on the LAN rewrites the featured-server (Hive/etc.) domains to this container, so when a console opens any featured tile it lands in a server-list UI pre-seeded from `./config/custom_servers.json` with two entries: "MinecraftCross (Home)" → `192.168.10.12:19132` (the rig's Geyser/Paper server) and "MinecraftCross (Remote/playit)" → `bedrock.tabaska.us:1111` (the playit tunnel). It runs `NODB=true` (file-based player storage, no external DB) on the external `edge` docker network, so no console-side settings are needed — the LAN's AdGuard DNS does all the redirection.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -20,6 +24,11 @@ BedrockConnect — lets consoles (Switch 2) join self-hosted Bedrock servers.
 | Service | Volume |
 |---|---|
 | `bedrock-connect` | `./config:/config` |
+
+## Troubleshooting
+
+- **Console opens a featured-server tile but never sees the MinecraftCross list (times out or shows the vendor's real server).** — This depends entirely on the LAN AdGuard rewrites hijacking the featured-server domains to the mini. Confirm the console is using AdGuard as its DNS resolver, and that the featured-server rewrite rules still exist in AdGuard. Verify the gateway itself is up: ssh mini 'cd /opt/stacks/bedrock-connect && docker compose ps' (should show Up/healthy on 0.0.0.0:19132->19132/udp).
+- **The server list appears but connecting to an entry fails.** — The two target addresses in ./config/custom_servers.json must be reachable: Home = 192.168.10.12:19132 (rig Geyser must be running) and Remote = bedrock.tabaska.us:1111 (playit tunnel). Bedrock ignores SRV records so the port 1111 is significant. Edit config/custom_servers.json and restart with docker compose up -d if an address/port changed.
 
 ## Operations
 

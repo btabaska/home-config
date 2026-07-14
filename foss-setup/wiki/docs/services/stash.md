@@ -10,6 +10,10 @@ Stash on Synology DS920+ (Container Manager / Docker Compose)
 | **Notes** | Adult media organizer. LAN/Tailscale only. No API key in vault — no widget. |
 | **Upstream docs** | <https://github.com/stashapp/stash> · <https://docs.stashapp.cc/installation/docker/> · <https://github.com/stashapp/stash/blob/develop/docker/production/docker-compose.yml> |
 
+## About
+
+Stash (`stashapp/stash:v0.31.1`) is an adult-media organizer running as a single Docker container on the Synology DS920+ NAS (`192.168.10.4`), deployed via DSM Container Manager from `foss-setup/configs/nas/stash/docker-compose.yml` at `/volume1/docker/stash/` on the host. It reuses a pre-existing library tree at `/volume1/stash` (`STASH_ROOT`), with `root/` as the ~915 GB media dir mounted to `/data`, plus sibling `metadata/` (SQLite DB), `generated/`, `blobs/`, and `cache/` dirs; scrapers/plugins/config live separately under `CONFIG_DIR` (`/volume1/docker/stash/config` → `/root/.stash`). It listens on host port 9999 (`STASH_PORT`) and is fronted by Caddy on mini at `stash.tabaska.us`, but is deliberately kept LAN/Tailscale-only with no public vhost given the content. No API key is stored in the vault, so it has no dashboard widget.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -36,6 +40,11 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `CONFIG_DIR`
 - `STASH_PORT`
 - `TZ`
+
+## Troubleshooting
+
+- **After the first launch the library is empty or tags/performers are missing, even though media files are present.** — The migration from the prior install carried over media files and generated thumbnails but no SQLite DB was found in the old tree (a fresh `metadata/stash-go.sqlite` is created on first run). Re-index by running Settings -> Tasks -> Scan against `/data`; previously-scraped tags/performers from the old install are gone and must be re-scraped.
+- **`docker compose` commands over SSH fail or Stash won't come up after editing the compose file.** — The NAS requires root and the full docker path. Deploy/verify with `ssh -t nas 'cd /volume1/docker/stash && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'` and check with `ssh -t nas 'sudo /usr/local/bin/docker ps --filter name=stash'`.
 
 ## Operations
 

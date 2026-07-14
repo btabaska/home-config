@@ -9,6 +9,10 @@ AdGuard Home — SECONDARY network DNS (NAS)
 | **Source** | `foss-setup/configs/docker-stack/stacks/adguard-nas/compose.yaml` |
 | **Upstream docs** | <http://192.168.10.4:3000> |
 
+## About
+
+AdGuard Home running as the **secondary** network DNS resolver on the NAS (`192.168.10.4`, eth1 on the Trusted VLAN), deployed via Synology Container Manager from `foss-setup/configs/docker-stack/stacks/adguard-nas/` as container `adguardhome-nas` (`adguard/adguardhome:v0.107.77`), serving DNS on `:53` with break-glass admin at http://192.168.10.4:3000. It is DHCP DNS **#2** in the fail-open chain (`192.168.10.2` mini primary → `192.168.10.4` NAS secondary → `192.168.10.1` gateway fallback), so a mini reboot never becomes a house-wide outage. The critical design decision: its upstream is **public DoT** (`tls://1.1.1.1` / `tls://9.9.9.9`, live it resolves via Quad9), deliberately **not** mini Unbound, so it keeps resolving when the mini is offline; it mirrors the mini's `*.tabaska.us → 192.168.10.2` rewrites (verified live: returns `192.168.10.2` for `plex.tabaska.us`). This is task dns-02, done and validated 2026-07-14; config state lives in the bind-mounted `./work` and `./conf` dirs under `/volume1/docker/adguard-nas/`.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -21,6 +25,13 @@ AdGuard Home — SECONDARY network DNS (NAS)
 |---|---|
 | `adguardhome` | `./work:/opt/adguardhome/work` |
 | `adguardhome` | `./conf:/opt/adguardhome/conf` |
+
+## Troubleshooting
+
+- **Upstream DNS resolution intermittently fails; logs show `dnsproxy: exchange failed upstream=https://dns10.quad9.net:443/dns-query ... err="...unexpected EOF"`.** — Transient DoH/DoT hiccup against the public upstream — AdGuard retries and other upstreams answer, so it is usually self-healing. Configure multiple upstreams (Settings → DNS → tls://1.1.1.1 AND tls://9.9.9.9) so one flaky provider does not stall lookups. Verify resolution still works: `sudo docker exec adguardhome-nas nslookup google.com 127.0.0.1`. Do NOT switch the upstream to mini Unbound — the secondary must resolve independently when the mini is down.
+- **Internal `*.tabaska.us` names resolve via the mini but not via the NAS secondary (client on NAS DNS gets wrong/no address for e.g. vault/plex/wiki).** — The rewrites drifted from the mini. Re-mirror them: on mini AdGuard Settings → DNS rewrites → Export, then import into the NAS instance at http://192.168.10.4:3000 (Settings → DNS rewrites). Confirm with `sudo docker exec adguardhome-nas nslookup plex.tabaska.us 127.0.0.1` — must return `192.168.10.2`.
+- **Container won't (re)start because `:53` is already bound on the NAS.** — Synology's own services or a stale bind can hold UDP/TCP 53. Check with `ssh nas` then `sudo netstat -tulnp | grep :53`; free the port or stop the conflicting service, then `cd /volume1/docker/adguard-nas && sudo docker compose up -d`.
+- **Whole-house DNS outage symptom: WiFi shows connected but some devices have no internet.** — This is the dns-03 gap — the UniFi fail-open DHCP chain (`192.168.10.2, 192.168.10.4, 192.168.10.1`) is not yet applied to all client VLANs, so a client may sit on a single dead resolver. Immediate fix: UniFi → set affected VLAN DHCP DNS to `192.168.10.1` (gateway), renew leases. Long-term: complete dns-03 so the NAS secondary is actually second in the client chain. Do NOT enable the dns-05 NAT :53 redirect until dns-03 is verified.
 
 ## Operations
 

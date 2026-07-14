@@ -11,6 +11,10 @@ Frigate — local, real-time object-detection NVR for IP cameras
 | **Source** | `foss-setup/configs/docker-stack/stacks/frigate/compose.yaml` |
 | **Upstream docs** | <https://docs.frigate.video/> · <https://docs.frigate.video/configuration/camera_specific> |
 
+## About
+
+Frigate is a local, real-time object-detection NVR for IP cameras, staged (not deployed) as a Docker Compose stack on `mini` at `/opt/stacks/frigate` from source `foss-setup/configs/docker-stack/stacks/frigate/compose.yaml`, image `ghcr.io/blakeblackshear/frigate:0.17.1` (0.17.2 not yet published upstream). It is the ha-15 camera-detection piece: the intended design ingests UniFi Protect RTSP(S) substreams — a low-res substream for continuous detect plus the full-res stream for recording — and runs AI detection entirely locally with no cloud. The blocking decision is the detector hardware, which has not been chosen: the compose `devices:` list is an empty `[]` with commented options for a Google Coral USB/M.2 TPU (the recommended path) or an Intel Quick Sync iGPU via OpenVINO — notably the 2014 Mac mini's HD 5000 iGPU is called out as NOT a practical OpenVINO detector, so a Coral is required on that host. Config/recordings are bind-mounted (`./config`, `${FRIGATE_MEDIA:-./media}`) with a 1 GB tmpfs RAM cache, it runs `privileged` on the external `edge` network, and the authenticated UI on `8971` is intentionally not proxied yet (the caddy frigate vhost is commented out).
+
 ## Containers
 
 | Service | Image (pinned) | Ports |

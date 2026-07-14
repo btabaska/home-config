@@ -10,6 +10,10 @@ Dockge — lightweight Docker Compose stack manager (SIMPLE DEFAULT)
 | **Notes** | Compose stack manager. |
 | **Upstream docs** | <https://github.com/louislam/dockge> |
 
+## About
+
+Dockge (`louislam/dockge:1.5.0`) is a lightweight self-hosted web UI for managing Docker Compose stacks, running on the `mini` (192.168.10.2) from `foss-setup/configs/docker-stack/stacks/dockge/compose.yaml` and fronted by Caddy at https://dockge.tabaska.us (direct port `5001:5001`). It mounts `/var/run/docker.sock` for Docker control and bind-mounts `/opt/stacks:/opt/stacks` — the same absolute path on both sides of the mount, matching `DOCKGE_STACKS_DIR=/opt/stacks`, which is the load-bearing convention: every compose stack on the mini lives under `/opt/stacks/<name>/` so Dockge can discover, edit, and (re)deploy them. It is the chosen SIMPLE DEFAULT compose manager for the fleet; Dockhand is documented as the "power option" (logs/metrics history, vuln scanning, safe pulls + rollback, Apprise) but is not deployed. State is a SQLite DB under the local `./data/` volume.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -30,6 +34,11 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 
 - `PUID`
 - `PGID`
+
+## Troubleshooting
+
+- **Dockge writes stack files to the wrong location or cannot see existing stacks** — The `/opt/stacks` bind-mount must use the SAME absolute path on host and container (`/opt/stacks:/opt/stacks`) and match `DOCKGE_STACKS_DIR=/opt/stacks`. Do not change either side independently; Dockge stores compose files at the container path but Docker executes them at the host path.
+- **New stack files created by Dockge are owned by the wrong user** — Set `PUID`/`PGID` in `.env` on the mini to the owning user (run `id`); defaults are 1000:1000 via `.env.example`.
 
 ## Operations
 

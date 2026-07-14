@@ -10,6 +10,10 @@ Homepage — the household front door + dashboard/observability layer
 | **Notes** | This dashboard. Container port 3000. |
 | **Upstream docs** | <https://gethomepage.dev/> · <https://gethomepage.dev/installation/#homepage_allowed_hosts> |
 
+## About
+
+Homepage (gethomepage.dev) is the household's single pane of glass — the "front door" at https://home.tabaska.us that gives the family friendly app tiles (Plex, Immich, Calibre-Web, Seerr) and the operator a live observability view (Beszel, Uptime Kuma, Dependency-Track, plus the *arr stack). It runs as one container `ghcr.io/gethomepage/homepage:v1.13.2` on `mini` from `foss-setup/configs/docker-stack/stacks/homepage/compose.yaml`, listening on 3000 in-container and published as host port `3010` (deliberately not 3000/3001 to avoid clashing with Forgejo and Uptime-Kuma on the same box), also fronted by Caddy at `home.tabaska.us`. Live service widgets are lit up by `HOMEPAGE_VAR_*` secrets sourced from the vault into `.env` and referenced as `{{HOMEPAGE_VAR_*}}` in `config/services.yaml`; the container uses `dns: 192.168.10.2` (AdGuard) so `*.tabaska.us` rewrites resolve for ping/widgets. Docker socket auto-discovery is intentionally DISABLED (home-03, 2026-07-07) — every tile is defined manually in `config/services.yaml` because the entrypoint drops to `PUID:PGID` and sheds groups, so the socket mount only produced repeating EACCES errors; the `/var/run/docker.sock:ro` mount remains but `config/docker.yaml` has no `local:` block.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -47,6 +51,13 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `HOMEPAGE_VAR_HA_TOKEN`
 - `HOMEPAGE_VAR_UPTIMEKUMA_SLUG`
 - `HOMEPAGE_VAR_DEPTRACK_KEY`
+
+## Troubleshooting
+
+- **Page won't load with "Host validation failed" after adding a new hostname or port.** — Since v1.0 `HOMEPAGE_ALLOWED_HOSTS` is a required exact-match allowlist. Add the verbatim `host:port` (and the Caddy subdomain) you type in the browser to `HOMEPAGE_ALLOWED_HOSTS` in `.env` on mini, e.g. `home.tabaska.us,192.168.10.2:3010,localhost:3010`, then `ssh mini 'cd /opt/stacks/homepage && docker compose up -d'`.
+- **Logs spam `<httpProxy> Error calling http://maintainerr:6246/ ... getaddrinfo EAI_AGAIN maintainerr` (500).** — A `services.yaml` widget points at the bare container name `maintainerr`, but that container isn't on the `edge` network so Docker/AdGuard DNS can't resolve it. Either put maintainerr on the `edge` network, use its LAN IP/Caddy hostname in the widget href+url, or remove the widget block. Non-fatal — only that one tile's live status is broken.
+- **Widget shows a plain link tile instead of live stats, or shows an auth error.** — The matching `HOMEPAGE_VAR_*_KEY`/`_TOKEN` in `.env` is blank or stale. Fill it from the vault and `docker compose up -d`. Blank values intentionally degrade to a plain link tile rather than erroring.
+- **Wanting Docker container auto-discovery back.** — It is disabled by design — the app runs as PUID:PGID and can't read the socket even with group_add, producing EACCES spam. To re-enable, front the socket with docker-socket-proxy and point `config/docker.yaml` at a `tcp://` endpoint instead of the raw `/var/run/docker.sock`.
 
 ## Operations
 

@@ -9,6 +9,10 @@ playit.gg tunnel agent — public game-server access without opening the Dream W
 | **Source** | `foss-setup/configs/gaming/playit/compose.yaml` |
 | **Notes** | playit.gg tunnel agent — public game paths on dedicated IP 69.9.181.17 (Java SRV:1105, Bedrock :1111, Palworld :1105). Restart the container after tunnel changes (claim-wedge gotcha). |
 
+## About
+
+`playit` is the playit.gg tunnel agent (`ghcr.io/playit-cloud/playit-agent:latest`, `container_name: playit`, `network_mode: host`) running on the rig at `/opt/stacks/playit`, source at `foss-setup/configs/gaming/playit/compose.yaml`. It is the live public path for the rig's game servers: on a premium dedicated IP (69.9.181.17) it forwards NS-delegated hostnames (e.g. `minecraft.tabaska.us`) to localhost ports without opening the Dream Wall or leaking the home IP — Minecraft Java (SRV :1105), Bedrock (:1111), and Palworld (:1105). ONE agent serves MANY tunnels: tunnels are created in the playit.gg dashboard and only `SECRET_KEY` (a read-only agent key, vaulted as `playit.secret_key`, injected via `.env`, never committed) lives on the host. The agent maintains a persistent control session to playit's edge and periodically reconnects.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -20,6 +24,11 @@ playit.gg tunnel agent — public game-server access without opening the Dream W
 Variable names from `.env.example` — real values live in `.env` on the host, sourced from the vault (never committed):
 
 - `SECRET_KEY`
+
+## Troubleshooting
+
+- **A newly-claimed UDP tunnel (e.g. a new Bedrock/Palworld port) does not carry traffic even though it shows in the dashboard.** — Claiming a new UDP tunnel does not take effect until the agent process is restarted — the claim wedges until reload. Run `ssh rig 'cd /opt/stacks/playit && sudo docker compose up -d --force-recreate'` (or `sudo docker restart playit`).
+- **Logs show repeated `WARN timeout waiting for pong` / `control session expired; reconnecting reason=Forced`.** — Benign — the agent's control session to the playit edge times out and auto-reconnects (seen every few hours). No action needed as long as the container stays `Up` and `New TCP Client` lines keep appearing; only intervene if reconnects loop continuously without recovering.
 
 ## Operations
 

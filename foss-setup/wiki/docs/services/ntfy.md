@@ -10,6 +10,10 @@ ntfy — self-hosted push notifications (the notification backbone)
 | **Notes** | Push notifications. Container port 80. |
 | **Upstream docs** | <https://docs.ntfy.sh/install/> · <https://docs.ntfy.sh/config/> |
 
+## About
+
+ntfy is the fleet's self-hosted push-notification server — the alert bus that backup jobs, the AER/NVMe monitor, net-selfheal watchdogs, Diun image-update checks, and other cron/scripts publish to, with the ntfy phone app subscribing per-topic. It runs as a single `binwiederhier/ntfy:v2.19.2` container on `mini` (port `8080`→`80` internally), fronted by Caddy at `https://ntfy.tabaska.us` on the external `edge` network, with `cache.db` and `auth.db`/attachments persisted in the bind-mounted `./cache` and `./lib` dirs. It is locked down: `NTFY_AUTH_DEFAULT_ACCESS=deny-all` with `NTFY_ENABLE_LOGIN=true`, so anonymous publish/subscribe is denied and publishers authenticate with per-user tokens created via the `ntfy` CLI (`ntfy user add`, `ntfy token add`). `NTFY_BEHIND_PROXY=true` is set because Caddy terminates TLS; `init: true` is required alongside the `/v1/health` healthcheck to reap zombie processes.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -32,6 +36,12 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `PUID`
 - `PGID`
 - `TZ`
+
+## Troubleshooting
+
+- **A publisher (backup job, AER monitor, watchdog) gets HTTP 403 / 401 when posting to a topic.** — Server is deny-all by design; the client needs a valid token with write access. Create/rotate one with `ssh mini 'cd /opt/stacks/ntfy && docker compose exec ntfy ntfy token list'` and grant access via `ntfy access <user> <topic> write`. Confirm the script sends `Authorization: Bearer <token>`.
+- **Container won't start or messages/users vanish after a restart.** — State lives in the bind mounts `./cache` (cache.db) and `./lib` (auth.db, attachments) owned by `PUID:PGID` (1000:1000). If perms drift, `ssh mini 'sudo chown -R 1000:1000 /opt/stacks/ntfy/cache /opt/stacks/ntfy/lib'` then `docker compose up -d`.
+- **Topic URLs or iOS Web Push (PWA) break after a domain/proxy change.** — `NTFY_BASE_URL` in `.env` must exactly match the public Caddy domain (`https://ntfy.tabaska.us`); Web Push and topic links are derived from it. Also keep `NTFY_BEHIND_PROXY=true` since Caddy terminates TLS. Fix `.env`, then `docker compose up -d`.
 
 ## Operations
 

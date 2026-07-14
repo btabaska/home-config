@@ -10,6 +10,10 @@ Miniflux — minimalist RSS reader (Go binary + PostgreSQL)
 | **Notes** | RSS reader. Container port 8080. |
 | **Upstream docs** | <https://miniflux.app/docs/docker.html> · <https://hub.docker.com/_/postgres> |
 
+## About
+
+Miniflux is a minimalist, single-binary Go RSS/Atom reader backed by PostgreSQL, running on `mini` (192.168.10.2) from `foss-setup/configs/docker-stack/stacks/miniflux/compose.yaml` and served at https://rss.tabaska.us. It is a two-container stack: `miniflux/miniflux:2.3.1` (host port `8082`→container `8080`) and a private `postgres:17-alpine` db, connected via a bridge `miniflux` network for the DB plus the shared external `edge` network so Caddy fronts it (the container also stays directly reachable on LAN port 8082). `DATABASE_URL` uses `sslmode=disable` over the internal network and `RUN_MIGRATIONS=1` auto-migrates on boot; the admin account is bootstrapped once via `CREATE_ADMIN=1` + `ADMIN_USERNAME`/`ADMIN_PASSWORD` (safe to leave, only acted on when no user exists). Postgres is deliberately pinned to `17-alpine` because pg18 moved the data path — the `./db:/var/lib/postgresql/data` mount would break on an unadjusted major bump.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -31,6 +35,11 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `MINIFLUX_ADMIN_USERNAME`
 - `MINIFLUX_ADMIN_PASSWORD`
 - `MINIFLUX_BASE_URL`
+
+## Troubleshooting
+
+- **DATABASE_URL fails to parse / miniflux can't reach the DB after setting a password** — MINIFLUX_DB_PASSWORD must be URL-safe — a `/` or `+` in the password breaks the `postgres://...@db/miniflux` connection string. Regenerate with `openssl rand -hex 24` (hex-only) and update `.env` on the host.
+- **Postgres won't start after bumping the `db` image to Postgres 18** — pg18 changed PGDATA from `/var/lib/postgresql/data` to `/var/lib/postgresql`. The stack pins `postgres:17-alpine` for this reason; if moving to 18, update the volume mount in `compose.yaml` accordingly (and dump/restore across a major version — data dirs are not forward-compatible).
 
 ## Operations
 

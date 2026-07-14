@@ -10,6 +10,10 @@ Calibre-Web-Automated (CWA) on Synology DS920+ (Container Manager / Docker Compo
 | **Notes** | Ebook library (CWA). |
 | **Upstream docs** | <https://github.com/new-usemame/Calibre-Web-NextGen/releases/tag/v4.0.7> |
 
+## About
+
+Calibre-Web-Automated (CWA) is the ebook library and reading server running as the `calibre-web-automated` container on the Synology NAS (`192.168.10.4`), pinned to the community fork `ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7` (the fork carries the CVE-2026-7713 Kobo auth-token IDOR fix that never shipped to the upstream `crocodilestick/calibre-web-automated` Docker Hub image, which stops at v4.0.6). It auto-ingests ebooks dropped into `/volume1/docker/calibre-web-automated/ingest` (mounted `/cwa-book-ingest`, where Readarr's Connect script deposits imports) into the Calibre library at `/volume1/books` (mounted `/calibre-library`, holding `metadata.db`), and serves the web UI, OPDS, Kobo sync, and KOSync on `:8083`. It runs `PUID=1026`/`PGID=100` to match the DSM `btabaska:users` owner of the volumes, and is kept LAN/Tailscale-only (never a raw public `:8083`); the public `https://books.tabaska.us` name is fronted via the reverse-proxy/Tailscale path. The key operational decision: the live container runs `NETWORK_SHARE_MODE=false` even though the compose file declares `true`, because the CIFS/SMB inotify watcher is unreliable — ingest is instead driven by a scheduled/manual Library Refresh.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -23,6 +27,13 @@ Calibre-Web-Automated (CWA) on Synology DS920+ (Container Manager / Docker Compo
 | `calibre-web-automated` | `/volume1/docker/calibre-web-automated/config:/config` |
 | `calibre-web-automated` | `/volume1/docker/calibre-web-automated/ingest:/cwa-book-ingest` |
 | `calibre-web-automated` | `/volume1/books:/calibre-library` |
+
+## Troubleshooting
+
+- **Redeploying from the on-disk compose file silently re-enables the flaky CIFS inotify watcher (compose sets NETWORK_SHARE_MODE=true, but the live-correct value is false).** — After any `docker compose up -d`, re-apply the override so the live container runs NETWORK_SHARE_MODE=false. Verify with: ssh nas then `sudo /usr/local/bin/docker inspect calibre-web-automated --format '{{range .Config.Env}}{{println .}}{{end}}' | grep NETWORK_SHARE_MODE`. Do not trust the compose file's `true` as effective.
+- **An ebook sits in the ingest folder and is never imported into the library.** — Because the inotify watcher is off (NETWORK_SHARE_MODE=false), ingest relies on Library Refresh. Click Library Refresh in the CWA navbar (or wait for the scheduled refresh). Confirm the file landed in `/volume1/docker/calibre-web-automated/ingest` (owner btabaska:users) and is a completed file, not a partial download.
+- **Kobo sync fails to authenticate or drops on a large library.** — Kobo uses per-device CWA users and the store-passthrough must stay ON (it carries the OAuth flow) — do not disable it. For big libraries, use SYNC_ITEM_LIMIT to batch. Kobo sync is only safe on v4.0.7+ (CVE-2026-7713 fixed); if ever falling back to crocodilestick/...:v4.0.6, disable Kobo sync.
+- **Never accidentally publish CWA on a raw public :8083.** — Keep :8083 LAN/Tailscale-only. Access is via LAN http://192.168.10.4:8083 or Tailscale; the public https://books.tabaska.us is proxied, not a direct port exposure.
 
 ## Operations
 

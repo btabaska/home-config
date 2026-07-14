@@ -9,6 +9,10 @@ Recyclarr — sync TRaSH Guides quality profiles + naming to NAS Sonarr/Radarr
 | **Source** | `foss-setup/configs/docker-stack/stacks/recyclarr/compose.yaml` |
 | **Notes** | TRaSH-guides sync — weekly cron (`docker compose run`), not a long-running container; dead-manned via healthchecks `recyclarr-sync-mini`. |
 
+## About
+
+Recyclarr is a headless (no web UI) config-syncer that pushes TRaSH-Guides quality definitions, guide-backed quality profiles, and media-naming schemes into the *arr apps. It runs on `mini` (`/opt/stacks/recyclarr`) as a one-shot container (`ghcr.io/recyclarr/recyclarr:8.4.0`, `restart: "no"`), targeting Sonarr (`http://192.168.10.4:8989`) and Radarr (`http://192.168.10.4:7878`) on the NAS over LAN. It is not a long-running service: a weekly root crontab entry (`0 3 * * 0`) does `docker compose run --rm recyclarr sync`, appends to `config/logs/cron-sync.log`, and pings healthchecks (`recyclarr-sync-mini`, UUID `fb109ef5...`) as a dead-man's switch. The syncable behavior is entirely driven by `config/recyclarr.yml`: Sonarr uses TRaSH id `72dae194...` (WEB-1080p), Radarr uses `d1d67249...` (HD Bluray + WEB), both with `reset_unmatched_scores` enabled, and API keys live in that file on the host (not committed).
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -26,6 +30,12 @@ Recyclarr — sync TRaSH Guides quality profiles + naming to NAS Sonarr/Radarr
 Variable names from `.env.example` — real values live in `.env` on the host, sourced from the vault (never committed):
 
 - `TZ`
+
+## Troubleshooting
+
+- **`docker compose ps` shows nothing / recyclarr appears "not running" and looks broken.** — This is expected — recyclarr is a one-shot syncer (`restart: "no"`), not a daemon. It only runs via the weekly root crontab (`0 3 * * 0`). Verify health by reading `/opt/stacks/recyclarr/config/logs/cron-sync.log` or the healthchecks check `recyclarr-sync-mini`, not by `ps`. Force a run with `ssh mini 'cd /opt/stacks/recyclarr && docker compose run --rm recyclarr sync'`.
+- **Radarr movie naming may not apply — live `config/recyclarr.yml` sets `movie.standard: plex-tmdb`, but the file's own header comment says `plex-tmdb` is NOT a valid `recyclarr list naming radarr` key and would be skipped/error.** — Confirm valid keys with `ssh mini 'cd /opt/stacks/recyclarr && docker compose run --rm recyclarr list naming radarr'`; the TRaSH-recommended value is `default` (as already used for Sonarr series/season/episodes). Change `plex-tmdb` to a real key (e.g. `default`) if Radarr renames aren't taking effect.
+- **Sync fails with auth/connection errors against the *arr apps.** — API keys are hard-coded in `/opt/stacks/recyclarr/config/recyclarr.yml` per instance (Sonarr `192.168.10.4:8989`, Radarr `192.168.10.4:7878`). If an *arr API key was rotated, or the NAS is unreachable, update the key / verify NAS reachability from mini before the next weekly run; a failed cron run also fails the healthchecks ping and will alert.
 
 ## Operations
 

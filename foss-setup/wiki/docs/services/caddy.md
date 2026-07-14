@@ -10,6 +10,10 @@ Caddy — reverse proxy with automatic HTTPS
 | **Notes** | The reverse proxy itself — no UI vhost. |
 | **Upstream docs** | <https://hub.docker.com/_/caddy> · <https://caddyserver.com/docs/> |
 
+## About
+
+Caddy is the single reverse proxy for the whole homelab, running on the Mac mini (`/opt/stacks/caddy`) and terminating TLS for every `https://*.tabaska.us` vhost defined in `caddy/Caddyfile`. It is a custom `xcaddy` build (`./Dockerfile`, `caddy:2.11.4` + `github.com/caddy-dns/cloudflare`) because the shipped Caddyfile's `local_tls` snippet uses `dns cloudflare` for DNS-01 wildcard certs — the stock image would fail to parse it and the proxy would never start. As of 2026-07-08 `local_tls` issues real, publicly-trusted Let's Encrypt certs via Cloudflare DNS-01 (NS delegated to Cloudflare, `CLOUDFLARE_API_TOKEN` in `.env`), so LAN-only services get valid certs without any inbound port; it also sets HSTS and access logging. Routing is mixed: mini-local services are reached by container name over the shared external `edge` Docker network, while NAS/rig/seedbox/HA/host-network services are proxied by IP via `{$NAS_IP}`/`{$RIG_IP}`/`{$SEEDBOX_IP}`/`{$HA_IP}`/`{$HOST_IP}`. It also serves the static wiki from `/opt/stacks/wiki/site` mounted read-only at `/srv/wiki`, and hardens Vaultwarden by 403-ing `/admin` from non-private/tailnet IPs.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -35,6 +39,14 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `SEEDBOX_IP`
 - `HA_IP`
 - `HOST_IP`
+
+## Troubleshooting
+
+- **Caddy container will not start / Caddyfile fails to parse ("unrecognized directive: dns").** — The stock `caddy` image lacks the Cloudflare DNS module the `local_tls` snippet needs. Use the custom build: `compose.yaml` must keep `build: .` (not the stock `image:` line). Rebuild with `ssh mini 'cd /opt/stacks/caddy && docker compose up -d --build'`.
+- **A specific vhost returns 502 Bad Gateway.** — This is an INCIDENT, not expected. It means the upstream is down or unreachable, not Caddy. Check `ssh mini 'cd /opt/stacks/caddy && docker compose logs --tail 50'` for `dial tcp`/`no such host`. For container-name upstreams (mini-local) confirm the target shares the `edge` network (`docker network inspect edge`); for IP upstreams confirm the right `{$NAS_IP}`/`{$RIG_IP}`/`{$SEEDBOX_IP}`/`{$HOST_IP}` in `.env` and that the remote service/host is up (rig AI + game stacks are on-demand; seedbox is over Tailscale).
+- **TLS certs fail to issue/renew or Caddy falls back to untrusted internal CA.** — DNS-01 depends on a valid `CLOUDFLARE_API_TOKEN` (Zone:DNS:Edit) in `.env`. If the token is missing/expired, ACME fails. The `caddy_data` volume holds certs & keys — never wipe it (Let's Encrypt rate limits). Verify with `ssh mini 'cd /opt/stacks/caddy && docker compose logs | grep -i acme'`.
+- **ha.tabaska.us returns 400 Bad Request.** — Home Assistant rejects the proxied request until its `http.use_x_forwarded_for` + `trusted_proxies` include the mini's Docker network ranges (configured in run-5 on the HA host at 192.168.10.50).
+- **wiki.tabaska.us returns 404.** — Expected until the wiki build populates `/opt/stacks/wiki/site` (mounted read-only at `/srv/wiki`). Rebuild the wiki stack to populate the static site; no Caddy change needed.
 
 ## Operations
 

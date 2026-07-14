@@ -17,7 +17,11 @@ from .env.example (never values), volumes, upstream doc links parsed from the
 compose header comment.
 
 Enrichment: if configs/docker-stack/service-catalog.yaml exists, its
-category/url/description fields override the built-in maps (absence is fine).
+category/url/description/notes fields override the built-in maps, and two
+optional prose fields render extra sections (absence is fine):
+  about:       prose block  -> "## About"  (after the metadata table)
+  troubleshoot: list of {symptom, fix} (or strings) -> "## Troubleshooting"
+                (after Environment, before Operations)
 
 Dependency-free: uses PyYAML when importable, otherwise falls back to a
 minimal regex parser good enough for these simple compose files.
@@ -35,6 +39,7 @@ REPO = Path(__file__).resolve().parents[2]  # .../foss-setup
 WIKI_DOCS = REPO / "wiki" / "docs" / "services"
 MKDOCS_YML = REPO / "wiki" / "mkdocs.yml"
 CATALOG = REPO / "configs" / "docker-stack" / "service-catalog.yaml"
+ENRICH = REPO / "configs" / "docker-stack" / "service-enrichment.yaml"
 
 try:
     import yaml  # type: ignore
@@ -209,27 +214,36 @@ def parse_env_example(path):
 # ---------------------------------------------------------------- catalog
 
 
-def load_catalog():
-    """Optional configs/docker-stack/service-catalog.yaml enrichment."""
-    if not CATALOG.exists():
+def _read_services_yaml(path):
+    """Parse a {services: [{name:..}]} / {services: {name:{}}} / {name:{}} file
+    into a {name: {...}} dict. Returns {} on any problem."""
+    if not path.exists() or not HAVE_YAML:
         return {}
     try:
-        text = CATALOG.read_text()
-        if HAVE_YAML:
-            data = yaml.safe_load(text) or {}
-        else:
-            return {}
-        # accept {services: [{name: ..}, ..]} (the real service-catalog.yaml
-        # schema), {services: {name: {...}}}, or {name: {...}}
+        data = yaml.safe_load(path.read_text()) or {}
         services = data.get("services", data)
         if isinstance(services, list):
             services = {
                 e["name"]: e for e in services if isinstance(e, dict) and e.get("name")
             }
         return services if isinstance(services, dict) else {}
-    except Exception as exc:  # tolerate a malformed/partial catalog
-        print(f"[gen-wiki-services] WARN: could not read {CATALOG}: {exc}", file=sys.stderr)
+    except Exception as exc:  # tolerate a malformed/partial file
+        print(f"[gen-wiki-services] WARN: could not read {path}: {exc}", file=sys.stderr)
         return {}
+
+
+def load_catalog():
+    """Merge service-catalog.yaml (homepage-surface facts) with the optional
+    sibling service-enrichment.yaml (wiki prose: about / troubleshoot, keyed by
+    STACK name). Enrichment fields win / add; a stack absent from the catalog but
+    present in enrichment still gets an entry."""
+    services = _read_services_yaml(CATALOG)
+    for name, extra in _read_services_yaml(ENRICH).items():
+        if isinstance(services.get(name), dict) and isinstance(extra, dict):
+            services[name] = {**services[name], **extra}
+        elif isinstance(extra, dict):
+            services[name] = extra
+    return services
 
 
 # ---------------------------------------------------------------- discover
@@ -306,6 +320,11 @@ def render_page(st, catalog):
     if doc_urls:
         links = " · ".join(f"<{u}>" for u in doc_urls)
         lines.append(f"| **Upstream docs** | {links} |")
+
+    about = cat_entry.get("about")
+    if about:
+        lines += ["", "## About", "", str(about).strip()]
+
     lines += ["", "## Containers", ""]
     lines += ["| Service | Image (pinned) | Ports |", "|---|---|---|"]
     for sname in services:
@@ -331,6 +350,20 @@ def render_page(st, catalog):
             "",
         ]
         lines += [f"- `{n}`" for n in env_names]
+
+    troubleshoot = cat_entry.get("troubleshoot")
+    if troubleshoot:
+        lines += ["", "## Troubleshooting", ""]
+        if isinstance(troubleshoot, list):
+            for item in troubleshoot:
+                if isinstance(item, dict):
+                    sym = str(item.get("symptom", "")).strip()
+                    fix = str(item.get("fix", "")).strip()
+                    lines.append(f"- **{sym}** — {fix}" if sym else f"- {fix}")
+                else:
+                    lines.append(f"- {str(item).strip()}")
+        else:
+            lines.append(str(troubleshoot).strip())
 
     lines += [
         "",

@@ -9,6 +9,10 @@ Palworld dedicated server — Going Analogue homelab.
 | **Source** | `foss-setup/configs/gaming/palworld/compose.yaml` |
 | **Notes** | Palworld dedicated server "Robits Farm" (UDP 8211; public = palworld.tabaska.us:1105 via playit; REST admin :8212). |
 
+## About
+
+Dedicated Palworld server ("Robits Farm") running as the single `palworld` container (`ghcr.io/thijsvanloef/palworld-server-docker:latest`) on the 24/7 rig under `/opt/stacks/palworld`, with the world mounted at `./game:/palworld`. It deliberately runs on this standard glibc image rather than AMP, because AMP's minimal Alpine/musl container can't run the SteamCMD/Palworld binaries; the image self-manages the steamcmd install and daily updates (`AUTO_UPDATE_ENABLED=true` at 4AM ET, `AUTO_REBOOT_ENABLED=false`). Public play is UDP-only over a shared playit.gg tunnel (game port `8211/udp` -> `127.0.0.1:8211`, exposed as `palworld.tabaska.us:1105`) with the router left closed; the REST admin API (`8212/tcp`) is LAN-only and RCON (`25575/tcp`) is bound to localhost. Crucially `COMMUNITY=false` keeps the home IP out of the in-game community browser, and gameplay is tuned to Hard difficulty with softened pal damage (`PAL_DAMAGE_RATE_DEFENSE=0.8`) and 2x enemy drops.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -29,6 +33,14 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `SERVER_DESCRIPTION`
 - `SERVER_PASSWORD`
 - `ADMIN_PASSWORD`
+
+## Troubleshooting
+
+- **Palworld world saves would not be backed up by default — the rig's restic only covers /etc + /home, but saves live under /opt.** — Already handled: `/etc/restic/env` explicitly adds `/opt/stacks/palworld/game/Pal/Saved` and `/opt/stacks/palworld/game/backups` to `BACKUP_PATHS` (see `env.bak-prepalworld` for the pre-change snapshot). The image also runs its own hourly local snapshot (`BACKUP_ENABLED=true`, `BACKUP_CRON_EXPRESSION=0 * * * *`, pruned after 30 days). If saves stop being captured, verify those two paths are still in `BACKUP_PATHS` on the rig.
+- **Home/public IP leaking into the in-game community server browser.** — Keep `COMMUNITY=false` in `compose.yaml`. It is currently set; do not enable the community listing or the rig's public IP is advertised.
+- **Container shows unhealthy for up to ~15 minutes on a fresh boot or after an image pull.** — Expected: `start_period` is 900s because the first boot downloads the server via steamcmd. The healthcheck curls `http://127.0.0.1:8212/v1/api/info` with the admin password. Wait it out; only investigate if it stays unhealthy past ~20 min. Check `ssh rig 'cd /opt/stacks/palworld && sudo docker compose logs --tail 50'`.
+- **Players get disconnected / server restarts unexpectedly around 4AM ET.** — That is the daily `AUTO_UPDATE` window (`AUTO_UPDATE_CRON_EXPRESSION=0 4 * * *`), which restarts the process to apply Steam updates and clears accumulated memory. `AUTO_REBOOT_ENABLED=false` so it won't reboot mid-session outside that window; `stop_grace_period: 30s` allows a clean save on shutdown.
+- **Public UDP tunnel drops after a playit agent restart.** — Palworld shares the playit.gg agent at `/opt/stacks/playit`; a playit UDP-claim can need re-establishing after the agent restarts. Confirm the UDP 8211 tunnel -> `127.0.0.1:8211` mapping is still active in the playit dashboard rather than opening the router.
 
 ## Operations
 

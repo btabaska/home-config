@@ -10,6 +10,10 @@ Wallabag — self-hosted read-it-later (replaces Pocket)
 | **Notes** | Read-it-later. Container port 80. |
 | **Upstream docs** | <https://github.com/wallabag/docker> · <https://doc.wallabag.org/admin/installation/installation/> · <https://doc.wallabag.org/admin/parameters/> |
 
+## About
+
+Wallabag is a self-hosted read-it-later / article archiver (a Pocket replacement) running on the Mac mini Docker stack at `/opt/stacks/wallabag`, reached via Caddy at https://wallabag.tabaska.us and directly on the LAN at `mini:8085`. The stack is three containers — `wallabag/wallabag:2.6.14` (app, port 80 internally), `mariadb:11.4` for storage, and `redis:7-alpine` for async import / 2FA throttling — wired to the shared external `edge` network for the Caddy reverse proxy plus a private `wallabag` bridge for DB/Redis. It sits alongside Miniflux and Navidrome in the reading/media stack and feeds the Kobo's KOReader Wallabag plugin (see `foss-setup/scripts/reading/koreader-cwa-wallabag-wiring.md` §F), which pulls saved articles over the API. Key config: DB migrations run on boot when `POPULATE_DATABASE=true`; the public URL is fixed by `SYMFONY__ENV__DOMAIN_NAME` (must match how it's actually reached, since it drives links/cookies) and secrets (`WALLABAG_SECRET`, DB passwords) come from `.env` sourced from the vault, never committed.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -39,6 +43,12 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `WALLABAG_SERVER_NAME`
 - `WALLABAG_MAILER_DSN`
 - `WALLABAG_FROM_EMAIL`
+
+## Troubleshooting
+
+- **KOReader Wallabag plugin can't authenticate or sync articles from the Kobo.** — The plugin needs an API client, not just the login. Log into https://wallabag.tabaska.us, go to Settings -> API clients management, create a client, and put its client_id/secret plus the wallabag user credentials into the KOReader plugin config with server_url set to the full https domain. See foss-setup/scripts/reading/koreader-cwa-wallabag-wiring.md §F.
+- **Fresh install still has the default wallabag / wallabag login.** — Default credentials on a new install are wallabag / wallabag. Log in and change the password immediately under User management before exposing it via Caddy.
+- **Broken links, redirect loops, or session/cookie issues after changing how the site is reached.** — SYMFONY__ENV__DOMAIN_NAME (from WALLABAG_DOMAIN_NAME in .env) must exactly match the public URL (https://wallabag.tabaska.us). If it drifts from the Caddy domain, fix .env on mini and `cd /opt/stacks/wallabag && docker compose up -d` to recreate the container.
 
 ## Operations
 

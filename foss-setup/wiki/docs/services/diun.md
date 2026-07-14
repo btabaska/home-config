@@ -10,6 +10,10 @@ Diun — Docker Image Update Notifier (NOTIFY-ONLY; no auto-update)
 | **Notes** | Image-update notifier → ntfy. No web UI. |
 | **Upstream docs** | <https://crazymax.dev/diun/> · <https://crazymax.dev/diun/providers/docker/> |
 
+## About
+
+Diun (Docker Image Update Notifier, `crazymax/diun:4.33.0`) runs on mini from `foss-setup/configs/docker-stack/stacks/diun/compose.yaml` (deployed at `/opt/stacks/diun`). It mounts the Docker socket read-only and, with `DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=true`, watches every running container's pinned tag/digest, running a cron scan daily at 06:00 (`DIUN_WATCH_SCHEDULE=0 6 * * *`) — currently analyzing 35 images. It is strictly NOTIFY-ONLY: it never pulls or restarts anything, so it complements (does not replace) the deliberate manual update procedure in the Update-images runbook. Notifications go to the self-hosted ntfy (`DIUN_NOTIF_NTFY_*`), and it deliberately joins the `edge` network to reach ntfy over plain http (`http://ntfy:80`) because ntfy's https vhost serves an internal-CA cert that Diun's Go client rejects.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -31,6 +35,11 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `DIUN_NTFY_TOPIC`
 - `DIUN_NTFY_TOKEN`
 - `TZ`
+
+## Troubleshooting
+
+- **Diun sends no notifications / ntfy delivery silently fails with a TLS/x509 certificate error** — Diun must reach ntfy over plain http, not https — the internal-CA cert on the https vhost is rejected by Diun's Go client. Keep `DIUN_NTFY_ENDPOINT` pointed at `http://ntfy:80` (via the shared `edge` external network) rather than the https URL.
+- **diun stack won't start: network edge declared as external is not found** — The `edge` network is `external: true` and owned by another stack. Ensure the stack that creates `edge` is up first, or create it manually: `ssh mini 'docker network create edge'` before `docker compose up -d`.
 
 ## Operations
 

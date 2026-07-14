@@ -10,6 +10,10 @@ Unbound — recursive, validating, DNSSEC-aware resolver (the upstream for AdGua
 | **Notes** | Recursive DNS resolver behind AdGuard — no web UI. |
 | **Upstream docs** | <https://docs.pi-hole.net/guides/dns/unbound/> |
 
+## About
+
+Unbound is a recursive, validating, DNSSEC-aware DNS resolver running as the `mvance/unbound:1.22.0` container on `mini` (`/opt/stacks/unbound`), acting as the private upstream for AdGuard Home. Instead of AdGuard forwarding queries to Google/Cloudflare, it points its upstream at this resolver (`unbound:5335`), which then queries the DNS root and authoritative servers directly and validates DNSSEC itself, so no third-party resolver ever sees the household's queries. Reachability is container-to-container over the external `edge` bridge (both AdGuard and Unbound sit on it and address each other by container name); the `127.0.0.1:5335` host port is optional and exists only for host-side testing (`drill -p 5335 example.com @127.0.0.1`). Config is bind-mounted from `./unbound/unbound.conf` — RFC1918-only `access-control`, `prefetch`/`prefetch-key`, `serve-expired`, and `edns-buffer-size: 1232`. A healthcheck resolves `cloudflare.com` via drill every 30s; it is currently Up and healthy.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -21,6 +25,13 @@ Unbound — recursive, validating, DNSSEC-aware resolver (the upstream for AdGua
 | Service | Volume |
 |---|---|
 | `unbound` | `./unbound:/opt/unbound/etc/unbound` |
+
+## Troubleshooting
+
+- **Logs repeatedly warn `so-rcvbuf 4194304 was not granted. Got 425984` at every start.** — Benign — the container requests `so-rcvbuf: 4m` (in unbound.conf) but the host kernel caps it lower and Unbound falls back to the granted size. To silence it, either raise the host limit (`sysctl -w net.core.rmem_max=4194304`) or lower `so-rcvbuf` in `./unbound/unbound.conf` to match. Does not affect resolution.
+- **AdGuard shows all upstream queries failing / no internet DNS after a compose change.** — AdGuard cannot reach Unbound at `127.0.0.1` — that is AdGuard's own container loopback. Confirm both are on the external `edge` network (`docker network inspect edge`) and that AdGuard's upstream is set to `unbound:5335` (container name), not an IP or localhost.
+- **`docker compose up -d` fails with `network edge declared as external, but could not be found`.** — The `edge` bridge is owned by another stack (AdGuard). Bring that stack up first, or create it manually: `docker network create edge`, then re-run `cd /opt/stacks/unbound && docker compose up -d`.
+- **Verifying DNSSEC validation actually works from the host.** — Run `ssh mini 'drill -p 5335 sigok.verteiltesysteme.net @127.0.0.1'` (should return an answer with the AD flag) and `drill -p 5335 sigfail.verteiltesysteme.net @127.0.0.1` (should SERVFAIL). SERVFAIL on sigfail confirms validation is on.
 
 ## Operations
 

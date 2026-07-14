@@ -9,11 +9,21 @@ bgutil PO-token provider — generates YouTube PO tokens so yt-dlp (MeTube,
 | **Source** | `foss-setup/configs/docker-stack/stacks/bgutil-pot/compose.yaml` |
 | **Upstream docs** | <http://bgutil-pot:4416.> |
 
+## About
+
+`bgutil-pot` is a headless PO-token (proof-of-origin) provider sidecar running the `brainicism/bgutil-ytdlp-pot-provider:latest` image (currently server v1.3.1) on `mini`, defined by `foss-setup/configs/docker-stack/stacks/bgutil-pot/compose.yaml`. It joins the external `edge` Docker network and listens on port `4416` with no published host port and no web UI; the yt-dlp bgutil plugin inside the MeTube and Pinchflat containers reaches it at `http://bgutil-pot:4416` to fetch YouTube PO tokens. It was added 2026-07-08 to stop yt-dlp getting HTTP 403 on YouTube's JS/GVS bot challenge, and runs with `init: true` and `restart: unless-stopped`. There are no env vars or `.env`; the compose is a single minimal service block.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
 |---|---|---|
 | `bgutil-pot` | `brainicism/bgutil-ytdlp-pot-provider:latest` | — |
+
+## Troubleshooting
+
+- **MeTube/Pinchflat downloads start returning HTTP 403 on YouTube's JS/GVS challenge again** — Confirm the provider is up and reachable on the edge network: `ssh mini 'cd /opt/stacks/bgutil-pot && docker compose ps'` (expect Up, port 4416/tcp) and `docker compose logs --tail 50` (expect 'Started POT server' and 'Generating POT'/'poToken' lines). Then verify the consuming container is on the same `edge` network and its yt-dlp bgutil plugin points at `http://bgutil-pot:4416`.
+- **Consumers cannot resolve the bgutil-pot hostname / connection refused** — The service has no published host port and relies on Docker DNS over the external `edge` network. Ensure MeTube/Pinchflat are attached to the same `edge` network; if the network was recreated, `docker compose up -d` this stack so it re-registers, and restart the consumer containers.
+- **Image is pinned to :latest, so a pull can regress token minting** — Update via `ssh mini 'cd /opt/stacks/bgutil-pot && docker compose pull && docker compose up -d'`; if a new tag breaks POT generation, roll back by pinning the previous digest in compose.yaml. Also keep the yt-dlp bgutil plugin version in the consumer containers in sync with this provider version.
 
 ## Operations
 

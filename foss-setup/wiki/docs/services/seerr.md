@@ -10,6 +10,10 @@ Seerr — unified successor to Overseerr + Jellyseerr (media request portal)
 | **Notes** | Movie/TV request portal (Jellyseerr/Overseerr-compatible API). |
 | **Upstream docs** | <https://docs.seerr.dev/getting-started/docker/> · <https://docs.seerr.dev/migration-guide/> |
 
+## About
+
+Seerr is the unified successor to Overseerr + Jellyseerr — a media request/discovery portal that lets users browse movies/TV and file requests that flow through to Radarr/Sonarr for automated grabbing. It runs on `mini` as a single container (`ghcr.io/seerr-team/seerr:v3.2.0`) defined in `foss-setup/configs/docker-stack/stacks/seerr/compose.yaml`, published on port `5055`, joined to the external `edge` Docker network, and fronted by Caddy at https://seerr.tabaska.us. All persistent state (settings, users, DB) lives in the bind mount `./config:/app/config`; existing Jellyseerr/Overseerr data migrates automatically on first start if that dir holds the old config. Two non-obvious deploy details: the image ships NO internal init process so `init: true` is required, and the only env var of note is `TZ` (defaults to `America/New_York`). Live logs show it integrated with Plex — running scheduled Plex Recently Added Scans and Plex Watchlist Sync jobs against the Movies and TV Shows libraries.
+
 ## Containers
 
 | Service | Image (pinned) | Ports |
@@ -27,6 +31,11 @@ Seerr — unified successor to Overseerr + Jellyseerr (media request portal)
 Variable names from `.env.example` — real values live in `.env` on the host, sourced from the vault (never committed):
 
 - `TZ`
+
+## Troubleshooting
+
+- **Container restart-loops or exits immediately with a zombie/PID-1 signal-handling error after a version bump** — The Seerr image bundles no init process. Ensure `init: true` remains under the `seerr` service in compose.yaml (it is already set); do not remove it. Redeploy with `ssh mini 'cd /opt/stacks/seerr && docker compose up -d'`.
+- **Requests are approved in Seerr but nothing downloads / titles never appear in Plex** — This is a downstream integration gap, not Seerr itself. Verify the Radarr/Sonarr connections under Settings and confirm the arr's are grabbing — the arr-plex-journey check (see arr sample-file imports memory) catches 'green but not watchable' cases where an arr imports a junk sample instead of the real file.
 
 ## Operations
 
