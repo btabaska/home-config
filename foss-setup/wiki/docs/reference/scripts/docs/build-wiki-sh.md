@@ -23,8 +23,10 @@
    3. sudo rsync the built site/ into /opt/stacks/wiki/site, which Caddy
       serves at https://wiki.tabaska.us via file_server
 
- Regenerate service pages first if compose files changed:
-   python3 foss-setup/scripts/docs/gen-wiki-services.py
+ Regenerate generated pages first if the repo changed:
+   python3 foss-setup/scripts/docs/gen-wiki-services.py   # service pages (compose)
+   python3 foss-setup/scripts/docs/gen-script-pages.py    # script man-pages
+   python3 foss-setup/scripts/docs/gen-roadmap-pages.py   # todo list from progress.json
 
  Usage: ./foss-setup/scripts/docs/build-wiki.sh   (from the operator MacBook)
    env: MINI=<ssh alias> (default: mini)
@@ -36,16 +38,10 @@
 
 ## See also
 
-- [`add-dns-resilience-tasks.py`](add-dns-resilience-tasks-py.md)
-- [`apply-workstream-sequencing.py`](apply-workstream-sequencing-py.md)
+- [`gen-checks-pages.py`](gen-checks-pages-py.md)
+- [`gen-roadmap-pages.py`](gen-roadmap-pages-py.md)
 - [`gen-script-pages.py`](gen-script-pages-py.md)
+- [`gen-todo.py`](gen-todo-py.md)
 - [`gen-wiki-services.py`](gen-wiki-services-py.md)
-- [`generate-task-overrides.py`](generate-task-overrides-py.md)
-- [`inject-handoff-workstream.py`](inject-handoff-workstream-py.md)
-- [`migrate-to-tracks.py`](migrate-to-tracks-py.md)
-- [`patch-ai-handoff-badges.py`](patch-ai-handoff-badges-py.md)
-- [`patch-html-tasks.py`](patch-html-tasks-py.md)
 - [`publish-deploy.sh`](publish-deploy-sh.md)
-- [`resequence-guide.py`](resequence-guide-py.md)
-- [`sync-rollout-with-plan.py`](sync-rollout-with-plan-py.md)
 - [Docs & tracker generators scripts](index.md) · [All scripts](../index.md)

@@ -234,21 +234,13 @@ nav:
           - restore-test.sh: reference/scripts/backup/restore-test-sh.md
       - Docs & tracker generators:
           - Index: reference/scripts/docs/index.md
-          - add-dns-resilience-tasks.py: reference/scripts/docs/add-dns-resilience-tasks-py.md
-          - apply-workstream-sequencing.py: reference/scripts/docs/apply-workstream-sequencing-py.md
           - build-wiki.sh: reference/scripts/docs/build-wiki-sh.md
+          - gen-checks-pages.py: reference/scripts/docs/gen-checks-pages-py.md
+          - gen-roadmap-pages.py: reference/scripts/docs/gen-roadmap-pages-py.md
           - gen-script-pages.py: reference/scripts/docs/gen-script-pages-py.md
+          - gen-todo.py: reference/scripts/docs/gen-todo-py.md
           - gen-wiki-services.py: reference/scripts/docs/gen-wiki-services-py.md
-          - generate-task-overrides.py: reference/scripts/docs/generate-task-overrides-py.md
-          - inject-handoff-workstream.py: reference/scripts/docs/inject-handoff-workstream-py.md
-          - migrate-to-tracks.py: reference/scripts/docs/migrate-to-tracks-py.md
-          - patch-ai-handoff-badges.py: reference/scripts/docs/patch-ai-handoff-badges-py.md
-          - patch-html-tasks.py: reference/scripts/docs/patch-html-tasks-py.md
           - publish-deploy.sh: reference/scripts/docs/publish-deploy-sh.md
-          - resequence-guide.py: reference/scripts/docs/resequence-guide-py.md
-          - sync-rollout-with-plan.py: reference/scripts/docs/sync-rollout-with-plan-py.md
-          - tighten-tasks.py: reference/scripts/docs/tighten-tasks-py.md
-          - update-required-baseline.py: reference/scripts/docs/update-required-baseline-py.md
       - Dotfiles:
           - Index: reference/scripts/dotfiles/index.md
           - bootstrap-dotfiles.sh: reference/scripts/dotfiles/bootstrap-dotfiles-sh.md

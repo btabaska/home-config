@@ -5,7 +5,7 @@ Man-pages for every operational script in `foss-setup/scripts/`, generated from 
 | Category | Scripts | |
 |---|---|---|
 | **Backup & restore** | 5 | [open](backup/index.md) |
-| **Docs & tracker generators** | 15 | [open](docs/index.md) |
+| **Docs & tracker generators** | 7 | [open](docs/index.md) |
 | **Dotfiles** | 1 | [open](dotfiles/index.md) |
 | **Gaming & streaming** | 10 | [open](gaming/index.md) |
 | **Home Assistant** | 1 | [open](ha/index.md) |
@@ -17,4 +17,4 @@ Man-pages for every operational script in `foss-setup/scripts/`, generated from 
 | **Host setup** | 4 | [open](setup/index.md) |
 | **Uptime Kuma** | 3 | [open](uptime-kuma/index.md) |
 
-_Total: 69 scripts across 12 categories._
+_Total: 61 scripts across 12 categories._
