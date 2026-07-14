@@ -10626,5 +10626,40 @@
   "required": false,
   "run": 4,
   "mode": "ai"
+ },
+ {
+  "id": "media-06",
+  "title": "Resolve the rig ~/Music mirror conflict (05:00 ALAC transcode vs 05:30 rsync --delete-after)",
+  "host": "rig",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "30 min",
+  "required": true,
+  "run": 0,
+  "mode": "mixed",
+  "gate": "authoritative-mirror decision",
+  "summary": "Two rig systemd timers both target ~/Music and fight: nas-music-mirror.service (05:00) transcodes FLAC->ALAC into ~/Music, then music-mirror.service (05:30) runs `rsync -rt --delete-after` and deletes the .m4a files the transcode just created (they don't exist on the NAS source). Both are enabled+active as of 2026-07-14 \u2014 a nightly data-loss + wasted-CPU loop. Pick ONE authoritative mirror for ~/Music (or point them at separate target dirs / drop --delete-after).",
+  "steps": [
+   "Decide which mirror owns ~/Music: (a) keep the ALAC transcode (nas-music-mirror) and retire/redirect the verbatim rsync, (b) keep the verbatim rsync and retire the transcode, or (c) give each its own target dir so neither deletes the other.",
+   "Edit the units in `foss-setup/configs/host/rig/music-mirror/` to match (change WorkingDirectory/target, disable a timer, or remove `--delete-after`).",
+   "Deploy to the rig and reconcile: `ssh rig 'sudo systemctl daemon-reload'` then enable/disable the timers per the decision.",
+   "Verify no cross-deletion after a nightly run (or trigger both): the ALAC .m4a files survive."
+  ],
+  "commands": [
+   "ssh rig 'systemctl list-timers --no-pager | grep -E \"music|nas-music\"'",
+   "ssh rig 'ls -la ~/Music | head'"
+  ],
+  "files": [
+   "configs/host/rig/music-mirror/music-mirror.service",
+   "configs/host/rig/music-mirror/nas-music-mirror.service"
+  ],
+  "docs": [
+   {
+    "title": "rig background timers (the conflict, documented)",
+    "url": "https://wiki.tabaska.us/reference/hosts/rig-timers/"
+   }
+  ],
+  "verify": "After a nightly cycle, ~/Music still contains the ALAC .m4a transcodes (the 05:30 rsync no longer deletes them); exactly one timer owns ~/Music (or they target separate dirs). Surfaced by the rig-music-mirror-conflict finding 2026-07-14.",
+  "track": "media-pipeline"
  }
 ]
