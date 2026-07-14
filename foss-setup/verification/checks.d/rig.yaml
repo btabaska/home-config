@@ -72,6 +72,26 @@ checks:
     runbook: wiki/runbooks/rig.md
     enabled: true    # rig is 24/7 — a reverted keep-alive contends VRAM with gaming/streaming
 
+  # game-09 idle-power baseline (rig is 24/7): the GPU power-limit + persistence
+  # tune (gpu-power-tune.service, from game-10) must stay applied so the card sits
+  # at its ~17W idle floor instead of a higher P-state, and persistence-mode keeps
+  # the driver resident (avoids re-init power spikes). A kernel/driver update or a
+  # failed oneshot can silently drop either. Guards the config, not a wall reading
+  # (the <100W wall-draw verify still needs a smart plug — pending). CPU governor is
+  # left to the OS (intel_pstate powersave default) and not asserted here since it
+  # may be raised intentionally under load.
+  - id: rig-gpu-power-tune
+    name: "rig GPU power-tune applied (persistence on + gpu-power-tune.service active)"
+    host: rig
+    cmd: >-
+      echo "svc=$(systemctl is-active gpu-power-tune.service)
+      persist=$(nvidia-smi --query-gpu=persistence_mode --format=csv,noheader | tr -d ' ')"
+    expect: 'svc=active persist=Enabled'
+    severity: warn
+    task_id: game-09
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
   # Public game paths through the playit edge (dedicated IP). Real protocol
   # pings, NOT port probes: when the agent's claim leg wedges (seen live
   # 2026-07-09, TCP variant of the known UDP claim gotcha), the agent logs

@@ -1,6 +1,6 @@
 # Checks — rig
 
-`foss-setup/verification/checks.d/rig.yaml` — 8 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/rig.yaml` — 9 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `rig-ollama`
 
@@ -55,6 +55,17 @@ ollama KEEP_ALIVE=0 on rig (VRAM frees after each request — GPU contention)
 
 ```bash
 systemctl show ollama -p Environment
+```
+
+## `rig-gpu-power-tune`
+
+rig GPU power-tune applied (persistence on + gpu-power-tune.service active)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `game-09` · **enabled:** True
+- **expects:** `svc=active persist=Enabled`
+
+```bash
+echo "svc=$(systemctl is-active gpu-power-tune.service) persist=$(nvidia-smi --query-gpu=persistence_mode --format=csv,noheader | tr -d ' ')"
 ```
 
 ## `playit-java-public`
