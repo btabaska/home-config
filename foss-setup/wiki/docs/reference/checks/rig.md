@@ -1,6 +1,6 @@
 # Checks — rig
 
-`foss-setup/verification/checks.d/rig.yaml` — 10 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/rig.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `rig-ollama`
 
@@ -77,6 +77,17 @@ rig ~/Music holds no FLAC (ALAC-only mirror, no dupes — media-06)
 
 ```bash
 find /home/btabaska/Music -type f -iname '*.flac' 2>/dev/null | wc -l | tr -d ' '
+```
+
+## `palworld-rest-liveness`
+
+palworld game server alive (REST :8212 reports serverfps)
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `game-10` · **enabled:** True
+- **expects:** `"serverfps":`
+
+```bash
+curl -sm 8 -u "admin:$PALWORLD_ADMIN_PASSWORD" http://cachyos.tailb31641.ts.net:8212/v1/api/metrics
 ```
 
 ## `playit-java-public`

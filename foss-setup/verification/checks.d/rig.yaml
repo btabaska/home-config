@@ -107,6 +107,26 @@ checks:
     runbook: wiki/runbooks/rig.md
     enabled: true
 
+  # observability-audit (2026-07-14): palworld was the #1 blind spot — a 24/7
+  # player-facing server with ZERO checks, so a player noticed an outage before we
+  # did. Its REST API on :8212 is tailnet-reachable and probeable. This asserts the
+  # game LOOP is alive (serverfps present in /v1/api/metrics), catching a crashed or
+  # hung server, not just a missing container. (Palworld's public UDP path through
+  # playit stays unprobeable — a full playit-edge flap still surfaces via the
+  # playit-java/bedrock-public checks below.) Needs PALWORLD_ADMIN_PASSWORD in
+  # /etc/verification/env (vault palworld.admin_password).
+  - id: palworld-rest-liveness
+    name: "palworld game server alive (REST :8212 reports serverfps)"
+    host: url
+    cmd: >-
+      curl -sm 8 -u "admin:$PALWORLD_ADMIN_PASSWORD"
+      http://cachyos.tailb31641.ts.net:8212/v1/api/metrics
+    expect: '"serverfps":'
+    severity: warn
+    task_id: game-10
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
   # Public game paths through the playit edge (dedicated IP). Real protocol
   # pings, NOT port probes: when the agent's claim leg wedges (seen live
   # 2026-07-09, TCP variant of the known UDP claim gotcha), the agent logs
