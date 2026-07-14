@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**156/232 done** · **49 open** · **18 deferred** · 11 retired.
+**156/233 done** · **50 open** · **18 deferred** · 11 retired.
 
 ---
 
@@ -32,6 +32,7 @@
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
 
 ### media-pipeline
+- [ ] **`media-05`** Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) _(est 1-2 hrs)_
 - [ ] **`seed-11`** Public-indexer coverage layer in Prowlarr (TV/anime redundancy over IPT+MAM) _(est ~30-45 min)_ — ⛔ gate: per-tracker liveness spot-check
 - [ ] **`seed-12`** Deploy Bitmagnet self-hosted DHT crawler on NAS (rate-limit-proof indexer hedge) _(est ~1 hr + runbook)_
 - [ ] **`seed-13`** Whisparr adult-acquisition pipeline (sukebei/XXXClub -> Stash) on NAS _(est ~an afternoon + runbook)_ — ⛔ gate: operator decision to automate (else indexer-only)

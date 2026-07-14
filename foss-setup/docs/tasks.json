@@ -10589,5 +10589,38 @@
   "required": false,
   "run": 2,
   "mode": "mixed"
+ },
+ {
+  "id": "media-05",
+  "title": "Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex)",
+  "host": "NAS",
+  "type": "sync",
+  "depends_on": [
+   "nas-01"
+  ],
+  "estimate": "1-2 hrs",
+  "steps": [
+   "Motivation: Plex is cloud-tethered \u2014 auth + server discovery route through plex.tv, so a plex.tv outage locks out even LAN clients (hit 2026-07-14). Jellyfin is FOSS + FULLY LOCAL: local accounts, LAN discovery, no external dependency ever.",
+   "Deploy Jellyfin (jellyfin/jellyfin, pinned tag) as a NAS container via Container Manager on the shared 'edge' pattern; bind the SAME NAS media read-only: /volume1/movies, /volume2 or the tv share, /volume1/music, /volume1/youtube. Do NOT touch/remove Plex \u2014 run in parallel.",
+   "Enable HW transcoding via the DS920+ QuickSync iGPU (VA-API /dev/dri) if the Celeron supports it; else direct-play only. Create local users; NO cloud sign-in.",
+   "Add a Caddy vhost jellyfin.tabaska.us (import local_tls; reverse_proxy {$NAS_IP}:8096) per the add-a-service runbook (compose + catalog + homepage tile + wiki page + Uptime-Kuma + coverage manifest).",
+   "Install native Jellyfin apps (Apple TV/iOS via Swiftfin, Android, web) and confirm playback.",
+   "Add a checks.d/ acceptance check mirroring the Plex ones: Jellyfin serves its libraries + a Radarr/Sonarr-vs-Jellyfin coverage probe (arr-plex-journey.py pattern, adapted to the Jellyfin API)."
+  ],
+  "commands": [],
+  "files": [
+   "foss-setup/configs/nas/"
+  ],
+  "docs": [
+   {
+    "title": "Jellyfin",
+    "url": "https://jellyfin.org/docs/"
+   }
+  ],
+  "verify": "jellyfin.tabaska.us serves Movies/TV/Music; a local client plays a title with the NAS's WAN access BLOCKED (proves zero cloud dependency).",
+  "track": "media-pipeline",
+  "required": false,
+  "run": 4,
+  "mode": "ai"
  }
 ]
