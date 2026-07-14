@@ -10565,7 +10565,8 @@
   "steps": [
    "Small, densely-linked .md files (LLM-context-friendly for the local 3090 Ti models) for every service, setting, config, script, check.",
    "Wave 1 DONE 2026-07-14: gen-script-pages.py (69 script man-pages), gen-roadmap-pages.py (todo list mirrored from progress.json, 231 tasks), hardware-to-buy page. Built --strict + deployed.",
-   "Remaining waves: verification checks reference (188 checks in checks.d/), config/settings deep-dives (ansible roles, network, homeassistant, host configs), per-service DESCRIPTION/TROUBLESHOOT prose, troubleshooting index, maintenance calendar.",
+   "Config-docs wave DONE 2026-07-14: 20 config .md docs migrated + live-validated into wiki (reference/seedbox, reference/nas service configs, reference/hosts + fleet systemd-units index, operations repo-structure/inventory/restore-template; ansible.md reconciled). Sources stubbed; 3 superseded seedbox docs retired. Section indexes + mkdocs nav wired; built --strict + deployed.",
+   "Remaining waves: 3 design HTMLs (cloudflare/game-hosting/ha-action) migrate+delete, per-service DESCRIPTION/TROUBLESHOOT prose via service-catalog.yaml, troubleshooting index, maintenance calendar, final cleanup (hard-delete stubs + retire dead HTML-patching scripts + workstream docs).",
    "Definition of done: everything in the repo is documented + reachable via links; mkdocs --strict passes."
   ],
   "commands": [

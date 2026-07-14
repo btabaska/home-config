@@ -1,48 +1,7 @@
-# Seedbox (Bytesized "betty") — Deluge queue hygiene
+# Seedbox (Betty) — Deluge queue hygiene — moved to the wiki
 
-Deluge runs on the seedbox (`betty.bysh.me`, no root). Sonarr/Radarr/Lidarr on the
-NAS import from it over a mount (cross-machine → imports are **copies**, so the NAS
-library and the seedbox torrent data are independent copies).
+> **Deprecated 2026-07-14.** This document was migrated (and re-validated against the live fleet) into the wiki, which is now the source of truth.
 
-## Deluge RPC access (for scripts)
-- Daemon: `127.0.0.1:3254`, `allow_remote: true`. Label plugin enabled.
-- Auth: local `btabaska` creds in `~/.config/deluge/auth` (scripts parse it; never print the value).
-- Driver: the venv python `~/venvs/deluge/bin/python` has the `deluge` lib.
-- `deluge-console` exists (`~/.local/bin/deluge-console`) but the Label plugin's console
-  command is NOT registered — use the RPC (`client.label.*`) instead.
+**Now lives at:** `foss-setup/wiki/docs/reference/seedbox/deluge-queue-hygiene.md` → <https://wiki.tabaska.us/reference/seedbox/deluge-queue-hygiene/>
 
-## The "57-item Sonarr queue" fix (2026-07-09)
-Root cause: Sonarr's Deluge client had **no Post-Import Category** and
-`removeCompletedDownloads=False`, so imported torrents stayed in the `sonarr` label,
-got re-scanned, pinned with "already imported" *warnings*, and never left the queue.
-
-Fix (keeps seeding, clears queue):
-1. Deluge label `sonarr-imported` created.
-2. Sonarr → Settings → Download Clients → Deluge → **tvImportedCategory = `sonarr-imported`**.
-   On successful import Sonarr re-labels the torrent out of the tracked `sonarr` label →
-   it leaves the queue while Deluge keeps seeding. `removeCompletedDownloads` stays False.
-3. Existing stuck torrents were relabeled `sonarr` → `sonarr-imported` once.
-
-## deluge-reaper.py
-Age-based cleanup so the seedbox doesn't fill up. Removes torrents (+data) in labels
-`sonarr`/`sonarr-imported` whose age (`time_added`) ≥ 14 days. NAS library copies are
-untouched. **Default is DRY-RUN**; pass `--live` to actually remove. Logs to
-`~/logs/deluge-reaper.log`.
-
-Deploy:
-```
-scp foss-setup/configs/host/seedbox/deluge-reaper.py seedbox:~/scripts/deluge-reaper.py
-```
-Cron (installed on betty, 05:00 CEST daily):
-```
-0 5 * * * ~/venvs/deluge/bin/python ~/scripts/deluge-reaper.py --live >/dev/null 2>>~/logs/deluge-reaper.err
-```
-Dry-run anytime: `ssh seedbox '~/venvs/deluge/bin/python ~/scripts/deluge-reaper.py'`
-
-## Applied to all three *arr (2026-07-09)
-- Sonarr: `tvImportedCategory = sonarr-imported`
-- Radarr (API v3): `movieImportedCategory = radarr-imported`
-- Lidarr (API v1): `musicImportedCategory = lidarr-imported`
-- Deluge labels `radarr-imported` / `lidarr-imported` created. All three keep
-  `removeCompletedDownloads=False` (seeding preserved). The reaper's LABELS set could be
-  widened to include radarr*/lidarr* labels later if those need disk reclamation too.
+_This stub remains only so existing links resolve; it will be removed in the final cleanup pass once all references are repointed to the wiki._

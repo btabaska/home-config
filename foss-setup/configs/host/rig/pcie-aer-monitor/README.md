@@ -1,27 +1,7 @@
-# rig PCIe AER monitor → ntfy
+# rig PCIe AER monitor → ntfy — moved to the wiki
 
-Alerts if the OS NVMe (WD Blue SN570, PCI `0000:74:00.0`, hosts root btrfs + /boot)
-resumes PCIe AER errors after the 2026-07-09 fix. See handoff RCA "rig freeze".
+> **Deprecated 2026-07-14.** This document was migrated (and re-validated against the live fleet) into the wiki, which is now the source of truth.
 
-**Why rig-local (not in the mini verification runner):** AER counters + SMART live in the
-rig's kernel log / sysfs and need privileged local access — an HTTP probe from the mini
-can't see them (the "which vantage sees this break?" rule). (mini→rig SSH does work now, so
-the runner *could* shell in, but a self-contained rig-local watcher is the right vantage.)
-This is a self-contained systemd timer on rig that
-counts AER on the current boot and POSTs to ntfy (`verification` topic, same one the runner
-uses → same iOS push) only when errors climb (threshold 25 new/interval) or go fatal, or
-SMART critical warning != 0x00. Quiet when healthy.
+**Now lives at:** `foss-setup/wiki/docs/reference/hosts/rig-pcie-aer-monitor.md` → <https://wiki.tabaska.us/reference/hosts/rig-pcie-aer-monitor/>
 
-## Files (deployed on rig)
-- `/opt/pcie-aer-monitor/pcie-aer-monitor.sh` (root, 0755)
-- `/etc/pcie-aer-monitor.env` (0600) — `NTFY_URL`, `NTFY_TOKEN` (vault `ntfy.rig_aer_token`)
-- `/etc/systemd/system/pcie-aer-monitor.{service,timer}` — timer every 20 min
-
-## Deploy / redeploy
-```
-scp pcie-aer-monitor.sh rig:/tmp/ && ssh rig 'sudo install -m0755 /tmp/pcie-aer-monitor.sh /opt/pcie-aer-monitor/'
-# env (token from vault):
-ssh rig 'sudo install -m0600 /tmp/pcie-aer-monitor.env /etc/pcie-aer-monitor.env'
-ssh rig 'sudo systemctl daemon-reload && sudo systemctl enable --now pcie-aer-monitor.timer'
-```
-Manual run / check: `ssh rig 'sudo systemctl start pcie-aer-monitor.service; journalctl -u pcie-aer-monitor -n5 -o cat'`
+_This stub remains only so existing links resolve; it will be removed in the final cleanup pass once all references are repointed to the wiki._

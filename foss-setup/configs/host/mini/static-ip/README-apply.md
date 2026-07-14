@@ -1,58 +1,7 @@
-# Apply mini static IP (maintenance-window runbook)
+# Apply mini static IP (maintenance-window runbook) — moved to the wiki
 
-Permanent fix for the recurring "mini frozen/off-network" outages — root cause was
-24h DHCP lease expiry with failed in-lease renewal (RCA in
-`docs/handoff-rollout-state.md`, 2026-07-09). This removes the lease dependency
-entirely. Do this in the **4-7AM ET window**, ideally before a lease expiry.
+> **Deprecated 2026-07-14.** This document was migrated (and re-validated against the live fleet) into the wiki, which is now the source of truth.
 
-Already-deployed safety nets remain in place and back this up:
-`net-selfheal.timer` (recovers a dead link in ≤60s) and the `KeepConfiguration=dhcp`
-drop-in (moot once static, remove in step 5).
+**Now lives at:** `foss-setup/wiki/docs/reference/hosts/mini-network-resilience.md` → <https://wiki.tabaska.us/reference/hosts/mini-network-resilience/>
 
-## 0. Prerequisite (UniFi) — ✅ DONE
-Confirmed 2026-07-09: UniFi already has a **Fixed IP reservation for
-`98:5a:eb:ca:b2:ef` → 192.168.10.2**, so .2 can be hard-coded static with no
-conflict risk. (Note: the reservation being present means the DHCP server *should*
-answer renewals with .2 — the fact it doesn't points to a UniFi RENEW-handling
-quirk or a networkd DHCP-client issue; going static sidesteps it either way.)
-
-## 1-6. On mini (run with a TTY so `netplan try` can be confirmed)
-```bash
-# 2. back up current config
-sudo cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.dhcp.bak
-
-# 3. install the static config (from this repo dir)
-sudo install -m 600 00-installer-config.static.yaml /etc/netplan/00-installer-config.yaml
-
-# 4. validate + apply with auto-revert (must be an interactive TTY: ssh -t mini)
-sudo netplan generate
-sudo netplan try --timeout 120     # applies; press ENTER within 120s to KEEP, else auto-reverts
-
-# 5. verify (in a SECOND terminal / fresh connection) BEFORE pressing Enter
-ip -4 route show default                 # default via 192.168.10.1 dev enp3s0f0
-ping -c2 192.168.10.1                     # gateway reachable
-resolvectl query home.tabaska.us         # DNS still works
-# from another host:  ssh mini 'echo ok'  &&  dig @192.168.10.2 +short home.tabaska.us
-```
-If all green, press **Enter** in the `netplan try` terminal to commit. If anything
-is wrong, do nothing — it auto-reverts to DHCP in 120s.
-
-## 5b. after static is confirmed committed
-```bash
-# KeepConfiguration drop-in is DHCP-only; harmless but tidy to remove:
-sudo rm -f /etc/systemd/network/10-netplan-enp3s0f0.network.d/10-keepconfiguration.conf
-sudo networkctl reload
-```
-Keep `net-selfheal.timer` — under static IP its `networkctl renew` step is a no-op,
-but its link-bounce / networkd-restart escalation still recovers link faults.
-
-## Rollback
-```bash
-sudo cp /etc/netplan/00-installer-config.yaml.dhcp.bak /etc/netplan/00-installer-config.yaml
-sudo netplan apply
-```
-
-## Follow-up
-Fold the static config + `net-selfheal` units into the ansible **mini** role so a
-reprovision keeps them. Also worth: check the UniFi controller for why it wasn't
-honoring in-lease RENEW/REBIND for this client (secondary; static makes it moot).
+_This stub remains only so existing links resolve; it will be removed in the final cleanup pass once all references are repointed to the wiki._

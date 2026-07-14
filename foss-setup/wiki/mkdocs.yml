@@ -123,9 +123,13 @@ nav:
       - Verification: runbooks/verification.md
       - Acceptance testing: runbooks/acceptance-testing.md
   - Operations:
+      - Overview: operations/index.md
       - Ansible & convergence: operations/ansible.md
       - Secrets policy: operations/secrets.md
       - Tracker & AI sessions: operations/tracker.md
+      - Repo structure, branching & secrets: operations/repo-structure.md
+      - Host inventory: operations/inventory.md
+      - Restore runbook (template): operations/restore-runbook-template.md
   - Hardware to buy: reference/hardware.md
   - Architecture & design:
       - Overview: architecture/index.md
@@ -171,8 +175,26 @@ nav:
           - Game server guide: reference/gaming/server-guide.md
       - NAS:
           - Overview: reference/nas/index.md
-          - NAS backup architecture: reference/nas/backup-architecture.md
           - NAS volume schema: reference/nas/volume-schema.md
+          - NAS backup architecture: reference/nas/backup-architecture.md
+          - Home media-automation stack: reference/nas/media-automation.md
+          - "Media-automation migration (Ubuntu → NAS)": reference/nas/media-automation-migration.md
+          - Plex Media Server: reference/nas/plex.md
+          - Calibre-Web-Automated: reference/nas/calibre-web-automated.md
+          - Stash: reference/nas/stash.md
+      - Seedbox & music:
+          - Overview: reference/seedbox/index.md
+          - Music pipeline: reference/seedbox/music-pipeline.md
+          - Deluge queue hygiene: reference/seedbox/deluge-queue-hygiene.md
+          - Provider comparison (2026): reference/seedbox/provider-comparison.md
+          - Decommission the old NAS torrent stack: reference/seedbox/decommission-old-nas-torrent.md
+      - Host internals:
+          - Overview: reference/hosts/index.md
+          - "mini — Docker stack & daemon.json": reference/hosts/mini-docker-stack.md
+          - "mini — network resilience": reference/hosts/mini-network-resilience.md
+          - "rig — PCIe AER monitor": reference/hosts/rig-pcie-aer-monitor.md
+          - "rig — background timers": reference/hosts/rig-timers.md
+          - Fleet systemd units: reference/hosts/systemd-units.md
   - Guides:
       - Overview: guides/index.md
       - Cloudflare cutover: guides/cloudflare-cutover.md
