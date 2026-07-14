@@ -8,7 +8,7 @@
 | `docker-03` | Deploy Seerr media request portal (home, Mac mini) | ✅ done | 20 min |
 | `docker-16` | Deploy MusicSeerr on Mac mini (album request portal) | ✅ done | 20-30 min |
 | `media-05` | Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) | ⬜ open | 1-2 hrs |
-| `media-06` | Resolve the rig ~/Music mirror conflict (05:00 ALAC transcode vs 05:30 rsync --delete-after) | ⬜ open | 30 min |
+| `media-06` | Resolve the rig ~/Music mirror conflict (05:00 ALAC transcode vs 05:30 rsync --delete-after) | ✅ done | 30 min |
 | `nas-10` | Deploy Plex Media Server on the NAS (libraries + Quick Sync) | ✅ done | 45-60 min |
 | `nas-20` | rclone SFTP mount of the seedbox files (persistent + self-healing) | ✅ done | 45 min |
 | `nas-21` | Deploy the NAS media-automation *arr stack (phased, pinned) | ✅ done | 1-2 hrs |

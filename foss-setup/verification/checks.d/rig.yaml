@@ -92,6 +92,21 @@ checks:
     runbook: wiki/runbooks/rig.md
     enabled: true
 
+  # media-06: the rig's ~/Music is an ALAC-only derived mirror (FLAC lives on the
+  # NAS master; nas-music-mirror.service transcodes FLAC->.m4a and copies mp3/aac
+  # verbatim). A FLAC file appearing here means the retired verbatim-rsync mirror
+  # (music-mirror.service, --delete-after) came back or something copied lossless
+  # onto the rig — which also creates flac/m4a duplicates. 0 is the invariant.
+  - id: rig-music-no-flac
+    name: "rig ~/Music holds no FLAC (ALAC-only mirror, no dupes — media-06)"
+    host: rig
+    cmd: find /home/btabaska/Music -type f -iname '*.flac' 2>/dev/null | wc -l | tr -d ' '
+    expect: '^0$'
+    severity: warn
+    task_id: media-06
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
   # Public game paths through the playit edge (dedicated IP). Real protocol
   # pings, NOT port probes: when the agent's claim leg wedges (seen live
   # 2026-07-09, TCP variant of the known UDP claim gotcha), the agent logs

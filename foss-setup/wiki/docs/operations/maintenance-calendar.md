@@ -24,9 +24,8 @@ _Compiled 2026-07-14 from the live systemd timers (`reference/hosts/systemd-unit
 | 01:30 | `restic-backup.timer` | mini + rig | Tier-1 restic → Backblaze B2, dead-man monitored |
 | 03:10 | `borgmatic.timer` | (mini) | Borg → Hetzner — **not deployed** (template only) |
 | 04:20 | `ansible-pull.timer` | each host | Converge against `forgejo:home/homelab` |
-| 05:00 | `nas-music-mirror.timer` | rig | FLAC → ALAC transcode into `~/Music` |
+| 05:00 | `nas-music-mirror.timer` | rig | **Sole** `~/Music` mirror: FLAC → ALAC (.m4a) transcode + mp3/aac verbatim; owns the `music-mirror-rig` dead-man (media-06 — the 05:30 rsync mirror was retired) |
 | 05:00 | Kometa (`KOMETA_TIME=05:00`) | mini | Rebuild Plex collections / overlays |
-| 05:30 | `music-mirror.timer` ⚠️ | rig | `rsync --delete-after` mirror — **conflicts** with the 05:00 job (see `reference/hosts/rig-timers.md`) |
 | 06:00 | Diun (`DIUN_WATCH_SCHEDULE=0 6 * * *`) | mini | Check for new image tags → notify (no auto-update) |
 | 07:15 (PT) | `verification.timer` | mini | Full verification sweep |
 | nightly | Synology Hyper Backup "S3 Backup enc" | NAS | Tier-1 shares → B2, **client-side encrypted**, Smart Recycle |

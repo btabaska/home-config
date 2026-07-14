@@ -1,6 +1,6 @@
 # Checks — rig
 
-`foss-setup/verification/checks.d/rig.yaml` — 9 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/rig.yaml` — 10 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `rig-ollama`
 
@@ -66,6 +66,17 @@ rig GPU power-tune applied (persistence on + gpu-power-tune.service active)
 
 ```bash
 echo "svc=$(systemctl is-active gpu-power-tune.service) persist=$(nvidia-smi --query-gpu=persistence_mode --format=csv,noheader | tr -d ' ')"
+```
+
+## `rig-music-no-flac`
+
+rig ~/Music holds no FLAC (ALAC-only mirror, no dupes — media-06)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `media-06` · **enabled:** True
+- **expects:** `^0$`
+
+```bash
+find /home/btabaska/Music -type f -iname '*.flac' 2>/dev/null | wc -l | tr -d ' '
 ```
 
 ## `playit-java-public`

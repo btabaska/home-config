@@ -9,3 +9,8 @@ User=btabaska
 Nice=10
 IOSchedulingClass=idle
 ExecStart=/home/btabaska/bin/nas-music-to-alac-mirror.sh
+# Dead-man for the surviving mirror (media-06): inherited from the retired rsync
+# music-mirror.service. Fires only on a successful transcode run (ExecStartPost
+# runs after ExecStart exits 0; the script exits nonzero on the empty-source
+# safety abort, so a dead NAS mount correctly withholds the ping).
+ExecStartPost=/usr/bin/curl -fsS -m 10 --retry 3 -o /dev/null https://health.tabaska.us/ping/c7b523e2-dabc-425b-9295-260069397bb2

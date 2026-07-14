@@ -6,19 +6,15 @@ _Source: `foss-setup/configs/host/rig/music-mirror/music-mirror.service`, `foss-
 
 ## Overview
 
-The rig runs three `oneshot`-service + `.timer` pairs, all installed under `/etc/systemd/system/` and enabled:
+The rig runs two `oneshot`-service + `.timer` pairs, all installed under `/etc/systemd/system/` and enabled:
 
 | Timer | Schedule (OnCalendar) | Service it triggers | What it does |
 |---|---|---|---|
-| `nas-music-mirror.timer` | `*-*-* 05:00:00` (host TZ) | `nas-music-mirror.service` | Mirror NAS music → `~/Music` transcoding FLAC→ALAC for iPod Classic |
-| `music-mirror.timer` | `*-*-* 05:30:00 America/New_York` | `music-mirror.service` | rsync mirror NAS music → `~/Music` verbatim (Rhythmbox/iPod source) |
+| `nas-music-mirror.timer` | `*-*-* 05:00:00` (host TZ) | `nas-music-mirror.service` | **Sole** `~/Music` mirror — transcode FLAC→ALAC (.m4a), copy mp3/aac verbatim, prune orphans; pings the `music-mirror-rig` dead-man |
 | `ai-stack-watchdog.timer` | `*:0/10` (every 10 min) | `ai-stack-watchdog.service` | Dead-man ping for the open-webui→host Ollama hop |
 
-!!! note "Validated against live rig (2026-07-14)"
-    `systemctl status` shows all three timers `loaded ... enabled` and `active (waiting)`. Next triggers: `nas-music-mirror.timer` Wed 2026-07-15 05:01:59 EDT, `music-mirror.timer` Wed 2026-07-15 05:32:20 EDT, `ai-stack-watchdog.timer` Tue 2026-07-14 13:00:20 EDT (fires every 10 min). Last run of each service: `Result=success`, `ExecMainStatus=0`.
-
-!!! note "Two timers write to the same ~/Music (overlap, by design)"
-    Both `music-mirror.service` (05:30, rsync verbatim) **and** `nas-music-mirror.service` (05:00, FLAC→ALAC transcode) target `/home/btabaska/Music/`. They are staggered 30 min apart. The ALAC job runs first (05:00) and converts FLAC→`.m4a`; the rsync job runs second (05:30). Note the rsync `--delete-after` mirror would remove the `.m4a` files the ALAC job created (they don't exist on the NAS source), so the two mechanisms overwrite each other's view of `~/Music`. Both are enabled on live rig as of 2026-07-14 — flag if only one should be authoritative.
+!!! success "media-06 resolved (2026-07-14): one authoritative ~/Music mirror"
+    There used to be a **second** pair, `music-mirror.timer`/`.service` (05:30) that did `rsync -rt --delete-after /mnt/nas-music-ro/ ~/Music/` — a *verbatim* mirror. It copied FLAC onto the rig and, worse, its `--delete-after` removed the `.m4a` files the 05:00 ALAC job had just made (they don't exist on the NAS source), so the two fought nightly. Per the owner's decision (**ALAC on the rig, FLAC on the NAS, no duplicates**), the rsync pair was **retired** (unit files removed) and the leftover `~/Music/*.flac` deleted. `nas-music-mirror.service` is now the single source and inherited the `music-mirror-rig` healthchecks dead-man via `ExecStartPost`. Guarded by the `rig-music-no-flac` verification check.
 
 ---
 
@@ -83,52 +79,17 @@ Behaviour:
 
 ---
 
-## 2. music-mirror — verbatim rsync mirror (05:30 America/New_York)
+## 2. music-mirror — verbatim rsync mirror (RETIRED 2026-07-14, media-06)
 
-An rsync mirror of the NAS master library into `~/Music`, used as the Rhythmbox/iPod source. `~/Music` is a strict mirror — additions AND deletions propagate, so local duplicates/drift are structurally impossible (2026-07-10: the old hand-copied `~/Music` had months of drift plus orphan dupes). The NAS master is the only place music is ever added (via Lidarr).
-
-### Timer — `music-mirror.timer`
-
-```ini
-[Unit]
-Description=Daily NAS->rig music mirror
-
-[Timer]
-# 05:30 ET: after the nightly import/cron window on the NAS side.
-OnCalendar=*-*-* 05:30:00 America/New_York
-Persistent=true
-RandomizedDelaySec=300
-
-[Install]
-WantedBy=timers.target
-```
-
-- Fires daily at **05:30 America/New_York** — scheduled after the NAS nightly import/cron window.
-- `Persistent=true` (catch-up), `RandomizedDelaySec=300` (≤5 min jitter).
-
-### Service — `music-mirror.service`
-
-```ini
-[Unit]
-Description=Mirror NAS music library to ~/Music (rsync --delete; Rhythmbox/iPod source)
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-User=btabaska
-ExecStart=/usr/bin/rsync -rt --delete-after --exclude '#recycle' --exclude '@eaDir' /mnt/nas-music-ro/ /home/btabaska/Music/
-ExecStartPost=/usr/bin/curl -fsS -m 10 --retry 3 -o /dev/null HC_MUSIC_MIRROR_PING_URL
-TimeoutStartSec=30min
-Nice=15
-```
-
-- `Type=oneshot`, user `btabaska`, `Nice=15`, `TimeoutStartSec=30min`.
-- **rsync flags**: `-rt` (recursive + preserve mtimes — NOT `-a`, because CIFS has no owners/links). Trailing slashes on both paths mirror *contents*. `--delete-after` keeps the window of missing files minimal. Excludes Synology's `#recycle` and `@eaDir`.
-- **ExecStartPost dead-man ping**: on success, `curl` pings healthchecks check `music-mirror-rig`. The source file carries the placeholder `HC_MUSIC_MIRROR_PING_URL`; deploy replaces it with vault key `healthchecks.music_mirror_rig_ping_url`.
-
-!!! note "Validated against live rig (2026-07-14)"
-    The **installed** unit's `ExecStartPost` resolves the placeholder to the real healthchecks URL: `https://health.tabaska.us/ping/c7b523e2-dabc-425b-9295-260069397bb2`. The rsync `ExecStart` matches the source verbatim. Last run `Result=success`.
+**Retired.** This pair (`music-mirror.timer` 05:30 + `music-mirror.service`) ran a
+verbatim `rsync -rt --delete-after /mnt/nas-music-ro/ ~/Music/`. It copied FLAC onto
+the rig and its `--delete-after` wiped the `.m4a` files the 05:00 ALAC job produced
+(they don't exist on the NAS source), so the two mirrors fought nightly. Per the
+owner's decision — **ALAC on the rig, FLAC on the NAS, no duplicates** — the unit
+files were removed, the leftover `~/Music/*.flac` deleted, and `nas-music-mirror.service`
+(§1) is now the sole mirror; it inherited the `music-mirror-rig` healthchecks dead-man
+(`ExecStartPost` pinging `https://health.tabaska.us/ping/c7b523e2-…`). Guarded by the
+`rig-music-no-flac` verification check. See the success banner at the top of this page.
 
 ---
 
@@ -204,8 +165,7 @@ ssh rig "systemctl status music-mirror.timer nas-music-mirror.timer ai-stack-wat
 ssh rig "systemctl list-timers --no-pager | grep -E 'music|ai-stack'"
 
 # run a job on demand (the .service, not the .timer)
-ssh rig "systemctl start nas-music-mirror.service"   # ALAC transcode mirror
-ssh rig "systemctl start music-mirror.service"       # rsync verbatim mirror
+ssh rig "systemctl start nas-music-mirror.service"   # ALAC transcode mirror (the sole ~/Music mirror)
 ssh rig "systemctl start ai-stack-watchdog.service"  # ollama hop probe
 
 # logs

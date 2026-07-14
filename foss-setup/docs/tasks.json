@@ -10650,7 +10650,6 @@
    "ssh rig 'ls -la ~/Music | head'"
   ],
   "files": [
-   "configs/host/rig/music-mirror/music-mirror.service",
    "configs/host/rig/music-mirror/nas-music-mirror.service"
   ],
   "docs": [
