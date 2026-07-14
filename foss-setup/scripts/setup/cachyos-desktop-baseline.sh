@@ -6,7 +6,9 @@
 # What it sets up:
 #   * A browser (default: Firefox from the official repo). Optionally LibreWolf
 #     (hardened) and/or Zen (Firefox-based, polished) from the AUR.
-#   * LibreOffice 25.8 ("still" maintenance branch) for offline office work.
+#   * LibreOffice (default: libreoffice-fresh, the 26.2 current branch) for
+#     offline office work. Set LIBREOFFICE_PKG=libreoffice-still for the prior
+#     (more conservative) maintenance branch, or =none to skip.
 #
 # Setting Kagi as the default search engine is a per-profile *browser* action and
 # cannot be reliably scripted — it's documented at the end and printed on finish.
@@ -128,8 +130,15 @@ EOF
 
 main() {
   detect_aur_helper
-  log "Sync package databases."
-  sudo pacman -Sy
+  # NOTE: deliberately NO bare `pacman -Sy` here. On a rolling release a lone
+  # -Sy (refresh the sync db WITHOUT upgrading) creates a partial-upgrade hazard:
+  # a subsequent install can pull a package built against newer libraries than the
+  # ones currently installed, which can break the system. We install with --needed
+  # against the CURRENT sync db instead, so the deps we pull match what's installed.
+  # If a target package is missing or too old, run a FULL `sudo pacman -Syu` first
+  # (in a maintenance window — it may bump the kernel/nvidia and want a reboot),
+  # then re-run this script.
+  # https://wiki.archlinux.org/title/System_maintenance#Partial_upgrades_are_unsupported
   install_browsers
   install_office
   log "Baseline installed. Browsers: ${BROWSERS}. Office: ${LIBREOFFICE_PKG}."
