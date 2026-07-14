@@ -107,12 +107,6 @@ tautulli.{$DOMAIN} {
 	reverse_proxy tautulli:8181
 }
 
-# Library pruning (rule-based)
-maintainerr.{$DOMAIN} {
-	import local_tls
-	reverse_proxy maintainerr:6246
-}
-
 # Pre-transcode automation (server UI; the heavy node runs on the rig)
 # 2026-07-07 disabled pending fix-18 decision: Tdarr not running on NAS (:8265 unreachable)
 # tdarr.{$DOMAIN} {
@@ -224,15 +218,6 @@ amp.{$DOMAIN} {
 health.{$DOMAIN} {
 	import local_tls
 	reverse_proxy healthchecks:8000
-}
-
-# SBOM / vulnerability dashboard (runs on NAS — frontend :9010, API :9011)
-deptrack.{$DOMAIN} {
-	import local_tls
-	handle /api/* {
-		reverse_proxy {$NAS_IP}:9011
-	}
-	reverse_proxy {$NAS_IP}:9010
 }
 
 # Photo library (runs on NAS — :2283)

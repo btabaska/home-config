@@ -32,7 +32,7 @@ volumes:
 
 services:
   romm:
-    image: rommapp/romm:latest
+    image: rommapp/romm:4.9.2   # pinned 2026-07-14 (was :latest) — avoid a jump onto the 5.0 redesign/beta (sync API changed); Diun watches for updates
     container_name: romm
     restart: unless-stopped
     environment:

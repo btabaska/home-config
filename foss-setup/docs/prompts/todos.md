@@ -60,6 +60,16 @@ Keep this in sync when an item's state changes. Last updated: **2026-07-13**.
   reconciled (closed 5 drift, retired 7, deferred 4, kept the rest); ai-01 expanded
   (above).
 
+## 🔎 research.md integrated — 2026-07-14 → `../research-integration.md`
+
+Walked the 4 research areas (grounded live first). **Done live:** RomM pinned 4.9.2
++ health probe, stale Caddyfile vhosts removed, `docker-14` closed as delivered
+(Coolify dropped), `game-12` un-deferred, research.md drift corrected. **New tracked
+tasks (build later):** `foss-01..04` (Vaultwarden cutover, desktop-suite packaging,
+Syncthing hub, Ente Auth+YubiKey), `retro-08` (RomM RetroAchievements — needs your
+RA username), `seed-11/12/13` (public indexers, Bitmagnet, Whisparr — **spot-check
+each tracker's liveness before adding**). Details + effort/deps in `research-integration.md`.
+
 ## 🗺️ Roadmap walk — DONE 2026-07-14 (all 66 remaining tasks reviewed)
 
 Task-by-task walk with the operator: **156/223 done** now (was 146). Closed 10

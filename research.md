@@ -1,6 +1,6 @@
 # Homelab Improvements — Research & Plan (2026-07)
 
-**Status:** Research + planning only. **Nothing here has been implemented.** These are four improvement ideas the user wants scoped before deciding what to build.
+**Status:** Research + planning. **Integrated into the roadmap 2026-07-14** (operator decisions) — see [`docs/research-integration.md`](foss-setup/docs/research-integration.md) for where each area landed. Summary: §1 Caddy → `docker-14` CLOSED as delivered (Coolify dropped) + stale vhosts cleaned + RomM/Caddy hygiene done live; §2 FOSS suite → 4 tasks tracked (Vaultwarden cutover, suite packaging, Syncthing hub, Ente Auth) to build later; §3 Retro → RomM pinned + health-probed + RA-dashboard tracked, save-sync (`game-12`) un-deferred; §4 Trackers → full path chosen (seed-11 public indexers, seed-12 Bitmagnet, seed-13 Whisparr) tracked, pending per-tracker liveness spot-check.
 
 **How to use this doc (for Claude Code):** Each of the four sections is self-contained: *Verified current state* (with repo file references — jump to these first) → *Gap* → *Recommendation* → *Concrete steps/snippets* → *Effort* → *Open decisions*. The current-state blocks were verified against the live repo on 2026-07 so you do **not** need to re-scout before acting. Verify version-sensitive external facts (tracker liveness especially) before executing — they drift fast.
 
@@ -117,7 +117,7 @@ Static: ~15 min. Dynamic on mini or NAS: ~30-60 min. Tailscale exposure: 0 (auto
 ### Verified current state
 - **Rig = CachyOS (Arch), i7-12700K / RTX 3090 Ti / 64 GB, on 24/7**, daily-driver + gaming + local LLM stack (separate `local-ai-tooling` repo) + game servers. Installs via `pacman` + AUR (`paru`) + Flatpak + chezmoi dotfiles. `ansible-pull` runs for *maintenance* but does **not** install desktop apps.
 - Only desktop installer today: `foss-setup/scripts/setup/cachyos-desktop-baseline.sh` = browser (Firefox/optional LibreWolf/Zen) + LibreOffice + sets Kagi default. Everything else is scattered per-task `pacman -S`. **No unified suite, no macOS Brewfile.**
-- **Already LIVE:** Vaultwarden on mini (`vault.tabaska.us`, v1.36.0); Immich on NAS (v3.x).
+- **Already LIVE:** Vaultwarden on mini (`vault.tabaska.us`, v1.36.0); Immich on NAS (v2.7.5 — corrected 2026-07-14, the "v3.x" here was drift; Immich is on the 2.x line).
 - **Already decided in research (not yet done):** 2FA = **Ente Auth + YubiKey** (task `sec-01`); local-first files = **Syncthing v2 hub on NAS** (+ mini node, iOS = Synctrain). **Nextcloud was considered and RETIRED**; Seafile not adopted.
 - **Kept (deliberate):** Protonmail, Kagi, iOS, iMessage (no FOSS fix), Obsidian + paid Sync.
 - **Pending cutovers:** Bitwarden data → Vaultwarden (**Task 06**); Authy → Ente Auth (**sec-01**, Authy has no export → manual re-enroll); Proton Drive → Syncthing hub.
@@ -215,7 +215,7 @@ brew "zellij", "neovim", "lazygit", "lazydocker", "starship", "ripgrep", "fd", "
 
 ### Verified current state (repo)
 - **RomM LIVE on the mini** (`romm.tabaska.us`, `mini:8998`, image `rommapp/romm:latest` **[UNPINNED]**, `mariadb:11` sidecar). Tasks `retro-01`/`retro-02` done.
-- ROMs on the NAS `games` CIFS share at `/mnt/share/Games/romm/roms/<platform>/` (BIOS in `bios/`). **Saves/states stored LOCALLY on the mini** at `./assets:/romm/assets` — **not synced anywhere, and a single point of loss** (mini off-box backup is thin per DR notes).
+- ROMs on the NAS `games` CIFS share at `/mnt/share/Games/romm/roms/<platform>/` (BIOS in `bios/`). Saves/states stored LOCALLY on the mini at `./assets:/romm/assets` — **not synced cross-device** (still the real gap for multi-device play). _Correction 2026-07-14: the `./assets` saves folder IS already covered by the mini restic→B2 job, so it is backed up off-box — hygiene win #3 below is effectively DONE. The remaining gap is cross-device **sync**, not backup._
 - Metadata via IGDB + Hasheous. Bundled EmulatorJS web player (no separate EmulatorJS deploy).
 - **Verification is container-presence only** (`verification/coverage/mini.containers` lists `romm` + `romm-db`); **no HTTP health probe**, no functional test.
 - Deferred roadmap items: `game-12` (save-sync via **Ludusavi + Syncthing**), `game-14` (launcher + library). RetroAchievements has **zero mention** in the repo.

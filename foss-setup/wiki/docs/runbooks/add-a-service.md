@@ -40,7 +40,7 @@ fails the sweep by design).
 
     ```caddyfile
     <name>.{$DOMAIN} {
-        import cloudflare_tls
+        import local_tls          # the live Caddyfile uses local_tls (cloudflare_tls is commented out)
         reverse_proxy <container>:<port>
     }
     ```
