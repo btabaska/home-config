@@ -45,7 +45,7 @@ checks:
     host: mini
     cmd: >-
       D=/var/lib/verification/wiki-drift-repo;
-      { [ -d "$D/.git" ] || git clone -q forgejo:home/homelab "$D"; } &&
+      { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } &&
       git -C "$D" fetch -q origin main &&
       git -C "$D" reset --hard -q FETCH_HEAD &&
       git -C "$D" worktree prune 2>/dev/null &&

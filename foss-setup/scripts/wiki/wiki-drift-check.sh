@@ -6,23 +6,31 @@
 # the docker-stack service catalog+enrichment, and the scripts themselves). The
 # rule that keeps the manual honest: ANY change to those sources must regenerate
 # the affected wiki pages IN THE SAME COMMIT. This check proves it — it checks
-# out HEAD into a throwaway git worktree, re-runs every page generator there, and
-# diffs the result against what HEAD actually committed. Any difference means a
-# source changed but its generated page did not => STALE wiki.
+# out HEAD into a throwaway git worktree, re-runs EVERY page generator there, and
+# looks for any change to the worktree. Any change means a source was committed
+# but its generated page was not => STALE wiki.
 #
 #   exit 0  — in sync (generated pages match a fresh regeneration)
 #   exit 1  — DRIFT (prints the stale paths)
 #   exit 2  — environment/tooling error (not a drift verdict)
 #
+# Coverage is automatic: it runs every scripts/docs/gen-*.py it finds and diffs
+# the WHOLE worktree, so a newly-added generator (or a new output path) is covered
+# with no edit here — there is no allow-list to drift out of date. The only special
+# case is gen-todo.py, which writes todo.md at the PLANNING-repo root (parent of
+# foss-setup); that path only exists in the full planning repo, so it is skipped in
+# the forgejo deploy subtree.
+#
 # Read-only wrt the invoking working tree: all regeneration happens in a detached
-# worktree under $TMPDIR, removed on exit. Works from either the full planning
-# repo (sources under foss-setup/) or the forgejo deploy subtree (sources at the
-# repo root). Deps: git >=2.5, python3, python-yaml (same as the generators).
+# worktree under $TMPDIR, removed on exit. Works from either the full planning repo
+# (sources under foss-setup/) or the forgejo deploy subtree (sources at the repo
+# root). Deps: git >=2.5, python3, python-yaml (same as the generators).
 #
 # Usage:  bash scripts/wiki/wiki-drift-check.sh
 # Wired into verification as the `wiki-drift` check (see checks.d/git-hygiene.yaml),
 # which runs it against a fresh forgejo checkout so the verify timer tests HEAD.
 set -uo pipefail
+export PYTHONDONTWRITEBYTECODE=1   # no __pycache__ noise in the worktree diff
 
 die()  { echo "wiki-drift: $*" >&2; exit 2; }
 
@@ -45,29 +53,25 @@ trap cleanup EXIT
 git -C "$GIT_ROOT" worktree add --detach -q "$WT" HEAD 2>/dev/null || die "git worktree add failed"
 
 GENDIR="$WT/$SUB/scripts/docs"
-# Page generators. gen-todo writes todo.md at the PLANNING-repo root (parent of
-# foss-setup); that file only exists in the full repo, so run it only there.
-GENERATORS=(gen-roadmap-pages.py gen-checks-pages.py gen-script-pages.py gen-wiki-services.py)
-[ "$SUB" = "foss-setup" ] && GENERATORS+=(gen-todo.py)
+shopt -s nullglob
+GENERATORS=("$GENDIR"/gen-*.py)
+shopt -u nullglob
+[ "${#GENERATORS[@]}" -gt 0 ] || die "no generators found under $SUB/scripts/docs (checkout too old?)"
 
 for g in "${GENERATORS[@]}"; do
-  [ -f "$GENDIR/$g" ] || die "generator missing: $SUB/scripts/docs/$g (checkout too old?)"
-  if ! err="$(python3 "$GENDIR/$g" 2>&1 >/dev/null)"; then
-    die "generator $g failed: $err"
+  name="$(basename "$g")"
+  # gen-todo writes todo.md at the PLANNING-repo root (outside foss-setup); that file
+  # only exists in the full repo, so run it only there (skip in the deploy subtree).
+  if [ "$name" = "gen-todo.py" ] && [ "$SUB" != "foss-setup" ]; then continue; fi
+  if ! err="$(python3 "$g" 2>&1 >/dev/null)"; then
+    die "generator $name failed: $err"
   fi
 done
 
-# Paths the generators own. git status --porcelain over exactly these -> drift.
-GEN_PATHS=(
-  "$SUB/wiki/docs/roadmap"
-  "$SUB/wiki/docs/reference/checks"
-  "$SUB/wiki/docs/reference/scripts"
-  "$SUB/wiki/docs/services"
-  "$SUB/wiki/mkdocs.yml"
-)
-[ "$SUB" = "foss-setup" ] && GEN_PATHS+=("todo.md")
-
-DRIFT="$(git -C "$WT" status --porcelain -- "${GEN_PATHS[@]}" 2>/dev/null)"
+# Any change to the freshly-regenerated worktree = drift. Whole-tree status (not an
+# allow-list) so a new generator's output is covered automatically. __pycache__ is
+# gitignored + PYTHONDONTWRITEBYTECODE is set, so only real page changes show up.
+DRIFT="$(git -C "$WT" status --porcelain 2>/dev/null)"
 
 if [ -n "$DRIFT" ]; then
   echo "WIKI DRIFT: committed generated pages are stale vs a fresh regeneration."
