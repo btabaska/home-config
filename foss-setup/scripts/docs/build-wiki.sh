@@ -10,8 +10,10 @@
 #   3. sudo rsync the built site/ into /opt/stacks/wiki/site, which Caddy
 #      serves at https://wiki.tabaska.us via file_server
 #
-# Regenerate service pages first if compose files changed:
-#   python3 foss-setup/scripts/docs/gen-wiki-services.py
+# Regenerate generated pages first if the repo changed:
+#   python3 foss-setup/scripts/docs/gen-wiki-services.py   # service pages (compose)
+#   python3 foss-setup/scripts/docs/gen-script-pages.py    # script man-pages
+#   python3 foss-setup/scripts/docs/gen-roadmap-pages.py   # todo list from progress.json
 #
 # Usage: ./foss-setup/scripts/docs/build-wiki.sh   (from the operator MacBook)
 #   env: MINI=<ssh alias> (default: mini)

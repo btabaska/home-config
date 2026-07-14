@@ -126,3 +126,125 @@ nav:
       - Ansible & convergence: operations/ansible.md
       - Secrets policy: operations/secrets.md
       - Tracker & AI sessions: operations/tracker.md
+  - Hardware to buy: reference/hardware.md
+  - Scripts reference:
+      # BEGIN GENERATED SCRIPTS NAV (managed by scripts/docs/gen-script-pages.py — do not edit by hand)
+      - Overview: reference/scripts/index.md
+      - Backup & restore:
+          - Index: reference/scripts/backup/index.md
+          - ntfy-notify.sh: reference/scripts/backup/ntfy-notify-sh.md
+          - pre-backup-db-dumps.sh: reference/scripts/backup/pre-backup-db-dumps-sh.md
+          - restic-backup.sh: reference/scripts/backup/restic-backup-sh.md
+          - restic-latest-age.sh: reference/scripts/backup/restic-latest-age-sh.md
+          - restore-test.sh: reference/scripts/backup/restore-test-sh.md
+      - Docs & tracker generators:
+          - Index: reference/scripts/docs/index.md
+          - add-dns-resilience-tasks.py: reference/scripts/docs/add-dns-resilience-tasks-py.md
+          - apply-workstream-sequencing.py: reference/scripts/docs/apply-workstream-sequencing-py.md
+          - build-wiki.sh: reference/scripts/docs/build-wiki-sh.md
+          - gen-script-pages.py: reference/scripts/docs/gen-script-pages-py.md
+          - gen-wiki-services.py: reference/scripts/docs/gen-wiki-services-py.md
+          - generate-task-overrides.py: reference/scripts/docs/generate-task-overrides-py.md
+          - inject-handoff-workstream.py: reference/scripts/docs/inject-handoff-workstream-py.md
+          - migrate-to-tracks.py: reference/scripts/docs/migrate-to-tracks-py.md
+          - patch-ai-handoff-badges.py: reference/scripts/docs/patch-ai-handoff-badges-py.md
+          - patch-html-tasks.py: reference/scripts/docs/patch-html-tasks-py.md
+          - publish-deploy.sh: reference/scripts/docs/publish-deploy-sh.md
+          - resequence-guide.py: reference/scripts/docs/resequence-guide-py.md
+          - sync-rollout-with-plan.py: reference/scripts/docs/sync-rollout-with-plan-py.md
+          - tighten-tasks.py: reference/scripts/docs/tighten-tasks-py.md
+          - update-required-baseline.py: reference/scripts/docs/update-required-baseline-py.md
+      - Dotfiles:
+          - Index: reference/scripts/dotfiles/index.md
+          - bootstrap-dotfiles.sh: reference/scripts/dotfiles/bootstrap-dotfiles-sh.md
+      - Gaming & streaming:
+          - Index: reference/scripts/gaming/index.md
+          - apollo-enable.sh: reference/scripts/gaming/apollo-enable-sh.md
+          - display-policy.sh: reference/scripts/gaming/display-policy-sh.md
+          - enable-wol-cachyos.sh: reference/scripts/gaming/enable-wol-cachyos-sh.md
+          - gpu-power-tune.sh: reference/scripts/gaming/gpu-power-tune-sh.md
+          - mc-bedrock-ping.py: reference/scripts/gaming/mc-bedrock-ping-py.md
+          - mc-status-ping.py: reference/scripts/gaming/mc-status-ping-py.md
+          - wake-rig-listener.sh: reference/scripts/gaming/wake-rig-listener-sh.md
+          - wake-rig-recovery.sh: reference/scripts/gaming/wake-rig-recovery-sh.md
+          - wake-rig-via-mini.sh: reference/scripts/gaming/wake-rig-via-mini-sh.md
+          - wake-rig.sh: reference/scripts/gaming/wake-rig-sh.md
+      - Home Assistant:
+          - Index: reference/scripts/ha/index.md
+          - haws.py: reference/scripts/ha/haws-py.md
+      - Inventory & manifests:
+          - Index: reference/scripts/inventory/index.md
+          - etckeeper-setup.sh: reference/scripts/inventory/etckeeper-setup-sh.md
+          - export-manifests.sh: reference/scripts/inventory/export-manifests-sh.md
+          - gen-inventory-md.sh: reference/scripts/inventory/gen-inventory-md-sh.md
+      - Media pipeline:
+          - Index: reference/scripts/media/index.md
+          - flac-to-alac-inplace.sh: reference/scripts/media/flac-to-alac-inplace-sh.md
+          - immich-go-import.sh: reference/scripts/media/immich-go-import-sh.md
+          - install-ipod-tools-cachyos.sh: reference/scripts/media/install-ipod-tools-cachyos-sh.md
+          - install-slskd-native.sh: reference/scripts/media/install-slskd-native-sh.md
+          - nas-music-to-alac-mirror.sh: reference/scripts/media/nas-music-to-alac-mirror-sh.md
+          - rclone-manual-copy.sh: reference/scripts/media/rclone-manual-copy-sh.md
+          - rclone-seedbox-mount.sh: reference/scripts/media/rclone-seedbox-mount-sh.md
+          - rclone-seedbox-watchdog.sh: reference/scripts/media/rclone-seedbox-watchdog-sh.md
+          - readarr-copy-to-cwa-ingest.sh: reference/scripts/media/readarr-copy-to-cwa-ingest-sh.md
+          - seedbox-sync.sh: reference/scripts/media/seedbox-sync-sh.md
+          - verify-tailscale-seedbox.sh: reference/scripts/media/verify-tailscale-seedbox-sh.md
+          - window-maint-unpackerr-rclone.sh: reference/scripts/media/window-maint-unpackerr-rclone-sh.md
+      - NAS tasks:
+          - Index: reference/scripts/nas/index.md
+          - apply-compose-restart-policy.sh: reference/scripts/nas/apply-compose-restart-policy-sh.md
+          - immich-db-dump.sh: reference/scripts/nas/immich-db-dump-sh.md
+          - immich-pg-dump.sh: reference/scripts/nas/immich-pg-dump-sh.md
+          - install-beets-task.sh: reference/scripts/nas/install-beets-task-sh.md
+          - install-immich-dump-task.sh: reference/scripts/nas/install-immich-dump-task-sh.md
+          - install-nas-docker-health-task.sh: reference/scripts/nas/install-nas-docker-health-task-sh.md
+          - nas-docker-health.sh: reference/scripts/nas/nas-docker-health-sh.md
+          - recover-docker-stacks.sh: reference/scripts/nas/recover-docker-stacks-sh.md
+      - Network:
+          - Index: reference/scripts/network/index.md
+          - dns-resilience-verify.sh: reference/scripts/network/dns-resilience-verify-sh.md
+          - tailscale-connectivity-test.sh: reference/scripts/network/tailscale-connectivity-test-sh.md
+          - tailscale-install-up.sh: reference/scripts/network/tailscale-install-up-sh.md
+          - tailscale-ssh-enable.sh: reference/scripts/network/tailscale-ssh-enable-sh.md
+          - tailscale-verify-direct.sh: reference/scripts/network/tailscale-verify-direct-sh.md
+          - zbf-isolation-verify.sh: reference/scripts/network/zbf-isolation-verify-sh.md
+      - Reading stack:
+          - Index: reference/scripts/reading/index.md
+          - syncthing-setup-cachyos.sh: reference/scripts/reading/syncthing-setup-cachyos-sh.md
+      - Host setup:
+          - Index: reference/scripts/setup/index.md
+          - cachyos-desktop-baseline.sh: reference/scripts/setup/cachyos-desktop-baseline-sh.md
+          - install-docker-ubuntu.sh: reference/scripts/setup/install-docker-ubuntu-sh.md
+          - install-haos-vm.sh: reference/scripts/setup/install-haos-vm-sh.md
+          - nut-client-ubuntu.sh: reference/scripts/setup/nut-client-ubuntu-sh.md
+      - Uptime Kuma:
+          - Index: reference/scripts/uptime-kuma/index.md
+          - add-functional-monitors.sh: reference/scripts/uptime-kuma/add-functional-monitors-sh.md
+          - bootstrap-nas-monitors.sh: reference/scripts/uptime-kuma/bootstrap-nas-monitors-sh.md
+          - seed-monitors.sh: reference/scripts/uptime-kuma/seed-monitors-sh.md
+      # END GENERATED SCRIPTS NAV
+  - Roadmap:
+      # BEGIN GENERATED ROADMAP NAV (managed by scripts/docs/gen-roadmap-pages.py)
+      - Overview: roadmap/index.md
+      - agent-handoff: roadmap/agent-handoff.md
+      - apps: roadmap/apps.md
+      - audit-fixes: roadmap/audit-fixes.md
+      - backups-offsite: roadmap/backups-offsite.md
+      - desktop: roadmap/desktop.md
+      - docker-host: roadmap/docker-host.md
+      - ebook-mgmt: roadmap/ebook-mgmt.md
+      - gaming: roadmap/gaming.md
+      - home-surface: roadmap/home-surface.md
+      - media-pipeline: roadmap/media-pipeline.md
+      - media-polish: roadmap/media-polish.md
+      - nas-foundation: roadmap/nas-foundation.md
+      - network: roadmap/network.md
+      - ops: roadmap/ops.md
+      - photos: roadmap/photos.md
+      - reading: roadmap/reading.md
+      - security: roadmap/security.md
+      - smart-home: roadmap/smart-home.md
+      - verification: roadmap/verification.md
+      - wiki: roadmap/wiki.md
+      # END GENERATED ROADMAP NAV
