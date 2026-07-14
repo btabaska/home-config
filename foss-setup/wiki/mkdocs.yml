@@ -127,6 +127,22 @@ nav:
       - Secrets policy: operations/secrets.md
       - Tracker & AI sessions: operations/tracker.md
   - Hardware to buy: reference/hardware.md
+  - Verification checks:
+      # BEGIN GENERATED CHECKS NAV (managed by scripts/docs/gen-checks-pages.py)
+      - Overview: reference/checks/index.md
+      - alerting: reference/checks/alerting.md
+      - backups: reference/checks/backups.md
+      - dns: reference/checks/dns.md
+      - docker-fleet: reference/checks/docker-fleet.md
+      - git-hygiene: reference/checks/git-hygiene.md
+      - ha: reference/checks/ha.md
+      - media: reference/checks/media.md
+      - mini-services: reference/checks/mini-services.md
+      - nas-services: reference/checks/nas-services.md
+      - network: reference/checks/network.md
+      - rig: reference/checks/rig.md
+      - system: reference/checks/system.md
+      # END GENERATED CHECKS NAV
   - Scripts reference:
       # BEGIN GENERATED SCRIPTS NAV (managed by scripts/docs/gen-script-pages.py — do not edit by hand)
       - Overview: reference/scripts/index.md
