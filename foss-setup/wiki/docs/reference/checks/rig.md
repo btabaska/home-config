@@ -1,6 +1,6 @@
 # Checks — rig
 
-`foss-setup/verification/checks.d/rig.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/rig.yaml` — 8 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `rig-ollama`
 
@@ -44,6 +44,17 @@ ollama has the triage model pulled (qwen3-coder:30b)
 
 ```bash
 curl -s -m 8 http://cachyos.tailb31641.ts.net:11434/api/tags
+```
+
+## `rig-ollama-keepalive`
+
+ollama KEEP_ALIVE=0 on rig (VRAM frees after each request — GPU contention)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `game-13` · **enabled:** True
+- **expects:** `OLLAMA_KEEP_ALIVE=0(?![.0-9a-zA-Z])`
+
+```bash
+systemctl show ollama -p Environment
 ```
 
 ## `playit-java-public`

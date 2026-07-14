@@ -60,12 +60,13 @@ checks:
   # config, so it also catches "edited the file but forgot to reload"). Source of
   # truth: local-ai-tooling scripts/01-ollama-tune.sh (separate repo, NOT this
   # one). host: rig => the mini runner SSHes to the rig (mini->rig SSH confirmed
-  # working 2026-07-09); the regex rejects any nonzero value incl. 0m/0s/-1.
+  # working 2026-07-09); the lookahead rejects any nonzero value — 0m/0s/-1/00
+  # and fractional 0.5 (the '.' in the class stops =0 matching the '0' of =0.5).
   - id: rig-ollama-keepalive
     name: "ollama KEEP_ALIVE=0 on rig (VRAM frees after each request — GPU contention)"
     host: rig
     cmd: systemctl show ollama -p Environment
-    expect: 'OLLAMA_KEEP_ALIVE=0(?![0-9a-zA-Z])'
+    expect: 'OLLAMA_KEEP_ALIVE=0(?![.0-9a-zA-Z])'
     severity: warn
     task_id: game-13
     runbook: wiki/runbooks/rig.md
