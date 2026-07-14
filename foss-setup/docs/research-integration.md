@@ -1,10 +1,11 @@
 # research.md → roadmap integration
 
 How the 4 areas of `research.md` were reconciled into the plan on **2026-07-14**
-(operator decisions, grounded against the live fleet first). New tasks are tracked
-here (the companion-doc pattern, like `hardware-shopping-list.md`) rather than
-hand-edited into the 223-task `index.html`; `progress.json` carries the state
-changes to *existing* tasks.
+(operator decisions, grounded against the live fleet first). **The 8 new tasks
+below are now first-class in the main tracker** — `docs/index.html` `taskData`
+(total 223 → **231**) + `progress.json` — so they render on the board and count.
+This file is the decision/detail layer; the **tracker (`index.html` + `progress.json`)
+is the source of truth**.
 
 ## ✅ Done live this session (hygiene / decided)
 - **RomM pinned** `:latest` → `:4.9.2` (`configs/docker-stack/stacks/romm/compose.yaml`, redeployed) — stops a surprise jump onto the 5.0 redesign/beta (sync API changed).
