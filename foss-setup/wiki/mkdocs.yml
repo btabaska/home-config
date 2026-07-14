@@ -127,6 +127,19 @@ nav:
       - Secrets policy: operations/secrets.md
       - Tracker & AI sessions: operations/tracker.md
   - Hardware to buy: reference/hardware.md
+  - Architecture & design:
+      - Overview: architecture/index.md
+      - Master plan:
+          - Overview: architecture/master-plan/index.md
+          - "Game servers and game streaming": architecture/master-plan/gaming.md
+          - "The host decision that drives everything": architecture/master-plan/host-decision.md
+          - "The home network": architecture/master-plan/network.md
+          - "Open-source replacements, by Apple/iOS task": architecture/master-plan/replacements.md
+          - "Smart home": architecture/master-plan/smart-home.md
+      - "Smart-home (Home Assistant) design": architecture/smart-home-design.md
+      - "Local-AI build plan": architecture/local-ai-build.md
+      - "Research — improvement areas": architecture/research-improvements.md
+      - "Research → roadmap integration": architecture/research-integration.md
   - Reference:
       - Network:
           - Overview: reference/network/index.md
@@ -153,6 +166,7 @@ nav:
           - NAS volume schema: reference/nas/volume-schema.md
   - Guides:
       - Overview: guides/index.md
+      - Cloudflare cutover: guides/cloudflare-cutover.md
       - Apollo autostart notes: guides/apollo-autostart.md
       - chezmoi dotfiles quickstart: guides/chezmoi.md
       - immich-go import: guides/immich-go.md

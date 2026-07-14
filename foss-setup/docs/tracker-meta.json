@@ -1,0 +1,281 @@
+{
+ "tierMeta": {
+  "handoff": {
+   "title": "Agent handoff prep",
+   "sub": "One-time checklist (~1\u20132 hrs) before delegating purple AI handoff tasks. Secrets stay in a local file on your MacBook \u2014 never paste into chat."
+  },
+  "backbone": {
+   "title": "Backbone \u2014 do this first",
+   "sub": "Critical path: operator prep \u2192 network \u2192 NAS layout \u2192 Docker host. If backbone is mostly done, finish the remaining gates (nas-01 snapshots, glue-01 UPS) before Immich, Paperless, or off-site backup."
+  },
+  "workstreams": {
+   "title": "Parallel workstreams",
+   "sub": "Independent feature tracks \u2014 run side by side after backbone. Suggested order: finish media verification \u2192 smart home or life apps \u2192 reading \u2192 photos (needs nas-01) \u2192 off-site backup. None block each other except where deps say SYNC."
+  },
+  "operations": {
+   "title": "Operations & rebuildability",
+   "sub": "Glue layer in three waves: (1) AdGuard, Dockge, ntfy, Beszel, Forgejo \u2014 (2) Caddy + Uptime Kuma + Homepage \u2014 (3) Git the stack, Ansible fleet, SBOM inventory. Security hardening follows once backups and Caddy exist."
+  },
+  "enhancements": {
+   "title": "Enhancements",
+   "sub": "Optional polish \u2014 Plex analytics, game servers, Apollo streaming, local AI. Gaming Phase 1 (WoL + Apollo) can start anytime; Tdarr and GPU policy wait on WoL / HA voice."
+  }
+ },
+ "trackMeta": {
+  "network": {
+   "tier": "backbone",
+   "order": 1,
+   "title": "Network & remote access",
+   "sub": "UniFi VLANs + zone firewall (one-way door), Tailscale mesh, SSH fallbacks, and security extras."
+  },
+  "nas-foundation": {
+   "tier": "backbone",
+   "order": 2,
+   "title": "NAS storage layout",
+   "sub": "Three-volume split, share exports, Container Manager \u2014 then nas-01 Btrfs snapshots (unlocks Immich + off-site backup) and glue-01 UPS/NUT."
+  },
+  "docker-host": {
+   "tier": "backbone",
+   "order": 3,
+   "title": "Docker host bootstrap",
+   "sub": "Docker Engine + /opt/stacks layout on the Mac mini \u2014 prerequisite for every Compose app."
+  },
+  "desktop": {
+   "tier": "backbone",
+   "order": 0,
+   "title": "Operator & desktop baseline",
+   "sub": "prep-01 first, then glue-03/04 anytime. Remaining: glue-02 browser baseline, glue-04b fleet dotfiles."
+  },
+  "smart-home": {
+   "tier": "workstreams",
+   "order": 2,
+   "title": "Smart home (Home Assistant)",
+   "sub": "Fully parallel \u2014 network backbone already unlocks this. Phase: HA Green \u2192 HACS + Hue/Nest \u2192 Midea/Zigbee \u2192 voice/cameras \u2192 LiteLLM fallback."
+  },
+  "media-pipeline": {
+   "tier": "workstreams",
+   "order": 1,
+   "title": "Media pipeline (seedbox \u2192 Plex)",
+   "sub": "Core stack is live. Close out: seed-07 end-to-end verify \u2192 optional Soulseek branch (seed-09 \u2192 nas-29 \u2192 nas-30 beets)."
+  },
+  "photos": {
+   "tier": "workstreams",
+   "order": 5,
+   "title": "Photos (Immich)",
+   "sub": "Immich on NAS \u2014 blocked only on nas-01 Btrfs snapshots."
+  },
+  "reading": {
+   "tier": "workstreams",
+   "order": 4,
+   "title": "Reading & portable media",
+   "sub": "Three entry points: (A) CWA + Calibre + Kobo, (B) iPod/podcasts on CachyOS, (C) Obsidian + Pinchflat anytime."
+  },
+  "apps": {
+   "tier": "workstreams",
+   "order": 3,
+   "title": "Life apps (Docker)",
+   "sub": "Light Docker on Mac mini \u2014 deploy Miniflux + Navidrome + Wallabag + Mealie together; Paperless after nas-01."
+  },
+  "backups-offsite": {
+   "tier": "workstreams",
+   "order": 6,
+   "title": "Off-site backup (recommended)",
+   "sub": "Recommended after nas-01: B2 Hyper Backup \u2192 restic/Borg \u2192 full restore drill (nas-07)."
+  },
+  "ops": {
+   "tier": "operations",
+   "order": 1,
+   "title": "Reverse proxy, monitoring & Git",
+   "sub": "Wave 1: AdGuard, Dockge, ntfy, Beszel, Forgejo. Wave 2: Caddy \u2192 Uptime Kuma \u2192 Homepage. Wave 3: Git stack, Ansible, SBOM, restore runbooks."
+  },
+  "security": {
+   "tier": "operations",
+   "order": 2,
+   "title": "Security hardening",
+   "sub": "MFA + patches + Docker log caps anytime. Immutable backups (sec-03) after off-site chain; CrowdSec (sec-04) after Caddy."
+  },
+  "media-polish": {
+   "tier": "enhancements",
+   "order": 1,
+   "title": "Plex polish",
+   "sub": "All async \u2014 Tautulli, Kometa anytime; Tdarr + Maintainerr removed from plan 2026-07-08."
+  },
+  "gaming": {
+   "tier": "enhancements",
+   "order": 2,
+   "title": "Gaming & streaming",
+   "sub": "Phase 1: Apollo + Moonlight (rig 24/7; WoL = recovery). Phase 2: LinuxGSM servers. Phase 3: Ludusavi, RomM, GPU policy (needs ha-17)."
+  },
+  "ebook-mgmt": {
+   "tier": "workstreams",
+   "order": 7,
+   "title": "Ebook Management Improvements",
+   "sub": "Readarr permanent library + CWA copy-on-import, Libreseerr request portal \u2014 fixes inventory tracking and household book requests."
+  },
+  "agent-handoff": {
+   "tier": "handoff",
+   "order": 0,
+   "title": "Agent handoff prep",
+   "sub": "SSH check \u2192 secrets vault \u2192 optional B2/creds \u2192 sudo mode \u2192 pick batch \u2192 run agent \u2192 verify \u2192 cleanup."
+  },
+  "audit-fixes": {
+   "tier": "operations",
+   "order": 0,
+   "title": "Audit fixes \u2014 2026-07-07 fleet audit",
+   "sub": "Run 0 repair batch: live breakage (DNS failover, crash loops, GPU cap), repo bugs (set -e, word-splitting, bad defaults), convergence (ansible-pull, subtree publish), drift, secrets hygiene, and placement decisions."
+  },
+  "verification": {
+   "tier": "operations",
+   "order": 3,
+   "title": "Continuous verification",
+   "sub": "checks.d probe library \u2192 SSH runner + timer + ntfy on regression \u2192 local-LLM triage on the rig (small scoped skills) \u2192 auto-reopen regressions in progress.json."
+  },
+  "home-surface": {
+   "tier": "workstreams",
+   "order": 8,
+   "title": "Home surface (home.tabaska.us)",
+   "sub": "Live service inventory \u2192 catalog file in repo \u2192 Caddy vhost reconciliation \u2192 Homepage rebuild by category with health widgets \u2192 polish."
+  },
+  "wiki": {
+   "tier": "workstreams",
+   "order": 9,
+   "title": "Wiki (wiki.tabaska.us)",
+   "sub": "MkDocs Material scaffold \u2192 generated service/script/host pages \u2192 seven core runbooks \u2192 deploy behind Caddy \u2192 wiki-in-the-loop drift check."
+  }
+ },
+ "runMeta": {
+  "0": {
+   "name": "Repair & Trust",
+   "goal": "Fix today\u2019s live breakage and repo bugs; reconcile the tracker with reality. Exit: everything marked done is verifiably true, ansible-pull converges green, and git is the single source of truth."
+  },
+  "1": {
+   "name": "DNS resilience & Verification",
+   "goal": "Finish the fail-open DNS chain (mini \u2192 NAS \u2192 gateway) and build the continuous-verification framework \u2014 probe library, SSH runner, and local-LLM triage on the rig."
+  },
+  "2": {
+   "name": "Home surface",
+   "goal": "home.tabaska.us becomes the full categorized service catalog, the Caddyfile is reconciled against reality, and wiki.tabaska.us ships the user manual."
+  },
+  "3": {
+   "name": "Backups & Security",
+   "goal": "Complete the offsite 3-2-1 chain (B2, restic, Borg, restore drill) and harden security (MFA, immutable backups, CrowdSec). Gate: B2 credentials in vault + UPS hardware purchase."
+  },
+  "4": {
+   "name": "Reading & Media completion",
+   "goal": "CWA + KOReader + podcasts + iPod + Obsidian, ebook request flow end-to-end, plus remaining media polish (music verification, beets \u2014 Tdarr/Maintainerr removed from plan 2026-07-08)."
+  },
+  "5": {
+   "name": "Smart home",
+   "goal": "Home Assistant through all integrations. HA is live on the LAN (192.168.10.50:8123, admin created 2026-07-07) but NOT on the tailnet and has no SSH add-on yet \u2014 first items: enable the Advanced SSH add-on, join the tailnet, and publish ha.tabaska.us via Caddy + Homepage. Physical gates: Hue bridge button, Zigbee coordinator, mic test, Apple Home pairing."
+  },
+  "6": {
+   "name": "Gaming & AI",
+   "goal": "Game servers (mini light slot + 24/7 rig), streaming polish (headless display, Moonlight), rig idle-power tuning, desktop baseline, and local-LLM apps."
+  },
+  "7": {
+   "name": "Capstone: Rebuild-proof",
+   "goal": "Rebuild drills, SBOM completeness, wiki completeness, verification green fleet-wide \u2014 the \u201creproducible, maintainable, understandable\u201d proof. Then delete the vault and rotate keys."
+  }
+ },
+ "aiHandoffMap": {
+  "_meta": {
+   "description": "AI automation tier for rollout tasks. auto = SSH/sudo + secrets vault, minimal human steps. assisted = AI does bulk work; you provide creds, OAuth, physical confirm, or spot-check. Omit = physical device, account enrollment, or subjective desktop prefs. As of plan v3 (2026-07-07) the per-task `mode` field in taskData is authoritative; this map is kept for backward compatibility.",
+   "updated": "2026-07-07"
+  },
+  "auto": {
+   "glue-04b": "chezmoi apply on rig + mini \u2014 dotfiles already in repo",
+   "glue-01": "NUT netclient \u2014 nut-client-ubuntu.sh exists",
+   "docker-16": "MusicSeerr compose deploy on Mac mini",
+   "seed-06": "Wire MusicSeerr \u2192 Lidarr/Plex via API",
+   "seed-09": "slskd on Betty \u2014 install-slskd-native.sh",
+   "nas-29": "Soularr compose on NAS",
+   "nas-30": "beets tag layer (optional compose)",
+   "ha-04": "HACS install via SSH/add-on",
+   "ha-10": "Energy dashboard YAML/config",
+   "ha-11": "HA backup target \u2192 NAS share",
+   "ha-12": "Mosquitto + Zigbee2MQTT stack (needs coordinator plugged in)",
+   "ha-15": "Frigate on NAS compose (if cameras ready)",
+   "ha-17": "LiteLLM gateway compose + small fallback model",
+   "docker-04": "Miniflux + Postgres compose",
+   "docker-05": "Navidrome compose",
+   "read-07": "Wallabag compose",
+   "doc-02": "Mealie compose",
+   "doc-01": "Paperless-ngx on NAS Container Manager",
+   "nas-09": "Calibre-Web-Automated compose (pinned image)",
+   "read-03": "CWA auto-ingest path wiring",
+   "ebook-01": "Readarr permanent library mount",
+   "ebook-02": "readarr-copy-to-cwa-ingest.sh",
+   "ebook-03": "Readarr root folder migration",
+   "ebook-04": "Libreseerr compose deploy",
+   "ebook-05": "Libreseerr \u2192 Readarr API wiring",
+   "read-14": "Pinchflat compose deploy",
+   "nas-08": "Immich compose on NAS",
+   "nas-04": "restic \u2192 B2 on Ubuntu (needs B2 app key once)",
+   "nas-05": "restic \u2192 B2 on CachyOS",
+   "docker-07": "AdGuard Home compose",
+   "docker-08": "Dockge compose",
+   "docker-09": "ntfy compose",
+   "docker-10": "Beszel hub + agent",
+   "glue-05": "Forgejo compose",
+   "docker-06": "Caddy reverse proxy",
+   "docker-11": "Uptime Kuma",
+   "docker-12": "Diun notifier",
+   "docker-14": "Caddy-fronted optional stacks",
+   "docker-15": "Homepage dashboard",
+   "docker-13": "Git commit Docker stack",
+   "glue-07": "Ansible fleet push",
+   "glue-08": "ansible-pull convergence",
+   "sbom-01": "Dependency-Track v5 compose",
+   "sbom-02": "Syft + Grype nightly cron",
+   "sbom-03": "etckeeper on all hosts",
+   "sbom-04": "export-manifests.sh \u2192 control repo",
+   "dns-01": "Unbound + AdGuard core on mini (done); resilience is dns-02\u2013dns-05",
+   "sec-02": "Docker log rotation caps",
+   "sec-05": "unattended-upgrades / patch cadence",
+   "media-01": "Tautulli compose",
+   "media-02": "Kometa compose + config",
+   "media-03": "Removed from plan 2026-07-08 (was: Maintainerr compose)",
+   "media-04": "Removed from plan 2026-07-08 (was: Tdarr server on NAS + rig node)",
+   "game-08": "enable-wol-cachyos.sh + wake-rig.sh",
+   "game-10": "gpu-power-tune.sh",
+   "game-05": "Apollo install + autostart",
+   "game-11": "Headless/virtual display for Apollo",
+   "game-09": "Rig idle-power tuning (24/7 baseline)",
+   "game-01": "LinuxGSM light server on mini",
+   "game-04": "Tailscale ACL / exposure policy",
+   "game-12": "Ludusavi + Syncthing paths",
+   "game-13": "GPU contention policy (keep_alive rules)",
+   "dns-02": "NAS secondary AdGuard compose + rewrite mirror",
+   "dns-04": "dns-resilience-verify.sh + outage drill"
+  },
+  "assisted": {
+   "nas-01": "DSM Snapshot Replication \u2014 mostly GUI; AI can drive via SSH where possible",
+   "seed-07": "E2E media test \u2014 AI triggers request; you confirm Plex playback",
+   "seed-10": "E2E music test \u2014 same spot-check pattern",
+   "ha-02": "HA Green onboarding \u2014 you plug in; AI finishes integrations",
+   "ha-03": "HAOS VM \u2014 install-haos-vm.sh; you pick primary vs Green path",
+   "ha-05": "Hue \u2014 bridge button press + LAN discovery",
+   "ha-07": "Midea LAN \u2014 device discovery + backup .json",
+   "ha-09": "Voice stack \u2014 mic test + Assist pipeline tuning",
+   "ha-14": "UniFi Protect \u2192 HA \u2014 local API creds",
+   "ha-16": "HomeKit Bridge \u2014 Apple Home pairing code on phone",
+   "read-02": "Syncthing \u2014 syncthing-setup-cachyos.sh + device pairing",
+   "ebook-06": "E2E ebook verify \u2014 AI runs pipeline; you check Kobo/CWA",
+   "nas-08b": "immich-go-import.sh \u2014 you insert SD card",
+   "nas-02": "Hyper Backup \u2192 B2 \u2014 B2 bucket + app key once",
+   "nas-03": "Tier-2 HDD rotation \u2014 you plug drive in",
+   "nas-06": "Borg \u2192 Hetzner \u2014 storage box creds",
+   "nas-07": "restore-test.sh \u2014 you confirm restored files look right",
+   "glue-06": "Rebuild drill capstone \u2014 AI runs; you spot-check services",
+   "sbom-05": "Per-host rebuild drill \u2014 guided verification",
+   "sec-03": "B2 Object Lock + Healthchecks \u2014 cloud console + ping URL",
+   "sec-04": "CrowdSec + forward-auth \u2014 API keys + test attack",
+   "game-02": "AMP \u2014 first Minecraft instance via web UI",
+   "game-03": "Heavy game servers \u2014 pick title + friend test",
+   "game-14": "Heroic/Lutris + RomM \u2014 launcher preferences",
+   "ai-01": "ComfyUI / Open WebUI RAG \u2014 model download choices",
+   "dns-03": "UniFi DHCP fail-open DNS chain \u2014 GUI on Dream Wall",
+   "dns-05": "NAT :53 redirect + DoH blocking \u2014 UniFi GUI; gated on dns-04"
+  }
+ }
+}

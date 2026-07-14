@@ -14,14 +14,12 @@ import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-HTML = REPO / "docs" / "index.html"
+TASKS = REPO / "docs" / "tasks.json"   # canonical task DEFINITIONS (was index.html taskData; index.html retired 2026-07-14)
 PROG = REPO / "docs" / "progress.json"
 OUT = REPO / "wiki" / "docs" / "roadmap"
 MKDOCS = REPO / "wiki" / "mkdocs.yml"
 
-html = HTML.read_text(errors="replace")
-i = html.index('[{"id":')
-tasks, _ = json.JSONDecoder().raw_decode(html[i:])
+tasks = json.load(open(TASKS))
 prog = json.load(open(PROG))
 done = {k for k, v in prog["done"].items() if v}
 deferred = prog.get("deferred", {})

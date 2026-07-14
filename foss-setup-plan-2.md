@@ -1,3 +1,5 @@
+> **Migrating to the wiki (2026-07-14):** most of this master narrative is now split into `foss-setup/wiki/docs/architecture/master-plan/` (host-decision, network, replacements, smart-home, gaming, power, backup, set-and-forget, inventory-sbom). The Ansible/fleet-automation section (§9) and final validation are still pending — kept here until fully migrated.
+
 # Going Analogue: A FOSS Computing Setup
 
 A reference build for moving off the Apple/iOS ecosystem onto your own hardware, with as much current open-source tooling as possible. Scoped to what you already run (CachyOS rig, DS920+, Mac mini/Ubuntu, Dream Wall, Hue, Nest, Midea, Plex, Kagi, Proton) and what you're moving toward (iPod Classic, eReader, Immich, Obsidian, Home Assistant, self-hosted RSS, game servers, game streaming).

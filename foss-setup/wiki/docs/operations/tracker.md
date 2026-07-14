@@ -1,9 +1,18 @@
 # Operations — Tracker & AI sessions
 
-The rollout is driven by **Plan v3**: `foss-setup/docs/index.html`, a
-self-contained HTML tracker with **223 tasks (as of 2026-07-09) organized
-as staged runs** — the count grows as runs add work.
-This page is how to read it, and the protocol AI sessions follow.
+The tracker is now **plain data + generated views** (the self-contained
+`docs/index.html` HTML app was **retired 2026-07-14** — one source of truth).
+
+- **`foss-setup/docs/tasks.json`** — canonical task **definitions** (id, title,
+  track, run, mode, steps, deps, verify). Extracted from the old `taskData`.
+- **`foss-setup/docs/progress.json`** — **status** maps (`done` / `deferred` /
+  `retired`) + `_meta` counts.
+- **`foss-setup/docs/tracker-meta.json`** — run/track/tier groupings + ai-handoff map.
+
+Two generated views from that data: **`todo.md`** (repo root — remaining work)
+and the **[wiki Roadmap](../roadmap/index.md)** (full browsable tracker). To
+change a task: edit `tasks.json`/`progress.json`, then re-run
+`scripts/docs/gen-todo.py` + `gen-roadmap-pages.py` + `build-wiki.sh`.
 
 ## The tracker
 

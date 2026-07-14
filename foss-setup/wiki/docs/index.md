@@ -20,7 +20,7 @@ Three documents divide the world:
 | Document | Role |
 |---|---|
 | `foss-setup-plan-2.md` (repo root) | The **why** — the full design narrative |
-| `foss-setup/docs/index.html` | The **what/when** — Plan v3 rollout tracker (223 tasks as of 2026-07-09; grows as runs add work) |
+| [Roadmap](roadmap/index.md) + `todo.md` | The **what/when** — the task tracker (generated from `docs/tasks.json` + `docs/progress.json`; the HTML tracker was retired 2026-07-14) |
 | **This wiki** (`foss-setup/wiki/`) | The **how to operate** — stable reference + runbooks |
 
 Guiding rule: the wiki is **generated from the repo wherever possible** so it

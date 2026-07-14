@@ -1,6 +1,6 @@
 # Roadmap — wiki
 
-5 task(s). Status mirrors `docs/progress.json` (the source of truth).
+6 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -9,5 +9,6 @@
 | `wiki-03` | Core runbooks — the seven operations you'll actually need | ✅ done | 2 hr |
 | `wiki-04` | Deploy wiki.tabaska.us — dockerized build + Caddy file_server | ✅ done | 45 min |
 | `wiki-05` | Wiki-in-the-loop — every change updates the wiki in the same commit | ⬜ open | 30 min |
+| `wiki-06` | Build out the wiki as the master source of truth (document EVERYTHING in the repo) | ⬜ open | multi-wave / ongoing |
 
 [← Roadmap overview](index.md)
