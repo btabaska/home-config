@@ -23,7 +23,7 @@ The full task tracker, mirrored from `docs/index.html` + `docs/progress.json` (*
 | [photos](photos.md) | 2 | 1 | 1 | 0 | 0 |
 | [reading](reading.md) | 14 | 8 | 6 | 0 | 0 |
 | [security](security.md) | 7 | 2 | 5 | 0 | 0 |
-| [smart-home](smart-home.md) | 38 | 6 | 18 | 12 | 2 |
+| [smart-home](smart-home.md) | 38 | 6 | 17 | 13 | 2 |
 | [verification](verification.md) | 5 | 5 | 0 | 0 | 0 |
 | [wiki](wiki.md) | 6 | 4 | 2 | 0 | 0 |
 

@@ -21,7 +21,7 @@
 | `ha-09` | Set up local voice (Assist + Whisper + Piper); LLM agent via LiteLLM (ha-17) | ⬜ open | 30-45 min |
 | `ha-10` | Configure the Energy dashboard | ⬜ open | 20 min |
 | `ha-11` | Configure HA backups to NAS and SAVE the encryption key | ✅ done | 30 min |
-| `ha-12` | Zigbee backbone: Mosquitto + Zigbee2MQTT + USB coordinator | ⬜ open | 45-60 min |
+| `ha-12` | Zigbee backbone: Mosquitto + Zigbee2MQTT + USB coordinator | ⏸️ deferred | 45-60 min |
 | `ha-13` | Presence detection: HA Companion app + room-level (mmWave/Bermuda) | ⏸️ deferred | 30 min |
 | `ha-14` | Bring UniFi Protect cameras into Home Assistant (local, no subscription) | ⬜ open | 30 min |
 | `ha-15` | (Optional) Frigate for better local camera AI (zones, package/animal/face) | ⏸️ deferred | 1-2 hrs |

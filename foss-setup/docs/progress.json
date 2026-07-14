@@ -197,6 +197,7 @@
   "fut-03": "2026-07-14 roadmap walk (user): DEFERRED \u2014 DIY weather station; 2-5yr future (on shopping list).",
   "fut-04": "2026-07-14 roadmap walk (user): DEFERRED \u2014 Meshtastic LoRa mesh; 2-5yr hobbyist (on shopping list).",
   "fut-05": "2026-07-14 roadmap walk (user): DEFERRED \u2014 sump-pump smart monitoring; 2-5yr future (on shopping list).",
-  "fut-06": "2026-07-14 roadmap walk (user): DEFERRED \u2014 grow tent local-first; 2-5yr future (on shopping list)."
+  "fut-06": "2026-07-14 roadmap walk (user): DEFERRED \u2014 grow tent local-first; 2-5yr future (on shopping list).",
+  "ha-12": "2026-07-14 (user): DEFERRED \u2014 the Zigbee backbone (Mosquitto + Zigbee2MQTT + USB coordinator) is only needed for the ha-30 sensor rollout; every Zigbee device is to-be-purchased and the 45+ Hue lights run through their own Hue Bridge. Buy the ~$20 coordinator with the ha-30 sensors."
  }
 }

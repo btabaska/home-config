@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**156/232 done** · **50 open** · **17 deferred** · 11 retired.
+**156/232 done** · **49 open** · **18 deferred** · 11 retired.
 
 ---
 
@@ -60,7 +60,6 @@
 - [ ] **`ha-07`** Add Midea AC + dehumidifier via midea_ac_lan (local) — and BACK UP the .json _(est 30 min)_
 - [ ] **`ha-09`** Set up local voice (Assist + Whisper + Piper); LLM agent via LiteLLM (ha-17) _(est 30-45 min)_ — ⛔ gate: mic test
 - [ ] **`ha-10`** Configure the Energy dashboard _(est 20 min)_
-- [ ] **`ha-12`** Zigbee backbone: Mosquitto + Zigbee2MQTT + USB coordinator _(est 45-60 min)_ — ⛔ gate: plug in Zigbee USB coordinator
 - [ ] **`ha-14`** Bring UniFi Protect cameras into Home Assistant (local, no subscription) _(est 30 min)_ — ⛔ gate: Protect API creds in vault (currently empty)
 - [ ] **`ha-18`** Rooms & floors: HA registry matches the real house _(est 30 min)_
 - [ ] **`ha-19`** IoT VLAN migration: move every WiFi IoT device onto VLAN 20 + firewall groups _(est 2-3 h over days)_
@@ -92,6 +91,7 @@
 - **`glue-01`** UPS power resilience: NUT netclient on Ubuntu listening to the NAS UPS — _DEFERRED — UPS/NUT power resilience; no budget for a UPS right now._
 - **`glue-06`** Push ALL configs to Git + run the rebuild drill (capstone) — _DEFERRED — bare-OS rebuild-drill capstone; DR validation parked._
 - **`ha-08`** (Optional) Replace Midea OEM dongle with ESPHome SLWF-01Pro (cloud-free) — _DEFERRED (optional, no active plan) — replace the Midea OEM WiFi dongle with an ESPHome SLWF-01Pro (cloud-free). Midea i_
+- **`ha-12`** Zigbee backbone: Mosquitto + Zigbee2MQTT + USB coordinator — _DEFERRED — the Zigbee backbone (Mosquitto + Zigbee2MQTT + USB coordinator) is only needed for the ha-30 sensor rollout; _
 - **`ha-13`** Presence detection: HA Companion app + room-level (mmWave/Bermuda) — _DEFERRED (optional, no active plan) — mmWave/Zigbee room-level presence sensors; needs hardware purchase + placement._
 - **`ha-15`** (Optional) Frigate for better local camera AI (zones, package/animal/face) — _DEFERRED — Frigate; UniFi Protect's built-in detection judged sufficient._
 - **`ha-20`** Level Lock+ ×2: Apple Home now; trial HA pairing via BLE proxy after sensors arrive — _DEFERRED — Level Lock+ into HA; locks work in Apple Home now, HA path is hardware-gated on ha-30 ESP32 BLE proxies._
