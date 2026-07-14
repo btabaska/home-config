@@ -11,6 +11,8 @@ Pick by how much you want to manage:
 - **Pterodactyl** — the established panel Pelican forks from. **Crafty Controller** — simpler, Minecraft-focused.
 - **AMP (AMPACHE/CubeCoders)** — a licensed panel; **this is what actually runs the heavy servers live** (see below).
 
+> **Design decision — don't run a dedicated general-purpose panel (Pelican/Pterodactyl) at this scale** (from the 2026-07-08 `game-hosting-design` doc, still current). A game panel's main value is *provisioning servers on demand* — which duplicates what Compose already gives you for a handful of servers, while adding a database, a daemon, and its own auth surface for little gain. Pelican was also still pre-1.0 at the time. So the plan chose plain **pinned-image Compose per game** (the same one-service-per-box pattern as the rest of the fleet), managed with the tooling already in place, and to **revisit a panel only at 5+ servers or if friends should self-provision**. (`AMP` ended up as the Minecraft host anyway for its Java-server ergonomics — but as a single-instance runner, not a fleet provisioning panel.) *Live-state caveat: the rig's game stacks live as separate per-service dirs (`/opt/stacks/{amp,palworld,playit}`), not one `/opt/stacks/games/` project, and the rig is **not** enrolled in the mini's Dockge — so on the rig they're managed directly, not through a panel.*
+
 **Where to run them:** the 8 GB Mac mini already carries the always-on web stack, so it hosts **at most one light always-on server** (a single Minecraft (Paper) or Terraria). **Everything else runs on the CachyOS rig (24/7).**
 
 > **⚠️ Corrected — how servers actually run and are exposed (validated live):**

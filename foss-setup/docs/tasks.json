@@ -4516,7 +4516,7 @@
    "Hue Bridge is ALREADY on VLAN 20 (192.168.20.100, 0 B WAN \u2014 good). Remaining WiFi devices to re-provision onto the IoT SSID via each vendor app: 4\u00d7 Midea AC, Midea dehumidifier, Roborock, Roomba, LG CX, LG C4, LG range, LG microwave, COSORI air fryer, Emporia Vue, Withings scale, Withings BPM, ecobee (at install), Edn SmallGarden, Samsung HW-Q80R soundbar, Samsung Odyssey G9 monitor, Tesla Model 3 (garage). Apple TVs + HomePods STAY on Trusted (Apple Home hubs).",
    "HUMAN \u2014 per device: vendor app \u2192 WiFi settings \u2192 rejoin on IoT SSID (most Midea/LG re-run pairing). Do in one sitting per room; tick off in this task.",
    "FINDING 2026-07-08 to reconcile: mini (Trusted) \u2192 VLAN 20 is REJECTED by the gateway while HA (10.50) gets through \u2014 the Trusted\u2192IoT policy is narrower than plan \u00a71 assumes. In UniFi confirm intended policy; at minimum allow HA + admin laptops \u2192 IoT.",
-   "HUMAN (UniFi GUI) \u2014 fixed IPs per device; IP Groups iot-local (Hue, TVs, G9 monitor, soundbar, Elgato; later ecobee/Midea/Emporia) + iot-tvs + plex-servers; two Create Policy recipes (Block iot-local\u2192External; Allow iot-tvs\u2192plex-servers :32400 TCP) \u2014 exact field-by-field instructions in docs/ha-action-guide.html \u00a72. IoT isolation blocks confirmed already present 2026-07-08.",
+   "HUMAN (UniFi GUI) \u2014 fixed IPs per device; IP Groups iot-local (Hue, TVs, G9 monitor, soundbar, Elgato; later ecobee/Midea/Emporia) + iot-tvs + plex-servers; two Create Policy recipes (Block iot-local\u2192External; Allow iot-tvs\u2192plex-servers :32400 TCP) \u2014 exact field-by-field instructions in the wiki reference/network/firewall-checklist.md (Part 4 per-device pinholes). IoT isolation blocks confirmed already present 2026-07-08.",
    "AI \u2014 after each wave: verify device entities still available in HA and (for iot-local) that WAN counters stay at ~0 B."
   ],
   "commands": [],
@@ -4535,7 +4535,7 @@
   "detail": [
    {
     "h": "Confirmed \u2014 2026-07-08",
-    "note": "IoT SSID = **BillWi-IoT**, subnet 192.168.20.0/24 (VLAN 20). mini and HA both STAY on Trusted \u2014 no host moves. Outstanding: reconcile Trusted\u2192IoT firewall policy (see docs/ha-action-guide.html \u00a72)."
+    "note": "IoT SSID = **BillWi-IoT**, subnet 192.168.20.0/24 (VLAN 20). mini and HA both STAY on Trusted \u2014 no host moves. Outstanding: reconcile Trusted\u2192IoT firewall policy (see the wiki reference/network/firewall-checklist.md (Part 4 per-device pinholes))."
    },
    {
     "h": "RESOLVED + rescoped \u2014 2026-07-08 (evening)",

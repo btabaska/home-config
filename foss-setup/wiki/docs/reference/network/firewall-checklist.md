@@ -572,6 +572,67 @@ Drag all three **above Allow All Traffic**, test, then continue with the full li
 
 ---
 
+## Part 4 — Per-device refinements (optional pinholes)
+
+_Added 2026-07-14 from the retired `foss-setup/docs/ha-action-guide.html` (2026-07-08). Validated: HA `192.168.10.50` → 200, Plex `192.168.10.4:32400` → 200, Hue bridge `192.168.20.100` → 200._
+
+The rules above are **zone-level** — `#11 IoT → Internet` is a blanket **Allow**, and `#15 Block IoT → Trusted` blocks the whole zone. Two optional **IP-group** policies refine that without changing zone membership: they enforce "local-first devices get no internet" and "IoT TVs can reach Plex." Skip both until you actually move TVs / cloud-free devices onto IoT.
+
+### Prereqs — fixed IPs + three IP Groups
+
+1. **Fixed IP per IoT device:** UniFi → Client → gear → **Fixed IP Address** → keep the current `192.168.20.x` → Apply. Local integrations key off a stable IP anyway (this duplicates §2 of `device-onboarding.md`).
+2. **Create three IP Groups** at Settings → Profiles → **IP Groups** (some versions: Objects). **Type = "IPv4 Address/Subnet" for all three — not "Port Group"; no port ranges in the groups.** The only port in this design is `32400`, typed straight into policy `#21`'s Destination-Port field:
+   - `iot-local` — the fixed IPs of every device that should get **no** WAN (table below).
+   - `iot-tvs` — just the LG CX + LG C4 IPs.
+   - `plex-servers` — `192.168.10.2` and `192.168.10.4`.
+
+**Which bucket each device goes in** (the `#20` cloud-block only touches `iot-local`; everything else keeps the blanket `#11` internet allow — no group needed):
+
+| Bucket | Devices | Internet |
+|---|---|---|
+| `iot-local` (cloud-blocked) | Hue bridge (`192.168.20.100`) · LG CX · LG C4 · Samsung Odyssey G9 (G95SC — Tizen smart display, network beyond basics blocked) · Samsung HW-Q80R soundbar + SWA-9000S rears (audio is HDMI-ARC; WiFi only feeds SmartThings/telemetry — or just skip WiFi) · Elgato ×2 · *later:* ecobee, Midea ×5 (after ESPHome dongles), Emporia (after ESPHome flash) | **Blocked** |
+| `iot-cloud` (no group — keep `#11`) | Roborock · Roomba · LG range · LG microwave · COSORI · Withings ×2 · Edn · Tesla Model 3 (needs Tesla cloud for app/OTA; garage WiFi) · Emporia + Midea ×5 until their local paths land | Allowed |
+
+### #20 Block iot-local → Internet
+
+- [ ] Created · - [ ] Skipped
+
+| Field | Value |
+|---|---|
+| **Name** | `Block iot-local to Internet` |
+| **Source Zone** | **IoT** |
+| **Source** | **IP** → `iot-local` group *(if your version only takes manual IPs here, use the **Device** radio and multi-select the same clients)* |
+| **Action** | **Block** · Auto allow return traffic **unchecked** |
+| **Destination Zone** | **External** |
+| **Destination / Port** | Any / Any |
+| **Protocol** | **All** · Connection State All · Schedule Always |
+| **Description** | Local-first IoT devices must not reach the internet (enforces "block once local") |
+
+Reorder this **above** the `#11 IoT → Internet` allow (top wins). Test: the Hue bridge client page shows ~0 B of 24-h internet traffic (it already does — this makes it enforced rather than incidental).
+
+### #21 Allow IoT TVs → Plex
+
+- [ ] Created · - [ ] Skipped *(required before any TV moves to IoT, or Plex breaks)*
+
+| Field | Value |
+|---|---|
+| **Name** | `Allow IoT TVs to Plex` |
+| **Source Zone** | **IoT** |
+| **Source** | **IP** → `iot-tvs` group *(or Device multi-select: LG CX, LG C4)* |
+| **Action** | **Allow** · Auto allow return traffic **✓** |
+| **Destination Zone** | **Trusted** |
+| **Destination** | **IP** → `plex-servers` group (`192.168.10.2` + `192.168.10.4`) |
+| **Destination Port** | **Specific** → `32400` |
+| **Protocol** | **TCP** · Connection State All · Schedule Always |
+| **Description** | Narrow pinhole so IoT TVs reach Plex despite `#15 Block IoT → Trusted` |
+
+Reorder this **above** `#15 Block IoT → Trusted`. Test after a TV migrates: open the Plex app on it.
+
+!!! note "Historical: the mini→IoT scare (2026-07-08, resolved)"
+    The action guide that seeded this section opened with a "Trusted→IoT is silently blocked" finding. It was **not** a firewall problem — Docker on the mini had auto-assigned a container network `192.168.16.0/20` (which swallows the whole IoT VLAN), so the mini couldn't route to the Hue bridge. Fixed via the `daemon.json` address-pool pin + the `sys-docker-subnet-squat` guard (see `foss-setup/wiki/docs/reference/hosts/mini-docker-stack.md`). Trusted→IoT was correct all along (`#2` allow); mini→`192.168.20.100` now returns 200.
+
+---
+
 ## Policy count: ~38 total
 
 | Category | Count |
@@ -581,7 +642,8 @@ Drag all three **above Allow All Traffic**, test, then continue with the full li
 | #5–9 Gateway | 5 |
 | #10–13 Internet | 4 |
 | #14–19 blocks | 19 |
-| **Total** | **~38** |
+| #20–21 per-device pinholes (optional) | 2 |
+| **Total** | **~38 core + 2 optional** |
 
 ---
 [← Network reference](index.md)
