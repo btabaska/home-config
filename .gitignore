@@ -17,3 +17,9 @@
 # Local server migration snapshot (contains Plex tokens, API keys, indexer cookies)
 migration-snapshot/
 __pycache__/
+
+# iCloud Drive "Desktop & Documents" conflict copies: this repo lives under
+# ~/Documents which is iCloud-synced, and rapid page regeneration spawns
+# "name 2.md" / "name 3.md" duplicates. Never track them.
+* [0-9].*
+* [0-9][0-9].*
