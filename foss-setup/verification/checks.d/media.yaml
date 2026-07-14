@@ -45,6 +45,28 @@ checks:
     runbook: wiki/runbooks/verification.md
     enabled: true
 
+  # seed-11 redundancy guard: the original gap was "IPT-only TV search returns ~0
+  # grabs" (a single-tracker point of failure — see the Sonarr search-freeze
+  # writeup). Closed with private-tracker redundancy (operator declined public
+  # indexers): Prowlarr fullSyncs its TV-capable indexers to Sonarr. This counts
+  # Sonarr indexers with automatic-search enabled and fails below 3 — i.e. if the
+  # fleet regresses toward IPT-only. Deliberately reads the stable enable-flag
+  # CONFIG, not live indexer availability (which flaps with 429 backoff and is
+  # intentionally out of scope for these checks).
+  - id: sonarr-indexer-redundancy
+    name: "sonarr has >=3 search-enabled indexers (no IPT-only single point of failure)"
+    host: url
+    cmd: >-
+      curl -sm 20 -H "X-Api-Key: $SONARR_API_KEY"
+      "http://192.168.10.4:8989/api/v3/indexer"
+      | python3 -c "import json,sys; d=json.load(sys.stdin);
+      print('searchable=%d' % sum(1 for i in d if i.get('enableAutomaticSearch')))"
+    expect: '^searchable=(?:[3-9]|[1-9][0-9]+)$'
+    severity: warn
+    task_id: seed-11
+    runbook: wiki/runbooks/verification.md
+    enabled: true
+
   - id: radarr-queue-stuck
     name: "radarr: import queue not clogged (<=5 items stuck in warning state)"
     host: url

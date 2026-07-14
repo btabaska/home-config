@@ -10472,15 +10472,16 @@
  },
  {
   "id": "seed-11",
-  "title": "Public-indexer coverage layer in Prowlarr (TV/anime redundancy over IPT+MAM)",
+  "title": "Indexer redundancy layer in Prowlarr (TV/anime over IPT+MAM)",
   "host": "NAS",
   "type": "sync",
   "depends_on": [],
   "estimate": "~30-45 min",
   "steps": [
-   "SPOT-CHECK each tracker's domain + Prowlarr definition liveness BEFORE adding (research verification pass was incomplete).",
-   "Fix the 'IPT ~0 TV grabs' gap first: add EZTV + The Pirate Bay (no Cloudflare solver).",
-   "Add Nyaa + SubsPlease (anime) + enable Sonarr anime mode. Keep TRaSH/recyclarr gating tight. Settings -> Apps -> Full Sync."
+   "Goal: remove the IPT-only single point of failure for TV/anime search (the 'IPT ~0 grabs' gap) by adding indexer redundancy in Prowlarr.",
+   "Resolution (operator decision, 2026-07-14): satisfied with PRIVATE-tracker redundancy instead of public indexers. Prowlarr now carries IPTorrents + OnlyEncodes+ + RetroToon + SexTorrent + Zenith (+ MyAnonamouse for books, BitPorn) and fullSyncs its TV-capable indexers to Sonarr/Radarr/Readarr/Lidarr.",
+   "Public piracy indexers (EZTV / The Pirate Bay / Nyaa / SubsPlease) were DECLINED and are NOT added.",
+   "Verified: 5 TV-capable indexers synced to Sonarr with automatic-search enabled; Prowlarr indexerstatus shows no failing indexers; all four *arr apps at fullSync. Guarded by the sonarr-indexer-redundancy check (>=3 search-enabled indexers)."
   ],
   "commands": [],
   "files": [],
@@ -10490,12 +10491,11 @@
     "url": "docs/research-integration.md"
    }
   ],
-  "verify": "Sonarr Search-All returns grabs from the new public indexers; anime resolves.",
+  "verify": "Sonarr has >=3 search-enabled indexers synced from Prowlarr (redundancy over IPT-only); no failing indexers.",
   "track": "media-pipeline",
   "required": false,
   "run": 4,
-  "mode": "mixed",
-  "gate": "per-tracker liveness spot-check"
+  "mode": "ai"
  },
  {
   "id": "seed-12",

@@ -1,6 +1,6 @@
 # Checks — media
 
-`foss-setup/verification/checks.d/media.yaml` — 13 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/media.yaml` — 14 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `music-library-dupes`
 
@@ -22,6 +22,17 @@ sonarr: import queue not clogged (<=5 items stuck in warning state)
 
 ```bash
 curl -sm 20 -H "X-Api-Key: $SONARR_API_KEY" "http://192.168.10.4:8989/api/v3/queue?pageSize=200" | python3 -c "import json,sys; d=json.load(sys.stdin); print('stuck=%d' % sum(1 for r in d.get('records',[]) if r.get('trackedDownloadStatus')=='warning'))"
+```
+
+## `sonarr-indexer-redundancy`
+
+sonarr has >=3 search-enabled indexers (no IPT-only single point of failure)
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `seed-11` · **enabled:** True
+- **expects:** `^searchable=(?:[3-9]|[1-9][0-9]+)$`
+
+```bash
+curl -sm 20 -H "X-Api-Key: $SONARR_API_KEY" "http://192.168.10.4:8989/api/v3/indexer" | python3 -c "import json,sys; d=json.load(sys.stdin); print('searchable=%d' % sum(1 for i in d if i.get('enableAutomaticSearch')))"
 ```
 
 ## `radarr-queue-stuck`

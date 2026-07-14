@@ -29,7 +29,7 @@
 | `seed-08` | Decommission the old home torrent stack (qBittorrent/Gluetun + dual-LAN + 5Mbps cap) | ✅ done | 45-60 min |
 | `seed-09` | Deploy slskd on Betty (Soulseek P2P off-site) | ✅ done | 45-60 min |
 | `seed-10` | End-to-end music verification (MusicSeerr → Betty → NAS → Plex/Navidrome) | ✅ done | 30-45 min |
-| `seed-11` | Public-indexer coverage layer in Prowlarr (TV/anime redundancy over IPT+MAM) | ⬜ open | ~30-45 min |
+| `seed-11` | Indexer redundancy layer in Prowlarr (TV/anime over IPT+MAM) | ✅ done | ~30-45 min |
 | `seed-12` | Deploy Bitmagnet self-hosted DHT crawler on NAS (rate-limit-proof indexer hedge) | ⬜ open | ~1 hr + runbook |
 | `seed-13` | Whisparr adult-acquisition pipeline (sukebei/XXXClub -> Stash) on NAS | ⬜ open | ~an afternoon + runbook |
 
