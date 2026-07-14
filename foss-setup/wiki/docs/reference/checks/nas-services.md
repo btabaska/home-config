@@ -1,6 +1,6 @@
 # Checks — nas-services
 
-`foss-setup/verification/checks.d/nas-services.yaml` — 9 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/nas-services.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `nas-ssh`
 
@@ -11,6 +11,28 @@ NAS reachable over SSH from mini
 
 ```bash
 echo nas-ssh-ok
+```
+
+## `nas-flaresolverr`
+
+flaresolverr Cloudflare solver healthy (Prowlarr/arr search dependency)
+
+- **host:** `nas` · **severity:** `warn` · **guards task:** `nas-01` · **enabled:** True
+- **expects:** `"ok"`
+
+```bash
+curl -sm 8 http://localhost:8191/health
+```
+
+## `nas-rreading-glasses`
+
+rreading-glasses metadata provider serving on :8788 (readarr/libreseerr)
+
+- **host:** `nas` · **severity:** `warn` · **guards task:** `nas-01` · **enabled:** True
+- **expects:** `^200$`
+
+```bash
+curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8788/
 ```
 
 ## `nas-immich`

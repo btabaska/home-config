@@ -170,6 +170,19 @@ checks:
   # Needs LITELLM_MASTER_KEY in /etc/verification/env (vault: litellm.master_key).
   # NUM_PARALLEL=1: if a big model is mid-generation the request queues and can blow
   # the 50s budget — one isolated failure = retry before treating it as an outage.
+  # observability hardening (2026-07-14): mcpo (the MCP tool host that Open WebUI
+  # calls for tools) had manifest+container-health coverage only — an "Up but the
+  # tool server is broken" state was invisible. This probes its OpenAPI surface.
+  - id: rig-mcpo
+    name: "mcpo tool host serving on rig:8000 (OWUI tools)"
+    host: url
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:8000/docs
+    expect: '^200$'
+    severity: warn
+    task_id: game-10
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
   - id: rig-ai-e2e
     name: "litellm end-to-end completion (containers reach host ollama)"
     host: url

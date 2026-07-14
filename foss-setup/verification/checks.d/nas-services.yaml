@@ -12,6 +12,33 @@ checks:
     runbook: wiki/runbooks/nas.md
     enabled: true
 
+  # observability hardening (2026-07-14): flaresolverr + rreading-glasses had
+  # manifest+container coverage only — an "Up but the job is dead" state was
+  # invisible, and both feed the arr search/metadata path (an "up but broken"
+  # flaresolverr silently zeroes Prowlarr indexer results = the sonarr-no-grabs
+  # class; a dead rreading-glasses is the libreseerr-edition / phantom-author
+  # incident class). These probe the actual service, not just container presence.
+  # Run on the NAS (localhost) since both bind internally for the arr network.
+  - id: nas-flaresolverr
+    name: "flaresolverr Cloudflare solver healthy (Prowlarr/arr search dependency)"
+    host: nas
+    cmd: curl -sm 8 http://localhost:8191/health
+    expect: '"ok"'
+    severity: warn
+    task_id: nas-01
+    runbook: wiki/runbooks/nas.md
+    enabled: true
+
+  - id: nas-rreading-glasses
+    name: "rreading-glasses metadata provider serving on :8788 (readarr/libreseerr)"
+    host: nas
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8788/
+    expect: '^200$'
+    severity: warn
+    task_id: nas-01
+    runbook: wiki/runbooks/nas.md
+    enabled: true
+
   - id: nas-immich
     name: "immich API ping on nas:2283"
     host: mini

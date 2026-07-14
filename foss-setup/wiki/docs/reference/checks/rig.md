@@ -1,6 +1,6 @@
 # Checks — rig
 
-`foss-setup/verification/checks.d/rig.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/rig.yaml` — 12 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `rig-ollama`
 
@@ -110,6 +110,17 @@ Minecraft Bedrock public path (playit edge 69.9.181.17:1111, RakNet ping)
 
 ```bash
 for i in 1 2 3 4; do python3 /opt/verification/bin/mc-bedrock-ping.py 69.9.181.17 1111 && { echo "pass on try $i/4"; break; }; sleep 3; done
+```
+
+## `rig-mcpo`
+
+mcpo tool host serving on rig:8000 (OWUI tools)
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `game-10` · **enabled:** True
+- **expects:** `^200$`
+
+```bash
+curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:8000/docs
 ```
 
 ## `rig-ai-e2e`
