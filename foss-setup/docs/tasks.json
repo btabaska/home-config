@@ -10566,8 +10566,11 @@
    "Small, densely-linked .md files (LLM-context-friendly for the local 3090 Ti models) for every service, setting, config, script, check.",
    "Wave 1 DONE 2026-07-14: gen-script-pages.py (69 script man-pages), gen-roadmap-pages.py (todo list mirrored from progress.json, 231 tasks), hardware-to-buy page. Built --strict + deployed.",
    "Config-docs wave DONE 2026-07-14: 20 config .md docs migrated + live-validated into wiki (reference/seedbox, reference/nas service configs, reference/hosts + fleet systemd-units index, operations repo-structure/inventory/restore-template; ansible.md reconciled). Sources stubbed; 3 superseded seedbox docs retired. Section indexes + mkdocs nav wired; built --strict + deployed.",
-   "Remaining waves: 3 design HTMLs (cloudflare/game-hosting/ha-action) migrate+delete, per-service DESCRIPTION/TROUBLESHOOT prose via service-catalog.yaml, troubleshooting index, maintenance calendar, final cleanup (hard-delete stubs + retire dead HTML-patching scripts + workstream docs).",
-   "Definition of done: everything in the repo is documented + reachable via links; mkdocs --strict passes."
+   "Wave 2 DONE 2026-07-14: 3 design HTMLs (cloudflare/game-hosting/ha-action) reconciled into the wiki + deleted (unique nuggets folded into cloudflare-cutover/master-plan-gaming/firewall-checklist).",
+   "Wave 3 DONE 2026-07-14: all 37 service pages enriched with About + Troubleshooting prose (37 About blocks + 121 symptom->fix bullets) via a new service-enrichment.yaml that gen-wiki-services.py merges over the catalog; live-validated per service.",
+   "Wave 4 DONE 2026-07-14: runbooks/troubleshooting.md (incident-class hub) + operations/maintenance-calendar.md (timer/backup/drill cadences), mined from incident memories + live schedules.",
+   "Wave 5 DONE 2026-07-14: removed 11 dead HTML-tracker-patching scripts + artifacts; migrated the 2 load-bearing research docs (ha-home-context, full-audit) into the wiki; hard-deleted the 45 stubs + retired docs/prompts, handoff-rollout-state, quality-hardening-state, docs/research/*, docs/archive, hardware-shopping-list dup; repointed all live refs (tracker/README/units/generators). Net ~-2100 lines; handoff mechanism is now persistent memory + the wiki.",
+   "Definition of done: everything in the repo is documented + reachable via links; mkdocs --strict passes. STATUS 2026-07-14: all 5 waves complete + green; wiki-in-the-loop upkeep continues under wiki-05."
   ],
   "commands": [
    "python3 foss-setup/scripts/docs/gen-script-pages.py",
