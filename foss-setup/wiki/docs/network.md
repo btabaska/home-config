@@ -30,7 +30,7 @@ Untrusted; block Untrusted → Trusted; narrow pinholes only.**
 | Guest | Hotspot | Visitors, client isolation on |
 
 Details, pinholes, and the one-way-door migration warning:
-`configs/network/vlan-zone-firewall-plan.md` and the firewall-policy docs in
+`reference/network/vlan-zone-firewall.md` and the firewall-policy docs in
 `configs/network/`. mDNS/IoT auto-discovery is enabled between Trusted and IoT
 (IGMP snooping OFF) so casting, HA discovery, and Moonlight keep working —
 this is why gaming/streaming stays on Trusted, not its own VLAN.

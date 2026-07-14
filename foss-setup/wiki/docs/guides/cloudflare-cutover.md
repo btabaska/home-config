@@ -4,7 +4,7 @@
 
 _Source: `foss-setup/docs/cloudflare-cutover.md` · migrated + validated 2026-07-14._
 
-> **STATUS — DONE (validated 2026-07-14).** This started as a cutover plan written 2026-07-08 against the pre-migration zone (registrar Squarespace, DNS still on legacy Google Cloud DNS). **The cutover has since happened.** Live `dig` confirms `tabaska.us` is now served by Cloudflare (`courtney.ns.cloudflare.com` / `ryan.ns.cloudflare.com`, zone active) and every "must exist" record below is present and correct. The registrar is **still Squarespace** — only the nameservers moved. This page is kept as the record of what was migrated and *why mail survived*, and as the reference if the zone ever has to be rebuilt. The full-audit doc corroborates the delegation (`docs/research/12-full-audit-2026-07.md`).
+> **STATUS — DONE (validated 2026-07-14).** This started as a cutover plan written 2026-07-08 against the pre-migration zone (registrar Squarespace, DNS still on legacy Google Cloud DNS). **The cutover has since happened.** Live `dig` confirms `tabaska.us` is now served by Cloudflare (`courtney.ns.cloudflare.com` / `ryan.ns.cloudflare.com`, zone active) and every "must exist" record below is present and correct. The registrar is **still Squarespace** — only the nameservers moved. This page is kept as the record of what was migrated and *why mail survived*, and as the reference if the zone ever has to be rebuilt. The full-audit page corroborates the delegation (`operations/audit-2026-07.md`).
 
 ## Starting state (2026-07-08, pre-cutover)
 

@@ -243,7 +243,7 @@ Soulseek is P2P — **slskd runs natively on Betty** (not rootless Docker; port 
 3. Soularr reads Lidarr **Wanted**, searches slskd over Tailscale (`http://betty.<tailnet>:5030`), triggers Lidarr import from `/seedbox/slskd/`.
 4. Set `SLSKD_HTTP_IP` in Betty's `.env` to the Tailscale IP so the NAS can reach the slskd API.
 
-Deploy: `scripts/media/install-slskd-native.sh` + `configs/seedbox/slskd-native.example.env`. Full wiring: `foss-setup/configs/seedbox/music-pipeline.md`.
+Deploy: `scripts/media/install-slskd-native.sh` + `configs/seedbox/slskd-native.example.env`. Full wiring: `foss-setup/reference/seedbox/music-pipeline.md`.
 
 !!! note "Validated against live nas (2026-07-14)"
     `soularr` (`ghcr.io/mrusse/soularr:1.2.2`) is running on the NAS, and the rclone mount exposes `/volume1/mounts/seedbox-files/slskd` (the `slskd` dir is present in the mount listing). slskd itself is native on Betty, so it does not appear in NAS `docker ps` (as designed).

@@ -2,7 +2,7 @@
 #
 # Replaces the bare `dhcp4: true` in /etc/netplan/00-installer-config.yaml that
 # caused the recurring 24h DHCP-lease-expiry off-network outages
-# (see foss-setup/docs/handoff-rollout-state.md, 2026-07-09 entry).
+# (see the wiki reference/hosts/mini-network-resilience page, 2026-07-09 RCA).
 #
 # Apply during the 4-7AM ET maintenance window using README-apply.md (netplan try,
 # auto-reverts). Pair with a UniFi DHCP reservation for MAC 98:5a:eb:ca:b2:ef -> .2.

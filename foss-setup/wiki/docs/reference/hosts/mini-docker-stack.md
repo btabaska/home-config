@@ -88,7 +88,7 @@ Everything is pinned — **never `:latest`**. Updates are *notify-only* via Diun
 
 ## Recommendations
 
-- **DNS filtering → AdGuard Home (primary).** Single container, built-in DoT/DoH/DoQ, per-client rules, cleaner first-run wizard. **Pi-hole** is the equally-valid alternative (`configs/docker-stack/alternatives/pihole/`) if you prefer its ecosystem — don't run both as the LAN resolver at once. **Resilience:** deploy `adguard-nas/` as DHCP DNS #2 and set UniFi to a three-tier chain (mini → NAS → gateway) before pointing clients at AdGuard-only DNS. See `configs/network/dns-resilience-plan.md` and rollout tasks dns-02–dns-05.
+- **DNS filtering → AdGuard Home (primary).** Single container, built-in DoT/DoH/DoQ, per-client rules, cleaner first-run wizard. **Pi-hole** is the equally-valid alternative (`configs/docker-stack/alternatives/pihole/`) if you prefer its ecosystem — don't run both as the LAN resolver at once. **Resilience:** deploy `adguard-nas/` as DHCP DNS #2 and set UniFi to a three-tier chain (mini → NAS → gateway) before pointing clients at AdGuard-only DNS. See `reference/network/dns-resilience.md` and rollout tasks dns-02–dns-05.
 - **Container management → Dockge (simple default).** Compose-native, dead simple, single-host — perfect for this one box. **Dockhand** (`configs/docker-stack/alternatives/dockhand/`) is the power option: logs, metrics history, vuln scanning (Grype/Trivy), safe pulls + rollback, Git sync, and Apprise notifications in one container. Swap it in if you want to consolidate Beszel/Diun-style features into the manager itself.
 - **Updates → pinned + Diun + manual.** No Watchtower, no blind auto-pull. Diun watches your running tags and pings ntfy when something is behind; you decide when to bump.
 

@@ -58,8 +58,8 @@ for t in sorted(def_tasks, key=lambda x: x["id"]):
     reason = reason.split(":", 1)[-1].strip() if ":" in reason else reason
     L.append(f"- **`{t['id']}`** {t.get('title','')} — _{reason[:120]}_")
 L += ["", "---", "",
-      "_Hardware to buy for these: see `foss-setup/docs/hardware-shopping-list.md` "
-      "(wiki: <https://wiki.tabaska.us/reference/hardware/>). Full per-track tables + done/retired "
+      "_Hardware to buy for these: the wiki hardware page "
+      "(<https://wiki.tabaska.us/reference/hardware/>). Full per-track tables + done/retired "
       "history: the wiki roadmap._", ""]
 
 (REPO_ROOT / "todo.md").write_text("\n".join(L))

@@ -26,7 +26,7 @@ _Source: `research.md` · migrated + validated 2026-07-14._
 - RomM stack: `foss-setup/configs/docker-stack/stacks/romm/compose.yaml`
 - *arr stack: `foss-setup/configs/nas/media-automation/docker-compose.yml`
 - Rig baseline installer: `foss-setup/scripts/setup/cachyos-desktop-baseline.sh`
-- FOSS narrative (partly stale): `foss-setup-plan-2.md`; ethos research: `foss-setup/docs/research/07-ethos.md`; devices research: `foss-setup/docs/research/09-devices.md`
+- FOSS narrative (partly stale): `foss-setup-plan-2.md`. The raw research docs (`docs/research/*`, incl. the ethos and devices notes) were retired 2026-07-14 — this page + `research-integration.md` are their synthesis; the durable house/device context lives at `reference/home-assistant/home-context.md` and the full audit at `operations/audit-2026-07.md` (raw docs remain in git history).
 
 Each section is self-contained: *verified current state* (with repo file references) → *gap* → *recommendation* → *concrete steps/snippets* → *effort* → *open decisions*. Version-sensitive external facts (tracker liveness especially) drift fast — re-verify before executing.
 

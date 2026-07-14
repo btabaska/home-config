@@ -47,7 +47,7 @@ UniFi ships **six** predefined zones (**Internal, External, Gateway, VPN, Hotspo
 | Gateway | predefined | the UDW itself | DHCP/DNS/NTP to the gateway |
 
 !!! info "Assigning networks to zones"
-    Each network belongs to exactly one zone. Assign in Settings → Security → Zone-Based Firewall → Zones (path differs slightly by 9.x minor; see the firewall-policy-order note in `foss-setup/configs/network/firewall-policy-order.md`). Create policies per the walkthrough in `foss-setup/configs/network/firewall-policy-walkthrough.md` (net-05).
+    Each network belongs to exactly one zone. Assign in Settings → Security → Zone-Based Firewall → Zones (path differs slightly by 9.x minor; see the firewall-policy-order note in `foss-setup/reference/network/firewall-order.md`). Create policies per the walkthrough in `foss-setup/reference/network/firewall-walkthrough.md` (net-05).
 
 ## Zone matrix (intended traffic flows)
 
@@ -73,7 +73,7 @@ Key intents:
 ## mDNS / multicast (why gaming stays on Trusted)
 
 - Moonlight discovers the Apollo host via mDNS **on the same subnet** → keep both on **Trusted**. No cross-VLAN proxy needed for game streaming.
-- For cross-VLAN discovery you *do* want (e.g. phone on Trusted → Chromecast/AirPlay/HomeKit on IoT): enable the **Gateway mDNS Proxy on BOTH the source and destination VLANs** (enabling one side only is the #1 mistake), and add a narrowly-scoped firewall policy for the control ports. See the mDNS/multicast checklist in `foss-setup/configs/network/mdns-multicast-checklist.md`.
+- For cross-VLAN discovery you *do* want (e.g. phone on Trusted → Chromecast/AirPlay/HomeKit on IoT): enable the **Gateway mDNS Proxy on BOTH the source and destination VLANs** (enabling one side only is the #1 mistake), and add a narrowly-scoped firewall policy for the control ports. See the mDNS/multicast checklist in `foss-setup/reference/network/mdns-multicast.md`.
 - Turn **IGMP snooping OFF** — UniFi's implementation is aggressive and drops the discovery packets Apple TVs / HomePods / Matter devices rely on (the #1 cause of "casting broke after segmentation"). It does not move multicast across VLANs anyway (that's the mDNS proxy's job); it only limits in-VLAN flooding, which is negligible at home scale.
 
 ## Authoritative docs
@@ -95,7 +95,7 @@ These need either the operator's UniFi UI or an on-device check (router not mach
 **#4 — HomePod ↔ HA HomeKit hub (blocked on this audit):** HA (`.50`) + its HomeKit Bridge are on **Trusted** (HA reachable + RUNNING v2026.6.4 as of 2026-07-14); the gate is **which VLAN the HomePods are on**:
 
 - HomePods on **Trusted** → same subnet as HA → mDNS (`_hap._tcp.local`) works natively, no proxy needed. Likely the quickest path.
-- HomePods on **IoT** → need the **Gateway mDNS Proxy enabled on BOTH Trusted and IoT** for `_hap._tcp.local`, IGMP snooping **off**, and a firewall allow for the HAP control port (Trusted↔IoT). See the mDNS/multicast checklist in `foss-setup/configs/network/mdns-multicast-checklist.md`.
+- HomePods on **IoT** → need the **Gateway mDNS Proxy enabled on BOTH Trusted and IoT** for `_hap._tcp.local`, IGMP snooping **off**, and a firewall allow for the HAP control port (Trusted↔IoT). See the mDNS/multicast checklist in `foss-setup/reference/network/mdns-multicast.md`.
 - **Need from operator for #4:** (a) which VLAN the HomePods sit on; (b) whether the Gateway mDNS proxy is enabled on the relevant VLAN(s); (c) IGMP-snooping state on those VLANs. Then #4 is an on-device Apple Home add-hub check.
 
 ---

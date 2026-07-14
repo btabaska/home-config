@@ -93,7 +93,7 @@ ssh -t nas 'cd /volume1/docker/calibre-web-automated && sudo /usr/local/bin/dock
 | KOReader OPDS | `http://<nas>:8083/opds/` (trailing slash required) |
 | KOSync (`read-06`) | `http://<nas>:8083/kosync` |
 
-Wiring checklist (repo): `foss-setup/scripts/reading/koreader-cwa-wallabag-wiring.md`. End-to-end KOReader/CWA/Wallabag guide: `guides/koreader-cwa-wallabag.md`.
+Wiring checklist (repo): `guides/koreader-cwa-wallabag.md`. End-to-end KOReader/CWA/Wallabag guide: `guides/koreader-cwa-wallabag.md`.
 
 ## Security posture
 

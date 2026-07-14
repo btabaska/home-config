@@ -13,5 +13,6 @@ per-host restore runbook.
 | [Repo structure, branching & secrets](repo-structure.md) | Config-as-code monorepo layout + dual remotes |
 | [Host inventory](inventory.md) | Point-in-time manifest export (mini) |
 | [Restore runbook (template)](restore-runbook-template.md) | Fill-in-the-blank per-host rebuild procedure |
+| [Security & infra audit (2026-07)](audit-2026-07.md) | Dated full-fleet audit snapshot |
 
-_6 pages._
+_8 pages._

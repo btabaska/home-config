@@ -21,7 +21,7 @@ ultimately lives (or lands) here.
 
 A single drive failure loses that whole volume — that trade is intentional;
 Tier 1 rides snapshots + off-site backup (pending: B2). Authoritative spec:
-`configs/nas/SCHEMA.md`.
+`reference/nas/volume-schema.md`.
 
 ## What runs here (Container Manager)
 

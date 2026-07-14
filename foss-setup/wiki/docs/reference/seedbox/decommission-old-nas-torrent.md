@@ -16,7 +16,7 @@ _Source: `foss-setup/configs/seedbox/decommission-old-nas-torrent.md` · migrate
 ## Pre-flight (don't skip)
 
 - [ ] Seedbox pipeline confirmed working end-to-end (request → download → import → sync → Plex → Seerr "Available").
-- [ ] **Back up the UniFi config** (Settings → System → Backup) before touching routing/firewall — the Zone-Based Firewall is a one-way door. See the UniFi network plan `reference/network/vlan-zone-firewall-plan.md` (source `configs/network/vlan-zone-firewall-plan.md`).
+- [ ] **Back up the UniFi config** (Settings → System → Backup) before touching routing/firewall — the Zone-Based Firewall is a one-way door. See the UniFi network plan `reference/network/vlan-zone-firewall-plan.md` (source `reference/network/vlan-zone-firewall.md`).
 - [ ] Note your current NAS qBittorrent **active torrents** — anything you still want to seed should be re-added on the seedbox first (re-download or migrate the `.torrent`/resume data).
 - [ ] Export any *arr config you want to keep (Sonarr/Radarr settings) — though the seedbox now owns these.
 

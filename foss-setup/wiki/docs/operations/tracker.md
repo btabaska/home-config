@@ -52,8 +52,8 @@ change a task: edit `tasks.json`/`progress.json`, then re-run
 
 The standing session shape (from the audit's operating flow):
 
-1. **Sync & verify** — pull the repo, read
-   `docs/handoff-rollout-state.md`, run the probe sweep across reachable
+1. **Sync & verify** — pull the repo, read the wiki (this page + the roadmap)
+   and the persistent memory notes, run the probe sweep across reachable
    hosts, diff against the tracker. Regressions reopen tasks first.
 2. **Plan the wave** — pick the next batch from the diff + tracker:
    autonomous (`ai`/`vault`) items first, sized to one session.
@@ -63,9 +63,10 @@ The standing session shape (from the audit's operating flow):
    **No probe, no checkmark.**
 5. **Record** — commit (GitHub + Forgejo via `publish-deploy.sh`), update
    `progress.json`, update the wiki pages touched — docs are part of "done".
-6. **Hand back** — end with a handoff in `docs/handoff-rollout-state.md`:
-   what changed (with proof), what's blocked, and a numbered human queue
-   with exact click-paths and the test that confirms each item.
+6. **Hand back** — record state in the persistent memory notes and the
+   relevant wiki pages: what changed (with proof), what's blocked, and a
+   numbered human queue with exact click-paths and the test that confirms
+   each item.
 
 ### Rules of engagement
 
@@ -75,13 +76,15 @@ The standing session shape (from the audit's operating flow):
   waking/rebooting hosts outside a maintenance task, anything touching
   credentials.
 - **Secrets** travel only via the vault ([Secrets policy](secrets.md)).
-- **Every out-of-band manual change gets one line in the state doc** — no
-  exceptions. This rule alone would have caught the DHCP misconfiguration.
+- **Every out-of-band manual change gets one line in persistent memory** (and
+  the relevant wiki page) — no exceptions. This rule alone would have caught
+  the DHCP misconfiguration.
 
 ## The handoff protocol
 
-`foss-setup/docs/handoff-rollout-state.md` is the session-to-session memory:
-newest state at the top, per-session sections, partial/deferred tables
-("do NOT mark done without verifying"), key URLs, and the suggested next_up.
-Read it at session start; write it at session end. Vault keys only — never
-secret values (see the rotation-log incident).
+Session-to-session memory now lives in **persistent memory notes + the wiki**
+(the standalone `docs/handoff-rollout-state.md` / `docs/quality-hardening-state.md`
+workstream docs were retired 2026-07-14 when the wiki became the single source of
+truth). Record newest state, partial/deferred items ("do NOT mark done without
+verifying"), key URLs, and the suggested next_up in memory and on the wiki page
+each touches. Vault keys only — never secret values (see the rotation-log incident).

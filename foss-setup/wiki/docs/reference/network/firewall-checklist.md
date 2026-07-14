@@ -6,7 +6,7 @@ _Source: `foss-setup/configs/network/firewall-policy-checklist.md` · migrated +
 
 **Open:** Settings → Zones → **Create Policy** (or Policy Table → Create New Policy)
 
-Companion docs in the repo: `foss-setup/configs/network/firewall-policy-order.md`, `firewall-policy-walkthrough.md`, `vlan-zone-firewall-plan.md`.
+Companion docs in the repo: `foss-setup/reference/network/firewall-order.md`, `firewall-policy-walkthrough.md`, `vlan-zone-firewall-plan.md`.
 
 ---
 

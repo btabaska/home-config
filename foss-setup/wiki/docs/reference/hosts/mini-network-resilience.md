@@ -8,7 +8,7 @@ _Source: `foss-setup/configs/host/mini/static-ip/README-apply.md`, `foss-setup/c
 
 The recurring "mini frozen / off the network" incidents were **not** a lockup. `mini` (`192.168.10.2`, MAC `98:5a:eb:ca:b2:ef`, NIC `enp3s0f0`) ran a bare `dhcp4: true` netplan config with a **24h DHCP lease**. In-lease renewal (T1 at 12h, T2 at 21h) silently failed, so at the **24h hard expiry** `systemd-networkd` **withdrew the address and flushed every route** (`RTM_DELROUTE`). The box stayed powered and the OS kept running, but it was completely off the network — no ARP / ping / SSH / DNS — until a manual power-cycle. It **looked** frozen from outside but was only networkless.
 
-Full RCA lives in `foss-setup/docs/handoff-rollout-state.md` (2026-07-09 entry).
+The full root-cause analysis is captured on this page (originally diagnosed in the 2026-07-09 session); the `mini-dhcp-lease-outage` memory note carries the running summary.
 
 Three fixes were layered, in escalating permanence:
 
@@ -145,7 +145,7 @@ Even under static IP, `net-selfheal` stays deployed. Its `networkctl renew` step
 ```ini
 [Unit]
 Description=Self-heal enp3s0f0 when its DHCP lease/route is lost
-Documentation=file://.../foss-setup/docs/handoff-rollout-state.md
+Documentation=https://wiki.tabaska.us/reference/hosts/mini-network-resilience/
 After=network.target systemd-networkd.service
 
 [Service]

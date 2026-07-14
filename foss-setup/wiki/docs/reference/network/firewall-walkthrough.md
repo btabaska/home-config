@@ -3,7 +3,7 @@
 > Step-by-step guide for building the UniFi Zone-Based Firewall (ZBF) policy set on the Dream Wall (net-05): concepts, phased UI walkthrough, and verification.
 _Source: `foss-setup/configs/network/firewall-policy-walkthrough.md` · migrated + validated 2026-07-14._
 
-The authoritative policy table lives in `foss-setup/configs/network/firewall-policy-order.md`; zone/VLAN mapping is in `foss-setup/configs/network/vlan-zone-firewall-plan.md`; exact UI field selections are in `foss-setup/configs/network/firewall-policy-checklist.md`.
+The authoritative policy table lives in `foss-setup/reference/network/firewall-order.md`; zone/VLAN mapping is in `foss-setup/reference/network/vlan-zone-firewall.md`; exact UI field selections are in `foss-setup/reference/network/firewall-checklist.md`.
 
 !!! success "Done when"
     Trusted reaches IoT; IoT cannot ping Trusted; Cameras have no internet; Work/Guest reach only the internet.
@@ -109,9 +109,9 @@ You create an explicit **Allow** for `Trusted → IoT` and an explicit **Block**
 - **Network 9.4+:** Settings → Zones → **Create Policy** (or Settings → Policy Table → **Create New Policy**)
 - **Network 9.3:** Settings → Policy Engine → Zones → **Create Policy**
 
-For **each policy**, fill in every field per `foss-setup/configs/network/firewall-policy-checklist.md` (exact UniFi UI selections).
+For **each policy**, fill in every field per `foss-setup/reference/network/firewall-checklist.md` (exact UniFi UI selections).
 
-Policies appear in a list — **drag or reorder so #1 is at the top**. Match `foss-setup/configs/network/firewall-policy-order.md`.
+Policies appear in a list — **drag or reorder so #1 is at the top**. Match `foss-setup/reference/network/firewall-order.md`.
 
 ---
 
@@ -148,7 +148,7 @@ Policies appear in a list — **drag or reorder so #1 is at the top**. Match `fo
 | 12 | Work → Internet | Work | External | Any | Allow |
 | 13 | Guest → Internet | Hotspot | External | Any | Allow |
 
-**Note on #4:** mDNS proxy handles *discovery* only. Rule #4 allows *control* traffic after discovery. See `foss-setup/configs/network/mdns-multicast-checklist.md`. Skip #4 until casting works without it; add if cross-VLAN casting fails.
+**Note on #4:** mDNS proxy handles *discovery* only. Rule #4 allows *control* traffic after discovery. See `foss-setup/reference/network/mdns-multicast.md`. Skip #4 until casting works without it; add if cross-VLAN casting fails.
 
 **Note on #2 vs #4:** Rule #2 is the blanket Trusted→IoT allow. Rule #4 is optional extra scoping for multicast-related ports. Start with #2 as `Any`; tighten both once things work.
 
@@ -235,9 +235,9 @@ ZONE=work TRUSTED_IP=192.168.10.1 ./scripts/network/zbf-isolation-verify.sh
 
 ## Authoritative docs
 
-- Policy table: `foss-setup/configs/network/firewall-policy-order.md`
-- Zone/VLAN mapping: `foss-setup/configs/network/vlan-zone-firewall-plan.md`
-- mDNS + rule #4: `foss-setup/configs/network/mdns-multicast-checklist.md`
+- Policy table: `foss-setup/reference/network/firewall-order.md`
+- Zone/VLAN mapping: `foss-setup/reference/network/vlan-zone-firewall.md`
+- mDNS + rule #4: `foss-setup/reference/network/mdns-multicast.md`
 - [Zone-Based Firewalls in UniFi](https://help.ui.com/hc/en-us/articles/115003173168-Zone-Based-Firewalls-in-UniFi)
 
 ---

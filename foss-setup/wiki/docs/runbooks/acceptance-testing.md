@@ -165,7 +165,7 @@ negative-tested against the PASS side.)
    confirm it PASSES. Not done until this holds.
 6. **Deploy** to the mini (`/opt/verification/`), **commit** to `origin`, and
    `./foss-setup/scripts/docs/publish-deploy.sh` to forgejo.
-7. **Record** — update `docs/quality-hardening-state.md` and memory.
+7. **Record** — update the wiki (the touched pages + the [troubleshooting index](troubleshooting.md)) and persistent memory.
 
 ## The "done" bar (task #10)
 
@@ -183,7 +183,8 @@ liveness never showed:
   `sample.*` instead of the movie), **2 `.iso` disc images** (Plex won't play raw
   ISOs), **1 wrong-file map** (All About My Mother ← a Mamma Mia file), 2 Plex
   agent-mismatch. Seam is healthy (0.94 ≥ 0.85); this is a **remediation backlog**,
-  not a monitoring gap — see `quality-hardening-state.md`.
+  not a monitoring gap (see the [troubleshooting index](troubleshooting.md) and the
+  `arr-sample-file-imports` memory note).
 - **MusicSeerr phantom recurred** — a "3OH!3" album sat request-`downloading`
   while unmonitored+fileless in Lidarr (same class as #3); `musicseerr-phantom-requests`
   caught it live. **Fixed** (Lidarr monitor + AlbumSearch on album 6037).

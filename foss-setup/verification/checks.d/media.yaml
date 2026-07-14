@@ -230,7 +230,7 @@ checks:
   # KNOWN BASELINE 2026-07-14: movies ~0.94 (12/197 unwatchable — 7 sample-file
   # imports, 2 .iso disc images, 1 wrong-file map, 2 Plex-mismatch), TV ~0.96. That
   # residual gap is a data-quality remediation backlog tracked in the done-audit
-  # (quality-hardening-state.md), deliberately ABOVE this 0.85 seam-break line so it
+  # (see the wiki troubleshooting index), deliberately ABOVE this 0.85 seam-break line so it
   # doesn't page hourly. Tighten min-ratio once the sample-imports are re-grabbed.
   # Recent imports (< 6h, by Radarr movieFile.dateAdded) are excluded for Plex scan lag.
   - id: radarr-movies-in-plex

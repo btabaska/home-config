@@ -26,10 +26,9 @@ box. Everything hangs off it.
 
 **Human + GUI, always.** There is no config-as-code path; changes here are
 the classic source of invisible drift, so the rule is: **every manual change
-in the UniFi GUI gets one line in the handoff state doc**
-(`foss-setup/docs/handoff-rollout-state.md`) — no exceptions. The 2026-07-07
-audit found the DHCP DNS chain changed out-of-band and wrong; that rule
-exists because of it.
+in the UniFi GUI gets one line in persistent memory** (and the relevant wiki
+page) — no exceptions. The 2026-07-07 audit found the DHCP DNS chain changed
+out-of-band and wrong; that rule exists because of it.
 
 ## Backups
 

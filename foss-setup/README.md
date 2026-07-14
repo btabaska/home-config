@@ -90,7 +90,7 @@ Do a phase before starting the next — each one leaves you strictly better off.
   (`scripts/network/`) — including **key-less Tailscale SSH + a `~/.ssh/config`
   fallback** for easy, secure maintenance access to every box
   (`scripts/network/tailscale-ssh-enable.sh`,
-  `configs/network/ssh-maintenance-access.md`) — backups + a tested restore
+  `reference/network/ssh-access.md (wiki)`) — backups + a tested restore
   (`scripts/backup/`), and **UPS power resilience**
   (`scripts/setup/nut-client-ubuntu.sh`). The **dotfiles + browser/office desktop
   baseline** can also be done here (or anytime) — they're independent of the

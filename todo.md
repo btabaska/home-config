@@ -103,4 +103,4 @@
 
 ---
 
-_Hardware to buy for these: see `foss-setup/docs/hardware-shopping-list.md` (wiki: <https://wiki.tabaska.us/reference/hardware/>). Full per-track tables + done/retired history: the wiki roadmap._
+_Hardware to buy for these: the wiki hardware page (<https://wiki.tabaska.us/reference/hardware/>). Full per-track tables + done/retired history: the wiki roadmap._

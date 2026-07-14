@@ -116,7 +116,7 @@ Plex config/appdata lives under the package's data directory. Include that path 
 
 ## 6. Seerr + MusicSeerr + *arr integration
 
-**Seerr** (Mac mini) links to **this** Plex server for movies/TV requests — wired to NAS Sonarr/Radarr only (seed-05). **MusicSeerr** (Mac mini, `:8688`) is the album request portal wired to NAS Lidarr (seed-06). Plex Music scans `/volume1/music` when Lidarr imports land. Betty (the seedbox) runs Deluge + slskd (P2P off-site); Soularr on the NAS bridges Soulseek. See `reference/seedbox/music-pipeline` / `configs/seedbox/music-pipeline.md`.
+**Seerr** (Mac mini) links to **this** Plex server for movies/TV requests — wired to NAS Sonarr/Radarr only (seed-05). **MusicSeerr** (Mac mini, `:8688`) is the album request portal wired to NAS Lidarr (seed-06). Plex Music scans `/volume1/music` when Lidarr imports land. Betty (the seedbox) runs Deluge + slskd (P2P off-site); Soularr on the NAS bridges Soulseek. See `reference/seedbox/music-pipeline` / `reference/seedbox/music-pipeline.md`.
 
 ---
 

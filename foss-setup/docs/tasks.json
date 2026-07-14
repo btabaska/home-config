@@ -3577,7 +3577,7 @@
    },
    {
     "h": "Status \u2014 2026-07-08",
-    "note": "Mostly done already: Hue Bridge integrated (73 lights, 21 scenes), bridge ALREADY on IoT VLAN 20 at 192.168.20.100 (vault: hue.bridge_ip) with 0 B internet traffic \u2014 effectively cloud-isolated. Remaining: 16 lights unavailable (wall-switch power cuts \u2014 see shopping list), finish area assignment after the human answers the room-mapping questions in docs/research/11-ha-home-context.md."
+    "note": "Mostly done already: Hue Bridge integrated (73 lights, 21 scenes), bridge ALREADY on IoT VLAN 20 at 192.168.20.100 (vault: hue.bridge_ip) with 0 B internet traffic \u2014 effectively cloud-isolated. Remaining: 16 lights unavailable (wall-switch power cuts \u2014 see shopping list), finish area assignment after the human answers the room-mapping questions in https://wiki.tabaska.us/reference/home-assistant/home-context/."
    }
   ],
   "pitfalls": [
@@ -4141,7 +4141,7 @@
    },
    {
     "h": "Status \u2014 2026-07-08",
-    "note": "Brandon\u2019s iPhone companion app already connected (mobile_app \"Btiphone\"). Remaining: Kaelyn\u2019s phone + room-level presence (Bermuda via ESP32 BLE proxies \u2014 see shopping list in docs/research/11-ha-home-context.md)."
+    "note": "Brandon\u2019s iPhone companion app already connected (mobile_app \"Btiphone\"). Remaining: Kaelyn\u2019s phone + room-level presence (Bermuda via ESP32 BLE proxies \u2014 see shopping list in https://wiki.tabaska.us/reference/home-assistant/home-context/)."
    }
   ],
   "pitfalls": [
@@ -4490,7 +4490,7 @@
   "docs": [
    {
     "title": "House & device context",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "floor/area list from the WS registry matches the canonical table in the context doc; no entity left in a dissolved area.",
@@ -4524,7 +4524,7 @@
   "docs": [
    {
     "title": "House & device context",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "UniFi client list shows all listed devices on VLAN 20; HA entities for each remain available; iot-local group shows no WAN traffic over 24 h.",
@@ -4561,7 +4561,7 @@
   "docs": [
    {
     "title": "House & device context",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "Either: both locks documented Apple-native, or lock entity in HA responds reliably (lock/unlock + state) for 14 days and is visible in Apple Home via the bridge.",
@@ -4676,7 +4676,7 @@
   "docs": [
    {
     "title": "House & device context",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "sensor entities for range/microwave state; test: preheat oven \u2192 HA sees it.",
@@ -4729,7 +4729,7 @@
   "docs": [
    {
     "title": "House & device context",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "air fryer status entity updates during a cook cycle.",
@@ -4809,7 +4809,7 @@
   "docs": [
    {
     "title": "House & device context",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "Context doc inventory lists both with the documented decision.",
@@ -4839,7 +4839,7 @@
   "docs": [
    {
     "title": "Shopping list + placement",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "Every paired device named + area-assigned; Z2M shows LQI > 50 for all; battery dashboard live; radon + AIR-1 data flowing.",
@@ -4867,7 +4867,7 @@
   "docs": [
    {
     "title": "House & device context",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "All v1 automations loaded + enabled; traces show correct trigger\u2192action for at least freeze, leak, laundry, humidity; YAML in git matches HA state.",
@@ -4895,7 +4895,7 @@
   "docs": [
    {
     "title": "House & device context",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "verification sweep includes ha-* checks green; /config visible in forgejo; SSH add-on reachable by key; Homepage widget live.",
@@ -9464,7 +9464,7 @@
   "gate": "credential rotation",
   "summary": "A live ntfy token is committed in the handoff doc \u2014 treat it as burned. Strip it from the doc (and history if feasible), then rotate everything known-exposed or default: the ntfy Diun token, the NAS AdGuard temp admin password, and Wallabag's default login.",
   "steps": [
-   "Remove the ntfy token from docs/handoff-rollout-state.md; replace with a vault reference. Consider a history rewrite or accept rotation as the remedy (rotation is mandatory either way).",
+   "The handoff doc that carried the ntfy token was deleted 2026-07-14, but the token remains in git history (and possibly the docs/progress-backup-*.json snapshots) \u2014 rotation is the remedy (mandatory either way). Grep and clear any remaining plaintext copies.",
    "YOU: rotate the ntfy token used by Diun; AI updates the Diun config from the vault and restarts it.",
    "YOU (or AI via API if reachable): change the NAS AdGuard temporary admin password set during dns-02.",
    "Change Wallabag's default wallabag/wallabag login to a real account.",
@@ -9475,7 +9475,7 @@
    "git grep -n 'tk_' docs/ || echo clean"
   ],
   "files": [
-   "docs/handoff-rollout-state.md"
+   "docs/ (git history + progress-backup snapshots) \u2014 handoff-rollout-state.md itself deleted 2026-07-14"
   ],
   "verify": "Repo greps clean of live tokens; old ntfy token rejected (401); AdGuard + Wallabag no longer accept the old/default creds.",
   "track": "audit-fixes"
@@ -9614,7 +9614,7 @@
   "docs": [
    {
     "title": "context: research/11-ha-home-context.md",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "docker info shows the pool; new test network lands in 10.210.x; sys-docker-subnet-squat stays 0; sweep green.",
@@ -10203,7 +10203,7 @@
   "docs": [
    {
     "title": "House & device context",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "Irrigation controllable from HA with WAN blocked.",
@@ -10227,7 +10227,7 @@
   "docs": [
    {
     "title": "House & device context",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "Production kWh visible in HA Energy dashboard from Emporia, not vendor cloud.",
@@ -10251,7 +10251,7 @@
   "docs": [
    {
     "title": "House & device context",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "Outdoor temp/RH/wind/rain entities local in HA.",
@@ -10275,7 +10275,7 @@
   "docs": [
    {
     "title": "House & device context",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "Node visible on the mesh; messages bridged into HA/ntfy.",
@@ -10299,7 +10299,7 @@
   "docs": [
    {
     "title": "House & device context",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "Pit level + pump runtime graphed; simulated high-level triggers CRITICAL ntfy.",
@@ -10323,7 +10323,7 @@
   "docs": [
    {
     "title": "House & device context",
-    "url": "docs/research/11-ha-home-context.md"
+    "url": "https://wiki.tabaska.us/reference/home-assistant/home-context/"
    }
   ],
   "verify": "Tent climate + schedule fully controllable with WAN blocked.",

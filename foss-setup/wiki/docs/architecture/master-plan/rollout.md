@@ -6,7 +6,7 @@ Do a phase before starting the next; each leaves you better off. **Status notes 
 
 1. **Back up your UniFi config**, then build the segmentation: Default(mgmt) / Trusted / IoT / Cameras / Work / Guest, the firewall rules, mDNS reflector on + IGMP snooping off. (One-way door — back up first.) **✅ Done** (segmentation live, operator-confirmed).
 2. **Install Tailscale** on the NAS, Mac mini, rig, laptop, and phone. Turn on **Tailscale SSH** (`tailscale up --ssh`) with `tag:admin`→`tag:server` ACLs, drop in the `~/.ssh/config` aliases + ed25519 key as break-glass (enable SSH on DSM, the HA SSH add-on). **✅ Done** (aliases work; `net-14` closed). Note HA is not a tailnet node — driven via REST.
-3. **Lock in backups:** Synology Hyper Backup + Snapshot Replication, plus a Restic/Kopia job for irreplaceable data → B2. Test one restore. Follow `configs/nas/SCHEMA.md` when reorganizing shares. **✅ Done** (encrypted NAS→B2 task live; restic dead-men FRESH).
+3. **Lock in backups:** Synology Hyper Backup + Snapshot Replication, plus a Restic/Kopia job for irreplaceable data → B2. Test one restore. Follow `reference/nas/volume-schema.md` when reorganizing shares. **✅ Done** (encrypted NAS→B2 task live; restic dead-men FRESH).
 
 ## Phase 2 — De-cloud the essentials
 
@@ -38,7 +38,7 @@ Do a phase before starting the next; each leaves you better off. **Status notes 
 
 ## Phase 5 — Play
 
-18. **Game servers:** light games on the Mac mini, heavy games on the rig (24/7), friends in via Tailscale. **⚠️ Corrected & live:** heavy servers run via **AMP on the rig** (Minecraft Java+Bedrock, Palworld), exposed via **playit premium** (not LinuxGSM, not Tailscale). See `configs/gaming/server-guide.md`.
+18. **Game servers:** light games on the Mac mini, heavy games on the rig (24/7), friends in via Tailscale. **⚠️ Corrected & live:** heavy servers run via **AMP on the rig** (Minecraft Java+Bedrock, Palworld), exposed via **playit premium** (not LinuxGSM, not Tailscale). See `reference/gaming/server-guide.md`.
 19. **Sunshine** on the rig + **Moonlight** clients; set up the headless display (dummy HDMI or the Apollo-Linux/`sunshine_virt_display` virtual display); confirm Tailscale "direct" for remote. Add a launcher (Heroic/Lutris + RomM) and Ludusavi + Syncthing save-sync. **✅ Live:** in-home (`game-06`) + remote-direct (`game-07`) streaming; RomM live (4.9.2). Launcher bundle deferred; save-sync folds into the Syncthing hub task.
 20. **Tune the rig (`game-09` — idle-power tuning):** GPU idle/undervolt + power-limit tuning to shave the ~130 W idle, keep WoL as recovery, set the **GPU contention policy** (Ollama `keep_alive=0`) so streaming/servers/AI share the one card. Optionally add ComfyUI / Continue / Open WebUI RAG. **Open** (`game-09`).
 

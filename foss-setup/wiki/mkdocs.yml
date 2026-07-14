@@ -129,6 +129,7 @@ nav:
       - Secrets policy: operations/secrets.md
       - Tracker & AI sessions: operations/tracker.md
       - Maintenance calendar: operations/maintenance-calendar.md
+      - Security & infra audit (2026-07): operations/audit-2026-07.md
       - Repo structure, branching & secrets: operations/repo-structure.md
       - Host inventory: operations/inventory.md
       - Restore runbook (template): operations/restore-runbook-template.md
@@ -168,6 +169,7 @@ nav:
           - VLAN / zone / firewall plan: reference/network/vlan-zone-firewall.md
       - Home Assistant:
           - Overview: reference/home-assistant/index.md
+          - House & device context: reference/home-assistant/home-context.md
           - HA backup checklist: reference/home-assistant/backup-checklist.md
           - Midea local (midea_ac_lan) setup: reference/home-assistant/midea-local.md
           - Nest SDM OAuth checklist: reference/home-assistant/nest-sdm-oauth.md

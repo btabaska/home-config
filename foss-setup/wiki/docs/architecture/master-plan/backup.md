@@ -2,7 +2,7 @@
 
 RAID is not a backup — it survives a dead drive, not a deletion, ransomware hit, fire, or theft. Target: **3-2-1 — three copies, two media types, one off-site.**
 
-> **NAS storage layout that implements this tiering:** the drive/pool/shared-folder/network-drive schema lives in `configs/nas/SCHEMA.md`. It **retains three Basic volumes** (~42 TB usable, no parity): Volume 1 = Music/Books/Tier 1/Docker, Volume 2 = Movies, Volume 3 = TV — read it before reorganizing shares.
+> **NAS storage layout that implements this tiering:** the drive/pool/shared-folder/network-drive schema lives in `reference/nas/volume-schema.md`. It **retains three Basic volumes** (~42 TB usable, no parity): Volume 1 = Music/Books/Tier 1/Docker, Volume 2 = Movies, Volume 3 = TV — read it before reorganizing shares.
 
 ## Tier your data first (the key move)
 

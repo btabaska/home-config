@@ -2,7 +2,7 @@
 # pcie-aer-monitor: alert via ntfy if the OS NVMe (WD SN570 @ 0000:74:00.0) resumes
 # PCIe AER errors after the 2026-07-09 APST/ASPM fix (nvme_core.default_ps_max_latency_us=0
 # + pcie_aspm=off). Runs from a systemd timer on rig, as root. Quiet when healthy.
-# See handoff-rollout-state.md "RCA: rig freeze ... NVMe PCIe link instability".
+# See the wiki reference/hosts/rig-pcie-aer-monitor page (RCA: rig freeze / NVMe PCIe link instability).
 set -uo pipefail
 
 PCI="0000:74:00.0"                       # stable addr of the OS drive (nvmeX name is NOT stable)

@@ -69,4 +69,4 @@ integrations need no new hardware).
 - **Resilience (Phase 3):** ~$100–260.
 - **Future (Phase 4):** highly variable, mostly $30–150 per project except solar.
 
-_Source: `docs/research/11-ha-home-context.md` (sensor list v1.0) + the 2026-07-14 roadmap walk. Update this file as you buy; the tasks stay `deferred` in `progress.json` until their hardware lands._
+_Source: the sensor list in `reference/home-assistant/home-context.md` (v1.0) + the 2026-07-14 roadmap walk. Update this file as you buy; the tasks stay `deferred` in `progress.json` until their hardware lands._
