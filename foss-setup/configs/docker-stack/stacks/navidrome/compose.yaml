@@ -16,7 +16,8 @@ services:
       ND_BACKUP_SCHEDULE: "${ND_BACKUP_SCHEDULE:-}"
       ND_BACKUP_COUNT: "${ND_BACKUP_COUNT:-0}"
       ND_ENABLEINSIGHTSCOLLECTOR: "${ND_ENABLEINSIGHTSCOLLECTOR:-true}"
-      ND_SCANSCHEDULE: 1h
+      ND_SCANNER_SCHEDULE: "@every 1h"   # 0.62 new-scanner key; legacy ND_SCANSCHEDULE is ignored -> "Periodic scan is DISABLED"
+      ND_SCANNER_WATCHERWAIT: "0"         # fs watcher is unreliable over CIFS (misses NAS-side writes, dies on mount EBADF); rely on the periodic full scan
       ND_LOGLEVEL: info
       ND_SESSIONTIMEOUT: 24h
       ND_BASEURL: ${ND_BASEURL:-}
