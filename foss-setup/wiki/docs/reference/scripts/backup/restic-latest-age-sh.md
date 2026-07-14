@@ -1,32 +1,32 @@
 # `restic-latest-age.sh`
 
-> print freshness of the newest restic snapshot for this
+> restic-latest-age — report whether the automated restic backup succeeded within
 
 **Path:** `foss-setup/scripts/backup/restic-latest-age.sh` · **Category:** [Backup & restore](index.md) · **Type:** Bash
 
 ## What it does
 
 ```text
- restic-latest-age.sh — print freshness of the newest restic snapshot for this
- host. Deployed to /usr/local/bin/restic-latest-age (root, 0755).
+ restic-latest-age — report whether the automated restic backup succeeded within
+ MAX_AGE_HOURS. Prints "FRESH ..." (exit 0) or "STALE ..."/"NO-BACKUP-SIGNAL"
+ (exit 1). Deployed to /usr/local/bin/restic-latest-age (root, 0755). Consumed by
+ the restic-snapshot-fresh-{mini,rig} verification checks.
 
- WHY IT EXISTS: the verification runner executes as btabaska, but the restic
- env file (/etc/restic/env) is root-only 0600. Rather than loosening the env
- file's permissions, a single sudoers rule (/etc/sudoers.d/verification-restic)
- lets btabaska run EXACTLY this root-owned script with no arguments:
-   btabaska ALL=(root) NOPASSWD: /usr/local/bin/restic-latest-age
- The verification check is then just: sudo -n /usr/local/bin/restic-latest-age
-
- Output:  "FRESH age_hours=N latest=<timestamp>"  exit 0   (age < MAX_AGE_HOURS)
-          "STALE age_hours=N latest=<timestamp>"  exit 1
-          "NO-SNAPSHOTS"                          exit 1
- MAX_AGE_HOURS defaults to 26 (daily timer + slack); env-overridable, NOT an
- argv argument — sudoers pins the zero-argument invocation.
+ DOES NOT do a live B2 `restic snapshots` round-trip: that takes ~100s for this
+ repo (all network wait) and blew the verification sweep's 60s timeout, FALSE-
+ failing a crit check while backups were actually fine (observability-audit
+ 2026-07-14). Instead it reads two fast, local, authoritative signals:
+   1. systemd's record of restic-backup.service (Result/ExecMainStatus/exit time)
+      — set the instant the backup unit finishes; and
+   2. a persisted success-marker it maintains itself, so the signal survives a
+      reboot (systemd's per-unit record resets on boot; the file does not).
+ restic-backup.service ends with `restic check`, so a successful unit run means
+ the snapshot really is in B2.
 ```
 
 ## Environment / variables referenced
 
-`ENV_FILE`, `MAX_AGE_HOURS`
+`MARKER`, `MAX_AGE_HOURS`, `RESTIC_SUCCESS_MARKER`, `RESTIC_UNIT`, `UNIT`
 
 ## See also
 
