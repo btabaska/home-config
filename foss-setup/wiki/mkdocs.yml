@@ -114,6 +114,7 @@ nav:
           - bgutil-pot: services/bgutil-pot.md
       # END GENERATED SERVICES NAV
   - Runbooks:
+      - Troubleshooting index: runbooks/troubleshooting.md
       - DNS outage: runbooks/dns-outage.md
       - Backup & restore: runbooks/backup-restore.md
       - Rebuild a host: runbooks/rebuild-a-host.md
@@ -127,6 +128,7 @@ nav:
       - Ansible & convergence: operations/ansible.md
       - Secrets policy: operations/secrets.md
       - Tracker & AI sessions: operations/tracker.md
+      - Maintenance calendar: operations/maintenance-calendar.md
       - Repo structure, branching & secrets: operations/repo-structure.md
       - Host inventory: operations/inventory.md
       - Restore runbook (template): operations/restore-runbook-template.md
