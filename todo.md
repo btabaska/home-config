@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**161/234 done** · **46 open** · **18 deferred** · 11 retired.
+**162/234 done** · **45 open** · **18 deferred** · 11 retired.
 
 ---
 
@@ -50,7 +50,6 @@
 - [ ] **`foss-01`** Bitwarden → Vaultwarden data cutover (point clients at vault.tabaska.us) _(est 1-2 hrs)_
 - [ ] **`foss-04`** Ente Auth adoption + YubiKey enrollment (Authy migration) _(est 1-2 hrs)_
 - [ ] **`sec-01`** Turn on MFA/2FA everywhere (hardware key on the crown jewels) _(est 1-2 hrs)_
-- [ ] **`sec-03`** Immutable backups (B2 Object Lock + Borg append-only) + Healthchecks dead-man's-switch _(est 1-1.5 hrs)_ — ⛔ gate: B2 credentials in vault
 - [ ] **`sec-04`** Harden exposed surfaces (CrowdSec + forward-auth on the seedbox/public ports) _(est 1 hr)_ — ⛔ gate: Tailscale SSH ACL for operator → seedbox (currently blocked)
 
 ### smart-home
