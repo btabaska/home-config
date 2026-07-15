@@ -32,15 +32,18 @@ and converges itself:
 
 ```
 home-config (GitHub, full repo)
-   └─ scripts/docs/publish-deploy.sh          # git subtree split of foss-setup/
-        └─ Forgejo home/homelab (on mini)     # the deploy repo
+   └─ scripts/docs/publish-deploy.sh          # pushes main to both remotes
+        └─ Forgejo home/homelab (on mini)     # deploy remote = the SAME full repo
              └─ ansible-pull (per host, systemd timer)
-                  clone → ~/.ansible-pull → site.yml against itself
+                  clone → ~/.ansible-pull → foss-setup/configs/ansible/site.yml
 ```
 
+Since **2026-07-14** `home/homelab` holds the full repo (root = `Home/`), not a
+`foss-setup/` subtree — every path a host consumes is `foss-setup/`-prefixed.
+
 - **Unit**: `configs/ansible/ansible-pull.service` — runs
-  `ansible-pull -U git@forgejo:home/homelab.git -i configs/ansible/inventory.ini
-  --limit $(hostname -s) --connection local --diff configs/ansible/site.yml`.
+  `ansible-pull -U git@forgejo:home/homelab.git -i foss-setup/configs/ansible/inventory.ini
+  --limit $(hostname -s) --connection local --diff foss-setup/configs/ansible/site.yml`.
   `--check` was deliberately removed 2026-07-07: with it, the fleet only
   *reported* drift and never converged (the audit's P0-2).
 - **Timer**: daily ~04:20 **UTC** ± jitter on the mini (~04:40 ET on the
@@ -135,10 +138,11 @@ Ansible once you're repeating yourself.
 ./foss-setup/scripts/docs/publish-deploy.sh
 ```
 
-It runs `git subtree split --prefix=foss-setup` and pushes the result to
-Forgejo `home/homelab` `main` (deterministic → fast-forwards). Hosts pick it
-up on their next timer fire. After a `--force` publish, refresh host clones:
-`ssh mini 'rm -rf ~/.ansible-pull'`.
+It pushes `main` to GitHub `origin` AND to Forgejo `home/homelab` (plain
+fast-forward pushes — the pre-2026-07-14 `git subtree split` flow is retired;
+a subtree push now non-FF-conflicts with the full-repo lineage). Hosts pick it
+up on their next timer fire. If the forgejo lineage is ever force-replaced
+again, refresh host clones: `rm -rf ~/.ansible-pull` on mini AND rig.
 
 ## Run a manual converge
 

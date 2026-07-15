@@ -46,7 +46,7 @@ See [Network](network.md) for VLANs, the DNS chain, Tailscale, and the
 | Repo | Where | What it is |
 |---|---|---|
 | **GitHub `btabaska/home-config`** | `origin` of `~/Documents/Home` | The **full** planning repo: plan, tracker, `foss-setup/` configs+scripts+this wiki |
-| **Forgejo `home/homelab`** (on mini) | published subtree | The **deploy repo** = the `foss-setup/` subtree; hosts run `ansible-pull` against it. Published via `scripts/docs/publish-deploy.sh` |
+| **Forgejo `home/homelab`** (on mini) | mirror of `main` | The **deploy remote** — since 2026-07-14 the same **full** repo (root = `Home/`); hosts run `ansible-pull` against it with `foss-setup/`-prefixed paths. Published via `scripts/docs/publish-deploy.sh` |
 | **Forgejo `home/docker-stacks`** | `/opt/stacks` on mini | The **live** compose state actually running on the mini |
 
 Flow: edit in `home-config` → `publish-deploy.sh` fast-forwards Forgejo

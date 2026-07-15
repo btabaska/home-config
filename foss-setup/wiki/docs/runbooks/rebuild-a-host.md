@@ -11,12 +11,13 @@ a throwaway VM; the drill is the proof, this page is the procedure.
 sudo apt install -y git curl   # or pacman -S
 
 # 2. Clone the deploy repo (Forgejo; GitHub home-config also works)
-git clone git@forgejo:home/homelab.git   # = foss-setup/ subtree
+git clone git@forgejo:home/homelab.git   # full repo; deploy tree = foss-setup/
 # forgejo alias → macmini.tailb31641.ts.net, SSH port 2222 (~/.ssh/config)
+cd homelab
 
 # 3. Converge the host layer — ansible-pull does OS packages, Docker engine,
 #    daemon.json log rotation, the edge network, tailscale, timers, chezmoi
-sudo cp configs/ansible/ansible-pull.{service,timer} /etc/systemd/system/
+sudo cp foss-setup/configs/ansible/ansible-pull.{service,timer} /etc/systemd/system/
 sudo systemctl daemon-reload && sudo systemctl enable --now ansible-pull.timer
 sudo systemctl start ansible-pull.service   # first converge now, not at 04:20
 
