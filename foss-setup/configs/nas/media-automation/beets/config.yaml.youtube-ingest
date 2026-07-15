@@ -22,7 +22,17 @@ match:
     max_rec:
         unmatched_tracks: medium
 
-plugins: fromfilename
+# `web` is REQUIRED: the linuxserver/beets image's always-on service IS `beet web`.
+# Without the web plugin it crash-loops "error: unknown command 'web'" (harmless but
+# noisy, and leaves the container with no working service). With it, the container
+# serves a beets library browser on :8337 — a real, monitorable purpose (nas-beets).
+plugins: fromfilename web
+
+# Bind the web UI to all interfaces so it's reachable on the LAN (default is
+# container-localhost, i.e. unreachable). :8337 is published in the compose.
+web:
+    host: 0.0.0.0
+    port: 8337
 
 # Keep beets from ever rewriting paths — tag metadata only, files stay where MeTube put them.
 paths:

@@ -20,7 +20,7 @@
 | `nas-27` | Media-automation self-check (report violations, don't silently fix) | ✅ done | 15 min |
 | `nas-28` | Apply TRaSH quality profiles + naming via Recyclarr (Ubuntu → NAS *arrs) | ✅ done | 30-45 min |
 | `nas-29` | Deploy Soularr on NAS (Lidarr ↔ remote slskd bridge) | ✅ done | 30-45 min |
-| `nas-30` | Deploy beets tag layer on NAS (optional, Lidarr owns layout) | 🗑️ retired | 20-30 min |
+| `nas-30` | beets YouTube-audio tagging layer on NAS (tags non-Lidarr music) | ✅ done | 20-30 min |
 | `seed-01` | Provision seedbox "Betty" — Bytesized Stream +3 (Deluge + slskd later) | ✅ done | 1 hr + provisioning |
 | `seed-03` | Put the seedbox on Tailscale (userspace networking) | ✅ done | 20-30 min |
 | `seed-05` | Connect Seerr to NAS Sonarr/Radarr (movies/TV — not music) | ✅ done | 20-30 min |
@@ -31,6 +31,6 @@
 | `seed-10` | End-to-end music verification (MusicSeerr → Betty → NAS → Plex/Navidrome) | ✅ done | 30-45 min |
 | `seed-11` | Indexer redundancy layer in Prowlarr (TV/anime over IPT+MAM) | ✅ done | ~30-45 min |
 | `seed-12` | Deploy Bitmagnet self-hosted DHT crawler on NAS (rate-limit-proof indexer hedge) | ⬜ open | ~1 hr + runbook |
-| `seed-13` | Whisparr adult-acquisition pipeline (sukebei/XXXClub -> Stash) on NAS | ⬜ open | ~an afternoon + runbook |
+| `seed-13` | Whisparr adult-acquisition pipeline (sukebei/XXXClub -> Stash) on NAS | ✅ done | ~an afternoon + runbook |
 
 [← Roadmap overview](index.md)

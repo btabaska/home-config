@@ -27,6 +27,7 @@ The full home `*arr` acquisition stack, running as the `media-automation` Compos
 | `rreading-glasses` | `blampe/rreading-glasses@sha256:dd996a1db19ac4ef18df47f1671f608c0f097ed43c4776ebde94dee20c6b43c8` | `8788:8788` |
 | `rreading-glasses-db` | `postgres:17.6` | — |
 | `unpackerr` | `golift/unpackerr:0.15.2` | — |
+| `whisparr` | `ghcr.io/hotio/whisparr@sha256:dfa198dc37a89f9f6b7a0fad39e66cfaa1153659a80e22fd9d9475b8b08bcac5` | `6969:6969` |
 
 ## Volumes
 
@@ -54,6 +55,9 @@ The full home `*arr` acquisition stack, running as the `media-automation` Compos
 | `rreading-glasses-db` | `${DOCKER_ROOT:-/volume1/docker}/rreading-glasses/postgres:/var/lib/postgresql/data` |
 | `unpackerr` | `./unpackerr/unpackerr.conf:/etc/unpackerr/unpackerr.conf:ro` |
 | `unpackerr` | `{'type': 'bind', 'source': '${SEEDBOX_MOUNT:-/volume1/mounts/seedbox-files}', 'target': '/seedbox'}` |
+| `whisparr` | `${DOCKER_ROOT:-/volume1/docker}/whisparr/config:/config` |
+| `whisparr` | `${WHISPARR_LIBRARY:-/volume1/stash/root/whisparr}:/data` |
+| `whisparr` | `{'type': 'bind', 'source': '${SEEDBOX_MOUNT:-/volume1/mounts/seedbox-files}', 'target': '/seedbox'}` |
 
 ## Environment (`.env`)
 
@@ -68,6 +72,7 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `DOCKER_ROOT`
 - `CWA_INGEST`
 - `READARR_LIBRARY`
+- `WHISPARR_LIBRARY`
 - `SEEDBOX_MOUNT`
 - `MANUAL_DST`
 - `RG_DB_NAME`

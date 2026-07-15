@@ -292,6 +292,13 @@ stash.{$DOMAIN} {
 	}
 }
 
+# Adult scene automation (Whisparr v2 — NAS :6969; seed-13). Feeds the Stash
+# library above. App-level auth required (same model as the other *arr panels).
+whisparr.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:6969
+}
+
 # ---------------------------------------------------------------------------
 # Seedbox download daemons (Tailscale — Betty)
 # ---------------------------------------------------------------------------

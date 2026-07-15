@@ -1,6 +1,6 @@
 # Checks — nas-services
 
-`foss-setup/verification/checks.d/nas-services.yaml` — 12 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/nas-services.yaml` — 15 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `nas-ssh`
 
@@ -132,6 +132,39 @@ stash answers its GraphQL version query (:9999)
 
 ```bash
 curl -s -m 8 -X POST http://nas:9999/graphql -H 'Content-Type: application/json' -d '{"query":"{version{version}}"}'
+```
+
+## `nas-beets`
+
+beets youtube-tagging web UI serving on :8337
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `nas-30` · **enabled:** True
+- **expects:** `^200$`
+
+```bash
+curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:8337/
+```
+
+## `nas-beets-ingest-fresh`
+
+beets youtube-ingest tagging ran recently (import.log < 30h)
+
+- **host:** `nas` · **severity:** `warn` · **guards task:** `nas-30` · **enabled:** True
+- **expects:** `^ingest=fresh$`
+
+```bash
+find /volume1/docker/beets/import.log -mmin -1800 2>/dev/null | grep -q . && echo ingest=fresh || echo ingest=STALE
+```
+
+## `nas-whisparr`
+
+whisparr answers its /ping (adult automation :6969, seed-13)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `seed-13` · **enabled:** True
+- **expects:** `"status":\s*"OK"`
+
+```bash
+curl -s -m 8 http://nas:6969/ping
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

@@ -281,3 +281,8 @@
         href: https://stash.tabaska.us
         description: Media organizer (LAN/VPN only)
         siteMonitor: http://192.168.10.4:9999
+    - Whisparr:
+        icon: whisparr.png
+        href: https://whisparr.tabaska.us
+        description: Adult scene automation (LAN/VPN only)
+        siteMonitor: http://192.168.10.4:6969

@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**162/234 done** · **45 open** · **18 deferred** · 11 retired.
+**164/234 done** · **44 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -33,7 +33,6 @@
 ### media-pipeline
 - [ ] **`media-05`** Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) _(est 1-2 hrs)_
 - [ ] **`seed-12`** Deploy Bitmagnet self-hosted DHT crawler on NAS (rate-limit-proof indexer hedge) _(est ~1 hr + runbook)_
-- [ ] **`seed-13`** Whisparr adult-acquisition pipeline (sukebei/XXXClub -> Stash) on NAS _(est ~an afternoon + runbook)_ — ⛔ gate: operator decision to automate (else indexer-only)
 
 ### photos
 - [ ] **`nas-08b`** Import mirrorless-camera SD card into Immich via immich-go (+ pbak option) _(est 30 min)_

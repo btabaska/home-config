@@ -3222,7 +3222,7 @@
  },
  {
   "id": "nas-30",
-  "title": "Deploy beets tag layer on NAS (optional, Lidarr owns layout)",
+  "title": "beets YouTube-audio tagging layer on NAS (tags non-Lidarr music)",
   "host": "NAS",
   "type": "async",
   "depends_on": [
@@ -3230,13 +3230,10 @@
   ],
   "estimate": "20-30 min",
   "steps": [
-   "On your MacBook: open this task's verify block and keep the repo at ~/Documents/Home/foss-setup handy.",
-   "Prerequisite: nas-29 complete.",
-   "Copy beets config: `cp beets/config.yaml.example beets/config.yaml` in media-automation/",
-   "**Tag-only:** Lidarr owns layout \u2014 do NOT run beet import with move/copy",
-   "Test: `docker compose --profile music-tags run --rm beets beet write` on a small album",
-   "DSM Task Scheduler: weekly `docker compose --profile music-tags run --rm beets beet write`",
-   "Optional: `docker compose --profile music-tags up -d beets` for web UI on :8337 (LAN only)"
+   "NOT redundant with Lidarr after all: Lidarr (writeAudioTags=sync) tags everything IT imports, and those tags flow to the rig ALAC mirror via ffmpeg -map_metadata 0. But MeTube-ingested YouTube audio bypasses Lidarr and arrives with junk/filename-only tags.",
+   "beets (media-automation compose, profile music-tags) tags the YouTube path IN PLACE: config beets/config.yaml.youtube-ingest \u2014 directory /music, library /config/beets-youtube.db, plugins fromfilename + web, import copy:no move:no write:yes, strong-match-only (weak matches quarantined-by-skip in /music/YouTube).",
+   "The always-on container runs `beet web` (the LSIO image's service) \u2014 REQUIRES the `web` plugin + web.host 0.0.0.0 or it crash-loops 'unknown command web'. Fixed 2026-07-14; :8337 serves the library browser.",
+   "Daily `beet import` tags new YouTube audio; Lidarr owns the rest of /music (never moved/copied by beets)."
   ],
   "commands": [
    "ssh nas 'cd /volume1/docker/media-automation && docker compose --profile music-tags run --rm beets beet write'"
@@ -3251,7 +3248,7 @@
     "url": "https://beets.readthedocs.io/"
    }
   ],
-  "verify": "beet write refreshes tags in place without moving files under /volume1/music.",
+  "verify": "beets web UI serves on :8337 and the daily YouTube-ingest import runs (guarded by nas-beets + nas-beets-ingest-fresh).",
   "track": "media-pipeline",
   "required": false,
   "run": 4,
@@ -10550,8 +10547,7 @@
   "track": "media-pipeline",
   "required": false,
   "run": 4,
-  "mode": "ai",
-  "gate": "operator decision to automate (else indexer-only)"
+  "mode": "ai"
  },
  {
   "id": "wiki-06",

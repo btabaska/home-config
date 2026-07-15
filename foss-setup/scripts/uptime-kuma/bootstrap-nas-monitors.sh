@@ -28,8 +28,8 @@ MONITORS=(
   "NAS Prowlarr|http://${NAS_IP}:9696|${ACCEPT_ARR}"
   "NAS FlareSolverr|http://${NAS_IP}:8191|${ACCEPT_OK}"
   "NAS Immich|http://${NAS_IP}:2283|${ACCEPT_OK}"
-  "NAS DepTrack|http://${NAS_IP}:9010|${ACCEPT_OK}"
   "NAS Stash|http://${NAS_IP}:9999|${ACCEPT_OK}"
+  "NAS Whisparr|http://${NAS_IP}:6969|${ACCEPT_ARR}"
   "NAS Calibre Web|http://${NAS_IP}:8083|${ACCEPT_ARR}"
   "NAS Plex|http://${NAS_IP}:32400|${ACCEPT_PLEX}"
 )

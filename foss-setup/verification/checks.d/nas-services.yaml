@@ -136,3 +136,44 @@ checks:
     task_id: nas-01
     runbook: wiki/runbooks/nas.md
     enabled: true
+
+  # beets = the YouTube-audio tagging layer (nas-30): MeTube writes audio to
+  # /music/YouTube, beets tags strong MusicBrainz matches in place (fromfilename),
+  # skips weak ones. NOT redundant with Lidarr (Lidarr writeAudioTags=sync handles
+  # its own imports; beets only touches the non-Lidarr YouTube path). Two signals:
+  # the always-on beet-web container serves :8337, and the daily import must run.
+  - id: nas-beets
+    name: "beets youtube-tagging web UI serving on :8337"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:8337/
+    expect: '^200$'
+    severity: warn
+    task_id: nas-30
+    runbook: wiki/runbooks/nas.md
+    enabled: true
+
+  - id: nas-beets-ingest-fresh
+    name: "beets youtube-ingest tagging ran recently (import.log < 30h)"
+    host: nas
+    cmd: >-
+      find /volume1/docker/beets/import.log -mmin -1800 2>/dev/null
+      | grep -q . && echo ingest=fresh || echo ingest=STALE
+    expect: '^ingest=fresh$'
+    severity: warn
+    task_id: nas-30
+    runbook: wiki/runbooks/nas.md
+    enabled: true
+
+  # seed-13 (2026-07-14): Whisparr v2 adult-scene automation feeds the Stash
+  # library. /ping is unauthenticated and returns {"status":"OK"} only when the
+  # app + its DB are actually serving (a wedged backend fails this), so it beats
+  # bare container-liveness for the "up but broken" class shared by the other *arrs.
+  - id: nas-whisparr
+    name: "whisparr answers its /ping (adult automation :6969, seed-13)"
+    host: mini
+    cmd: curl -s -m 8 http://nas:6969/ping
+    expect: '"status":\s*"OK"'
+    severity: warn
+    task_id: seed-13
+    runbook: wiki/runbooks/nas.md
+    enabled: true

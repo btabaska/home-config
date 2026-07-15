@@ -23,8 +23,8 @@
 # SHARED INVARIANTS (change-one-change-all — a self-check must verify these)
 # ------------------------------------------------------------------------------
 #   1. Every DOWNLOAD-TOUCHING service (sonarr, radarr, lidarr, readarr,
-#      unpackerr) mounts the seedbox files at the IDENTICAL in-container path
-#      `/seedbox`. If you change the host mount path or container path, change
+#      whisparr, unpackerr) mounts the seedbox files at the IDENTICAL in-container
+#      path `/seedbox`. If you change the host mount path or container path, change
 #      it in ALL of them at once.
 #   2. DSM + rclone FUSE cannot satisfy Docker's :rslave propagation (kernel
 #      rejects shared/slave on fuse.rclone). Use a plain bind here; after a
@@ -57,6 +57,7 @@
 #   Phase C (polish):   unpackerr
 #   Phase D (Soulseek): soularr  (requires slskd on Betty — seed-09)
 #   Phase E (optional): beets    (tag-only; schedule beet write via DSM cron)
+#   Phase F (adult):    whisparr (seed-13; feeds the existing Stash library)
 # ==============================================================================
 
 name: media-automation
@@ -322,6 +323,42 @@ services:
       - radarr
       - lidarr
       - readarr
+
+  # ----------------------------------------------------------------------------
+  # Whisparr v2 — adult scene automation (seed-13). DOWNLOAD-TOUCHING -> /seedbox.
+  # IMAGE: not a LinuxServer image — LSIO does not publish Whisparr; hotio's is the
+  # canonical, well-maintained one. Pinned by DIGEST (hotio 'latest' tracks the v2
+  # release channel = github.com/hotio/whisparr/tree/v2). Digest below = version
+  # 2.2.0-release.108 (pulled 2026-07-14). hotio honors the same PUID/PGID/TZ.
+  #   Refresh deliberately: docker buildx imagetools inspect ghcr.io/hotio/whisparr:latest
+  #
+  # ROOT FOLDER = /data, bound to the Stash library subfolder
+  # ${WHISPARR_LIBRARY:-/volume1/stash/root/whisparr}. Whisparr only sees its own
+  # subfolder (isolated from the 557 GB hand-curated pile at /volume1/stash/root),
+  # and Stash indexes new scenes on its next scan of that library path.
+  #
+  # DOWNLOAD CLIENT: remote Deluge on Betty (185.162.184.38:5945) — SAME client and
+  # Remote Path Mapping (/home/hd34/btabaska/files/ -> /seedbox/) as radarr; set in
+  # the Whisparr UI/API, not here. INDEXERS: Prowlarr fullSyncs ONLY its adult-capable
+  # indexers here (XXX-category match; live sync landed BitPorn + IPTorrents) — Prowlarr gates app sync on category
+  # match — private-only, no public indexers (respects the seed-11 decision).
+  #
+  # AUTO-INDEX: a Whisparr Connect (Custom Script) fires on import and runs
+  # /config/stash-scan.sh (repo copy: ./whisparr/stash-scan.sh) which POSTs a
+  # Stash metadataScan of /data/whisparr so new scenes index automatically.
+  # Whisparr auth = Forms (set post-deploy; API key unaffected).
+  # ----------------------------------------------------------------------------
+  whisparr:
+    image: ghcr.io/hotio/whisparr@sha256:dfa198dc37a89f9f6b7a0fad39e66cfaa1153659a80e22fd9d9475b8b08bcac5   # v2 (2.2.0-release.108)
+    container_name: whisparr
+    environment: *common-env
+    volumes:
+      - ${DOCKER_ROOT:-/volume1/docker}/whisparr/config:/config
+      - ${WHISPARR_LIBRARY:-/volume1/stash/root/whisparr}:/data
+      - *seedbox-mount
+    ports:
+      - "6969:6969"
+    restart: always
 
 # A single user-defined default network is created automatically by Compose;
 # every service resolves the others by name (e.g. http://flaresolverr:8191,
