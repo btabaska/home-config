@@ -5,7 +5,7 @@
 > **Do not edit by hand** — your changes will be overwritten. Adjust the generator
 > or the source manifests under `hosts/macmini/` instead.
 >
-> Generated: 2026-07-15T13:55:49+00:00
+> Generated: 2026-07-15T15:05:43+00:00
 
 ## Host
 
