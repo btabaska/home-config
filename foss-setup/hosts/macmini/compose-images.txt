@@ -34,7 +34,7 @@ mvance/unbound:1.22.0
 pinchflat-bgutil:local
 postgres:17-alpine
 redis:7-alpine
-rommapp/romm:latest
+rommapp/romm:4.9.2
 strausmann/minecraft-bedrock-connect:latest
 vaultwarden/server:1.36.0
 wallabag/wallabag:2.6.14

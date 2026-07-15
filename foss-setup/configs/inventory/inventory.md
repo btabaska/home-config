@@ -5,7 +5,7 @@
 > **Do not edit by hand** — your changes will be overwritten. Adjust the generator
 > or the source manifests under `hosts/macmini/` instead.
 >
-> Generated: 2026-07-13T04:02:42+00:00
+> Generated: 2026-07-15T13:55:49+00:00
 
 ## Host
 
@@ -23,7 +23,7 @@
 | Flatpak apps | `hosts/macmini/flatpak.txt` | 0 apps | tracked |
 | Compose images (pinned) | `/opt/stacks` | 40 images | pinned |
 | Running containers | docker | 38 up | active |
-| systemd timers | `hosts/macmini/systemd-timers.txt` | 23 active | scheduled |
+| systemd timers | `hosts/macmini/systemd-timers.txt` | 25 active | scheduled |
 
 ## Pinned container images
 
@@ -65,7 +65,7 @@
 | `pinchflat-bgutil:local` | /opt/stacks |
 | `postgres:17-alpine` | /opt/stacks |
 | `redis:7-alpine` | /opt/stacks |
-| `rommapp/romm:latest` | /opt/stacks |
+| `rommapp/romm:4.9.2` | /opt/stacks |
 | `strausmann/minecraft-bedrock-connect:latest` | /opt/stacks |
 | `vaultwarden/server:1.36.0` | /opt/stacks |
 | `wallabag/wallabag:2.6.14` | /opt/stacks |

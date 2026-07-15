@@ -1,29 +1,31 @@
-NEXT                        LEFT          LAST                        PASSED        UNIT                           ACTIVATES
-Mon 2026-07-13 04:02:49 UTC 6s left       Mon 2026-07-13 04:01:49 UTC 53s ago       net-selfheal.timer             net-selfheal.service
-Mon 2026-07-13 04:09:00 UTC 6min left     Mon 2026-07-13 03:39:00 UTC 23min ago     phpsessionclean.timer          phpsessionclean.service
-Mon 2026-07-13 04:28:00 UTC 25min left    Sun 2026-07-12 04:31:39 UTC 23h ago       ansible-pull.timer             ansible-pull.service
-Mon 2026-07-13 04:41:13 UTC 38min left    Mon 2026-07-13 03:41:40 UTC 21min ago     verification-quick.timer       verification-quick.service
-Mon 2026-07-13 05:08:01 UTC 1h 5min left  Sun 2026-07-12 16:44:31 UTC 11h ago       certbot.timer                  certbot.service
-Mon 2026-07-13 06:29:53 UTC 2h 27min left Sun 2026-07-12 06:41:40 UTC 21h ago       apt-daily-upgrade.timer        apt-daily-upgrade.service
-Mon 2026-07-13 09:35:34 UTC 5h 32min left Sun 2026-07-12 04:03:22 UTC 23h ago       man-db.timer                   man-db.service
-Mon 2026-07-13 11:16:43 UTC 7h left       Mon 2026-07-13 02:54:31 UTC 1h 8min ago   fwupd-refresh.timer            fwupd-refresh.service
-Mon 2026-07-13 11:59:52 UTC 7h left       Sun 2026-07-12 11:59:52 UTC 16h ago       update-notifier-download.timer update-notifier-download.service
-Mon 2026-07-13 12:09:48 UTC 8h left       Sun 2026-07-12 12:09:48 UTC 15h ago       systemd-tmpfiles-clean.timer   systemd-tmpfiles-clean.service
-Mon 2026-07-13 13:18:21 UTC 9h left       Sun 2026-07-12 13:18:21 UTC 14h ago       etckeeper.timer                etckeeper.service
-Mon 2026-07-13 14:15:51 UTC 10h left      Sun 2026-07-12 14:16:41 UTC 13h ago       verification.timer             verification.service
-Mon 2026-07-13 17:05:33 UTC 13h left      Mon 2026-07-13 02:22:37 UTC 1h 40min ago  apt-daily.timer                apt-daily.service
-Mon 2026-07-13 20:52:03 UTC 16h left      Mon 2026-07-13 02:23:15 UTC 1h 39min ago  motd-news.timer                motd-news.service
-Tue 2026-07-14 00:00:00 UTC 19h left      Mon 2026-07-13 00:00:01 UTC 4h 2min ago   dpkg-db-backup.timer           dpkg-db-backup.service
-Tue 2026-07-14 00:00:00 UTC 19h left      Mon 2026-07-13 00:00:01 UTC 4h 2min ago   logrotate.timer                logrotate.service
-Tue 2026-07-14 01:42:58 UTC 21h left      Mon 2026-07-13 01:41:37 UTC 2h 21min ago  restic-backup.timer            restic-backup.service
-Wed 2026-07-15 18:26:29 UTC 2 days left   Mon 2026-07-06 23:18:29 UTC 6 days ago    update-notifier-motd.timer     update-notifier-motd.service
-Sun 2026-07-19 03:10:02 UTC 5 days left   Sun 2026-07-12 03:11:00 UTC 24h ago       e2scrub_all.timer              e2scrub_all.service
-Mon 2026-07-20 01:31:27 UTC 6 days left   Mon 2026-07-13 00:23:50 UTC 3h 38min ago  fstrim.timer                   fstrim.service
-n/a                         n/a           Fri 2026-07-10 08:35:00 UTC 2 days ago    apply-static-ip.timer          apply-static-ip.service
-n/a                         n/a           n/a                         n/a           apport-autoreport.timer        apport-autoreport.service
-n/a                         n/a           Mon 2026-07-13 04:02:37 UTC 5s ago        export-manifests.timer         export-manifests.service
-n/a                         n/a           Sat 2026-07-11 08:30:00 UTC 1 day 19h ago media-window-maint.timer       media-window-maint.service
-n/a                         n/a           n/a                         n/a           snapd.snap-repair.timer        snapd.snap-repair.service
-n/a                         n/a           n/a                         n/a           ua-timer.timer                 ua-timer.service
+NEXT                        LEFT              LAST                        PASSED        UNIT                           ACTIVATES
+Wed 2026-07-15 13:56:17 UTC 27s left          Wed 2026-07-15 13:55:17 UTC 32s ago       net-selfheal.timer             net-selfheal.service
+Wed 2026-07-15 14:05:21 UTC 9min left         Wed 2026-07-15 13:55:09 UTC 39s ago       verification-fast.timer        verification-fast.service
+Wed 2026-07-15 14:09:00 UTC 13min left        Wed 2026-07-15 13:39:00 UTC 16min ago     phpsessionclean.timer          phpsessionclean.service
+Wed 2026-07-15 14:15:57 UTC 20min left        Tue 2026-07-14 14:15:13 UTC 23h ago       verification.timer             verification.service
+Wed 2026-07-15 14:41:24 UTC 45min left        Wed 2026-07-15 13:40:22 UTC 15min ago     verification-quick.timer       verification-quick.service
+Wed 2026-07-15 17:24:42 UTC 3h 28min left     Wed 2026-07-15 10:55:07 UTC 3h 0min ago   certbot.timer                  certbot.service
+Wed 2026-07-15 23:22:00 UTC 9h left           Wed 2026-07-15 10:30:08 UTC 3h 25min ago  apt-daily.timer                apt-daily.service
+Thu 2026-07-16 00:00:00 UTC 10h left          Wed 2026-07-15 00:00:01 UTC 13h ago       dpkg-db-backup.timer           dpkg-db-backup.service
+Thu 2026-07-16 00:00:00 UTC 10h left          Wed 2026-07-15 00:00:01 UTC 13h ago       logrotate.timer                logrotate.service
+Thu 2026-07-16 00:11:49 UTC 10h left          Wed 2026-07-15 13:24:46 UTC 31min ago     motd-news.timer                motd-news.service
+Thu 2026-07-16 01:34:04 UTC 11h left          Wed 2026-07-15 01:41:32 UTC 12h ago       restic-backup.timer            restic-backup.service
+Thu 2026-07-16 01:48:50 UTC 11h left          Wed 2026-07-15 10:51:45 UTC 3h 4min ago   fwupd-refresh.timer            fwupd-refresh.service
+Thu 2026-07-16 02:41:27 UTC 12h left          Wed 2026-07-15 00:55:45 UTC 13h ago       man-db.timer                   man-db.service
+Thu 2026-07-16 04:49:33 UTC 14h left          Wed 2026-07-15 04:39:22 UTC 9h ago        ansible-pull.timer             ansible-pull.service
+Thu 2026-07-16 05:14:44 UTC 15h left          n/a                         n/a           wiki-rag-sync.timer            wiki-rag-sync.service
+Thu 2026-07-16 06:20:20 UTC 16h left          Wed 2026-07-15 06:43:14 UTC 7h ago        apt-daily-upgrade.timer        apt-daily-upgrade.service
+Thu 2026-07-16 11:59:55 UTC 22h left          Wed 2026-07-15 11:59:55 UTC 1h 55min ago  update-notifier-download.timer update-notifier-download.service
+Thu 2026-07-16 12:09:49 UTC 22h left          Wed 2026-07-15 12:09:49 UTC 1h 45min ago  systemd-tmpfiles-clean.timer   systemd-tmpfiles-clean.service
+Thu 2026-07-16 13:18:24 UTC 23h left          Wed 2026-07-15 13:18:24 UTC 37min ago     etckeeper.timer                etckeeper.service
+Sun 2026-07-19 03:10:10 UTC 3 days left       Sun 2026-07-12 03:11:00 UTC 3 days ago    e2scrub_all.timer              e2scrub_all.service
+Mon 2026-07-20 00:15:29 UTC 4 days left       Mon 2026-07-13 00:23:50 UTC 2 days ago    fstrim.timer                   fstrim.service
+Mon 2026-07-20 04:00:26 UTC 4 days left       Mon 2026-07-13 04:02:37 UTC 2 days ago    export-manifests.timer         export-manifests.service
+Fri 2026-07-24 00:05:23 UTC 1 week 1 day left Mon 2026-07-13 19:17:02 UTC 1 day 18h ago update-notifier-motd.timer     update-notifier-motd.service
+n/a                         n/a               Fri 2026-07-10 08:35:00 UTC 5 days ago    apply-static-ip.timer          apply-static-ip.service
+n/a                         n/a               n/a                         n/a           apport-autoreport.timer        apport-autoreport.service
+n/a                         n/a               Sat 2026-07-11 08:30:00 UTC 4 days ago    media-window-maint.timer       media-window-maint.service
+n/a                         n/a               n/a                         n/a           snapd.snap-repair.timer        snapd.snap-repair.service
+n/a                         n/a               n/a                         n/a           ua-timer.timer                 ua-timer.service
 
-26 timers listed.
+28 timers listed.
