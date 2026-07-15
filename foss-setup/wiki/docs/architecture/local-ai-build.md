@@ -21,7 +21,8 @@ this section disagree, this section is the live truth.
 existing **LiteLLM** gateway. A 3-model **Ollama compat shim** remains on
 `:11434` *only* for HA Assist and Obsidian. Coding default is
 **Qwen3.6-35B-A3B** (bake-off winner: 3/3 agentic tasks, **0 malformed tool
-calls**, 73–126 tok/s); **Qwen3.6-27B** is the strong/slow fallback. GPU
+calls**, 73–126 tok/s); **Qwen3.6-27B (MTP, ~50 tok/s)** is the strong
+fallback. GPU
 yields to gaming via idle-unload + an Apollo session-start force-unload hook
 (**182 ms** measured VRAM handoff).
 
@@ -52,8 +53,8 @@ rig (192.168.10.12) ─ docker compose │ (local-ai-tooling/docker/)
 
 | alias | model (llama-swap) | use |
 |---|---|---|
-| `coder` (=`code`) | qwen3.6-35b-a3b UD-IQ4_NL_XL 32k | agentic coding default |
-| `coder-strong` | qwen3.6-27b UD-Q4_K_XL 32k | long/hard tasks (slower, steadier) |
+| `coder` (=`code`) | qwen3.6-35b-a3b UD-IQ4_NL_XL **131k ctx** | agentic coding default |
+| `coder-strong` | qwen3.6-27b **MTP** UD-Q4_K_XL **98k ctx** (~50 t/s) | long/hard tasks |
 | `chat` | gemma4-31b-qat 16k | general chat |
 | `chat-creative` | deckard-heretic 8k | creative |
 | `fast` | qwen2.5-coder-7b 32k | autocomplete/cheap tool loop |
@@ -178,13 +179,36 @@ source in `foss-setup/scripts/ai/`). Reference it in chat with
 - **Gaming:** just play — the Apollo hook frees VRAM at session start; the
   LLM reloads on the next request.
 
+## Context ceilings + MTP (measured 2026-07-15, post-ship increment)
+
+The shipped 32k ctx was conservative — ladder-probed the real VRAM ceilings
+(q8 KV + FA, total board memory incl. desktop):
+
+| ctx | 35B-A3B (coder) | 27B (coder-strong) |
+|---|---|---|
+| 49k | 20.0 GiB | 19.6 GiB |
+| 98k | 20.6 GiB | 21.5 GiB |
+| 131k | **21.1 GiB ← shipped** | 22.7 GiB |
+| 163k | — | 24.0 GiB (hard edge) |
+| 262k (native) | **22.8 GiB — fits!** | — |
+
+The MoE's KV is ~14 KiB/token (hybrid attention) vs ~38 KiB/token dense.
+`coder` now runs **131k** (256k native fits if ever needed); `coder-strong`
+runs **98k**.
+
+**MTP speculative decoding: promoted.** A/B bench (900-token code gen, 2 runs
+each): baseline 34.5 tok/s → **50.3 tok/s at `--spec-draft-n-max 2`** (1.46×);
+n-max 3 was slower (47.2); the llama.cpp #23658 2048-aligned-ctx acceptance
+bug did **not** manifest on b9994 (aligned ≡ non-aligned), prefill cost ~7%.
+Correctness gate: the bake-off refactor task re-run on the MTP build —
+success, 0 malformed tool calls, **47.4 tok/s in the real agentic loop**
+(was 27.5; wall 85.9 s → 52.0 s, 1.72×). Caveats now living in the llama-swap
+config comment: `--parallel 1` required; never send images through the MTP
+entry (llama.cpp #23233); q8_0 KV benched clean but has one upstream
+long-soak crash report — drop the cache-type flags first if it ever wedges.
+
 ## Follow-ups (tracked, optional)
 
-- **MTP speculative decoding** for `coder-strong`: mainline llama.cpp supports
-  Qwen3.6 MTP (b9180+; running b9994). Recipe: `unsloth/Qwen3.6-27B-MTP-GGUF`
-  UD-Q4_K_XL + `--spec-type draft-mtp --spec-draft-n-max 2..3 -np 1`, q8_0 KV,
-  and benchmark the exact `--ctx-size` (avoid 2048-aligned values — llama.cpp
-  #23658 acceptance collapse). Reported 1.7× gen on a 3090 (38→65 tok/s).
 - **Devstral Small 2 (2512)** as a non-Qwen fallback pull if wanted.
 - OWUI: attach `#homelab-wiki` to a custom model for a dedicated "Homelab"
   assistant (UI step, operator taste).
