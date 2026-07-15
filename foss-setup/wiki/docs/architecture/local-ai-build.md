@@ -43,7 +43,7 @@ any LAN/tailnet machine
 rig (192.168.10.12) ─ docker compose │ (local-ai-tooling/docker/)
   LiteLLM :4000 ──► llama-swap :8080(→9292) ──► llama-server (one proc/model,
   CUDA via CDI, on-demand load, ttl idle-unload, swap group = 1 big model at
-  a time + persistent 262MB embedder)
+  a time + persistent ~1GB embedder)
   fleet-mcp :8765 (systemd, host) ──► read-only ops tools (ssh fleet-mini/nas)
   mcpo :8000/fleet ──► same tools bridged to Open WebUI
 ```
@@ -58,7 +58,7 @@ rig (192.168.10.12) ─ docker compose │ (local-ai-tooling/docker/)
 | `chat-creative` | deckard-heretic 8k | creative |
 | `fast` | qwen2.5-coder-7b 32k | autocomplete/cheap tool loop |
 | `utility` | fast-3b (llama3.2, temp 0) | titles/tags/classification |
-| `embed` | nomic-embed-text | RAG embeddings |
+| `embed` | Qwen3-Embedding-0.6B Q8 (8k ctx, `--pooling last`) | RAG embeddings |
 
 Model files live in `/opt/llm/models` — **deliberately outside /home** so
 restic never backs up re-pullable weights (removed ollama blobs are hardlink-
@@ -97,7 +97,9 @@ demo (no chopped-args issue at 8192 max output tokens).
   `global_prep_cmd`. Caveat: an in-flight generation delays the unload until
   it finishes; the hook never blocks session start (3 s cap, always exit 0).
 - **(b) RAG fit:** persistent embedder + 19.5 GB coder co-resident at
-  **20.4 GiB** with both serving — RAG sync can run while someone codes.
+  **20.4 GiB** with both serving (measured with nomic; the Qwen3-Embedding
+  replacement adds ~0.7 GB, still comfortable) — RAG sync can run while
+  someone codes.
 - **(c) exl2/TabbyAPI/SGLang on Ampere:** evaluated; **stay GGUF/llama.cpp**.
   exl2/exl3 has a real single-user speed edge on paper, but: no FP8 on Ampere,
   exl quants for week-old models lag GGUF (unsloth ships day-one; MTP variants
@@ -121,7 +123,8 @@ demo (no chopped-args issue at 8192 max output tokens).
 ## RAG pillar
 
 OWUI knowledge collection **`homelab-wiki`** (RAG embeddings via LiteLLM
-`embed` → nomic, with `search_document:`/`search_query:` prefixes), synced
+`embed` → Qwen3-Embedding-0.6B; nomic was dropped mid-build — its 2048-token
+trained context rejected big markdown-header chunks), synced
 daily at 05:10 from the forgejo repo by `wiki-rag-sync.timer` on the mini
 (`/opt/verification/bin/wiki-rag-sync.py`, incremental by sha256 manifest;
 source in `foss-setup/scripts/ai/`). Reference it in chat with
