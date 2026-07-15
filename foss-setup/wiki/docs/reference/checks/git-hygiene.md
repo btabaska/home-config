@@ -43,7 +43,7 @@ wiki generated pages in sync with sources (same-commit rule)
 - **expects:** `0`
 
 ```bash
-D=/var/lib/verification/wiki-drift-repo; { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } && git -C "$D" fetch -q origin main && git -C "$D" reset --hard -q FETCH_HEAD && git -C "$D" worktree prune 2>/dev/null && bash "$D/scripts/wiki/wiki-drift-check.sh"
+D=/var/lib/verification/wiki-drift-repo; { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } && git -C "$D" fetch -q origin main && git -C "$D" reset --hard -q FETCH_HEAD && git -C "$D" worktree prune 2>/dev/null && bash "$D/foss-setup/scripts/wiki/wiki-drift-check.sh"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
