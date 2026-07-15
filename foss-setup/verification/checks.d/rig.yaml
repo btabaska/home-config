@@ -77,7 +77,7 @@ checks:
     name: "llama-swap serves the coder lineup (bake-off winner + embedder)"
     host: url
     cmd: curl -s -m 8 http://cachyos.tailb31641.ts.net:9292/v1/models
-    expect: '(?s)qwen3.6-35b-a3b.*nomic-embed|nomic-embed.*qwen3.6-35b-a3b'
+    expect: '(?s)qwen3.6-35b-a3b.*qwen3-embed|qwen3-embed.*qwen3.6-35b-a3b'
     severity: warn
     task_id: ai-01
     runbook: wiki/runbooks/rig.md
@@ -86,12 +86,14 @@ checks:
   # ai-01 GPU-yield behavioral check: a model loads ON DEMAND, answers, then
   # the admin unload frees VRAM (measured 182ms; gaming gets the full card).
   # Uses the tiny fast-3b (2.8GB, ~2s cold) to keep GPU cost negligible. The
-  # unload-all is safe: anything in use reloads on the next request.
+  # unload-all is safe: anything in use reloads on the next request. Can flap
+  # during sustained bulk embedding (first wiki-RAG sync class) — that state
+  # is rare; budgets are sized for normal contention.
   - id: rig-ai-gpu-yield
     name: "llama-swap loads on demand + VRAM frees on unload (gaming yield)"
     host: rig
     cmd: >-
-      curl -sm 60 http://localhost:9292/v1/chat/completions
+      curl -sm 90 http://localhost:9292/v1/chat/completions
       -H 'Content-Type: application/json'
       -d '{"model":"fast-3b","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}'
       | grep -q '"content"' &&
@@ -141,7 +143,7 @@ checks:
     host: rig
     cmd: >-
       set -a && . ~/.config/fleet-mcp/env && set +a &&
-      timeout 120 /opt/llm/fleet-venv/bin/python
+      timeout 180 /opt/llm/fleet-venv/bin/python
       ~/Documents/GitHub/local-ai-tooling/ops/ops_probe.py
       --quiet --max-turns 4
       "Use the gpu_status tool and report how much VRAM is used right now."

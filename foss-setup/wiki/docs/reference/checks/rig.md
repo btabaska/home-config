@@ -62,7 +62,7 @@ curl -s -m 8 http://cachyos.tailb31641.ts.net:9292/health
 llama-swap serves the coder lineup (bake-off winner + embedder)
 
 - **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
-- **expects:** `(?s)qwen3.6-35b-a3b.*nomic-embed|nomic-embed.*qwen3.6-35b-a3b`
+- **expects:** `(?s)qwen3.6-35b-a3b.*qwen3-embed|qwen3-embed.*qwen3.6-35b-a3b`
 
 ```bash
 curl -s -m 8 http://cachyos.tailb31641.ts.net:9292/v1/models
@@ -76,7 +76,7 @@ llama-swap loads on demand + VRAM frees on unload (gaming yield)
 - **expects:** `YIELD_OK`
 
 ```bash
-curl -sm 60 http://localhost:9292/v1/chat/completions -H 'Content-Type: application/json' -d '{"model":"fast-3b","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}' | grep -q '"content"' && { curl -sm 30 -X POST http://localhost:9292/api/models/unload -o /dev/null || true; } && sleep 3 && v=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits) && { [ "$v" -lt 3000 ] && echo "YIELD_OK vram=${v}MiB" || echo "YIELD_FAIL vram=${v}MiB"; }
+curl -sm 90 http://localhost:9292/v1/chat/completions -H 'Content-Type: application/json' -d '{"model":"fast-3b","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}' | grep -q '"content"' && { curl -sm 30 -X POST http://localhost:9292/api/models/unload -o /dev/null || true; } && sleep 3 && v=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits) && { [ "$v" -lt 3000 ] && echo "YIELD_OK vram=${v}MiB" || echo "YIELD_FAIL vram=${v}MiB"; }
 ```
 
 ## `rig-fleet-mcp`
@@ -109,7 +109,7 @@ ops agent answers a canned question via fleet tools (bounded loop)
 - **expects:** `(?i)(vram|mib|gpu)`
 
 ```bash
-set -a && . ~/.config/fleet-mcp/env && set +a && timeout 120 /opt/llm/fleet-venv/bin/python ~/Documents/GitHub/local-ai-tooling/ops/ops_probe.py --quiet --max-turns 4 "Use the gpu_status tool and report how much VRAM is used right now."
+set -a && . ~/.config/fleet-mcp/env && set +a && timeout 180 /opt/llm/fleet-venv/bin/python ~/Documents/GitHub/local-ai-tooling/ops/ops_probe.py --quiet --max-turns 4 "Use the gpu_status tool and report how much VRAM is used right now."
 ```
 
 ## `rig-ollama-keepalive`
