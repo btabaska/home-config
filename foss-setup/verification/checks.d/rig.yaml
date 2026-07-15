@@ -116,6 +116,7 @@ checks:
   # playit-java/bedrock-public checks below.) Needs PALWORLD_ADMIN_PASSWORD in
   # /etc/verification/env (vault palworld.admin_password).
   - id: palworld-rest-liveness
+    tier: fast
     name: "palworld game server alive (REST :8212 reports serverfps)"
     host: url
     cmd: >-
@@ -138,6 +139,7 @@ checks:
   # Retries page only on HARD outage (e.g. wedged claims = 100% fail); partial
   # degradation shows in the output ("try N") without hourly alert flapping.
   - id: playit-java-public
+    tier: fast
     name: "Minecraft Java public path (playit edge 69.9.181.17:1105, real status ping)"
     host: url
     cmd: >-
@@ -151,6 +153,7 @@ checks:
     enabled: true
 
   - id: playit-bedrock-public
+    tier: fast
     name: "Minecraft Bedrock public path (playit edge 69.9.181.17:1111, RakNet ping)"
     host: url
     cmd: >-

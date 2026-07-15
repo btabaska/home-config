@@ -133,6 +133,7 @@ checks:
   # warning). `ls` with a hard timeout catches stale/hung SFTP handles that a
   # `mount | grep` would miss. crit — this is the scariest silent failure.
   - id: seedbox-mount-listable
+    tier: fast
     name: "nas: rclone seedbox mount lists content within 15s (imports depend on it)"
     host: mini
     cmd: >-
@@ -163,6 +164,7 @@ checks:
   # library, so counts are directly comparable). Fails loudly if the mount is
   # down (never a vacuous pass). crit — archived content invisible to the user.
   - id: pinchflat-plex-visible
+    tier: fast
     name: "pinchflat: archived YouTube videos are visible in Plex (disk vs library)"
     host: mini
     cmd: >-
@@ -256,6 +258,7 @@ checks:
   # doesn't page hourly. Tighten min-ratio once the sample-imports are re-grabbed.
   # Recent imports (< 6h, by Radarr movieFile.dateAdded) are excluded for Plex scan lag.
   - id: radarr-movies-in-plex
+    tier: fast
     name: "radarr: imported movies are actually served in Plex (tmdb-id coverage)"
     host: mini
     cmd: >-
@@ -269,6 +272,7 @@ checks:
     enabled: true
 
   - id: sonarr-tv-in-plex
+    tier: fast
     name: "sonarr: imported series are actually served in Plex (tvdb-id coverage)"
     host: mini
     cmd: >-

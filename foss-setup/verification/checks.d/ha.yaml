@@ -3,6 +3,7 @@
 # vault: hosts.ha.api_token — value lives only on mini + vault, never in this repo).
 checks:
   - id: ha-http
+    tier: fast
     name: "Home Assistant UI answers on :8123"
     host: mini
     cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://192.168.10.50:8123/

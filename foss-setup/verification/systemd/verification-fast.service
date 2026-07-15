@@ -1,0 +1,30 @@
+[Unit]
+Description=Fast-tier verification (crit user-facing liveness, ~10 min)
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+User=btabaska
+EnvironmentFile=-/etc/verification/env
+# --tier fast runs ONLY the checks tagged `tier: fast` (the ~17 crit user-facing
+# liveness/outcome probes: palworld, plex, dns, ha, caddy/adguard/ntfy/vaultwarden,
+# the *-in-plex outcome checks, seedbox mount, game public paths). Whole set <4s.
+# --notify pages on state transitions, keyed off its OWN results-tier-fast.json
+# side file (never clobbers the daily results.json or the quick tier's per-domain
+# files). Cuts worst-case detection of a crit user-facing outage from ~24h (daily
+# sweep) to ~10 min.
+ExecStart=/opt/verification/bin/run-checks.sh --tier fast --notify
+# SuccessExitStatus=1: a crit check failing exits the runner 1, but the tier still
+# RAN — treat exit 1 as success so the unit isn't marked FAILED and the dead-man
+# ping still fires (same dead-man-self-blinding fix as verify-cycle.sh; a real
+# crash/timeout exits 2+ and correctly downs the dead-man).
+SuccessExitStatus=1
+# Dead-man: Healthchecks 'verification-fast-mini' (period 10m, grace 25m, ntfy).
+# URL is in /etc/verification/env as VERIFY_FAST_PING_URL (kept out of git).
+ExecStartPost=/usr/bin/curl -fsS -m 10 --retry 3 -o /dev/null ${VERIFY_FAST_PING_URL}
+TimeoutStartSec=5min
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

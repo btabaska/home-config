@@ -3,6 +3,7 @@
 # Expected codes captured live: plex 401 = up-but-unauthenticated (normal); *arr 302 = login redirect.
 checks:
   - id: nas-ssh
+    tier: fast
     name: "NAS reachable over SSH from mini"
     host: nas
     cmd: echo nas-ssh-ok
@@ -40,6 +41,7 @@ checks:
     enabled: true
 
   - id: nas-immich
+    tier: fast
     name: "immich API ping on nas:2283"
     host: mini
     cmd: curl -s -m 8 http://nas:2283/api/server/ping
@@ -50,6 +52,7 @@ checks:
     enabled: true
 
   - id: nas-plex
+    tier: fast
     name: "plex answers on nas:32400 (401 unauthenticated = up)"
     host: mini
     cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:32400/

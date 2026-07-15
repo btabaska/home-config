@@ -4,6 +4,7 @@
 # these checks guard against regression (the header's old "currently DOWN" era is over).
 checks:
   - id: dns-mini-internal
+    tier: fast
     name: "AdGuard (mini) resolves internal name home.tabaska.us"
     host: mini
     cmd: dig +short +time=3 +tries=1 @192.168.10.2 home.tabaska.us
@@ -14,6 +15,7 @@ checks:
     enabled: true
 
   - id: dns-mini-external
+    tier: fast
     name: "AdGuard (mini) resolves external name example.com"
     host: mini
     cmd: dig +short +time=3 +tries=1 @192.168.10.2 example.com

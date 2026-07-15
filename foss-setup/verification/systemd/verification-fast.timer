@@ -1,0 +1,12 @@
+[Unit]
+Description=Fast-tier verification (crit user-facing liveness, ~10 min)
+
+[Timer]
+# Every 10 min at :05,:15,:25,:35,:45,:55 — staggered clear of the quick tier
+# (*:40) and the rig ai-stack-watchdog (*:0/10), and avoids the daily 07:15 PT sweep.
+OnCalendar=*-*-* *:05/10:00
+Persistent=true
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target

@@ -170,6 +170,10 @@ def main():
                     help="send ntfy on filtered (--host) runs too — used by the "
                          "scheduled quick tier; ad-hoc filtered runs stay silent "
                          "by default")
+    ap.add_argument("--tier", help="only run enabled checks tagged `tier: <name>` "
+                                   "(e.g. --tier fast); writes results-tier-<name>.json "
+                                   "and, unlike --host, RESPECTS 'enabled' — it is a "
+                                   "scheduled tier, not an operator override")
     args = ap.parse_args()
 
     load_env_file(ENV_FILE)
@@ -177,9 +181,13 @@ def main():
     # Filtered (--host) runs are ad-hoc operator runs: they write to a side
     # file and never touch the daily state (results.json, reopen-suggestions,
     # last-summary) or send notifications.
-    filtered = bool(args.host)
-    results_path = os.path.join(
-        STATE_DIR, f"results-{args.host}.json" if filtered else "results.json")
+    filtered = bool(args.host) or bool(args.tier)
+    if args.tier:
+        results_path = os.path.join(STATE_DIR, f"results-tier-{args.tier}.json")
+    elif args.host:
+        results_path = os.path.join(STATE_DIR, f"results-{args.host}.json")
+    else:
+        results_path = os.path.join(STATE_DIR, "results.json")
     prev_failed = previous_failed_ids(results_path)
 
     checks = load_checks(args.checks_dir)
@@ -190,6 +198,12 @@ def main():
         # (e.g. checks still disabled for other reasons, like the seedbox;
         # rig checks are enabled in the daily cycle now — rig is 24/7)
         runnable = checks
+    elif args.tier:
+        # scheduled fast tier: run only checks tagged `tier: <name>`, and — unlike
+        # --host — RESPECT `enabled` (a scheduled tier must not resurrect a
+        # deliberately-disabled check, e.g. the dns-02 NAS-secondary crits).
+        checks = [c for c in checks if c.get("tier") == args.tier]
+        runnable = [c for c in checks if c.get("enabled", True)]
     else:
         runnable = [c for c in checks if c.get("enabled", True)]
 
