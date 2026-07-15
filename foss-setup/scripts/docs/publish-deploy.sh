@@ -1,36 +1,30 @@
 #!/usr/bin/env bash
 #
-# publish-deploy.sh — publish foss-setup/ as the deployment repo (fix-07)
+# publish-deploy.sh — publish the repo to the forgejo deploy remote (fix-07)
 #
-# Repo topology:
+# Repo topology (since 2026-07-14):
 #   origin  = github.com/btabaska/home-config      — the FULL planning repo
-#   forgejo = forgejo:home/homelab (on the mini)   — DEPLOY repo = foss-setup/ subtree;
-#             hosts run ansible-pull against it, so its root is configs/, scripts/, docs/
+#   forgejo = forgejo:home/homelab (on the mini)   — the SAME full repo; hosts
+#             consume it with paths prefixed foss-setup/ (ansible-pull plays
+#             foss-setup/configs/ansible/site.yml, wiki-drift runs
+#             foss-setup/scripts/wiki/wiki-drift-check.sh, etc.)
 #
-# This script splits the foss-setup/ prefix into a synthetic branch and pushes it
-# to forgejo main. git subtree split is deterministic for a given history, so
-# subsequent publishes fast-forward. Run from anywhere inside the repo.
+# HISTORY: home/homelab originally held only the foss-setup/ subtree, published
+# via `git subtree split`. On 2026-07-14 the full repo main was pushed there
+# (ai-01 session) and consumers were repointed to foss-setup/-prefixed paths,
+# so this script is now a plain push of main to both remotes.
 #
-# First publish after the 2026-07-07 topology reconciliation used --force (the
-# old forgejo lineage was unrelated; its unique content was imported first —
-# see commit "Import macmini sbom manifest exports").
-#
-# Usage: ./foss-setup/scripts/docs/publish-deploy.sh [--force]
+# Usage: ./foss-setup/scripts/docs/publish-deploy.sh
 
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
 cd "${ROOT}"
 
-FORCE=""
-[[ "${1:-}" == "--force" ]] && FORCE="--force"
+echo "[publish] pushing main to origin (GitHub)..."
+git push origin main
 
-echo "[publish] splitting foss-setup/ subtree..."
-SPLIT_SHA="$(git subtree split --prefix=foss-setup)"
-echo "[publish] subtree head: ${SPLIT_SHA}"
-
-echo "[publish] pushing to forgejo main..."
-git push ${FORCE} forgejo "${SPLIT_SHA}:refs/heads/main"
+echo "[publish] pushing main to forgejo home/homelab..."
+git push forgejo main:main
 
 echo "[publish] done. Hosts pulling forgejo:home/homelab get this state on their next ansible-pull cycle."
-echo "[publish] NOTE: after a --force publish, refresh host clones: ssh mini 'rm -rf ~/.ansible-pull' (re-clones on next timer fire)."

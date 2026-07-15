@@ -19,7 +19,9 @@ User=btabaska
 Group=btabaska
 Environment=PATH=/home/btabaska/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 Environment=CONTROL_REPO_URL=git@forgejo:home/homelab.git
-Environment=ANSIBLE_CONFIG=/home/btabaska/.ansible-pull/configs/ansible/ansible.cfg
+# home/homelab hosts the FULL planning repo as of 2026-07-14 (root = Home/, the
+# deploy tree lives under foss-setup/) — paths below are relative to that root.
+Environment=ANSIBLE_CONFIG=/home/btabaska/.ansible-pull/foss-setup/configs/ansible/ansible.cfg
 
 # NOTE: --check was removed (2026-07-07): pull convergence must actually APPLY
 # changes, not dry-run them — with --check the fleet never converged, it only
@@ -28,11 +30,11 @@ ExecStart=/bin/bash -c '/home/btabaska/.local/bin/ansible-pull \
     -U "${CONTROL_REPO_URL}" \
     -d /home/btabaska/.ansible-pull \
     --accept-host-key \
-    -i configs/ansible/inventory.ini \
+    -i foss-setup/configs/ansible/inventory.ini \
     --limit "$(hostname -s)" \
     --connection local \
     --diff \
-    configs/ansible/site.yml'
+    foss-setup/configs/ansible/site.yml'
 
 # Don't let a transient pull failure mark the box permanently failed.
 SuccessExitStatus=0
