@@ -12,8 +12,10 @@ containerd.io
 curl
 dash
 diffutils
+docker-buildx-plugin
 docker-ce
 docker-ce-cli
+docker-compose-plugin
 efibootmgr
 etckeeper
 findutils
@@ -52,9 +54,11 @@ php8.3-mysql
 php8.3-xml
 php8.3-zip
 python3-certbot-nginx
+python3-docker
 python3-pip
 python3.10-venv
 redis-server
+restic
 shim-signed
 slurm
 software-properties-common

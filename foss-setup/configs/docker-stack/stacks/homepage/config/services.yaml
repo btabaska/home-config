@@ -226,11 +226,6 @@
         href: https://health.tabaska.us
         description: Backup dead-man's-switch
         siteMonitor: http://healthchecks:8000
-    - Dependency-Track:
-        icon: dependency-track.png
-        href: https://deptrack.tabaska.us
-        description: SBOM & vulnerabilities
-        siteMonitor: http://192.168.10.4:9010
     - AdGuard Home:
         icon: adguard-home.png
         href: https://dns.tabaska.us

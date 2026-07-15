@@ -49,5 +49,5 @@
 # 
 # m h  dom mon dow   command
 0 0 * * * /home/btabaska/bin
-0 3 * * 0 cd /opt/stacks/recyclarr && /usr/bin/docker compose run --rm recyclarr sync >> /tmp/recyclarr-sync.log 2>&1
+0 3 * * 0 cd /opt/stacks/recyclarr && /usr/bin/docker compose run --rm recyclarr sync >> /opt/stacks/recyclarr/config/logs/cron-sync.log 2>&1 && curl -fsS -m 10 --retry 3 -o /dev/null https://health.tabaska.us/ping/fb109ef5-e8aa-447f-84ae-324ca05e4324
 
