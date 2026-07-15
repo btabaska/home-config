@@ -9038,41 +9038,37 @@
  },
  {
   "id": "ai-01",
-  "title": "(Optional) Local AI extras: ComfyUI, a coding assistant, and Open WebUI RAG",
+  "title": "Local-AI buildout: llama.cpp/llama-swap stack, coding + ops agents, wiki RAG",
   "host": "CachyOS",
   "type": "async",
-  "depends_on": [
-   "ha-17"
-  ],
-  "estimate": "1-2 hrs",
+  "depends_on": [],
+  "estimate": "multi-session",
   "steps": [
-   "Prerequisite: ha-17 (LiteLLM) complete. All on the **rig** (24/7) unless noted.",
-   "**ComfyUI:** image generation on the rig (NVENC).",
-   "**Continue/Aider:** point at LiteLLM endpoint (http://mini:4000) for coding assistant.",
-   "**Open WebUI RAG:** upload Obsidian vault / Paperless exports for local doc Q&A.",
-   "Set OLLAMA_KEEP_ALIVE=0 on rig so VRAM frees between sessions (game-13 contention policy).",
-   "Voice/quick queries use LiteLLM \u2192 small Mac-mini model as a resilience fallback if the rig is down."
+   "All on the **rig** (24/7). Stack repo: local-ai-tooling (separate git remote).",
+   "**Model server:** migrate Ollama -> llama-swap + llama.cpp llama-server (Docker CUDA via CDI); Ollama demoted to a 3-model compat shim on :11434 (HA Assist + Obsidian).",
+   "**Bake-off** on a real agentic repo loop -> coder = qwen3.6-35b-a3b, coder-strong = qwen3.6-27b; stable LiteLLM aliases.",
+   "**GPU yields to gaming:** llama-swap ttl idle-unload + Apollo global_prep_cmd force-unload (182 ms measured).",
+   "**Coding pillar:** opencode (Mac + rig) via https://llm.tabaska.us with virtual keys; pi.dev configured as alternative.",
+   "**Ops pillar:** fleet-mcp read-only MCP tools (:8765) + ollmcp HIL agent + OWUI mcpo bridge; Trusted-VLAN only.",
+   "**RAG:** OWUI homelab-wiki knowledge, embeddings via LiteLLM embed alias, daily wiki-rag-sync.timer on mini.",
+   "**Harden:** ai-01 checks block in checks.d/rig.yaml + mini-wiki-rag-fresh; ai-stack-watchdog covers both docker->host hops; reboot-survival demonstrated."
   ],
   "commands": [
-   "ssh rig 'git clone https://github.com/comfyanonymous/ComfyUI'"
+   "ssh rig 'cd ~/Documents/GitHub/local-ai-tooling && git log --oneline -5'"
   ],
   "files": [],
   "docs": [
    {
-    "title": "ComfyUI",
-    "url": "https://github.com/comfyanonymous/ComfyUI"
+    "title": "Shipped design + live truth",
+    "url": "https://wiki.tabaska.us/architecture/local-ai-build/"
    },
    {
-    "title": "Continue docs",
-    "url": "https://docs.continue.dev/"
-   },
-   {
-    "title": "Open WebUI RAG",
-    "url": "https://docs.openwebui.com/features/rag"
+    "title": "llama-swap",
+    "url": "https://github.com/mostlygeek/llama-swap"
    }
   ],
-  "verify": "ComfyUI generates an image; Continue answers via LiteLLM; rig VRAM clears after idle.",
-  "track": "gaming",
+  "verify": "checks_runner --host rig green on the ai-01 block; opencode completes a repo task from the Mac; ops_probe root-causes a failed unit; HA Assist answers; reboot -> stack back unattended.",
+  "track": "ai",
   "required": false,
   "run": 6,
   "mode": "mixed"

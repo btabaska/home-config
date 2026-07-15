@@ -10,11 +10,13 @@ STATE_DIR="${VERIFICATION_STATE_DIR:-/var/lib/verification}"
 ENV_FILE="${VERIFICATION_ENV_FILE:-/etc/verification/env}"
 [ -r "$ENV_FILE" ] && set -a && . "$ENV_FILE" && set +a
 
-# Endpoint priority: env LLM_BASE_URL, then ollama on the rig (verified open,
-# no auth; litellm :4000 requires an API key so it is not the default).
-LLM_BASE_URL="${LLM_BASE_URL:-http://cachyos.tailb31641.ts.net:11434/v1}"
+# Endpoint priority: env LLM_BASE_URL, then llama-swap on the rig (ai-01:
+# the old ollama :11434 is now a 3-small-model compat shim for HA/Obsidian —
+# big models live behind llama-swap :9292, same open no-auth LAN posture;
+# litellm :4000 requires an API key so it is not the default).
+LLM_BASE_URL="${LLM_BASE_URL:-http://cachyos.tailb31641.ts.net:9292/v1}"
 export LLM_BASE_URL
-export LLM_MODEL="${LLM_MODEL:-qwen3-coder:30b}"
+export LLM_MODEL="${LLM_MODEL:-qwen3.6-35b-a3b}"
 
 RIG_MAC="50:eb:f6:b5:82:c6"
 RIG_BCAST="192.168.10.255"

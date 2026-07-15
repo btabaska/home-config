@@ -225,3 +225,22 @@ checks:
     task_id: docker-02
     runbook: wiki/runbooks/docker.md
     enabled: true
+
+  # ai-01 RAG freshness: wiki-rag-sync.timer (daily 05:10) keeps the OWUI
+  # "homelab-wiki" knowledge collection synced to wiki/docs. A wedged sync
+  # (API key revoked, OWUI down at 05:10, forgejo unreachable) would silently
+  # serve stale RAG answers — this asserts the last run SUCCEEDED and the
+  # state manifest is fresh (<26h).
+  - id: mini-wiki-rag-fresh
+    name: "wiki->OWUI RAG sync ran clean in the last 26h (homelab-wiki fresh)"
+    host: mini
+    cmd: >-
+      st=$(systemctl show wiki-rag-sync.service -p ExecMainStatus --value);
+      age=$(( $(date +%s) - $(stat -c %Y /var/lib/verification/wiki-rag-state.json 2>/dev/null || echo 0) ));
+      echo "exit=$st age_h=$(( age / 3600 ))";
+      [ "$st" = "0" ] && [ "$age" -lt 93600 ] && echo RAG_FRESH || echo RAG_STALE
+    expect: 'RAG_FRESH'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/mini.md
+    enabled: true

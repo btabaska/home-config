@@ -10,13 +10,17 @@
 # Recovery if the rig is down: wakeonlan -i 192.168.10.255 50:eb:f6:b5:82:c6
 # (llm-triage.sh attempts this automatically as the recovery path).
 checks:
+  # ai-01 (2026-07-15): ollama on :11434 is now a COMPAT SHIM — it serves only
+  # llama3.2:3b (HA Assist), tag:fast (Obsidian AI Tagger) and nomic-embed-text
+  # (Obsidian Smart Connections). All big models moved to llama-swap/llama.cpp
+  # (:9292, in-compose). Do NOT re-pull big models into ollama.
   - id: rig-ollama
-    name: "ollama API answers on rig:11434"
+    name: "ollama SHIM answers on rig:11434 (HA Assist + Obsidian compat)"
     host: url
     cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:11434/api/tags
     expect: '^200$'
     severity: warn
-    task_id: game-10
+    task_id: ai-01
     runbook: wiki/runbooks/rig.md
     enabled: true    # rig is 24/7 — failure here is an incident
 
@@ -40,15 +44,112 @@ checks:
     runbook: wiki/runbooks/rig.md
     enabled: true    # rig is 24/7 — failure here is an incident
 
+  # ai-01: the shim must keep HA Assist's model. (The old expect qwen3-coder:30b
+  # is obsolete — big models were trimmed from ollama 2026-07-15; llm-triage now
+  # rides llama-swap :9292 instead.)
   - id: rig-ollama-models
-    name: "ollama has the triage model pulled (qwen3-coder:30b)"
+    name: "ollama shim holds HA Assist's model (llama3.2:3b)"
     host: url
     cmd: curl -s -m 8 http://cachyos.tailb31641.ts.net:11434/api/tags
-    expect: 'qwen3-coder:30b'
+    expect: 'llama3.2:3b'
     severity: warn
-    task_id: game-10
+    task_id: ai-01
     runbook: wiki/runbooks/rig.md
-    enabled: true    # rig is 24/7 — failure here is an incident
+    enabled: true    # HA Assist voice LLM depends on this exact model
+
+  # ---- ai-01 llama.cpp stack (llama-swap + llama-server, replaces ollama) ----
+  # llama-swap swaps one big model at a time on demand (group "big"), keeps the
+  # 262MB embedder persistent, unloads after ttl idle, and force-unloads on an
+  # Apollo session start (gpu-yield hook). Config: local-ai-tooling
+  # docker/llama-swap-config.yaml; UI: http://rig:9292/ui
+  - id: rig-llama-swap
+    tier: fast
+    name: "llama-swap model server healthy on rig:9292"
+    host: url
+    cmd: curl -s -m 8 http://cachyos.tailb31641.ts.net:9292/health
+    expect: '^OK$'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
+  - id: rig-llama-swap-models
+    name: "llama-swap serves the coder lineup (bake-off winner + embedder)"
+    host: url
+    cmd: curl -s -m 8 http://cachyos.tailb31641.ts.net:9292/v1/models
+    expect: '(?s)qwen3.6-35b-a3b.*nomic-embed|nomic-embed.*qwen3.6-35b-a3b'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
+  # ai-01 GPU-yield behavioral check: a model loads ON DEMAND, answers, then
+  # the admin unload frees VRAM (measured 182ms; gaming gets the full card).
+  # Uses the tiny fast-3b (2.8GB, ~2s cold) to keep GPU cost negligible. The
+  # unload-all is safe: anything in use reloads on the next request.
+  - id: rig-ai-gpu-yield
+    name: "llama-swap loads on demand + VRAM frees on unload (gaming yield)"
+    host: rig
+    cmd: >-
+      curl -sm 60 http://localhost:9292/v1/chat/completions
+      -H 'Content-Type: application/json'
+      -d '{"model":"fast-3b","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}'
+      | grep -q '"content"' &&
+      { curl -sm 30 -X POST http://localhost:9292/api/models/unload -o /dev/null || true; } &&
+      sleep 3 &&
+      v=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits) &&
+      { [ "$v" -lt 3000 ] && echo "YIELD_OK vram=${v}MiB" || echo "YIELD_FAIL vram=${v}MiB"; }
+    expect: 'YIELD_OK'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
+  # ai-01 ops pillar: fleet-mcp serves the read-only fleet tools for ollmcp,
+  # OWUI (via mcpo) and ops_probe. HTTP 406 on a bare GET = transport alive
+  # (streamable-http wants proper Accept headers).
+  - id: rig-fleet-mcp
+    name: "fleet-mcp ops tool server active on rig:8765"
+    host: rig
+    cmd: >-
+      echo "svc=$(systemctl is-active fleet-mcp)
+      http=$(curl -sm 5 -o /dev/null -w '%{http_code}' http://localhost:8765/mcp)"
+    expect: 'svc=active http=406'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
+  # ai-01: mcpo must actually EXPOSE the fleet tools (an "Up but bridge broken"
+  # state — e.g. the UFW docker->host regression — leaves /fleet/docs 200 with
+  # an EMPTY tool list; this checks a real tool route exists).
+  - id: rig-mcpo-fleet-tools
+    name: "mcpo bridges the fleet ops tools to OWUI (gpu_status route present)"
+    host: url
+    cmd: curl -s -m 8 http://cachyos.tailb31641.ts.net:8000/fleet/openapi.json
+    expect: 'gpu_status'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
+  # ai-01 ops-agent liveness: one bounded agentic loop — LLM (LiteLLM `coder`)
+  # picks a fleet tool, calls it, answers. Proves the whole ops chain:
+  # litellm -> llama-swap -> model -> fleet-mcp tools. ~10-40s on GPU.
+  - id: rig-ops-agent-e2e
+    name: "ops agent answers a canned question via fleet tools (bounded loop)"
+    host: rig
+    cmd: >-
+      set -a && . ~/.config/fleet-mcp/env && set +a &&
+      timeout 120 /opt/llm/fleet-venv/bin/python
+      ~/Documents/GitHub/local-ai-tooling/ops/ops_probe.py
+      --quiet --max-turns 4
+      "Use the gpu_status tool and report how much VRAM is used right now."
+    expect: '(?i)(vram|mib|gpu)'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
 
   # game-13 GPU-contention policy: the single 3090 Ti is shared by the Apollo
   # stream, the game servers, and Ollama inference. OLLAMA_KEEP_ALIVE=0 makes
@@ -186,8 +287,12 @@ checks:
     runbook: wiki/runbooks/rig.md
     enabled: true
 
+  # ai-01 (2026-07-15): this now exercises litellm -> llama-swap -> llama-server
+  # (`utility` alias = fast-3b on llama.cpp), container-to-container in compose.
+  # It doubles as the canned-completion LATENCY budget: -m 50 fails a stack that
+  # answers slower than 50s cold (measured: 1.3-11s incl. model load).
   - id: rig-ai-e2e
-    name: "litellm end-to-end completion (containers reach host ollama)"
+    name: "litellm end-to-end completion (gateway -> llama-swap -> model)"
     host: url
     cmd: >-
       curl -s -m 50 -H "Authorization: Bearer $LITELLM_MASTER_KEY"

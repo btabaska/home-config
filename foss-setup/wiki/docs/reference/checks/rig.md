@@ -1,12 +1,12 @@
 # Checks — rig
 
-`foss-setup/verification/checks.d/rig.yaml` — 12 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/rig.yaml` — 18 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `rig-ollama`
 
-ollama API answers on rig:11434
+ollama SHIM answers on rig:11434 (HA Assist + Obsidian compat)
 
-- **host:** `url` · **severity:** `warn` · **guards task:** `game-10` · **enabled:** True
+- **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
 - **expects:** `^200$`
 
 ```bash
@@ -37,13 +37,79 @@ curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:300
 
 ## `rig-ollama-models`
 
-ollama has the triage model pulled (qwen3-coder:30b)
+ollama shim holds HA Assist's model (llama3.2:3b)
 
-- **host:** `url` · **severity:** `warn` · **guards task:** `game-10` · **enabled:** True
-- **expects:** `qwen3-coder:30b`
+- **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `llama3.2:3b`
 
 ```bash
 curl -s -m 8 http://cachyos.tailb31641.ts.net:11434/api/tags
+```
+
+## `rig-llama-swap`
+
+llama-swap model server healthy on rig:9292
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `^OK$`
+
+```bash
+curl -s -m 8 http://cachyos.tailb31641.ts.net:9292/health
+```
+
+## `rig-llama-swap-models`
+
+llama-swap serves the coder lineup (bake-off winner + embedder)
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `(?s)qwen3.6-35b-a3b.*nomic-embed|nomic-embed.*qwen3.6-35b-a3b`
+
+```bash
+curl -s -m 8 http://cachyos.tailb31641.ts.net:9292/v1/models
+```
+
+## `rig-ai-gpu-yield`
+
+llama-swap loads on demand + VRAM frees on unload (gaming yield)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `YIELD_OK`
+
+```bash
+curl -sm 60 http://localhost:9292/v1/chat/completions -H 'Content-Type: application/json' -d '{"model":"fast-3b","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}' | grep -q '"content"' && { curl -sm 30 -X POST http://localhost:9292/api/models/unload -o /dev/null || true; } && sleep 3 && v=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits) && { [ "$v" -lt 3000 ] && echo "YIELD_OK vram=${v}MiB" || echo "YIELD_FAIL vram=${v}MiB"; }
+```
+
+## `rig-fleet-mcp`
+
+fleet-mcp ops tool server active on rig:8765
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `svc=active http=406`
+
+```bash
+echo "svc=$(systemctl is-active fleet-mcp) http=$(curl -sm 5 -o /dev/null -w '%{http_code}' http://localhost:8765/mcp)"
+```
+
+## `rig-mcpo-fleet-tools`
+
+mcpo bridges the fleet ops tools to OWUI (gpu_status route present)
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `gpu_status`
+
+```bash
+curl -s -m 8 http://cachyos.tailb31641.ts.net:8000/fleet/openapi.json
+```
+
+## `rig-ops-agent-e2e`
+
+ops agent answers a canned question via fleet tools (bounded loop)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `(?i)(vram|mib|gpu)`
+
+```bash
+set -a && . ~/.config/fleet-mcp/env && set +a && timeout 120 /opt/llm/fleet-venv/bin/python ~/Documents/GitHub/local-ai-tooling/ops/ops_probe.py --quiet --max-turns 4 "Use the gpu_status tool and report how much VRAM is used right now."
 ```
 
 ## `rig-ollama-keepalive`
@@ -125,7 +191,7 @@ curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:800
 
 ## `rig-ai-e2e`
 
-litellm end-to-end completion (containers reach host ollama)
+litellm end-to-end completion (gateway -> llama-swap -> model)
 
 - **host:** `url` · **severity:** `warn` · **guards task:** `game-10` · **enabled:** True
 - **expects:** `"finish_reason"`

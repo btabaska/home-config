@@ -320,6 +320,7 @@ nav:
       # BEGIN GENERATED ROADMAP NAV (managed by scripts/docs/gen-roadmap-pages.py)
       - Overview: roadmap/index.md
       - agent-handoff: roadmap/agent-handoff.md
+      - ai: roadmap/ai.md
       - apps: roadmap/apps.md
       - audit-fixes: roadmap/audit-fixes.md
       - backups-offsite: roadmap/backups-offsite.md

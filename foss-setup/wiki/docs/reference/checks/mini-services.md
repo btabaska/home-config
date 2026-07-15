@@ -1,6 +1,6 @@
 # Checks — mini-services
 
-`foss-setup/verification/checks.d/mini-services.yaml` — 20 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/mini-services.yaml` — 21 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `mini-caddy-running`
 
@@ -220,6 +220,17 @@ bgutil POT provider serving (:4416/ping — YouTube token dep for pinchflat)
 
 ```bash
 docker exec caddy wget -qO- --timeout=8 http://bgutil-pot:4416/ping | grep -o '"version":"[0-9.]*"' || echo BGUTIL_BAD
+```
+
+## `mini-wiki-rag-fresh`
+
+wiki->OWUI RAG sync ran clean in the last 26h (homelab-wiki fresh)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `RAG_FRESH`
+
+```bash
+st=$(systemctl show wiki-rag-sync.service -p ExecMainStatus --value); age=$(( $(date +%s) - $(stat -c %Y /var/lib/verification/wiki-rag-state.json 2>/dev/null || echo 0) )); echo "exit=$st age_h=$(( age / 3600 ))"; [ "$st" = "0" ] && [ "$age" -lt 93600 ] && echo RAG_FRESH || echo RAG_STALE
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

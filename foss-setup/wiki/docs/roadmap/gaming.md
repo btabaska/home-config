@@ -1,10 +1,9 @@
 # Roadmap — gaming
 
-23 task(s). Status mirrors `docs/progress.json` (the source of truth).
+22 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
-| `ai-01` | (Optional) Local AI extras: ComfyUI, a coding assistant, and Open WebUI RAG | ⬜ open | 1-2 hrs |
 | `game-01` | Install LinuxGSM light co-op servers on the Mac mini (always-on) | 🗑️ retired | 60-90 min |
 | `game-02` | AMP game panel on rig — create first Minecraft instance (UI) | ✅ done | 30 min (web UI) |
 | `game-03` | Run heavy game servers on the CachyOS rig | ✅ done | 30-60 min per server |

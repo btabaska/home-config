@@ -186,10 +186,19 @@ llm.{$DOMAIN} {
 	reverse_proxy {$RIG_IP}:4000
 }
 
-# Ollama native API (direct /v1 for OpenCode, Obsidian, scripts)
+# Ollama COMPAT SHIM (ai-01 2026-07-15): serves ONLY llama3.2:3b + tag:fast +
+# nomic-embed-text for HA Assist and Obsidian. Big models moved to llama-swap
+# (llamaswap.{$DOMAIN} below); API clients should use llm.{$DOMAIN} (LiteLLM).
 ollama.{$DOMAIN} {
 	import local_tls
 	reverse_proxy {$RIG_IP}:11434
+}
+
+# llama-swap (ai-01): llama.cpp model server + web UI (activity, loaded models,
+# manual unload). Unauthenticated like the old ollama — LAN/tailnet posture.
+llamaswap.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$RIG_IP}:9292
 }
 
 # mcpo tool bridge (OpenAPI docs at /docs)

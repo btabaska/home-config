@@ -16,9 +16,23 @@ set -u
 : "${PING_URL:?PING_URL not set (EnvironmentFile /etc/ai-stack-watchdog.env)}"
 
 probe() {
+  # hop 1: open-webui container -> host ollama SHIM (:11434 — HA Assist +
+  # Obsidian compat since ai-01; big models moved to llama-swap in-compose).
   docker exec open-webui python3 -c "
 import urllib.request
 urllib.request.urlopen('http://host.docker.internal:11434/api/version', timeout=8)
+" >/dev/null 2>&1 || return 1
+  # hop 2 (ai-01): mcpo container -> host fleet-mcp (:8765). Same UFW failure
+  # class (docker-subnet -> host INPUT); HTTP 406 on bare GET = reachable+alive,
+  # only a transport error means the hop is down.
+  docker exec mcpo python3 -c "
+import urllib.request, urllib.error, sys
+try:
+    urllib.request.urlopen('http://host.docker.internal:8765/mcp', timeout=8)
+except urllib.error.HTTPError:
+    sys.exit(0)
+except Exception:
+    sys.exit(1)
 " >/dev/null 2>&1
 }
 
@@ -30,7 +44,7 @@ else
     curl -fsS -m 10 --retry 2 -o /dev/null "$PING_URL"
   else
     curl -fsS -m 10 --retry 2 -o /dev/null \
-      --data-raw "container->host ollama probe failed (open-webui -> host.docker.internal:11434); check rig UFW 172.16.0.0/12 allow on 11434, ollama.service, docker" \
+      --data-raw "container->host probe failed (open-webui->:11434 ollama shim OR mcpo->:8765 fleet-mcp); check rig UFW 172.16.0.0/12 allows on 11434+8765, ollama.service, fleet-mcp.service, docker" \
       "$PING_URL/fail"
   fi
 fi
