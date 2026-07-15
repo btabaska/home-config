@@ -4,6 +4,7 @@ Man-pages for every operational script in `foss-setup/scripts/`, generated from 
 
 | Category | Scripts | |
 |---|---|---|
+| **ai** | 1 | [open](ai/index.md) |
 | **Backup & restore** | 5 | [open](backup/index.md) |
 | **Docs & tracker generators** | 7 | [open](docs/index.md) |
 | **Dotfiles** | 1 | [open](dotfiles/index.md) |
@@ -18,4 +19,4 @@ Man-pages for every operational script in `foss-setup/scripts/`, generated from 
 | **Uptime Kuma** | 3 | [open](uptime-kuma/index.md) |
 | **wiki** | 1 | [open](wiki/index.md) |
 
-_Total: 62 scripts across 13 categories._
+_Total: 63 scripts across 14 categories._

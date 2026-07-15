@@ -227,6 +227,9 @@ nav:
   - Scripts reference:
       # BEGIN GENERATED SCRIPTS NAV (managed by scripts/docs/gen-script-pages.py — do not edit by hand)
       - Overview: reference/scripts/index.md
+      - ai:
+          - Index: reference/scripts/ai/index.md
+          - wiki-rag-sync.py: reference/scripts/ai/wiki-rag-sync-py.md
       - Backup & restore:
           - Index: reference/scripts/backup/index.md
           - ntfy-notify.sh: reference/scripts/backup/ntfy-notify-sh.md
