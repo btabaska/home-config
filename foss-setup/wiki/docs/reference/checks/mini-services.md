@@ -1,6 +1,6 @@
 # Checks — mini-services
 
-`foss-setup/verification/checks.d/mini-services.yaml` — 18 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/mini-services.yaml` — 20 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `mini-caddy-running`
 
@@ -198,6 +198,28 @@ RomM answers its heartbeat with a version (functional, not just container-up)
 
 ```bash
 curl -sf --max-time 10 http://localhost:8998/api/heartbeat 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); s=d.get('SYSTEM') or {}; v=s.get('VERSION') or ''; print('romm=ok:'+v if v else 'romm=BAD')" 2>/dev/null || echo romm=BAD
+```
+
+## `metube-serving`
+
+metube backend + yt-dlp loaded (:8081/version, not just the SPA)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `docker-02` · **enabled:** True
+- **expects:** `"yt-dlp": "[0-9]`
+
+```bash
+curl -s -m 8 http://localhost:8081/version | grep -o '"yt-dlp": "[0-9.]*"' || echo METUBE_BAD
+```
+
+## `bgutil-pot-serving`
+
+bgutil POT provider serving (:4416/ping — YouTube token dep for pinchflat)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `docker-02` · **enabled:** True
+- **expects:** `"version":"[0-9]`
+
+```bash
+docker exec caddy wget -qO- --timeout=8 http://bgutil-pot:4416/ping | grep -o '"version":"[0-9.]*"' || echo BGUTIL_BAD
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

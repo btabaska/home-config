@@ -191,3 +191,33 @@ checks:
     task_id: retro-02
     runbook: wiki/runbooks/docker.md
     enabled: true
+
+  # observability hardening (2026-07-14): functional probes for two YouTube-pipeline
+  # helpers that had container coverage only. metube's /version proves the aiohttp
+  # backend + yt-dlp loaded (the static SPA returns 200 even if the backend is
+  # wedged). bgutil-pot's :4416 is edge-network-only (not host-published) and the
+  # container has no curl/wget, so we probe it FROM caddy (same docker network) —
+  # a dead POT provider silently breaks Pinchflat/yt-dlp YouTube token fetching.
+  - id: metube-serving
+    name: "metube backend + yt-dlp loaded (:8081/version, not just the SPA)"
+    host: mini
+    cmd: >-
+      curl -s -m 8 http://localhost:8081/version
+      | grep -o '"yt-dlp": "[0-9.]*"' || echo METUBE_BAD
+    expect: '"yt-dlp": "[0-9]'
+    severity: warn
+    task_id: docker-02
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  - id: bgutil-pot-serving
+    name: "bgutil POT provider serving (:4416/ping — YouTube token dep for pinchflat)"
+    host: mini
+    cmd: >-
+      docker exec caddy wget -qO- --timeout=8 http://bgutil-pot:4416/ping
+      | grep -o '"version":"[0-9.]*"' || echo BGUTIL_BAD
+    expect: '"version":"[0-9]'
+    severity: warn
+    task_id: docker-02
+    runbook: wiki/runbooks/docker.md
+    enabled: true

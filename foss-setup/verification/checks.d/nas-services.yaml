@@ -118,3 +118,18 @@ checks:
     task_id: ebook-02
     runbook: wiki/runbooks/nas.md
     enabled: true
+
+  # observability hardening (2026-07-14): stash had container coverage only. This
+  # GraphQL version query proves the app + DB handshake (a static 200 could hide a
+  # wedged backend). :9999 is published on the NAS host so mini can reach it.
+  - id: stash-serving
+    name: "stash answers its GraphQL version query (:9999)"
+    host: mini
+    cmd: >-
+      curl -s -m 8 -X POST http://nas:9999/graphql -H 'Content-Type: application/json'
+      -d '{"query":"{version{version}}"}'
+    expect: '"version":"v[0-9]'
+    severity: warn
+    task_id: nas-01
+    runbook: wiki/runbooks/nas.md
+    enabled: true

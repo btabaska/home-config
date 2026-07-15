@@ -56,11 +56,15 @@ checks:
     runbook: wiki/runbooks/alerting.md
     enabled: true
 
+  # NAMES the down dead-mans (not just a count) so the daily re-page + last-summary
+  # say WHICH monitoring subsystem is dark — the harness's daily reminder IS the nag
+  # (self-hosted Healthchecks here has no SMTP, so its built-in email nag is a dead
+  # end; only the ntfy channel works, and the sweep already re-pages while failing).
   - id: alert-healthchecks-none-down
-    name: "no Healthchecks check is in 'down' state"
+    name: "no Healthchecks dead-man is in 'down' state"
     host: mini
-    cmd: docker exec healthchecks python3 /opt/healthchecks/manage.py shell -c "from hc.api.models import Check; print('down='+str(sum(1 for c in Check.objects.all() if c.get_status()=='down')))"
-    expect: '^down=0$'
+    cmd: docker exec healthchecks python3 /opt/healthchecks/manage.py shell -c "from hc.api.models import Check; d=[c.name for c in Check.objects.all() if c.get_status()=='down']; print('down_checks='+(','.join(sorted(d)) if d else 'NONE'))"
+    expect: '^down_checks=NONE$'
     severity: crit
     task_id: sec-03
     runbook: wiki/runbooks/alerting.md

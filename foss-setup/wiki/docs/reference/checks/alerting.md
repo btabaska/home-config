@@ -59,13 +59,13 @@ docker exec healthchecks python3 /opt/healthchecks/manage.py shell -c "from hc.a
 
 ## `alert-healthchecks-none-down`
 
-no Healthchecks check is in 'down' state
+no Healthchecks dead-man is in 'down' state
 
 - **host:** `mini` · **severity:** `crit` · **guards task:** `sec-03` · **enabled:** True
-- **expects:** `^down=0$`
+- **expects:** `^down_checks=NONE$`
 
 ```bash
-docker exec healthchecks python3 /opt/healthchecks/manage.py shell -c "from hc.api.models import Check; print('down='+str(sum(1 for c in Check.objects.all() if c.get_status()=='down')))"
+docker exec healthchecks python3 /opt/healthchecks/manage.py shell -c "from hc.api.models import Check; d=[c.name for c in Check.objects.all() if c.get_status()=='down']; print('down_checks='+(','.join(sorted(d)) if d else 'NONE'))"
 ```
 
 ## `alert-dsm-immich-task-scheduled`

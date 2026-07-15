@@ -1,6 +1,6 @@
 # Checks — ha
 
-`foss-setup/verification/checks.d/ha.yaml` — 5 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/ha.yaml` — 6 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `ha-http`
 
@@ -33,6 +33,17 @@ Hue integration healthy (>=50 light entities registered)
 
 ```bash
 curl -s -m 8 -H "Authorization: Bearer $HA_TOKEN" http://192.168.10.50:8123/api/states | grep -o '"entity_id":"light\.' | wc -l | tr -d ' '
+```
+
+## `ha-lights-available`
+
+HA lights available (not a whole room dark; >12 unavailable = alert)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `ha-05` · **enabled:** True
+- **expects:** `^lights_avail=ok$`
+
+```bash
+curl -s -m 12 -H "Authorization: Bearer $HA_TOKEN" http://192.168.10.50:8123/api/states | python3 -c "import sys,json; d=json.load(sys.stdin); n=sum(1 for e in d if e['entity_id'].startswith('light.') and e['state'] in ('unavailable','unknown')); print('lights_avail=ok' if n<=12 else 'lights_avail=DARK:%d'%n)"
 ```
 
 ## `ha-backup-offsite-fresh`

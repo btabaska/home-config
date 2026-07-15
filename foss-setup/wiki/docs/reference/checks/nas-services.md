@@ -1,6 +1,6 @@
 # Checks — nas-services
 
-`foss-setup/verification/checks.d/nas-services.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/nas-services.yaml` — 12 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `nas-ssh`
 
@@ -121,6 +121,17 @@ readarr answers on nas:8787
 
 ```bash
 curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:8787/
+```
+
+## `stash-serving`
+
+stash answers its GraphQL version query (:9999)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `nas-01` · **enabled:** True
+- **expects:** `"version":"v[0-9]`
+
+```bash
+curl -s -m 8 -X POST http://nas:9999/graphql -H 'Content-Type: application/json' -d '{"query":"{version{version}}"}'
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
