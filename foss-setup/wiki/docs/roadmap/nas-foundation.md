@@ -1,9 +1,11 @@
 # Roadmap — nas-foundation
 
-7 task(s). Status mirrors `docs/progress.json` (the source of truth).
+9 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
+| `fix-31` | Restore UPS/NUT power-loss protection (or cleanly retire the dead client) | ⬜ open | 1-3 hrs |
+| `fix-40` | NAS host hygiene: timezone drift, soularr parked import, core dumps, junk files, single-disk note | ⬜ open | 1-3 hrs |
 | `glue-01` | UPS power resilience: NUT netclient on Ubuntu listening to the NAS UPS | ⏸️ deferred | 30-45 min |
 | `nas-00a` | Pre-flight: audit three Basic volumes and map library paths | ✅ done | 1–2 hrs |
 | `nas-00b` | Prepare vol2 & vol3 Basic pools (wipe only if unorganized) | ✅ done | 30 min |

@@ -1,9 +1,10 @@
 # Roadmap — network
 
-15 task(s). Status mirrors `docs/progress.json` (the source of truth).
+16 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
+| `fix-24` | Close unintended public exposure: WAN-reachable Plex 32400 + public A-record to LAN IP | ⬜ open | 1-3 hrs |
 | `net-00` | Back up your UniFi config (the Zone-Based Firewall is a one-way door) | ✅ done | 10 min |
 | `net-01` | Create the VLAN networks | ✅ done | 30 min |
 | `net-02` | Create matching Wi-Fi SSIDs and assign switch ports | ✅ done | 30 min |

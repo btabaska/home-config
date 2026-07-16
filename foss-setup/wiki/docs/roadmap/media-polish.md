@@ -1,9 +1,11 @@
 # Roadmap — media-polish
 
-4 task(s). Status mirrors `docs/progress.json` (the source of truth).
+6 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
+| `fix-28` | Fix Plex/Navidrome library correctness (unmatched items, missing tracks, #recycle indexing) | ⬜ open | 1-3 hrs |
+| `fix-37` | Media-aux service config fixes (navidrome backup, kometa, pinchflat/bgutil, RomM empty) | ⬜ open | 1-3 hrs |
 | `media-01` | Deploy Tautulli (Plex analytics + monitoring) | ✅ done | 30 min |
 | `media-02` | Deploy Kometa (Plex collections, overlays, posters) | ✅ done | 45-60 min |
 | `media-03` | (Removed from plan) Deploy Maintainerr (rule-based library pruning) | ✅ done | 30-45 min |

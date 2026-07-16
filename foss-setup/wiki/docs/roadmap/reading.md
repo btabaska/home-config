@@ -1,9 +1,10 @@
 # Roadmap — reading
 
-14 task(s). Status mirrors `docs/progress.json` (the source of truth).
+15 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
+| `fix-38` | Reading/CWA: reconcile Kobo store-passthrough state + note fork-image supply-chain risk | ⬜ open | 1-3 hrs |
 | `nas-09` | Deploy Calibre-Web-Automated on Container Manager (pinned, hardened) | ✅ done | 30 min |
 | `read-01` | Install Calibre desktop (library master + conversion) on CachyOS | ✅ done | 20 min |
 | `read-02` | Set up Syncthing as a systemd user service on CachyOS | ⬜ open | 20 min |

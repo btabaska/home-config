@@ -1,6 +1,6 @@
 # Roadmap — ops
 
-24 task(s). Status mirrors `docs/progress.json` (the source of truth).
+26 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -19,6 +19,8 @@
 | `docker-13` | Commit the whole Docker stack to Git (rebuildable in an hour) | ✅ done | 20 min |
 | `docker-14` | Serve your own apps on the LAN — Caddy-fronted Compose stacks (optional Coolify behind Caddy) | ✅ done | 30-60 min |
 | `docker-15` | Deploy Homepage — one dashboard (your observability + the household front door) | ✅ done | 45-60 min |
+| `fix-32` | Fix Caddy reverse-proxy routes (ha.tabaska.us 400, llamaswap not reloaded, stray placeholders/vhosts) | ⬜ open | 1-3 hrs |
+| `fix-41` | Repo-vs-live drift codification (forgejo stack, manifests, .env keys, ansible units) | ⬜ open | 1-3 hrs |
 | `glue-05` | Self-host Forgejo (config-as-code forge) on the Ubuntu box | ✅ done | 30-45 min |
 | `glue-06` | Push ALL configs to Git + run the rebuild drill (capstone) | ⏸️ deferred | 1-2 hr |
 | `glue-07` | Fleet maintenance with Ansible (run one command across every box) | ✅ done | 1-1.5 hr |

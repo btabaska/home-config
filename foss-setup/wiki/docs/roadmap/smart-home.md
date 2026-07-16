@@ -1,9 +1,10 @@
 # Roadmap — smart-home
 
-38 task(s). Status mirrors `docs/progress.json` (the source of truth).
+39 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
+| `fix-36` | Home Assistant health: unavailable entities, dead integrations, pending updates | ⬜ open | 1-3 hrs |
 | `fut-01` | Garden watering: OpenSprinkler (or ESPHome valves) — local irrigation | ⏸️ deferred | weekend |
 | `fut-02` | Plug-in solar (NY legislation) + local production monitoring | ⏸️ deferred | weekend+ |
 | `fut-03` | DIY weather station (local) | ⏸️ deferred | day |

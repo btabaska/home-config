@@ -1,9 +1,10 @@
 # Roadmap — gaming
 
-22 task(s). Status mirrors `docs/progress.json` (the source of truth).
+23 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
+| `fix-34` | Fix AMP scheduled backups (silently failing) + backup-bloat in restic + playit UDP churn | ⬜ open | 1-3 hrs |
 | `game-01` | Install LinuxGSM light co-op servers on the Mac mini (always-on) | 🗑️ retired | 60-90 min |
 | `game-02` | AMP game panel on rig — create first Minecraft instance (UI) | ✅ done | 30 min (web UI) |
 | `game-03` | Run heavy game servers on the CachyOS rig | ✅ done | 30-60 min per server |
