@@ -53,13 +53,22 @@ rig (192.168.10.12) ─ docker compose │ (local-ai-tooling/docker/)
 
 | alias | model (llama-swap) | use |
 |---|---|---|
-| `coder` (=`code`) | qwen3.6-35b-a3b UD-IQ4_NL_XL **131k ctx** | agentic coding default |
-| `coder-strong` | qwen3.6-27b **MTP** UD-Q4_K_XL **98k ctx** (~50 t/s) | long/hard tasks |
-| `chat` | gemma4-31b-qat 16k | general chat |
-| `chat-creative` | deckard-heretic 8k | creative |
-| `fast` | qwen2.5-coder-7b 32k | autocomplete/cheap tool loop |
-| `utility` | fast-3b (llama3.2, temp 0) | titles/tags/classification |
+| `coder` (=`code`) | qwen3.6-35b-a3b UD-IQ4_NL_XL **256k ctx (native max)** | agentic coding default |
+| `coder-strong` | qwen3.6-27b **MTP** UD-Q4_K_XL **112k ctx** (~50 t/s) | long/hard tasks |
+| `chat` | gemma4-31b-qat 72k | general chat |
+| `chat-creative` | deckard-heretic 48k | creative |
+| `fast` | qwen2.5-coder-7b 32k (native max) | autocomplete/cheap tool loop |
+| `utility` | fast-3b (llama3.2, temp 0) 128k (native max) | titles/tags/classification |
 | `embed` | Qwen3-Embedding-0.6B Q8 (CPU, `--pooling last`, instruct query prefix) | RAG embeddings |
+
+Ctx sizes above are the **measured VRAM ceilings** (2026-07-16 full-fleet
+bake-off, q8_0 KV + flash-attn, embedder truly CPU-pinned): every model now
+runs the max ctx that loads fully on GPU, or its native max if that fits.
+Each entry also bakes its HF-model-card recommended sampling defaults into
+llama-swap (`--temp/--top-p/--top-k/...`), mirrored in the OWUI model params.
+Enabler discovered en route: `-ngl 0` alone still left ~2.8 GiB of CUDA batch
+buffers on the card for the embedder — `CUDA_VISIBLE_DEVICES=""` in its
+llama-swap `env` freed it and raised every big model's ceiling.
 
 Model files live in `/opt/llm/models` — **deliberately outside /home** so
 restic never backs up re-pullable weights (removed ollama blobs are hardlink-
@@ -193,8 +202,16 @@ The shipped 32k ctx was conservative — ladder-probed the real VRAM ceilings
 | 262k (native) | **22.8 GiB — fits!** | — |
 
 The MoE's KV is ~14 KiB/token (hybrid attention) vs ~38 KiB/token dense.
-`coder` now runs **131k** (256k native fits if ever needed); `coder-strong`
-runs **98k**.
+
+**Superseded by the 2026-07-16 full-fleet bake-off** (post btrfs-recovery
+restore; embedder truly CPU-pinned via `CUDA_VISIBLE_DEVICES=""`, which
+returned ~2.8 GiB to the pool). Measured max ctx per model, all verified
+loading + generating fully on GPU: `coder` (35B-A3B) **262144 = native max**;
+`coder-strong` (27B MTP) **114688**; qwen3-coder-30b 98304; devstral 98304;
+`chat` (gemma4-qat) 73728; `chat-creative` (deckard) 49152; `fast` 32768
+(native); `utility` 131072 (native). These are edge fits (<1 GiB headroom) —
+the gaming force-unload hook is the safety valve. HF-card sampling defaults
+are baked into each llama-swap entry and mirrored in OWUI model params.
 
 **MTP speculative decoding: promoted.** A/B bench (900-token code gen, 2 runs
 each): baseline 34.5 tok/s → **50.3 tok/s at `--spec-draft-n-max 2`** (1.46×);
