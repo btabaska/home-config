@@ -217,6 +217,13 @@ libreseerr /api/requests -> 5 requests status=processing since 2026-07-13
 
 **Host:** mini · **Component:** miniflux · **Auditor:** svc:docs-life
 
+> **Resolution (2026-07-16, task `fix-33`):** error counters reset on all 49 feeds (3 had been
+> deleted since the audit), refresh-all forced via API — 49/49 polled, 105 articles ingested
+> within minutes. Root-cause guard: `POLLING_PARSING_ERROR_LIMIT=0` in the stack (feeds are
+> never auto-excluded again). New checks: `mini-miniflux-feeds-fresh` (scheduler stall),
+> `mini-miniflux-articles-flowing` (consumer-end ingest), `mini-container-dns` (the docker
+> embedded-DNS root cause, class-level). Runbook on the wiki miniflux service page.
+
 
 A transient docker-DNS outage (2026-07-08 21:18 -> 2026-07-09 11:18 UTC) made every feed fetch fail 3 times. All 52 feeds now sit at parsing_error_count=3, which equals Miniflux's default POLLING_PARSING_ERROR_LIMIT, so the hourly scheduler permanently excludes every feed (jobs_count=0 every batch). No feed has been checked since 2026-07-09 11:18 UTC. The web UI (https://rss.tabaska.us 200) and container healthcheck are green, so nothing alerts — classic liveness-vs-correctness gap. Recovery needs a manual refresh-all or error-count reset (not performed, read-only pass). Container DNS verified working again today.
 
@@ -2018,6 +2025,11 @@ Reading mealie's full container log history aborts with 'error from daemon in st
 ### L23. Leftover bootstrap: CREATE_ADMIN creds still active in .env and a second feed-less 'admin' account exists; feeds owned by 'btabaska'
 
 **Host:** mini · **Component:** miniflux · **Auditor:** svc:docs-life
+
+> **Resolution (2026-07-16, task `fix-33`):** `admin` (id=2) deleted from the DB;
+> `CREATE_ADMIN`/`ADMIN_*` stripped from compose and `.env`; an API key for `btabaska` was
+> minted and stored in the vault under `miniflux.api_key` (closing the "not in vault" gap).
+> Regression check `mini-miniflux-no-bootstrap-admin` guards against reappearance.
 
 
 /opt/stacks/miniflux/.env still carries CREATE_ADMIN=1 with ADMIN_USERNAME/ADMIN_PASSWORD in plaintext, despite the compose comment saying these may be removed after first login. The DB shows two admin users: id=1 btabaska (owns all 52 feeds) and id=2 admin (owns none — API basic-auth as 'admin' returns an empty feed list, which can mislead API-based monitoring/audits into thinking there are no feeds). Dead-path/cred-hygiene junk, not a live outage. Also note these miniflux admin creds are not in .handoff-secrets.yaml, only in the stack .env.

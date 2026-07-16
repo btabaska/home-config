@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**166/260 done** · **68 open** · **18 deferred** · 10 retired.
+**167/260 done** · **67 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -10,9 +10,6 @@
 
 ### agent-handoff
 - [ ] **`handoff-12`** Post-sprint cleanup — delete vault and rotate keys _(est 10 min)_
-
-### apps
-- [ ] **`fix-33`** Unfreeze Miniflux (all 52 feeds excluded from polling) + remove leftover bootstrap admin _(est 1-3 hrs)_
 
 ### backups-offsite
 - [ ] **`fix-42`** Make off-site DR reproducible (ansible backup role is a no-op diverged from live) _(est 1-3 hrs)_

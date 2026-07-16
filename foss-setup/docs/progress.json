@@ -174,7 +174,8 @@
     "seed-13": true,
     "nas-30": true,
     "ai-01": true,
-    "fix-20": true
+    "fix-20": true,
+    "fix-33": "2026-07-16: feeds unfrozen (49/49 polling, POLLING_PARSING_ERROR_LIMIT=0), bootstrap admin deleted + creds stripped, API key vaulted, 4 new verification checks green (H7, L23)"
   },
   "reopened": {},
   "retired": {

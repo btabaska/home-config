@@ -19,12 +19,15 @@ services:
     environment:
       - DATABASE_URL=postgres://miniflux:${MINIFLUX_DB_PASSWORD}@db/miniflux?sslmode=disable
       - RUN_MIGRATIONS=1
-      # CREATE_ADMIN/ADMIN_* create the first user on first boot only.
-      # After the first successful login you may remove these three lines.
-      - CREATE_ADMIN=1
-      - ADMIN_USERNAME=${MINIFLUX_ADMIN_USERNAME}
-      - ADMIN_PASSWORD=${MINIFLUX_ADMIN_PASSWORD}
+      # Bootstrap CREATE_ADMIN/ADMIN_* removed 2026-07-16 (fix-33): the leftover
+      # 'admin' account was deleted; the only user is btabaska (API key in the
+      # secrets vault under miniflux.api_key).
       - BASE_URL=${MINIFLUX_BASE_URL:-http://localhost:8082}
+      # Never auto-exclude feeds on consecutive fetch errors (default limit of 3
+      # froze ALL feeds permanently after a 14h docker-DNS outage, 2026-07-09,
+      # quality-gate H7). Dead feeds keep retrying hourly and stay visible in the
+      # UI; the miniflux-feeds-fresh verification check alerts on scheduler stalls.
+      - POLLING_PARSING_ERROR_LIMIT=0
     networks:
       - edge
       - miniflux

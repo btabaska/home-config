@@ -104,6 +104,59 @@ checks:
     runbook: wiki/runbooks/docker.md
     enabled: true
 
+  # fix-33 regression (quality-gate H7): a 14h docker-DNS outage on 2026-07-09 pushed
+  # every feed to parsing_error_count=3 == default POLLING_PARSING_ERROR_LIMIT, so the
+  # scheduler silently excluded ALL feeds for 7 days while the UI stayed 200-green.
+  # POLLING_PARSING_ERROR_LIMIT=0 now prevents exclusion; this catches any scheduler stall.
+  - id: mini-miniflux-feeds-fresh
+    name: "miniflux scheduler polled a feed within 3h"
+    host: mini
+    cmd: docker exec miniflux_db psql -U miniflux -d miniflux -tA -c "SELECT max(checked_at) > now() - interval '3 hours' FROM feeds"
+    expect: '^t$'
+    severity: crit
+    task_id: fix-33
+    runbook: wiki/docs/services/miniflux.md
+    enabled: true
+
+  # fix-33 consumer-end check: polling can tick while every fetch fails — this probes
+  # that articles are actually ARRIVING (49 feeds; 48h with zero new entries = broken).
+  - id: mini-miniflux-articles-flowing
+    name: "miniflux ingested at least one article in 48h"
+    host: mini
+    cmd: docker exec miniflux_db psql -U miniflux -d miniflux -tA -c "SELECT count(*) > 0 FROM entries WHERE created_at > now() - interval '48 hours'"
+    expect: '^t$'
+    severity: crit
+    task_id: fix-33
+    runbook: wiki/docs/services/miniflux.md
+    enabled: true
+
+  # fix-33 regression (quality-gate L23): bootstrap 'admin' account deleted 2026-07-16,
+  # CREATE_ADMIN stripped from compose. If it reappears, the bootstrap path regressed.
+  - id: mini-miniflux-no-bootstrap-admin
+    name: "miniflux has no leftover bootstrap 'admin' user"
+    host: mini
+    cmd: docker exec miniflux_db psql -U miniflux -d miniflux -tA -c "SELECT count(*) FROM users WHERE username='admin'"
+    expect: '^0$'
+    severity: warn
+    task_id: fix-33
+    runbook: wiki/docs/services/miniflux.md
+    enabled: true
+
+  # fix-33 class-level check for the H7 root cause: the docker embedded-DNS forwarder
+  # (127.0.0.11) silently failing upstream breaks EVERY outbound-fetching container on
+  # mini (2026-07-08/09 outage, quality-gate M-class DNS finding). Probes from inside a
+  # real stack container so it exercises the exact resolver path miniflux uses.
+  - id: mini-container-dns
+    tier: fast
+    name: "docker embedded DNS resolves external names from a container"
+    host: mini
+    cmd: docker exec miniflux_db nslookup miniflux.app 127.0.0.11 >/dev/null 2>&1 && echo OK
+    expect: '^OK$'
+    severity: crit
+    task_id: fix-33
+    runbook: wiki/docs/runbooks/dns-outage.md
+    enabled: true
+
   - id: mini-mealie
     name: "mealie answers on :9000"
     host: mini
