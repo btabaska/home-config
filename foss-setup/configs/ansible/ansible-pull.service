@@ -26,7 +26,11 @@ Environment=ANSIBLE_CONFIG=/home/btabaska/.ansible-pull/foss-setup/configs/ansib
 # NOTE: --check was removed (2026-07-07): pull convergence must actually APPLY
 # changes, not dry-run them — with --check the fleet never converged, it only
 # reported drift. --diff is kept so the journal still shows what changed.
-ExecStart=/bin/bash -c '/home/btabaska/.local/bin/ansible-pull \
+# NOTE: ansible-pull is PATH-resolved (2026-07-16), not hardcoded: the rig's
+# btrfs recovery wiped the pipx venv the old hardcoded ~/.local/bin path pointed
+# at, silently killing pull convergence. The unit PATH above prefers a pipx
+# install, then falls back to the distro package (pacman/apt).
+ExecStart=/bin/bash -c 'ansible-pull \
     -U "${CONTROL_REPO_URL}" \
     -d /home/btabaska/.ansible-pull \
     --accept-host-key \
