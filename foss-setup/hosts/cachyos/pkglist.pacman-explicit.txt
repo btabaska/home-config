@@ -9,12 +9,15 @@ alsa-firmware
 alsa-plugins
 alsa-utils
 ansible
+apollo
 ark
 awesome-terminal-fonts
 base
 base-devel
 bash-completion
+beets
 bind
+bitwarden
 bluedevil
 bluez
 bluez-hid2hci
@@ -151,6 +154,7 @@ modemmanager
 mtools
 nano
 nano-syntax-highlighting
+neovim
 netctl
 networkmanager
 networkmanager-openvpn
@@ -194,6 +198,7 @@ power-profiles-daemon
 powerdevil
 prismlauncher
 profile-sync-daemon
+protonmail-bridge
 pv
 python
 python-defusedxml
@@ -215,10 +220,12 @@ snapper
 sof-firmware
 spectacle
 sudo
+syncthing
 sysfsutils
 tailscale
 tesseract-data-eng
 texinfo
+thunderbird
 ttf-bitstream-vera
 ttf-dejavu
 ttf-liberation
@@ -231,6 +238,7 @@ unzip
 usb_modeswitch
 usbutils
 vim
+vkbasalt
 vlc
 vlc-plugins-all
 vulkan-icd-loader
@@ -243,3 +251,4 @@ xdg-user-dirs
 xfsprogs
 xl2tpd
 xsettingsd
+zen-browser-bin
