@@ -23,6 +23,6 @@
 | `fix-17` | Archive migration-snapshot (15 GB, zero backup, contains Plex tokens) to NAS | ✅ done | 30 min + transfer |
 | `fix-18` | Ratify placement decisions & purge legacy leftovers (D2–D5) | ✅ done | 30 min + your answers |
 | `fix-19` | Docker default-address-pools on mini (stop 192.168.x squatting) — maintenance window | ✅ done | 20 min (4-7AM window) |
-| `fix-20` | Recover rig root btrfs read-only incident + durable OS-NVMe fix | ⬜ open | 1-3 hrs |
+| `fix-20` | Recover rig root btrfs read-only incident + durable OS-NVMe fix | ✅ done | 1-3 hrs |
 
 [← Roadmap overview](index.md)

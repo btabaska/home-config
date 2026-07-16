@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**165/260 done** · **69 open** · **18 deferred** · 10 retired.
+**166/260 done** · **68 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -13,9 +13,6 @@
 
 ### apps
 - [ ] **`fix-33`** Unfreeze Miniflux (all 52 feeds excluded from polling) + remove leftover bootstrap admin _(est 1-3 hrs)_
-
-### audit-fixes
-- [ ] **`fix-20`** Recover rig root btrfs read-only incident + durable OS-NVMe fix _(est 1-3 hrs)_ — ⛔ gate: disruptive — 4-7AM window + operator approval
 
 ### backups-offsite
 - [ ] **`fix-42`** Make off-site DR reproducible (ansible backup role is a no-op diverged from live) _(est 1-3 hrs)_
