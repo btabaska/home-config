@@ -64,6 +64,23 @@
     reload: true
   ignore_errors: true   # nf_conntrack module not loaded on a host that never NATs torrents
 
+# --- no sleeping servers: every fleet host is 24/7 (rig since 2026-07-08).
+#     The rig's suspend mask was a LIVE-ONLY setting until 2026-07-16, when the
+#     btrfs recovery (reinstall from origin/main) silently dropped it and KDE
+#     powerdevil idle-suspended the box three times in one day — taking palworld,
+#     minecraft, playit and the AI stack down with it. Masking the targets makes
+#     logind refuse every suspend request (powerdevil included), and living here
+#     means ansible-pull re-asserts it after any future rebuild.
+- name: Mask systemd sleep targets (fleet is 24/7 — no host may suspend)
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    masked: true
+  loop:
+    - sleep.target
+    - suspend.target
+    - hibernate.target
+    - hybrid-sleep.target
+
 # --- package convergence: the sbom-04 manifest stops being a record and becomes
 #     the enforcer (M-an1). scripts/inventory/export-manifests.sh writes per-host,
 #     per-OS filenames into hosts/<box>/ — pkglist.apt-manual.txt on Debian/Ubuntu

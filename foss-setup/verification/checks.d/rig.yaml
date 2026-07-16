@@ -307,6 +307,23 @@ checks:
     runbook: wiki/runbooks/rig.md
     enabled: true    # rig is 24/7 — failure here is an incident
 
+  # 2026-07-16 incident: the btrfs-recovery reinstall dropped the (live-only,
+  # never-codified) suspend mask, and KDE powerdevil idle-suspended the 24/7 rig
+  # three times in one day — palworld/minecraft/playit/AI all dark until someone
+  # walked into the office. Desired state now lives in ansible roles/base (masks
+  # sleep/suspend/hibernate/hybrid-sleep fleet-wide); this guards against the
+  # same silent revert class (rebuild, recovery, or a helpful GUI toggle).
+  - id: rig-suspend-masked
+    tier: fast
+    name: "rig systemd sleep targets masked (24/7 box must never suspend)"
+    host: rig
+    cmd: systemctl is-enabled sleep.target suspend.target hibernate.target hybrid-sleep.target | sort -u | tr '\n' ' '
+    expect: '^masked\s*$'
+    severity: crit
+    task_id: game-08
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
   # ==== fix-20 (2026-07-16 incident): rig root btrfs went READ-ONLY ====
   # C1/C2/C3: a 'corrupt leaf' on the marginal OS NVMe (WDS200T3X0C @ PCIe 74:00.0)
   # forced the root btrfs read-only at 22:49 EDT 2026-07-15. The cascade (restic,
