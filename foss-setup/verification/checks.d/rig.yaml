@@ -306,3 +306,53 @@ checks:
     task_id: game-10
     runbook: wiki/runbooks/rig.md
     enabled: true    # rig is 24/7 — failure here is an incident
+
+  # ==== fix-20 (2026-07-16 incident): rig root btrfs went READ-ONLY ====
+  # C1/C2/C3: a 'corrupt leaf' on the marginal OS NVMe (WDS200T3X0C @ PCIe 74:00.0)
+  # forced the root btrfs read-only at 22:49 EDT 2026-07-15. The cascade (restic,
+  # ansible-pull, palworld, litellm-db segfault, OWUI write-death) ran for ~12h
+  # while EVERY liveness/HTTP probe stayed green and `docker ps` falsely reported
+  # dead containers "Up (healthy)" — the daemon couldn't persist state on the RO
+  # disk. The missing signal was a CONSUMER-level "can the host actually WRITE?"
+  # probe. This is that regression check: a real write to the /@home subvol plus
+  # the mount flags of / and /home. crit + fast tier so a forced-ro remount
+  # (btrfs error, ENOSPC, dying disk) pages within ~10 min instead of ~12h.
+  # Runbook: recovery = salvage-readable → offline `btrfs check --repair` from USB
+  # → reseat the marginal NVMe. See runbooks/rig-btrfs-readonly-recovery.
+  - id: rig-root-fs-writable
+    tier: fast
+    name: "rig root + /home are READ-WRITE (real write probe — catches silent RO remount)"
+    host: rig
+    cmd: >-
+      p="/home/btabaska/.verify-rw-probe";
+      if ( : > "$p" ) 2>/dev/null; then rm -f "$p"; w=OK; else w=FAIL; fi;
+      echo "write=$w root=$(findmnt -no OPTIONS / | cut -d, -f1) home=$(findmnt -no OPTIONS /home | cut -d, -f1)"
+    expect: 'write=OK root=rw home=rw'
+    severity: crit
+    task_id: fix-20
+    runbook: wiki/docs/runbooks/rig-btrfs-readonly-recovery.md
+    enabled: true
+
+  # fix-20 / M57 / H25 / H26: during the RO incident litellm-db segfaulted (exit
+  # 139) and LiteLLM returned 503 no_db_connection to EVERY virtual-key client —
+  # yet the master-key liveness probes (rig-ai-e2e above, /health/liveliness) kept
+  # answering 200, so all dashboards showed the stack "up". This CLASS check closes
+  # that liveness-masks-correctness gap: it exercises the DB-backed auth path with
+  # a real VIRTUAL key, so a dead or corrupt litellm-db — invisible to master-key
+  # probes — is caught at the consumer end. Needs LITELLM_VKEY in the mini
+  # /etc/verification/env (vault ai_stack.litellm_ops_agent_key). The master-key
+  # rig-ai-e2e above stays as the pure gateway/model liveness probe; this one is
+  # the correctness probe. host: url runs it from the mini with that env.
+  - id: rig-litellm-vkey-e2e
+    name: "litellm answers a VIRTUAL-key completion (DB-auth path — catches litellm-db down that master-key probes miss)"
+    host: url
+    cmd: >-
+      curl -s -m 50 -H "Authorization: Bearer $LITELLM_VKEY"
+      -H "Content-Type: application/json"
+      -d '{"model":"utility","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}'
+      http://cachyos.tailb31641.ts.net:4000/v1/chat/completions
+    expect: '"finish_reason"'
+    severity: warn
+    task_id: fix-20
+    runbook: wiki/docs/runbooks/rig-btrfs-readonly-recovery.md
+    enabled: true

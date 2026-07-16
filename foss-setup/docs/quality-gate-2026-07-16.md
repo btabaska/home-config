@@ -12,6 +12,15 @@
 
 ## CRITICAL — active incident (3)
 
+> **Resolution (2026-07-16, task `fix-20`):** C1/C2/C3 and the downstream cascade
+> (H22/H23/H25/H26/H27/I104/I105/M54/M56) were worked as one item. Root cause: a
+> marginal PCIe link on the OS NVMe (WD SN570 2TB, serial 210318800752 @ 0000:74:00.0)
+> corrupted a metadata write in flight → stale btrfs leaf → forced read-only. Recovery:
+> salvage-while-readable → offline `btrfs check --repair` from USB → NVMe reseat.
+> Prevention: `rig-root-fs-writable` + `mini-root-fs-writable` write-probe checks and
+> `rig-litellm-vkey-e2e` (DB-auth path). Full procedure:
+> [`wiki/docs/runbooks/rig-btrfs-readonly-recovery.md`](../../wiki/docs/runbooks/rig-btrfs-readonly-recovery.md).
+
 ### C1. Rig root filesystem is mounted READ-ONLY right now; journald, restic backups and ansible-pull all silently broken since ~22:49 EDT 2026-07-15
 
 **Host:** rig · **Component:** root filesystem (btrfs on OS NVMe /dev/nvme2n1p2) · **Auditor:** repo:live-drift

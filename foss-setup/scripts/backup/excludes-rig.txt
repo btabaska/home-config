@@ -1,7 +1,10 @@
 # restic excludes for rig (CachyOS gaming box) — deployed to /etc/restic/excludes.txt
 # (referenced by RESTIC_EXCLUDE_FILE in /etc/restic/env). One pattern per line.
-# Backup set is /etc + /home/btabaska; keep it LEAN Tier-1 (dotfiles, configs,
-# projects). Games, LLM models and media are re-downloadable — not backed up.
+# Backup set (see BACKUP_PATHS in /etc/restic/env): /etc + /home/btabaska + the
+# game/AI *state* under /opt/stacks (Palworld + AMP worlds) + the litellm-db and
+# open-webui docker volumes (fix-20, 2026-07-16 — a disk loss must not lose game/AI
+# data). Keep it LEAN Tier-1: worlds, saves and configs YES; re-downloadable game
+# binaries, server jars, LLM model weights and media NO.
 
 # Games / game platforms / wine prefixes
 /home/btabaska/Games
@@ -45,3 +48,14 @@
 **/GPUCache
 **/Code Cache
 **/CachedData
+
+# --- game-server data IS in the backup set now (fix-20): keep worlds + server
+# configs, drop the re-downloadable AMP/Minecraft binaries so B2 stays lean.
+# (MinecraftCross01's instance dir is ~13G, almost all jars/libraries.) ---
+/opt/stacks/amp/config/.ampdata/instances/*/Minecraft/libraries
+/opt/stacks/amp/config/.ampdata/instances/*/Minecraft/versions
+/opt/stacks/amp/config/.ampdata/instances/*/Minecraft/cache
+/opt/stacks/amp/config/.ampdata/instances/*/Minecraft/crash-reports
+/opt/stacks/amp/config/.ampdata/instances/*/Minecraft/logs
+# server + mod/plugin JARs are re-downloadable from the modpack/version manifest
+**/*.jar

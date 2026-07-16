@@ -244,3 +244,25 @@ checks:
     task_id: ai-01
     runbook: wiki/runbooks/mini.md
     enabled: true
+
+  # fix-20 CLASS check (2026-07-16): the rig's root btrfs silently went read-only
+  # under metadata corruption and nobody noticed for ~12h because every liveness
+  # probe stayed green (C1/C2/C3). The identical failure mode on the MINI — the
+  # fleet's core host — would be far worse and is currently unmonitored: ext4
+  # remounts read-only on error (errors=remount-ro), and a full/failing disk or FS
+  # error would silently write-freeze caddy, forgejo, healthchecks, every stack.
+  # This is the consumer-level sibling of rig-root-fs-writable: a REAL write to the
+  # root fs plus its mount flag. crit — a write-dead mini is a fleet incident.
+  - id: mini-root-fs-writable
+    tier: fast
+    name: "mini root filesystem is READ-WRITE (real write probe — silent RO/ENOSPC tripwire)"
+    host: mini
+    cmd: >-
+      p="/home/btabaska/.verify-rw-probe";
+      if ( : > "$p" ) 2>/dev/null; then rm -f "$p"; w=OK; else w=FAIL; fi;
+      echo "write=$w root=$(findmnt -no OPTIONS / | cut -d, -f1)"
+    expect: 'write=OK root=rw'
+    severity: crit
+    task_id: fix-20
+    runbook: wiki/docs/runbooks/rig-btrfs-readonly-recovery.md
+    enabled: true
