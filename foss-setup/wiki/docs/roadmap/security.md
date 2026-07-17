@@ -6,7 +6,7 @@
 |---|---|---|---|
 | `fix-21` | Close public exposure of seedbox torrent clients (Deluge RPC/web, qBittorrent, slskd) | ✅ done | 1-3 hrs |
 | `fix-22` | Make restic B2 backups actually immutable (default retention) + lock hyper-backup bucket | ✅ done | 1-3 hrs |
-| `fix-23` | Secrets & filesystem-permission hygiene (world-readable env, stale local secret dumps) | ⬜ open | 1-3 hrs |
+| `fix-23` | Secrets & filesystem-permission hygiene (world-readable env, stale local secret dumps) | ✅ done | 1-3 hrs |
 | `foss-01` | Bitwarden → Vaultwarden data cutover (point clients at vault.tabaska.us) | ⬜ open | 1-2 hrs |
 | `foss-04` | Ente Auth adoption + YubiKey enrollment (Authy migration) | ⬜ open | 1-2 hrs |
 | `sec-01` | Turn on MFA/2FA everywhere (hardware key on the crown jewels) | ⬜ open | 1-2 hrs |

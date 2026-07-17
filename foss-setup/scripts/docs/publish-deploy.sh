@@ -21,6 +21,12 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "${ROOT}"
 
+# fix-23: vault-completeness gate — a live service whose credential exists only on a
+# host filesystem (vault key '') is the M26/M44/M45 incident class. Lint runs here
+# because the vault lives only on this machine; the mini runner can't see it.
+echo "[publish] linting the secrets vault..."
+python3 "${ROOT}/foss-setup/scripts/secrets/vault-lint.py"
+
 echo "[publish] pushing main to origin (GitHub)..."
 git push origin main
 

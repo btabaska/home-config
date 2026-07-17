@@ -803,6 +803,8 @@ failed_imports.json: "5030": {... "failed_at": "2026-07-10T01:08:12", "folder_pa
 
 ### M7. health.env is world-readable (0777) and contains an ntfy publish token; broad 0777 across /volume1/docker
 
+> **RESOLVED (fix-23, 2026-07-17):** health.env → root:root 600 and the leaked token (admin-scoped, printed in this doc) was rotated and revoked (old token now 401). World-write stripped across /volume1/docker + /volume1/scripts; five *arr config.xml, stash/.env, media-automation/.env → 600. Guards: checks.d/secrets.yaml (nas-health-env-perms, nas-secret-file-perms, nas-worldwritable-sweep, ntfy-anon-publish-denied), runbook wiki/runbooks/secrets-hygiene.md.
+
 **Host:** nas · **Component:** security / secrets perms · **Auditor:** host:nas
 
 
@@ -1143,6 +1145,8 @@ compose comment: 'drives remote slskd on Betty over Tailscale'
 
 ### M26. Vault drift: soulseek.* empty while slskd is live, whisparr API key missing, deluge.port stale
 
+> **RESOLVED (fix-23, 2026-07-17):** soulseek.username/password/slskd_web_password backfilled from betty's slskd .env (api_key verified matching live); arr_api_keys.whisparr added from config.xml; deluge.port was already 5945 (fixed by fix-21). Guard: vault-lint.py now gates publish-deploy.sh.
+
 **Host:** nas · **Component:** secrets vault · **Auditor:** svc:nas-apps
 
 
@@ -1469,6 +1473,8 @@ entity registry: mobile_app has 18 entities, 11 unavailable + 1 unknown
 
 ### M43. 15 GB stale migration snapshot with live secrets sits in iCloud-synced ~/Documents
 
+> **RESOLVED (fix-23, 2026-07-17):** migration-snapshot/ deleted (15 GB, took 15 rm passes against iCloud sync); .gitignore entry removed. iCloud may retain deleted files ~30 days.
+
 **Host:** macbook (local repo) · **Component:** migration-snapshot/ · **Auditor:** repo:junk-deadpaths
 
 
@@ -1488,6 +1494,8 @@ find . -type l ! -exec test -e {} \; -print -> 3 broken symlinks under migration
 
 ### M44. Vault forgejo.admin_user/admin_password are empty while Forgejo is live and is the deploy control plane
 
+> **RESOLVED (fix-23, 2026-07-17):** admin password reset via `forgejo admin user change-password` in the container, stored in vault, verified by API basic-auth login (is_admin: true). Guard: vault-lint.py.
+
 **Host:** macbook (local repo) · **Component:** .handoff-secrets.yaml / forgejo · **Auditor:** repo:junk-deadpaths
 
 
@@ -1505,6 +1513,8 @@ service-enrichment.yaml: 'DISABLE_REGISTRATION=true ... publish-deploy.sh pushes
 </details>
 
 ### M45. All 4 soulseek vault keys empty while soularr is live on NAS with slskd creds only in its config.ini
+
+> **RESOLVED (fix-23, 2026-07-17):** vault backfilled (see M26); config.ini.bak-wrong-path junk deleted from /volume1/docker/soularr.
 
 **Host:** nas + macbook (vault) · **Component:** .handoff-secrets.yaml / soulseek + soularr · **Auditor:** repo:junk-deadpaths
 
