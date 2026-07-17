@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**170/261 done** · **65 open** · **18 deferred** · 10 retired.
+**170/263 done** · **67 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -78,6 +78,8 @@
 - [ ] **`sec-01`** Turn on MFA/2FA everywhere (hardware key on the crown jewels) _(est 1-2 hrs)_
 - [ ] **`sec-04`** Harden exposed surfaces (CrowdSec + forward-auth on the seedbox/public ports) _(est 1 hr)_ — ⛔ gate: Tailscale SSH ACL for operator → seedbox (currently blocked)
 - [ ] **`sec-06`** B2 master key custody: regenerate in console, store offline (Bitwarden/paper); optionally scope HB's key _(est 15-30 min)_
+- [ ] **`sec-07`** ntfy least-privilege: per-publisher users/tokens instead of everything on admin _(est 1-2 hrs)_
+- [ ] **`sec-08`** Rotate credentials that left the fleet: Plex token (iCloud snapshot) + secrets printed in the committed audit doc; purge iCloud Recently Deleted _(est 1-2 hrs)_ — ⛔ gate: plex-token-rotation-signs-out-devices
 
 ### smart-home
 - [ ] **`fix-36`** Home Assistant health: unavailable entities, dead integrations, pending updates _(est 1-3 hrs)_

@@ -1,6 +1,6 @@
 # Roadmap — security
 
-11 task(s). Status mirrors `docs/progress.json` (the source of truth).
+13 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -15,5 +15,7 @@
 | `sec-04` | Harden exposed surfaces (CrowdSec + forward-auth on the seedbox/public ports) | ⬜ open | 1 hr |
 | `sec-05` | OS security patches (unattended-upgrades on Ubuntu; manual cadence on CachyOS) | ✅ done | 20 min |
 | `sec-06` | B2 master key custody: regenerate in console, store offline (Bitwarden/paper); optionally scope HB's key | ⬜ open | 15-30 min |
+| `sec-07` | ntfy least-privilege: per-publisher users/tokens instead of everything on admin | ⬜ open | 1-2 hrs |
+| `sec-08` | Rotate credentials that left the fleet: Plex token (iCloud snapshot) + secrets printed in the committed audit doc; purge iCloud Recently Deleted | ⬜ open | 1-2 hrs |
 
 [← Roadmap overview](index.md)
