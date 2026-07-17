@@ -1,6 +1,6 @@
 # Home / homelab — operating context
 
-This repo (`~/Documents/Home`, the "Going Analogue" FOSS homelab) drives a 5-host fleet.
+This repo (`~/GitHub/Home`, the "Going Analogue" FOSS homelab) drives a 5-host fleet.
 The main content is under `foss-setup/`. This file is auto-loaded every session — read it
 before touching anything. The rule that matters most: **a fix that changes a live host but
 not the repo (or vice-versa) creates drift.** Every change lands in both.
