@@ -1838,6 +1838,8 @@ Bodies Bodies Bodies hasFile=True BODIES_BODIES_BODIES.iso 62065.7MB; Scooby-Doo
 
 ### M61. Plex port 32400 is directly reachable from the public internet (edge is NOT fully closed beyond 80/443/8123)
 
+> **RESOLVED (fix-24, 2026-07-17) — accepted as intentional:** operator decision to keep Plex Remote Access (household remote streaming without Tailscale). Investigation reframed the risk: the gateway (Dream Wall) offers **no UPnP IGD and no NAT-PMP** (verified via upnpc/natpmpc from mini), so 32400 is a deliberate **manual** forward and nothing on the LAN can silently open more ports; 80/443/8123 are now closed too, leaving 32400 the only open WAN port. Guards (checks.d/edge.yaml, probed from the seedbox off-net vantage): edge-wan-port-posture (crit on any other open port), edge-plex-remote-identity (pinned machineIdentifier), edge-plex-version-current (warn if exposed build >14d behind latest Synology release — CVE posture). Runbook wiki/docs/runbooks/edge-exposure.md; posture documented in wiki/docs/network.md.
+
 **Host:** nas (192.168.10.4) via home WAN 162.0.177.18 · **Component:** Plex Media Server (port 32400) / edge firewall · **Auditor:** gap:External WAN exposure — port probe was limited to 80/443/8123 from a single vantage
 
 
@@ -2254,6 +2256,8 @@ Root of /volume1 contains crash core dumps: '@Plex Transcoder...core.gz' (1.4MB,
 Answer to 'where IS it?': nowhere — progress.json records Dependency-Track FULLY RETIRED 2026-07-11 (3 NAS containers compose-downed, Kuma monitor, caddy vhost, homepage tile all removed); NAS /volume1/docker has no dependency-track dir, and no dtrack container exists on mini or rig. Leftovers: (1) .handoff-secrets.yaml still carries dtrack.admin_user/admin_password/url=https://deptrack.tabaska.us; (2) mini /opt/stacks/dependency-track/ still holds a template .env with placeholder DB password 'change_this_strong_db_password'; (3) the *.tabaska.us wildcard rewrite makes deptrack.tabaska.us resolve to caddy on both adguards, where TLS handshake fails (no vhost). Same partial-deletion pattern for litellm/tdarr (.env left) and maintainerr (.env + data/ dir left) despite progress notes saying those dirs were DELETED — live-vs-tracker drift.
 
 ### L53. www.tabaska.us has a PUBLIC A record pointing at private LAN IP 192.168.10.2
+
+> **RESOLVED (fix-24, 2026-07-17):** the A record was deleted from the Cloudflare zone via API; www.tabaska.us is now NXDOMAIN on 1.1.1.1 and 8.8.8.8, and LAN resolution is unaffected (AdGuard split-horizon rewrite serves it). Guards: edge-public-dns-no-rfc1918 (Cloudflare zone API audit — no A/AAAA record may hold a private IP, i.e. the class, not just www) + edge-public-dns-www-nxdomain (public-resolver regression probe), both in checks.d/edge.yaml. Runbook wiki/docs/runbooks/edge-exposure.md.
 
 **Host:** cloudflare (public DNS) · **Component:** tabaska.us public zone · **Auditor:** flow:dns-proxy
 

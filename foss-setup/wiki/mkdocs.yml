@@ -125,6 +125,7 @@ nav:
       - Acceptance testing: runbooks/acceptance-testing.md
       - Seedbox exposure / tailnet path: runbooks/seedbox-exposure.md
       - Secrets hygiene: runbooks/secrets-hygiene.md
+      - Edge / WAN exposure: runbooks/edge-exposure.md
   - Operations:
       - Overview: operations/index.md
       - Ansible & convergence: operations/ansible.md

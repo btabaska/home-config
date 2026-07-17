@@ -1,0 +1,105 @@
+# Edge / WAN exposure posture — fix-24 (quality-gate M61/L53, 2026-07-17).
+#
+# Ground truth established 2026-07-17: the ONLY intentionally internet-exposed
+# port is 32400 (NAS Plex, Remote Access kept deliberately by operator decision;
+# a MANUAL port-forward on the operator-managed UniFi Dream Wall — the gateway
+# offers NO UPnP IGD and NO NAT-PMP, verified with miniupnpc/natpmpc from mini,
+# so nothing on the LAN can silently open more ports). Public DNS for tabaska.us
+# must be NXDOMAIN for every host name — the www → 192.168.10.2 RFC1918 leak
+# (L53) was deleted from the Cloudflare zone 2026-07-17.
+#
+# WAN probes run FROM THE SEEDBOX (betty, true off-net vantage) via mini→seedbox
+# ssh, because probing your own WAN IP from inside the LAN tests NAT hairpin,
+# not the edge — the exact blind spot that let M61 go unnoticed.
+# CLOUDFLARE_API_TOKEN + CF_ZONE_ID_TABASKA_US live in mini /etc/verification/env
+# (vault cloudflare.api_token).
+checks:
+  # -- class-level (M61): no WAN port beyond the documented 32400 may be open.
+  #    Catches a new router forward, a future UPnP enable, or any sibling
+  #    exposure. Probes the audit's 18-port list + 80/443 + 32400, in parallel
+  #    on the seedbox to stay under the 60s check cap.
+  - id: edge-wan-port-posture
+    name: "edge: no unexpected WAN ports open (only 32400/Plex allowed)"
+    host: mini
+    cmd: >-
+      WAN=$(curl -s -m 10 https://ifconfig.me);
+      echo "$WAN" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$' || { echo NO_WAN_IP; exit 0; };
+      extra=$(ssh -o BatchMode=yes -o ConnectTimeout=10 seedbox
+      "for p in 22 80 443 853 2222 3000 3254 5000 5001 5945 6969 7878 8123 8443 8686 8787 8989 9696 13091 32400;
+      do (timeout 4 bash -c \"</dev/tcp/$WAN/\$p\" >/dev/null 2>&1 && echo \$p) & done; wait"
+      | grep -v '^32400$' | sort -n | xargs); [ -z "$extra" ] && echo NO_UNEXPECTED_PORTS || echo "UNEXPECTED_OPEN:$extra"
+    expect: '^NO_UNEXPECTED_PORTS$'
+    severity: crit
+    task_id: fix-24
+    runbook: wiki/docs/runbooks/edge-exposure.md
+    enabled: true
+
+  # -- regression (M61 accept-and-document): the thing answering on 32400 from
+  #    the internet is still OUR Plex (machineIdentifier pinned). Fails if Plex
+  #    Remote Access breaks (feature the operator wants) OR if some other
+  #    service ends up behind the forward (worse).
+  - id: edge-plex-remote-identity
+    name: "edge: WAN :32400 serves the NAS Plex (Remote Access intentional, id pinned)"
+    host: mini
+    cmd: >-
+      WAN=$(curl -s -m 10 https://ifconfig.me);
+      ssh -o BatchMode=yes -o ConnectTimeout=10 seedbox "curl -s -m 10 http://$WAN:32400/identity"
+    expect: 'machineIdentifier="70ffcfbb5dc9389e315070cf3a8af99c5fb340b4"'
+    severity: warn
+    task_id: fix-24
+    runbook: wiki/docs/runbooks/edge-exposure.md
+    enabled: true
+
+  # -- CVE-posture monitor (M61 accept condition): the internet-exposed Plex
+  #    build must track upstream. Warns only when the NAS build differs from the
+  #    latest Synology DSM 7.2.2+ release AND that release is >14 days old
+  #    (grace window for the DSM package to be published + installed).
+  - id: edge-plex-version-current
+    name: "edge: exposed Plex build not >14 days behind latest Synology release"
+    host: mini
+    cmd: >-
+      WAN=$(curl -s -m 10 https://ifconfig.me);
+      exp=$(ssh -o BatchMode=yes -o ConnectTimeout=10 seedbox "curl -s -m 10 http://$WAN:32400/identity"
+      | grep -oE 'version="[^"]+"' | head -1 | cut -d'"' -f2);
+      curl -s -m 15 https://plex.tv/api/downloads/5.json | EXPOSED="$exp" python3 -c 'import json,os,sys,time;
+      d=json.load(sys.stdin)["nas"]["Synology (DSM 7.2.2+)"]; exp=os.environ["EXPOSED"];
+      age=(time.time()-d["release_date"])/86400.0;
+      print("VERSION_OK:current" if exp==d["version"] else ("VERSION_OK:grace_%.0fd" % age if age < 14 else "VERSION_STALE:exposed="+exp+"_latest="+d["version"]))'
+    expect: '^VERSION_OK:'
+    severity: warn
+    task_id: fix-24
+    runbook: wiki/docs/runbooks/edge-exposure.md
+    enabled: true
+
+  # -- class-level (L53): NO record in the public Cloudflare zone may point at
+  #    a private address (the leak class, not just www). Audits the zone via
+  #    API so a future rewrite/record can't reintroduce it unseen.
+  - id: edge-public-dns-no-rfc1918
+    name: "edge: Cloudflare tabaska.us zone has no A/AAAA record with a private IP"
+    host: mini
+    cmd: >-
+      curl -s -m 15 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"
+      "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID_TABASKA_US/dns_records?per_page=100"
+      | python3 -c 'import json,sys,ipaddress; rs=json.load(sys.stdin)["result"];
+      bad=[r["name"]+"->"+r["content"] for r in rs if r["type"] in ("A","AAAA") and ipaddress.ip_address(r["content"]).is_private];
+      print("ZONE_CLEAN" if not bad else "RFC1918_LEAK:"+",".join(bad))'
+    expect: '^ZONE_CLEAN$'
+    severity: warn
+    task_id: fix-24
+    runbook: wiki/docs/runbooks/edge-exposure.md
+    enabled: true
+
+  # -- exact regression (L53): www.tabaska.us stays NXDOMAIN in public DNS
+  #    (pure-DNS consumer view, no API/token dependency — complements the zone
+  #    audit above; catches leaks via any DNS path, not just this CF zone).
+  - id: edge-public-dns-www-nxdomain
+    name: "edge: www.tabaska.us is NXDOMAIN in public DNS (1.1.1.1)"
+    host: mini
+    cmd: >-
+      out=$(dig +short +time=3 +tries=2 @1.1.1.1 www.tabaska.us A);
+      [ -z "$out" ] && echo WWW_NXDOMAIN || echo "WWW_RESOLVES:$out"
+    expect: '^WWW_NXDOMAIN$'
+    severity: warn
+    task_id: fix-24
+    runbook: wiki/docs/runbooks/edge-exposure.md
+    enabled: true

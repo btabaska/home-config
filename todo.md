@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**170/263 done** · **67 open** · **18 deferred** · 10 retired.
+**171/263 done** · **66 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -51,9 +51,6 @@
 ### nas-foundation
 - [ ] **`fix-31`** Restore UPS/NUT power-loss protection (or cleanly retire the dead client) _(est 1-3 hrs)_
 - [ ] **`fix-40`** NAS host hygiene: timezone drift, soularr parked import, core dumps, junk files, single-disk note _(est 1-3 hrs)_
-
-### network
-- [ ] **`fix-24`** Close unintended public exposure: WAN-reachable Plex 32400 + public A-record to LAN IP _(est 1-3 hrs)_
 
 ### ops
 - [ ] **`fix-32`** Fix Caddy reverse-proxy routes (ha.tabaska.us 400, llamaswap not reloaded, stray placeholders/vhosts) _(est 1-3 hrs)_

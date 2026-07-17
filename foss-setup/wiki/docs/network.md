@@ -70,7 +70,33 @@ gated on it). If names stop resolving, go straight to the
   prerequisite). NAS / rig / seedbox services are proxied **by IP** via the
   `NAS_IP` / `RIG_IP` / `SEEDBOX_IP` env vars in `caddy/.env`.
 - Result: `https://<name>.tabaska.us` works LAN-wide (and over Tailscale) with
-  real TLS and nothing exposed publicly.
+  real TLS and nothing exposed publicly except the one documented port below.
+
+## Edge / WAN exposure
+
+Ground truth (established 2026-07-17, quality-gate fix-24 — M61/L53):
+
+- **Exactly one inbound WAN port is open: `32400` → NAS Plex.** Plex Remote
+  Access is **intentional** (operator decision 2026-07-17) so household users
+  can stream without Tailscale. It is a **manual port-forward on the
+  operator-managed Dream Wall**, not UPnP: the gateway offers **no UPnP IGD and
+  no NAT-PMP** (verified with `upnpc`/`natpmpc` from the mini), so no LAN
+  device can silently open additional ports. The unauthenticated Plex
+  `/identity` endpoint is reachable from the internet by design (version +
+  machine id disclosure); everything token-gated stays token-gated.
+- **Public DNS for `tabaska.us` contains no host records.** The zone is Proton
+  mail records, playit.gg NS delegations (`minecraft`/`palworld`/`bedrock`),
+  and TXT only; every service name is NXDOMAIN publicly and resolves only via
+  the AdGuard split-horizon rewrites. The old `www → 192.168.10.2` public A
+  record (RFC1918 leak, finding L53) was deleted from the Cloudflare zone
+  2026-07-17.
+- **Continuously guarded** by `verification/checks.d/edge.yaml`: a WAN port
+  sweep from the seedbox (true off-net vantage — LAN-side probes only test NAT
+  hairpin) that pages `crit` on any port besides 32400; a pinned
+  machineIdentifier probe of the exposed Plex; a CVE-posture check that warns
+  if the exposed Plex build lags the latest Synology release by >14 days; and a
+  Cloudflare zone audit that fails on any private-IP record. Runbook:
+  [edge exposure](runbooks/edge-exposure.md).
 
 ## Tailscale
 
