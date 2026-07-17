@@ -314,7 +314,7 @@ whisparr.{$DOMAIN} {
 
 deluge.{$DOMAIN} {
 	import local_tls
-	reverse_proxy {$SEEDBOX_IP}:8112
+	reverse_proxy {$SEEDBOX_IP}:5945
 }
 
 slskd.{$DOMAIN} {

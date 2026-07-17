@@ -75,7 +75,7 @@ def run_check(check):
     on_runner = platform.node().split(".")[0] in LOCAL_HOSTNAMES
     if host in ("local", "url") or (host == "mini" and on_runner):
         argv = ["bash", "-c", cmd]
-    elif host in ("mini", "nas", "rig"):
+    elif host in ("mini", "nas", "rig", "seedbox"):
         argv = ["ssh"] + SSH_OPTS + [host, cmd]
     else:
         return {"status": "fail", "exit_code": -1,

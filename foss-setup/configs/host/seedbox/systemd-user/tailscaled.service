@@ -1,0 +1,17 @@
+[Unit]
+Description=Tailscale daemon (userspace networking)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=%h/tailscale/tailscaled \
+  --tun=userspace-networking \
+  --state=%h/tailscale/tailscaled.state \
+  --socket=%h/tailscale/tailscaled.sock \
+  --port=41641
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -113,6 +113,8 @@ ssh mini 'journalctl -p err -S -7days | ... uniq -c | sort -rn' -> '106834 upsmo
 
 ### H2. Deluge RPC (3254), deluge-web (5945, plain HTTP) and qBittorrent WebUI (13091) are bound to 0.0.0.0/public IP and reachable from the open internet
 
+> **RESOLVED 2026-07-17 (fix-21).** Deluge RPC/web bind 127.0.0.1 (`allow_remote:false`, web `interface:127.0.0.1`); qBittorrent retired; all five admin ports probe closed from the WAN. Consumers (arr Deluge clients + Remote Path Mappings, Caddy vhost) repointed to the tailnet `100.119.134.94` (userspace tailscaled forwards inbound tailnet→loopback). Guarded by `verification/checks.d/seedbox.yaml` (`seedbox-public-lockdown`, `seedbox-loopback-binds`, `seedbox-arr-deluge-e2e` — all green). Runbook: `wiki/docs/runbooks/seedbox-exposure.md`.
+
 **Host:** seedbox (betty.bysh.me / 185.162.184.38) · **Component:** Deluge daemon RPC + deluge-web + qBittorrent WebUI · **Auditor:** host:seedbox
 
 
@@ -1120,6 +1122,8 @@ tail soularr.log -> '[INFO|soularr|L414] 2026-07-15T12:29:11-0400: Skipping fail
 
 ### M25. slskd API driven over plaintext HTTP to a public IP (API key in cleartext); docs claim Tailscale
 
+> **RESOLVED 2026-07-17 (fix-21).** slskd binds 127.0.0.1:5030 (HTTPS 5031 disabled); soularr `host_url` → `http://100.119.134.94:5030` (WireGuard-encrypted; clean cycle verified). Root cause of the doc/intent drift: the NAS Tailscale package lacked TUN mode so outbound tailnet TCP never worked — fixed via `tailscale configure synology` + DSM task 13 (`configs/nas/tailscale/`). Guarded by `seedbox-slskd-e2e` (Connected+LoggedIn over tailnet, green).
+
 **Host:** seedbox · **Component:** slskd / soularr · **Auditor:** svc:nas-apps
 
 
@@ -1925,6 +1929,8 @@ journalctl --list-boots shows only boots -1 and 0 (first retained entry 2026-07-
 ~/tmp contains sonarr_update (559M), radarr_update (569M), prowlarr_update (510M) plus *_backup dirs and clr-debug-pipe/dotnet-diagnostic sockets, all dated Jun 27. No sonarr/radarr/prowlarr/dotnet processes run on the seedbox anymore (the arr stack lives on the NAS), so these are orphaned leftovers from a past on-seedbox arr install occupying ~1.7G.
 
 ### L9. qBittorrent-nox running since Jun 27 with zero torrents loaded (vestigial second client)
+
+> **RESOLVED 2026-07-17 (fix-21).** Daemon stopped, `~/.startup/qbittorrent` launcher removed (config data left in place). `seedbox-services-manifest` check alerts if it reappears.
 
 **Host:** seedbox · **Component:** qBittorrent-nox · **Auditor:** host:seedbox
 

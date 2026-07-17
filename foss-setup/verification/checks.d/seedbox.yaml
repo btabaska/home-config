@@ -1,0 +1,89 @@
+# Seedbox "betty" exposure + tailnet-path checks — fix-21 (quality-gate H2/L9/M25,
+# 2026-07-17). The lockdown moved Deluge RPC/web + slskd to loopback binds, retired
+# qBittorrent, and repointed every consumer (sonarr/radarr/lidarr/readarr/whisparr
+# Deluge client + soularr slskd host_url) at the tailnet address 100.119.134.94,
+# reached through userspace-tailscaled's inbound-to-loopback forwarding. These checks
+# probe BOTH failure directions: services leaking back onto the public IP (exposure
+# class) and the private tailnet path silently dying (which would strand every grab).
+# SLSKD_API_KEY lives in mini /etc/verification/env (vault soulseek.slskd_api_key).
+checks:
+  # -- class-level: NOTHING admin-shaped may answer on the public IP. Catches this
+  #    exact regression (deluge/qbittorrent/slskd rebinding 0.0.0.0) and any sibling
+  #    service that newly appears on a public port.
+  - id: seedbox-public-lockdown
+    name: "seedbox: admin ports closed on public IP (H2/L9/M25 regression)"
+    host: mini
+    cmd: >-
+      open=""; for p in 3254 5945 13091 5030 5031; do
+      timeout 5 bash -c "</dev/tcp/betty.bysh.me/$p" 2>/dev/null && open="$open $p";
+      done; [ -z "$open" ] && echo CLOSED_ALL || echo "STILL_OPEN:$open"
+    expect: '^CLOSED_ALL$'
+    severity: crit
+    task_id: fix-21
+    runbook: wiki/docs/runbooks/seedbox-exposure.md
+    enabled: true
+
+  # -- class-level, inside view: the admin listeners exist AND are loopback-only.
+  #    Complements the sweep above (catches a service that died vs one that rebound).
+  - id: seedbox-loopback-binds
+    name: "seedbox: deluge RPC/web + slskd bound to 127.0.0.1 only"
+    host: seedbox
+    cmd: >-
+      bad=""; for p in 3254 5945 5030; do
+      ss -tln | grep -q "127.0.0.1:$p " || bad="$bad missing:$p";
+      ss -tln | grep -E "(0.0.0.0|\*):$p " >/dev/null && bad="$bad public:$p";
+      done; [ -z "$bad" ] && echo LOOPBACK_OK || echo "BAD:$bad"
+    expect: '^LOOPBACK_OK$'
+    severity: crit
+    task_id: fix-21
+    runbook: wiki/docs/runbooks/seedbox-exposure.md
+    enabled: true
+
+  # -- regression, consumer end: Sonarr itself tests its Deluge connection (container
+  #    -> NAS TUN routing -> tailnet -> userspace forward -> loopback deluge-web).
+  #    Proves the WHOLE arr->Deluge path, not liveness. 200 = Sonarr connected+authed.
+  - id: seedbox-arr-deluge-e2e
+    name: "seedbox: sonarr -> Deluge over tailnet (download-client test passes)"
+    host: mini
+    cmd: >-
+      D=$(curl -sm 20 -H "X-Api-Key: $SONARR_API_KEY"
+      http://192.168.10.4:8989/api/v3/downloadclient
+      | python3 -c 'import json,sys; print(json.dumps([d for d in json.load(sys.stdin) if d["implementation"]=="Deluge"][0]))');
+      curl -sm 40 -X POST -H "X-Api-Key: $SONARR_API_KEY" -H "Content-Type: application/json"
+      -d "$D" -o /dev/null -w '%{http_code}' http://192.168.10.4:8989/api/v3/downloadclient/test
+    expect: '^200$'
+    severity: crit
+    task_id: fix-21
+    runbook: wiki/docs/runbooks/seedbox-exposure.md
+    enabled: true
+
+  # -- regression, consumer end: slskd API over the tailnet answers with a live
+  #    Soulseek-network login (the soularr path: API reachable + key valid + slskd
+  #    actually logged in upstream — 'Connected, LoggedIn', not just port-open).
+  - id: seedbox-slskd-e2e
+    name: "seedbox: slskd over tailnet Connected+LoggedIn to Soulseek (M25 regression)"
+    host: mini
+    cmd: >-
+      curl -sm 15 -H "X-API-Key: $SLSKD_API_KEY" http://100.119.134.94:5030/api/v0/server
+      | python3 -c 'import json,sys; print(json.load(sys.stdin).get("state",""))'
+    expect: 'Connected.*LoggedIn'
+    severity: crit
+    task_id: fix-21
+    runbook: wiki/docs/runbooks/seedbox-exposure.md
+    enabled: true
+
+  # -- coverage tripwire for the (non-docker) seedbox: expected daemons running,
+  #    retired ones absent — mirrors verification/coverage/seedbox.services.
+  - id: seedbox-services-manifest
+    name: "seedbox: running services match coverage manifest (qbittorrent retired)"
+    host: seedbox
+    cmd: >-
+      bad=""; for s in deluged deluge-web slskd tailscaled syncthing; do
+      pgrep -u "$(whoami)" -x "$s" >/dev/null || bad="$bad down:$s"; done;
+      pgrep -u "$(whoami)" -x qbittorrent-nox >/dev/null && bad="$bad retired-but-running:qbittorrent-nox";
+      [ -z "$bad" ] && echo MANIFEST_OK || echo "BAD:$bad"
+    expect: '^MANIFEST_OK$'
+    severity: warn
+    task_id: fix-21
+    runbook: wiki/docs/runbooks/seedbox-exposure.md
+    enabled: true

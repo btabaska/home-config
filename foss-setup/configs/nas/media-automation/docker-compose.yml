@@ -10,7 +10,9 @@
 # daemons.
 #
 # HOW THE TWO HALVES CONNECT
-#   - Home apps reach remote Deluge over its API (host 185.162.184.38).
+#   - Home apps reach remote Deluge over its API via the TAILNET
+#     (host 100.119.134.94:5945 — fix-21: Deluge binds loopback on Betty, the
+#     public IP exposes nothing; needs NAS Tailscale TUN mode, configs/nas/tailscale/).
 #   - Home apps READ completed downloads through an rclone SFTP mount of the
 #     seedbox `files/` folder (see ../../../scripts/media/rclone-seedbox-mount.sh):
 #         seedbox:/home/hd34/btabaska/files  ->  /volume1/mounts/seedbox-files
@@ -337,7 +339,7 @@ services:
   # subfolder (isolated from the 557 GB hand-curated pile at /volume1/stash/root),
   # and Stash indexes new scenes on its next scan of that library path.
   #
-  # DOWNLOAD CLIENT: remote Deluge on Betty (185.162.184.38:5945) — SAME client and
+  # DOWNLOAD CLIENT: remote Deluge on Betty via tailnet (100.119.134.94:5945, fix-21) — SAME client and
   # Remote Path Mapping (/home/hd34/btabaska/files/ -> /seedbox/) as radarr; set in
   # the Whisparr UI/API, not here. INDEXERS: Prowlarr fullSyncs ONLY its adult-capable
   # indexers here (XXX-category match; live sync landed BitPorn + IPTorrents) — Prowlarr gates app sync on category

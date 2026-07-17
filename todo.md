@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**167/260 done** · **67 open** · **18 deferred** · 10 retired.
+**168/260 done** · **66 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -73,7 +73,6 @@
 - [ ] **`read-12`** Install + configure gPodder for podcasts on CachyOS (funnel into Rhythmbox) _(est 20 min)_
 
 ### security
-- [ ] **`fix-21`** Close public exposure of seedbox torrent clients (Deluge RPC/web, qBittorrent, slskd) _(est 1-3 hrs)_
 - [ ] **`fix-22`** Make restic B2 backups actually immutable (default retention) + lock hyper-backup bucket _(est 1-3 hrs)_
 - [ ] **`fix-23`** Secrets & filesystem-permission hygiene (world-readable env, stale local secret dumps) _(est 1-3 hrs)_
 - [ ] **`foss-01`** Bitwarden → Vaultwarden data cutover (point clients at vault.tabaska.us) _(est 1-2 hrs)_

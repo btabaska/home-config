@@ -18,9 +18,33 @@ The ISP never sees a swarm.
 - **deluge-reaper** — daily 05:00 cron (`~/scripts/deluge-reaper.py --live`,
   repo copy `configs/host/seedbox/deluge-reaper.py`): prunes dead/aged
   torrents per label rules
+- **tailscaled** (userspace) + **syncthing** — systemd user units / `~/.startup`
 
-Nothing else. No *arr apps, no qBittorrent, no sync agents — the full *arr
-stack lives on the [NAS](nas.md).
+Nothing else. No *arr apps, no sync agents — the full *arr stack lives on the
+[NAS](nas.md). qBittorrent was **retired 2026-07-17** (fix-21/L9: idle since
+Jun 27 with a public WebUI).
+
+## Network exposure (fix-21 lockdown, 2026-07-17)
+
+Quality-gate H2/M25 found Deluge RPC/web, qBittorrent and slskd all bound to
+the **public** shared IP, with arr/soularr passwords crossing the WAN in
+cleartext. Since the lockdown:
+
+- Deluge RPC `3254`, deluge-web `5945`, slskd `5030` bind **127.0.0.1 only**;
+  slskd HTTPS `5031` is disabled. Public IP exposes just sshd + the peer ports
+  (Deluge `51867` TCP/UDP via `random_port`, Soulseek `50300`).
+- Consumers reach them **over the tailnet** at `100.119.134.94` — userspace
+  tailscaled forwards inbound tailnet connections to loopback. Repointed:
+  sonarr/radarr/lidarr/readarr/whisparr Deluge client **and Remote Path
+  Mapping host**, soularr `host_url`, and the mini Caddy vhosts
+  (`deluge.tabaska.us` → `:5945` — it had been proxying `:8112`, which is
+  **another tenant's** Deluge on this shared box, a false-green Kuma monitor).
+- The NAS needs its Tailscale package in **TUN mode** for outbound tailnet TCP
+  (see `configs/nas/tailscale/`); DSM task 13 re-asserts it daily.
+- Config mirrors + persistence details: `configs/host/seedbox/README.md`.
+  Guarded by `verification/checks.d/seedbox.yaml` (public-port sweep, loopback
+  binds, sonarr→Deluge e2e, slskd LoggedIn e2e, service manifest) — runbook:
+  [seedbox exposure](../runbooks/seedbox-exposure.md).
 
 ## How files reach home
 
@@ -43,7 +67,11 @@ panel handles the OS. Keys-only SSH; the provider box is the one
 internet-exposed surface, treat credentials accordingly.
 
 !!! note "Liveness signals"
-    `ssh seedbox` works (Tailscale). Kuma watches the Deluge and slskd web
-    UIs via `deluge.tabaska.us` / `slskd.tabaska.us`; the NAS rclone mount
-    showing fresh files is the functional end-to-end signal. There is no
-    root, so host-level monitoring is the provider's job.
+    `ssh seedbox` works (Tailscale SSH from the laptop; mini's verification
+    runner uses the public `betty.bysh.me` sshd — the tailnet ACL only allows
+    the laptop). Kuma watches the Deluge and slskd web UIs via
+    `deluge.tabaska.us` / `slskd.tabaska.us`; the `seedbox-*` verification
+    checks probe the consumer paths end to end (sonarr's own download-client
+    test, slskd Soulseek login); the NAS rclone mount showing fresh files is
+    the functional end-to-end signal. There is no root, so host-level
+    monitoring is the provider's job.

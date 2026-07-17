@@ -1,0 +1,14 @@
+[Unit]
+Description=Tailscale connect (userspace)
+After=tailscaled.service
+Requires=tailscaled.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=%h/tailscale/tailscale \
+  --socket=%h/tailscale/tailscaled.sock \
+  up --hostname=seedbox --ssh
+
+[Install]
+WantedBy=default.target

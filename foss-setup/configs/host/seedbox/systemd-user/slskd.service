@@ -1,0 +1,13 @@
+[Unit]
+Description=Soulseek daemon (native — not rootless Docker)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/bin/slskd/start-slskd.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

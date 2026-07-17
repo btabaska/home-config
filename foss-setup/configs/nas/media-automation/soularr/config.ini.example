@@ -15,8 +15,9 @@ disable_sync = False
 [Slskd]
 # slskd web UI → Options → API key (or slskd.yml under web.authentication.api_keys)
 api_key = <slskd-api-key>
-# Betty's Tailscale hostname or 100.x address — NOT the public shared IP for API traffic
-host_url = http://betty.<tailnet>:5030
+# Betty's tailnet address — NOT the public shared IP (fix-21: slskd binds loopback,
+# reachable only via tailnet; needs NAS Tailscale in TUN mode, see configs/nas/tailscale/)
+host_url = http://100.119.134.94:5030
 url_base = /
 # Path INSIDE slskd on Betty (native install — matches SLSKD_DOWNLOADS in ~/slskd-native/.env)
 download_dir = /home/hd34/btabaska/files/slskd
