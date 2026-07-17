@@ -11513,5 +11513,27 @@
     ],
     "verify": "README paragraph matches reality in repo and on mini; Plex prefs show ManualPortMappingMode=1 port 32400; run-checks.sh --host edge 5/5 green.",
     "source": "fix-24 follow-through 2026-07-17"
+  },
+  {
+    "id": "media-08",
+    "title": "CWA duplicate ingest on Readarr re-import \u2014 connect script has no dedupe, add a books-dup tripwire",
+    "host": "nas",
+    "type": "async",
+    "depends_on": [],
+    "estimate": "30-60 min",
+    "required": false,
+    "track": "media-pipeline",
+    "run": 5,
+    "mode": "ai",
+    "gate": "",
+    "summary": "Follow-through on fix-26 (2026-07-17, H15): manual-importing the Naamah's Curse epub into readarr book 293 re-fired the readarr->CWA connect script, and CWA ingested a second copy ('Naamah's Curse (62)' beside the existing (58)) \u2014 CWA does not dedupe by identified work on ingest. The instance was cleaned (calibredb remove 62, verified db+disk), but the class remains: ANY readarr re-import/upgrade of a book already in CWA will create a user-facing duplicate on the Kobo/shelf. Options: dedupe in the connect script (skip copy when CWA already has the identified work), a CWA setting if one exists, or at minimum a verification check that flags duplicate titles per author in /volume1/books (music-dupes.py analog for books).",
+    "steps": [
+      "Locate the readarr->CWA connect script and check for any existing dedupe/skip logic.",
+      "Prefer dedupe at the source (skip ingest when CWA has the work); else add a books-dup check in checks.d.",
+      "Test with a deliberate re-import of an existing book; verify no duplicate appears and/or the check fires."
+    ],
+    "findings": [],
+    "verify": "Re-importing a book that already exists in CWA does not produce a second library entry, or the new check flags it within a day.",
+    "source": "fix-26 follow-through 2026-07-17"
   }
 ]
