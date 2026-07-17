@@ -1,6 +1,6 @@
 # Roadmap — security
 
-13 task(s). Status mirrors `docs/progress.json` (the source of truth).
+14 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -17,5 +17,6 @@
 | `sec-06` | B2 master key custody: regenerate in console, store offline (Bitwarden/paper); optionally scope HB's key | ⬜ open | 15-30 min |
 | `sec-07` | ntfy least-privilege: per-publisher users/tokens instead of everything on admin | ⬜ open | 1-2 hrs |
 | `sec-08` | Rotate credentials that left the fleet: Plex token (iCloud snapshot) + secrets printed in the committed audit doc; purge iCloud Recently Deleted | ⬜ open | 1-2 hrs |
+| `sec-09` | Cloudflare token least-privilege: read-only DNS token for verification; keep the write token vault-only | ⬜ open | 30-45 min |
 
 [← Roadmap overview](index.md)

@@ -1,6 +1,6 @@
 # Roadmap — network
 
-16 task(s). Status mirrors `docs/progress.json` (the source of truth).
+17 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -20,5 +20,6 @@
 | `net-12` | UniFi security extras: IDS/IPS, WPA3, per-SSID mapping | ✅ done | 20 min |
 | `net-13` | Enable Tailscale SSH for key-less, ACL-gated admin access | ✅ done | 30 min |
 | `net-14` | SSH key + ~/.ssh/config fallback across all hosts (break-glass) | ✅ done | 30-45 min |
+| `net-15` | Edge/verification doc-truth trivia: stale seedbox-SSH claim in verification README; Plex ManualPortMappingMode mismatch | ⬜ open | 20 min |
 
 [← Roadmap overview](index.md)

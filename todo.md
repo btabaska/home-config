@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**171/263 done** · **66 open** · **18 deferred** · 10 retired.
+**171/265 done** · **68 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -52,6 +52,9 @@
 - [ ] **`fix-31`** Restore UPS/NUT power-loss protection (or cleanly retire the dead client) _(est 1-3 hrs)_
 - [ ] **`fix-40`** NAS host hygiene: timezone drift, soularr parked import, core dumps, junk files, single-disk note _(est 1-3 hrs)_
 
+### network
+- [ ] **`net-15`** Edge/verification doc-truth trivia: stale seedbox-SSH claim in verification README; Plex ManualPortMappingMode mismatch _(est 20 min)_
+
 ### ops
 - [ ] **`fix-32`** Fix Caddy reverse-proxy routes (ha.tabaska.us 400, llamaswap not reloaded, stray placeholders/vhosts) _(est 1-3 hrs)_
 - [ ] **`fix-41`** Repo-vs-live drift codification (forgejo stack, manifests, .env keys, ansible units) _(est 1-3 hrs)_
@@ -77,6 +80,7 @@
 - [ ] **`sec-06`** B2 master key custody: regenerate in console, store offline (Bitwarden/paper); optionally scope HB's key _(est 15-30 min)_
 - [ ] **`sec-07`** ntfy least-privilege: per-publisher users/tokens instead of everything on admin _(est 1-2 hrs)_
 - [ ] **`sec-08`** Rotate credentials that left the fleet: Plex token (iCloud snapshot) + secrets printed in the committed audit doc; purge iCloud Recently Deleted _(est 1-2 hrs)_ — ⛔ gate: plex-token-rotation-signs-out-devices
+- [ ] **`sec-09`** Cloudflare token least-privilege: read-only DNS token for verification; keep the write token vault-only _(est 30-45 min)_
 
 ### smart-home
 - [ ] **`fix-36`** Home Assistant health: unavailable entities, dead integrations, pending updates _(est 1-3 hrs)_
