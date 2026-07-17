@@ -341,3 +341,34 @@ checks:
     task_id: fix-25
     runbook: wiki/docs/reference/seedbox/deluge-queue-hygiene.md
     enabled: true
+
+  # ---------------------------------------------------------------------------
+  # Request-layer rot (added 2026-07-17, fix-26 / H4 H15 M12 M36): the request
+  # dashboards (seerr, libreseerr) lying about what the backend will deliver.
+  # Four audited shapes: seerr request whose sonarr series was deleted after the
+  # request (dangling, PROCESSING forever); seerr movie with zero radarr history
+  # 10+ days (no release exists, user never told); libreseerr 'completed' whose
+  # readarr book has no file (junk-edition mis-import); libreseerr 'processing'
+  # days after import (statuses only refreshed on UI POST — now a background
+  # reconciler in app.py, this check fires if it dies). Probes the CONSUMER end:
+  # stored request state vs live backend truth.
+  # ---------------------------------------------------------------------------
+  - id: seerr-request-rot
+    name: "seerr: no PROCESSING request dangling or never-grabbed >7d (H4/M12 class)"
+    host: mini
+    cmd: python3 /opt/verification/bin/request-layer-audit.py seerr
+    expect: '^SEERR_OK'
+    severity: warn
+    task_id: fix-26
+    runbook: wiki/docs/services/libreseerr.md
+    enabled: true
+
+  - id: libreseerr-request-rot
+    name: "libreseerr: stored request statuses match readarr truth (H15/M36 class)"
+    host: mini
+    cmd: python3 /opt/verification/bin/request-layer-audit.py libreseerr
+    expect: '^LIBRESEERR_OK'
+    severity: warn
+    task_id: fix-26
+    runbook: wiki/docs/services/libreseerr.md
+    enabled: true

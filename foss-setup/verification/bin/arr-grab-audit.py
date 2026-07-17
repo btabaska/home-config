@@ -124,23 +124,30 @@ def mode_monitor_flags():
     if not key:
         print("CONFIG_ERR missing READARR_API_KEY")
         sys.exit(1)
+    # The bulk /book endpoint omits the nested author object entirely (verified
+    # live 2026-07-17, fix-26) — resolving the embedded field made every
+    # monitored+fileless book a false positive. Resolve parents via /author.
+    authors = {a["id"]: a for a in api(*ARRS["readarr"][:2], key, "/author")}
     for b in api(*ARRS["readarr"][:2], key, "/book"):
         if not b.get("monitored"):
             continue
         checked += 1
+        parent = authors.get(b.get("authorId")) or b.get("author") or {}
         if ((b.get("statistics", {}).get("bookFileCount") or 0) == 0
-                and not b.get("author", {}).get("monitored")):
+                and not parent.get("monitored")):
             hidden.append(f"readarr:{(b.get('title') or '?')[:40]}")
     key = os.environ.get("LIDARR_API_KEY")
     if not key:
         print("CONFIG_ERR missing LIDARR_API_KEY")
         sys.exit(1)
+    artists = {a["id"]: a for a in api(*ARRS["lidarr"][:2], key, "/artist")}
     for a in api(*ARRS["lidarr"][:2], key, "/album"):
         if not a.get("monitored"):
             continue
         checked += 1
+        parent = artists.get(a.get("artistId")) or a.get("artist") or {}
         if ((a.get("statistics", {}).get("sizeOnDisk") or 0) == 0
-                and not a.get("artist", {}).get("monitored")):
+                and not parent.get("monitored")):
             hidden.append(f"lidarr:{(a.get('title') or '?')[:40]}")
     if hidden:
         print(f"FLAGS_HIDDEN {len(hidden)}: " + "; ".join(hidden[:6]))

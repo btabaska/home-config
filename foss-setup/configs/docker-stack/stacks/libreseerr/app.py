@@ -214,6 +214,46 @@ load_requests()
 load_users()
 init_default_admin()
 
+# ─── Background request reconciler (M36) ───
+# Statuses used to update only when the UI POSTed /api/requests/refresh, so the
+# dashboard silently rotted whenever nobody had the page open. One worker (the
+# fcntl-lock winner — gunicorn runs several) reconciles every RECONCILE_INTERVAL
+# seconds; other workers see the result via the on-request reload_state().
+
+RECONCILE_INTERVAL = int(os.environ.get("RECONCILE_INTERVAL", "900"))
+_reconciler_lock_fd = None  # keeps the fcntl lock alive for the process lifetime
+
+
+def _reconciler_loop():
+    while True:
+        time.sleep(RECONCILE_INTERVAL)
+        try:
+            with lock:
+                load_requests()
+                _reconcile_requests()
+            app.logger.info("Background reconcile pass complete")
+        except Exception:
+            app.logger.exception("Background reconcile pass failed")
+
+
+def _start_reconciler():
+    global _reconciler_lock_fd
+    if RECONCILE_INTERVAL <= 0:
+        return
+    import fcntl
+    lock_path = os.path.join(os.path.dirname(REQUESTS_FILE), ".reconciler.lock")
+    try:
+        fd = open(lock_path, "w")
+        fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        return  # another worker owns the reconciler
+    _reconciler_lock_fd = fd
+    threading.Thread(target=_reconciler_loop, daemon=True, name="reconciler").start()
+    app.logger.info("Background request reconciler started (interval %ss)", RECONCILE_INTERVAL)
+
+
+_start_reconciler()
+
 if OIDC_AVAILABLE:
     oidc_helper.init_oidc(app, config)
 
@@ -1096,53 +1136,84 @@ def get_requests():
         return jsonify(requests_history)
 
 
+def _reconcile_requests():
+    """Reconcile stored request statuses against the backend. Caller holds lock.
+
+    Beyond queue/import progress this detects two rot states the 2026-07-16
+    audit found sitting silently for days (findings H15/M36): a request whose
+    backend book record no longer exists (dangling), and a request whose book
+    is unmonitored with no file (nothing will ever search for it — dead).
+    """
+    for req in requests_history:
+        if req["status"] in ("completed", "error"):
+            continue
+        client = get_client(req["server_type"])
+        if not client:
+            continue
+        try:
+            queue = client.get_queue()
+            req_book_id = req.get("readarr_book_id")
+            matching = [
+                q for q in queue
+                if q.get("title", "").lower() == req["title"].lower()
+                or (req_book_id and str(q.get("bookId")) == str(req_book_id))
+            ]
+            if matching:
+                q = matching[0]
+                status = q.get("status", "").lower()
+                size = q.get("size", 0)
+                size_left = q.get("sizeleft", 0)
+                # Book is in the download queue
+                req["status"] = "downloading"
+                if size > 0:
+                    req["progress"] = round((1 - size_left / size) * 100)
+                if status == "completed":
+                    req["status"] = "completed"
+                    req["progress"] = 100
+                elif status in ("failed", "warning"):
+                    req["status"] = "error"
+                    req["error"] = q.get("errorMessage", "Download failed")
+            elif req_book_id:
+                book = client.get_book_status(req_book_id)
+                if book is None:
+                    # get_book_status returns None only on a definitive 404
+                    req["status"] = "error"
+                    req["error"] = (
+                        "Backend book record no longer exists (dangling request) "
+                        "— re-request the title"
+                    )
+                    app.logger.warning(
+                        "Request '%s': book id=%s gone from backend, marked error",
+                        req.get("title"), req_book_id,
+                    )
+                elif (book.get("statistics") or {}).get("bookFileCount", 0) > 0:
+                    req["status"] = "completed"
+                    req["progress"] = 100
+                elif not book.get("monitored"):
+                    req["status"] = "error"
+                    req["error"] = (
+                        "Book is unmonitored in the backend with no file — "
+                        "nothing will ever search for it. Monitor it or re-request."
+                    )
+                    app.logger.warning(
+                        "Request '%s': book id=%s unmonitored with no file, marked error",
+                        req.get("title"), req_book_id,
+                    )
+        except Exception:
+            # Keep current status, but never swallow silently (M36)
+            app.logger.exception(
+                "Reconcile failed for request '%s' — keeping stored status",
+                req.get("title"),
+            )
+    save_requests()
+
+
 @app.route("/api/requests/refresh", methods=["POST"])
 @login_required
 def refresh_requests():
     """Refresh the status of all processing/downloading requests."""
     with lock:
-        for req in requests_history:
-            if req["status"] in ("completed", "error"):
-                continue
-            client = get_client(req["server_type"])
-            if not client:
-                continue
-            try:
-                queue = client.get_queue()
-                req_book_id = req.get("readarr_book_id")
-                matching = [
-                    q for q in queue
-                    if q.get("title", "").lower() == req["title"].lower()
-                    or (req_book_id and str(q.get("bookId")) == str(req_book_id))
-                ]
-                if matching:
-                    q = matching[0]
-                    status = q.get("status", "").lower()
-                    size = q.get("size", 0)
-                    size_left = q.get("sizeleft", 0)
-                    # Book is in the download queue
-                    req["status"] = "downloading"
-                    if size > 0:
-                        req["progress"] = round((1 - size_left / size) * 100)
-                    if status == "completed":
-                        req["status"] = "completed"
-                        req["progress"] = 100
-                    elif status in ("failed", "warning"):
-                        req["status"] = "error"
-                        req["error"] = q.get("errorMessage", "Download failed")
-                else:
-                    # Check Readarr history
-                    book_id = req.get("readarr_book_id")
-                    if book_id:
-                        book = client.get_book_status(book_id)
-                        if book and book.get("statistics"):
-                            stats = book["statistics"]
-                            if stats.get("bookFileCount", 0) > 0:
-                                req["status"] = "completed"
-                                req["progress"] = 100
-            except Exception as e:
-                pass  # Keep current status on error
-        save_requests()
+        _reconcile_requests()
     return jsonify(requests_history)
 
 

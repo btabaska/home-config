@@ -165,6 +165,10 @@ ssh seedbox tail ~/logs/deluge-reaper.log -> '2026-07-15 05:00:11 LIVE: 0 eligib
 
 **Host:** mini + nas · **Component:** seerr -> sonarr link · **Auditor:** svc:request-layer
 
+> **Resolution (2026-07-17, task `fix-26`):** request 12 and its media entry deleted from seerr
+> (user chose clear-out over re-adding the deleted series; re-requestable any time). Class
+> tripwire added: `seerr-request-rot` (verification/checks.d/media.yaml) fails whenever a
+> PROCESSING request's externalServiceId 404s in sonarr/radarr — green post-fix, checked=2.
 
 Seerr request 12 (tv tmdb 283746 / tvdb 433627, 'New Teen Titans') is APPROVED with media status PROCESSING and mediaInfo.externalServiceId=258, but Sonarr has no series with tvdbId 433627 (162 series total) and GET /api/v3/series/258 returns 404 — the series was deleted from Sonarr after the request. Seerr's availability-sync does not detect the dangling link, so the request can never complete or fail; it will sit in PROCESSING indefinitely. Needs manual decline/re-request or media entry deletion in seerr.
 
@@ -407,6 +411,16 @@ sqlite3 library.db "select ... from request_history where status not in ('comple
 
 **Host:** nas · **Component:** readarr / rreading-glasses metadata · **Auditor:** flow:books
 
+> **Resolution (2026-07-17, task `fix-26`):** discovery: 262 is not a duplicate work — it is the
+> ONLY Naamah's Kiss record upstream, whose Readarr-picked edition (fgnEd 23551502, no ISBN) is a
+> junk misspelled Goodreads edition; a correct edition (fgnEd 5659537, ISBN 9780446198035) sat
+> unmonitored on the same record. Fixed by pinning the correct edition with `anyEditionOk=false`
+> (survives RefreshAuthor — verified; without the flag the refresh reverts the pick). The
+> mislabeled epub (Curse content) was staged out, its stale bookfile record deleted, and
+> manual-imported to book 293 (Naamah's Curse) — now 1 file, monitored, folder/filename correct;
+> libreseerr shows it completed. Book 262 re-driven as a real Naamah's Kiss request (monitored +
+> BookSearch; no release found yet). Tripwire: `libreseerr-request-rot` fails on any 'completed'
+> request whose readarr book has no file.
 
 rreading-glasses metadata contains a junk duplicate record 'Namaah's Kiss' (readarr book id 262, misspelled) alongside the real 'Naamah's Curse' (id 293). The 2026-07-13 'Naamah's Curse' grab was matched to book 262: readarr deleted book 262's prior file and imported the Curse epub as 'Jacqueline Carey - Namaah's Kiss.epub'. Net live state: book 293 (Naamah's Curse) has 0 files so the libreseerr request is stuck 'processing 0%' forever even though CWA actually HAS Naamah's Curse (58) (the connect script copied the file and CWA identified it correctly from embedded metadata); meanwhile the earlier 'Naamah's Kiss' request shows completed 100% because book 262 has a file — but that file is Curse content and NO Naamah's Kiss exists anywhere in the CWA library (Jacqueline Carey dir: Dart, Avatar, Chosen, Blessing, Curse, Miranda only). User-facing: a book reported complete is not actually available. Same junk-edition root-cause family as the libreseerr app.py patch (known issue 10) but this is a new, readarr-side manifestation.
 
@@ -921,6 +935,12 @@ GET /api/states: 11x 'unavailable' sensor.btiphone_* (audio_output, bssid, conne
 **Host:** mini + nas · **Component:** seerr -> radarr · **Auditor:** svc:request-layer
 
 
+> **Resolution (2026-07-17, task `fix-26`):** request 10, its seerr media entry, and radarr
+> movie 313 all deleted (user chose clear-out: a 2020 charity livestream will realistically
+> never hit trackers; re-requestable any time, no import exclusion set). Class tripwire:
+> `seerr-request-rot` flags any PROCESSING movie that is available+monitored with zero radarr
+> history after 7 days, so "no release exists and nobody was told" can't sit silent again.
+
 Request 10 (movie tmdb 742922, a 2020 charity livestream special) was added to Radarr (movieId 313, monitored=True, released/available) on 2026-07-05 but Radarr history is completely empty — the initial search found no releases and nothing has been found since. It sits in Radarr's missing list, and the seerr request shows PROCESSING with no signal to the user that no release likely exists. Note: request 2 (Supergirl tmdb 1081003) is also PROCESSING but is legitimately status=inCinemas/not-yet-available — not a bug.
 
 
@@ -1379,6 +1399,15 @@ ssh nas sqlite3 "file:/volume1/docker/calibre-web-automated/config/app.db?mode=r
 
 **Host:** mini · **Component:** libreseerr (app.py status tracking) · **Auditor:** flow:books
 
+
+> **Resolution (2026-07-17, task `fix-26`):** the bind-mounted app.py now runs a background
+> reconciler — one gunicorn worker (fcntl lock on data/.reconciler.lock) reconciles every
+> non-terminal request against Readarr every 15 min, logs failures instead of `except: pass`,
+> and marks dangling (book 404) and dead (unmonitored, no file) requests as 'error' with an
+> explanation. Rosemary and Rue reconciled to completed/100 on the first pass. Three more
+> rotten rows found and re-driven (Kushiel's Scion, The Rotten Romans, Kushiel's Justice —
+> unmonitored 0-file books from pre-fix-25 requests, re-monitored + searched). Tripwire:
+> `libreseerr-request-rot` fires if a processing request's book has a file (reconciler dead).
 
 libreseerr has no background status refresher: GET /api/requests returns raw stored history, and statuses are only reconciled when the frontend POSTs /api/requests/refresh; that handler also does 'except Exception: pass' (keeps stale status silently on any readarr error). Result: 'Rosemary and Rue' (request 2026-07-13T20:16:40, readarr_book_id 305) was grabbed at 20:17:00 and imported at 20:17:31 — the file exists in readarr (474,601 B) and in the CWA library (61) — yet the stored request still reads status=processing, progress=0 on 2026-07-15. A refresh would fix this one (book 305 has bookFileCount 1), but the dashboard is misleading whenever the UI has not been opened. Could not trigger refresh myself (mutating POST, out of scope for this read-only pass).
 
