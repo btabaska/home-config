@@ -1,6 +1,6 @@
 # Roadmap — media-pipeline
 
-31 task(s). Status mirrors `docs/progress.json` (the source of truth).
+32 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -12,6 +12,7 @@
 | `fix-27` | Remediate "green but not watchable": sample-file imports + unextracted RARs | ⬜ open | 1-3 hrs |
 | `media-05` | Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) | ⬜ open | 1-2 hrs |
 | `media-06` | Resolve the rig ~/Music mirror conflict (05:00 ALAC transcode vs 05:30 rsync --delete-after) | ✅ done | 30 min |
+| `media-07` | MusicSeerr can still create unmonitored-artist requests (upstream monitor_artist=0 default) — tripwire-covered, close the generator | ⬜ open | 30-45 min |
 | `nas-10` | Deploy Plex Media Server on the NAS (libraries + Quick Sync) | ✅ done | 45-60 min |
 | `nas-20` | rclone SFTP mount of the seedbox files (persistent + self-healing) | ✅ done | 45 min |
 | `nas-21` | Deploy the NAS media-automation *arr stack (phased, pinned) | ✅ done | 1-2 hrs |

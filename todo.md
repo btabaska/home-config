@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**172/265 done** · **67 open** · **18 deferred** · 10 retired.
+**172/266 done** · **68 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -41,6 +41,7 @@
 - [ ] **`fix-26`** Reconcile stuck request-layer states (seerr/libreseerr/musicseerr dangling & unmonitored) _(est 1-3 hrs)_
 - [ ] **`fix-27`** Remediate "green but not watchable": sample-file imports + unextracted RARs _(est 1-3 hrs)_
 - [ ] **`media-05`** Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) _(est 1-2 hrs)_
+- [ ] **`media-07`** MusicSeerr can still create unmonitored-artist requests (upstream monitor_artist=0 default) — tripwire-covered, close the generator _(est 30-45 min)_
 - [ ] **`seed-12`** Deploy Bitmagnet self-hosted DHT crawler on NAS (rate-limit-proof indexer hedge) _(est ~1 hr + runbook)_
 
 ### media-polish
