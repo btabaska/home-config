@@ -1,7 +1,9 @@
 # Runbook — Backup & restore
 
 Target model: **3-2-1-1-0** — three copies, two media, one off-site (B2), one
-immutable (B2 Object Lock), zero restore errors (tested). Tier 1
+immutable (B2 Object Lock GOVERNANCE 30d on `bucket-restic` — live since
+2026-07-17, see [Immutability](#immutability-b2-object-lock-fix-22-2026-07-17)),
+zero restore errors (tested). Tier 1
 (irreplaceable: photos, documents, configs, HA, saves) goes off-site;
 Tier 2 (re-acquirable media) gets local redundancy only.
 
@@ -96,6 +98,39 @@ sudo bash -c 'set -a; . /etc/restic/env; restic restore latest \
 Scripted monthly proof: `scripts/backup/restore-test.sh restic`
 (`ENV_FILE=/etc/restic/env`) — restores the latest snapshot to a temp dir
 and verifies files exist; read-only for the live system and the repo.
+
+## Immutability: B2 Object Lock (fix-22, 2026-07-17)
+
+The quality-gate audit (H20) found the documented "GOVERNANCE 30d" immutability
+was **not in effect** — `bucket-restic` had File Lock *enabled* but no default
+retention and no per-file retention, so the only guard was the append-only key.
+Resolved 2026-07-17:
+
+- **`bucket-restic`**: default retention **GOVERNANCE 30 days** + a one-time
+  backfill locked all 1174 pre-existing pack versions. New uploads are locked
+  automatically at upload — the append-only keys on mini/rig need no extra
+  capabilities. restic `forget`/`prune` still work: restic ≥0.19 deletes by
+  *hiding*, and the lifecycle rule (`daysFromHidingToDeleting: 30`) hard-deletes
+  only after both the hide window and retention have passed.
+- **`bucket-hyper-backup`**: **deliberately NOT locked** (M37, accepted).
+  Hyper Backup's Smart Recycle rotation must delete old versions; retention
+  would break it. Compensating controls: the delete-capable master key is out
+  of the vault (below), and the backup content is client-side encrypted.
+- **Master key retired from the vault**: it carries `deleteFiles` +
+  `bypassGovernance`, so a laptop/vault compromise could hard-delete
+  everything despite GOVERNANCE. Day-to-day access is now the scoped read-only
+  `b2-ops` key (vault `backblaze_b2.ops_key_id`/`ops_key` — list/read only).
+  Bucket admin uses the offline master key via
+  `scripts/backup/b2-apply-bucket-policy.py` (idempotent re-apply + backfill).
+- **Junk cleanup**: orphan empty `bucket-rustic` (typo bucket) deleted (L58);
+  the three 8-byte `ao-verify` test snapshots forgotten (L57) — their synthetic
+  hostnames put them in their own forget group, retained forever.
+
+Daily checks (all in `verification/checks.d/backups.yaml`, task `fix-22`):
+`b2-restic-immutable` (crit — asserts retention config **and live-attempts a
+delete with the vault key, expecting HTTP 401**), `b2-bucket-policy` (bucket-set
+manifest — catches unknown/typo buckets and policy drift),
+`restic-snapshot-hygiene-{mini,rig}` (no synthetic-host/test snapshots).
 
 ## Verify (any backup work)
 

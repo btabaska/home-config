@@ -81,3 +81,61 @@ checks:
     task_id: nas-02
     runbook: wiki/runbooks/backups.md
     enabled: true
+
+  # fix-22 (H20): the ransomware-immutability guarantee, probed at the CONSUMER
+  # end — not "is the config set" but "can the key in the vault actually delete
+  # a backup". b2-bucket-guard.py asserts governance/30d default retention,
+  # per-file retention on the newest packs, that the ops key is read-only, and
+  # then ATTEMPTS a real b2_delete_file_version expecting HTTP 401. Runs on the
+  # mini (daily untiered sweep) with B2_OPS_KEY_ID/B2_OPS_KEY from
+  # /etc/verification/env — the scoped key created when the master key was
+  # retired from the vault (2026-07-17).
+  - id: b2-restic-immutable
+    name: "bucket-restic is actually immutable (retention + live delete refused 401)"
+    host: mini
+    cmd: python3 /opt/verification/bin/b2-bucket-guard.py --immutable
+    expect: '^IMMUTABLE'
+    severity: crit
+    task_id: fix-22
+    runbook: wiki/runbooks/backup-restore.md
+    enabled: true
+
+  # fix-22 class check (L58/M37): cloud-surface coverage manifest. Every bucket
+  # in the B2 account must match the EXPECTED policy dict in b2-bucket-guard.py
+  # — an unknown bucket (the bucket-rustic typo class) or drifted lock/lifecycle
+  # fails. bucket-hyper-backup is asserted in its DOCUMENTED accepted state
+  # (no lock — retention would break HB Smart Recycle rotation).
+  - id: b2-bucket-policy
+    name: "B2 account bucket set + lock/lifecycle policy match the manifest"
+    host: mini
+    cmd: python3 /opt/verification/bin/b2-bucket-guard.py --policy
+    expect: '^POLICY-OK'
+    severity: warn
+    task_id: fix-22
+    runbook: wiki/runbooks/backup-restore.md
+    enabled: true
+
+  # fix-22 class check (L57): junk/test snapshots with synthetic hostnames fall
+  # into their own `restic forget` group and are retained FOREVER (the ao-verify
+  # leftovers). Root wrapper (same sudoers pattern as restic-latest-age) lists
+  # snapshots live (~2-5s, nightly-warmed cache) and fails on any snapshot whose
+  # hostname isn't a real fleet host or whose tags look like test junk.
+  - id: restic-snapshot-hygiene-mini
+    name: "mini restic repo: no synthetic-host/test junk snapshots"
+    host: mini
+    cmd: sudo -n /usr/local/bin/restic-snapshot-hygiene
+    expect: '^HYGIENE-OK'
+    severity: warn
+    task_id: fix-22
+    runbook: wiki/runbooks/backup-restore.md
+    enabled: true
+
+  - id: restic-snapshot-hygiene-rig
+    name: "rig restic repo: no synthetic-host/test junk snapshots"
+    host: rig
+    cmd: sudo -n /usr/local/bin/restic-snapshot-hygiene
+    expect: '^HYGIENE-OK'
+    severity: warn
+    task_id: fix-22
+    runbook: wiki/runbooks/backup-restore.md
+    enabled: true

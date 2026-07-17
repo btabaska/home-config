@@ -63,6 +63,8 @@ bucket-restic has fileLock enabled but NO default/per-file retention → nothing
 
 **Resolves 4 findings:** `H20` bucket-restic has fileLock enabled but NO default retention , `L57` Leftover 8-byte 'ao-verify'/'ao-verify2' test snapshots in b, `L58` Orphan empty bucket 'bucket-rustic' (apparent typo of bucket, `M37` Confirmed still true: bucket-hyper-backup has NO Object Lock
 
+> **RESOLVED 2026-07-17** — GOVERNANCE 30d default retention set + 1174 existing versions backfilled (H20); `bucket-rustic` deleted (L58); 3 ao-verify snapshots forgotten (L57); `bucket-hyper-backup` documented accepted-unlocked — retention would break HB Smart Recycle rotation (M37). Master key retired from the vault, replaced day-to-day by a scoped read-only `b2-ops` key. Checks `b2-restic-immutable` (crit, live delete-probe → 401), `b2-bucket-policy`, `restic-snapshot-hygiene-{mini,rig}` all green. See `wiki/docs/runbooks/backup-restore.md` § Immutability.
+
 ### `fix-23` 🟡 Secrets & filesystem-permission hygiene (world-readable env, stale local secret dumps)
 *host:* nas · *track:* security · *severity:* medium
 

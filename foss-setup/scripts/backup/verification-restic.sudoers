@@ -2,3 +2,4 @@
 # Lets the verification runner (btabaska) read restic snapshot freshness without
 # loosening the root-only /etc/restic/env: exactly this root-owned script, no args.
 btabaska ALL=(root) NOPASSWD: /usr/local/bin/restic-latest-age
+btabaska ALL=(root) NOPASSWD: /usr/local/bin/restic-snapshot-hygiene

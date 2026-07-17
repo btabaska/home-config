@@ -176,7 +176,8 @@
     "ai-01": true,
     "fix-20": true,
     "fix-33": "2026-07-16: feeds unfrozen (49/49 polling, POLLING_PARSING_ERROR_LIMIT=0), bootstrap admin deleted + creds stripped, API key vaulted, 4 new verification checks green (H7, L23)",
-    "fix-21": "2026-07-17: tailnet lockdown \u2014 Deluge/slskd bind loopback, qBittorrent retired, NAS Tailscale TUN mode fixed, arrs+soularr+Caddy repointed to 100.119.134.94; 5 e2e checks green (H2, L9, M25)"
+    "fix-21": "2026-07-17: tailnet lockdown \u2014 Deluge/slskd bind loopback, qBittorrent retired, NAS Tailscale TUN mode fixed, arrs+soularr+Caddy repointed to 100.119.134.94; 5 e2e checks green (H2, L9, M25)",
+    "fix-22": "2026-07-17: B2 immutability \u2014 GOVERNANCE 30d default retention + 1174-version backfill on bucket-restic; bucket-rustic deleted; 3 ao-verify snapshots forgotten; master key retired from vault to scoped read-only b2-ops key; hyper-backup bucket documented accepted-unlocked; 4 e2e checks green (H20, L57, L58, M37)"
   },
   "reopened": {},
   "retired": {
