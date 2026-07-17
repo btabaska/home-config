@@ -126,6 +126,7 @@ nav:
       - Seedbox exposure / tailnet path: runbooks/seedbox-exposure.md
       - Secrets hygiene: runbooks/secrets-hygiene.md
       - Edge / WAN exposure: runbooks/edge-exposure.md
+      - Media — green but not watchable: runbooks/media-watchable.md
   - Operations:
       - Overview: operations/index.md
       - Ansible & convergence: operations/ansible.md
@@ -222,6 +223,7 @@ nav:
       - git-hygiene: reference/checks/git-hygiene.md
       - ha: reference/checks/ha.md
       - media: reference/checks/media.md
+      - media-watchable: reference/checks/media-watchable.md
       - mini-services: reference/checks/mini-services.md
       - nas-services: reference/checks/nas-services.md
       - network: reference/checks/network.md

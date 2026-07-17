@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**173/267 done** · **68 open** · **18 deferred** · 10 retired.
+**174/267 done** · **67 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -38,7 +38,6 @@
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
 
 ### media-pipeline
-- [ ] **`fix-27`** Remediate "green but not watchable": sample-file imports + unextracted RARs _(est 1-3 hrs)_
 - [ ] **`media-05`** Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) _(est 1-2 hrs)_
 - [ ] **`media-07`** MusicSeerr can still create unmonitored-artist requests (upstream monitor_artist=0 default) — tripwire-covered, close the generator _(est 30-45 min)_
 - [ ] **`media-08`** CWA duplicate ingest on Readarr re-import — connect script has no dedupe, add a books-dup tripwire _(est 30-60 min)_

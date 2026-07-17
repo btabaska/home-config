@@ -1,0 +1,70 @@
+# fix-27 "green but not watchable" acceptance checks (2026-07-17).
+#
+# The 2026-07-16 audit found 177 *arr items reporting hasFile=True while the
+# tracked file was a scene Sample/*.avi, a Plex-unplayable .iso, or an
+# un-extracted .rar — green in Sonarr/Radarr, invisible to liveness monitoring,
+# unwatchable in Plex. These probe the CONSUMER-relevant invariant, not liveness:
+#   (a) class check  — no hasFile item points at a sample/iso/archive/stub
+#   (b) regression    — the H11 flagship (Gossip Girl) is actually in Plex
+#   (c) class check  — the library isn't accumulating un-extracted rar backlog
+#       that unpackerr (queue-driven) can never reach (M60)
+#   (d) regression    — the M27 whisparr block survives redeploys of unpackerr
+checks:
+  # (a) THE class canary. Sweeps every Radarr movieFile + Sonarr episodeFile and
+  # fails if ANY hasFile item is a sample / iso / archive / stuck-partial / byte
+  # stub. This is the exact defect class fix-27 remediated; it catches siblings
+  # and any future recurrence (e.g. a bulk library re-scan re-importing a sample).
+  - id: media-arr-file-quality
+    name: "arr: no hasFile item points at a sample/iso/rar/stub (green==watchable)"
+    host: mini
+    cmd: python3 /opt/verification/bin/arr-file-quality.py
+    expect: '^WATCHABLE_OK'
+    severity: warn
+    task_id: fix-27
+    runbook: wiki/docs/runbooks/media-watchable.md
+    enabled: true
+
+  # (b) Regression for H11 (Gossip Girl: 120 sample episodes, 0 in Plex). Probes
+  # the CONSUMER end directly — the show now resolves in Plex with its real
+  # episode count. A whole-show-invisible regression (ACL/path/sample re-import)
+  # drops leafCount and trips this.
+  - id: media-gossip-girl-in-plex
+    name: "regression: Gossip Girl present in Plex with its full episode count (H11)"
+    host: mini
+    cmd: >-
+      curl -sm 15 "$PLEX_URL/library/sections/2/all?title=Gossip%20Girl&X-Plex-Token=$PLEX_TOKEN"
+      | python3 -c "import sys,re;x=sys.stdin.read();m=re.search(r'leafCount=\"(\d+)\"',x);print('gg_episodes='+(m.group(1) if m else '0'))"
+    expect: '^gg_episodes=(1[0-9]{2}|[2-9][0-9]{2})$'
+    severity: warn
+    task_id: fix-27
+    runbook: wiki/docs/runbooks/media-watchable.md
+    enabled: true
+
+  # (c) Extraction backlog (M60), *arr-driven and precise. Counts Radarr movies
+  # that are hasFile=False (wanted, missing) yet have an un-extracted rar set in
+  # their folder — content unpackerr's queue-driven design can never reach. This
+  # deliberately excludes the raw-filesystem noise (subtitle packs, redundant
+  # rars next to an already-imported episode). Post-fix-27 floor is 3 honestly
+  # un-recoverable movies (2 iso-in-rar, 1 corrupt archive); a rise means a new
+  # rar-only import stranded content — extract in place or re-grab (see runbook).
+  - id: media-extraction-backlog
+    name: "arr: <=8 wanted movies stranded as un-extracted rar (M60 backlog)"
+    host: mini
+    cmd: python3 /opt/verification/bin/arr-rar-backlog.py
+    expect: '^RARBACKLOG_OK'
+    severity: warn
+    task_id: fix-27
+    runbook: wiki/docs/runbooks/media-watchable.md
+    enabled: true
+
+  # (d) M27 regression: the whisparr block must survive an unpackerr redeploy
+  # (host file is regenerated from the repo). Guards the anti-drift landing.
+  - id: unpackerr-whisparr-block
+    name: "unpackerr: whisparr block present (M27 — else rar'd adult grabs stall silent)"
+    host: nas
+    cmd: grep -c '^\[\[whisparr\]\]' /volume1/docker/media-automation/unpackerr/unpackerr.conf
+    expect: '^1$'
+    severity: warn
+    task_id: fix-27
+    runbook: wiki/docs/runbooks/media-watchable.md
+    enabled: true

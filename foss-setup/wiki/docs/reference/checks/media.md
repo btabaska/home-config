@@ -1,6 +1,6 @@
 # Checks — media
 
-`foss-setup/verification/checks.d/media.yaml` — 16 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/media.yaml` — 18 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `music-library-dupes`
 
@@ -176,6 +176,28 @@ python3 /opt/verification/bin/arr-grab-audit.py grabs
 
 ```bash
 python3 /opt/verification/bin/arr-grab-audit.py monitor-flags
+```
+
+## `seerr-request-rot`
+
+seerr: no PROCESSING request dangling or never-grabbed >7d (H4/M12 class)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-26` · **enabled:** True
+- **expects:** `^SEERR_OK`
+
+```bash
+python3 /opt/verification/bin/request-layer-audit.py seerr
+```
+
+## `libreseerr-request-rot`
+
+libreseerr: stored request statuses match readarr truth (H15/M36 class)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-26` · **enabled:** True
+- **expects:** `^LIBRESEERR_OK`
+
+```bash
+python3 /opt/verification/bin/request-layer-audit.py libreseerr
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

@@ -349,6 +349,8 @@ Plex /library/sections/2/all?title=Gossip Girl -> 0 hits; sonarr series stats: e
 
 </details>
 
+> **Resolution (2026-07-17, task `fix-27`):** all 120 Gossip Girl sample episodeFiles' RAR sets extracted in place (`unrar x`), samples deleted, real DVDRip `.avi` files re-imported via ManualImport (multi-episode scene files mapped to their full episode range). Show now resolves in Plex. Guarded by `media-arr-file-quality` + `media-gossip-girl-in-plex`. Runbook: `wiki/docs/runbooks/media-watchable.md`.
+
 ### H12. 6 movies live with sample-file imports (6-129MB) as their movieFile — hasFile=True, none watchable in Plex `known-issue`
 
 **Host:** nas · **Component:** radarr (movie library integrity) · **Auditor:** flow:movies-tv
@@ -369,6 +371,8 @@ All 6 tmdbIds absent from Plex Movies guid set (396 tmdb guids)
 
 </details>
 
+> **Resolution (2026-07-17, task `fix-27`):** sample movies with a real file alongside were re-pointed (delete sample record → ManualImport the real video); pure-sample movies with no recoverable content (American Hustle, American Reunion, Rampage, xXx, Take Me to the River, The Cabin in the Woods) were deleted + removed from Radarr per operator choice. Radarr side of `media-arr-file-quality` = 0.
+
 ### H13. Radarr movie 'All About My Mother' is mapped to the Mamma Mia! 2008 file — movie not actually in library
 
 **Host:** nas · **Component:** radarr (metadata mapping) · **Auditor:** flow:movies-tv
@@ -385,6 +389,8 @@ Plex section 1 title search 'All About My Mother' -> 0 hits; 'Mamma Mia' -> Mamm
 ```
 
 </details>
+
+> **Resolution (2026-07-17, task `fix-27`):** Mamma Mia! 2008 (tmdb 11631) added to Radarr and the file reassigned to it (ManualImport moved it to `/movies/Mamma Mia! (2008)/…`); AAMM flipped to honest `hasFile=False` + monitored. The shared Mamma Mia file was **preserved, never deleted**.
 
 ### H14. Phantom 'downloading' request: 3OH!3 - 3OH!3 stuck since 2026-07-13, artist unmonitored in Lidarr, zero grabs, will never auto-search `known-issue`
 
@@ -731,6 +737,8 @@ EverAfter | Ever After A Cinderella Story 1998 BRRip XvidHD 720p-NPW-Sample.avi 
 ```
 
 </details>
+
+> **Resolution (2026-07-17, task `fix-27`):** whole class remediated — extract-in-place, re-point, or delete-to-honest-missing across Sonarr+Radarr. The `media-arr-file-quality` check sweeps every `movieFile`/`episodeFile` for sample/iso/rar/partial/stub and is green; EverAfter's 2026-07-15 sample was among those removed. Un-recoverable residue (corrupt/iso-in-rar/subs-only) left honestly missing, not falsely green.
 
 
 ---
@@ -1240,6 +1248,8 @@ curl 'http://192.168.10.4:6969/api/v3/queue?apikey=...' -> totalRecords: 0 (noth
 
 </details>
 
+> **Resolution (2026-07-17, task `fix-27`):** `[[whisparr]]` block added to `unpackerr.conf` (repo mirror + live NAS), unpackerr restarted; logs confirm `Whisparr Config: http://whisparr:6969 … paths:["/seedbox"]` and active polling. Guarded by the `unpackerr-whisparr-block` check.
+
 ### M28. AdGuard-NAS healthy and genuinely used (52k queries/24h) but all client attribution lost to docker bridge NAT
 
 **Host:** nas · **Component:** adguard-nas · **Auditor:** svc:nas-apps
@@ -1325,6 +1335,8 @@ Plex /library/sections/1/all?title=Bodies Bodies Bodies -> 0 hits (tmdb 520023 a
 ```
 
 </details>
+
+> **Resolution (2026-07-17, task `fix-27`):** both ISO 'imports' (Bodies Bodies Bodies 57 GB, Scooby-Doo! WrestleMania 17 GB) deleted + removed from Radarr, reclaiming ~81 GB. The Plex-unplayable-ISO class is now caught by `media-arr-file-quality`.
 
 ### M32. 11 Plex movies have no external-ID match, including two fresh pipeline imports (Spider-Man: Homecoming, The Iron Giant, both imported 2026-07-14)
 
@@ -1901,6 +1913,8 @@ Bodies Bodies Bodies hasFile=True BODIES_BODIES_BODIES.iso 62065.7MB; Scooby-Doo
 ```
 
 </details>
+
+> **Resolution (2026-07-17, task `fix-27`):** wanted rar-only content extracted in place — 132 episodes + 8 movies recovered and imported; un-recoverable residue (2 corrupt RARs, 2 iso-in-rar, 1 subs-only) left honestly missing for the normal pipeline. The `media-extraction-backlog` check now tracks the count of rar dirs with no playable video. Redundant leftover RARs left on disk (seed-safe; the seedbox holds the seeding copies).
 
 ### M61. Plex port 32400 is directly reachable from the public internet (edge is NOT fully closed beyond 80/443/8123)
 
