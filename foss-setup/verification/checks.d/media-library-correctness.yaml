@@ -1,0 +1,73 @@
+# fix-28 "Plex/Navidrome library correctness" acceptance checks (2026-07-17).
+#
+# The 2026-07-16 audit found media that was GREEN everywhere (Plex up, *arr up,
+# Lidarr up, files on disk) yet wrong at the consumer end:
+#   M32  9 movies in Plex with NO external-id match (junk-titled bulk-scan imports)
+#   M33  *arr series with files MISSING/mismatched in Plex (Over the Garden Wall
+#        absent due to PartNN naming; a wrong Sonarr series mapped over 'Where Are
+#        You!' files; Delicious in Dungeon fell to a local:// match)
+#   M34  an album served silently incomplete (17/18 tracks; source missing track 1)
+#   +    Navidrome indexing the Synology #recycle bin as live library rows
+# The existing arr-plex-journey.py tolerated all of this because it passes on a
+# coverage RATIO — a handful of unmatched items stayed under the threshold. These
+# probe the CONSUMER end with ZERO tolerance, per item.
+checks:
+  # (a) M32 class canary. Every item in the agent-backed Movies + TV libraries must
+  # carry an external id (imdb/tmdb/tvdb). A local:// / no-Guid item = mangled
+  # metadata, invisible to seerr availability sync — exactly the 9 movies + the
+  # Delicious in Dungeon show. Scoped to sections 1+2 (Music/YouTube are local by
+  # design). Catches any future junk-named import or dropped match.
+  - id: plex-unmatched-items
+    name: "plex: 0 movies/shows with no external-id match (M32 — mangled/invisible)"
+    host: mini
+    cmd: python3 /opt/verification/bin/plex-unmatched-items.py
+    expect: '^UNMATCHED_OK'
+    severity: warn
+    task_id: fix-28
+    runbook: wiki/docs/runbooks/media-library-correctness.md
+    enabled: true
+
+  # (b) M33 class canary — the strict per-item complement to arr-plex-journey's
+  # ratio check. Every Radarr movie / Sonarr series that HAS FILES must be present
+  # in Plex (shared external id, or same title +/-2yr — so present-under-a-different
+  # -id items aren't false-flagged). An item ABSENT from Plex (no id AND no title
+  # hit) fails. Fresh imports (<24h) are excluded for scan lag. This is what would
+  # have caught Over the Garden Wall (0 Plex hits) and the wrong-mapped Scooby set.
+  - id: arr-plex-parity
+    name: "arr->plex: every movie/series with files is present in Plex (M33)"
+    host: mini
+    cmd: python3 /opt/verification/bin/arr-plex-parity.py
+    expect: '^PARITY_OK'
+    severity: warn
+    task_id: fix-28
+    runbook: wiki/docs/runbooks/media-library-correctness.md
+    enabled: true
+
+  # (c) M34 regression + class. A monitored album must not be served PARTIAL (some
+  # but not all tracks on disk) — that is an incomplete album playing silently in
+  # Plex/Navidrome. Fully-missing (backlog) and in-flight-download albums are
+  # excluded. Regression for the Marshall Mathers LP (17/18); catches siblings.
+  - id: lidarr-incomplete-albums
+    name: "lidarr: 0 monitored albums served partial-on-disk (M34)"
+    host: mini
+    cmd: python3 /opt/verification/bin/lidarr-incomplete-albums.py
+    expect: '^ALBUMS_OK'
+    severity: warn
+    task_id: fix-28
+    runbook: wiki/docs/runbooks/media-library-correctness.md
+    enabled: true
+
+  # (d) Navidrome hygiene regression. The NAS music mount exposes Synology's
+  # #recycle bin; Navidrome had indexed 2 user-deleted tracks as live rows. Guard =
+  # a .ndignore marker at /volume1/music/#recycle/ (the 0.62 new scanner ignores
+  # ND_IGNOREDPATTERNS). Fails if the marker is removed/ineffective and junk rows
+  # reappear. Reads Navidrome's own DB (the consumer's source of truth).
+  - id: navidrome-recycle-rows
+    name: "navidrome: 0 library rows under #recycle (deleted-content leak)"
+    host: mini
+    cmd: python3 /opt/verification/bin/navidrome-recycle-rows.py
+    expect: '^RECYCLE_OK'
+    severity: warn
+    task_id: fix-28
+    runbook: wiki/docs/runbooks/media-library-correctness.md
+    enabled: true

@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**174/269 done** · **69 open** · **18 deferred** · 10 retired.
+**175/269 done** · **68 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -45,7 +45,6 @@
 - [ ] **`seed-12`** Deploy Bitmagnet self-hosted DHT crawler on NAS (rate-limit-proof indexer hedge) _(est ~1 hr + runbook)_
 
 ### media-polish
-- [ ] **`fix-28`** Fix Plex/Navidrome library correctness (unmatched items, missing tracks, #recycle indexing) _(est 1-3 hrs)_
 - [ ] **`fix-37`** Media-aux service config fixes (navidrome backup, kometa, pinchflat/bgutil, RomM empty) _(est 1-3 hrs)_
 
 ### nas-foundation

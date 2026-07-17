@@ -1342,6 +1342,13 @@ Plex /library/sections/1/all?title=Bodies Bodies Bodies -> 0 hits (tmdb 520023 a
 
 **Host:** nas · **Component:** plex (Movies agent matching) · **Auditor:** flow:movies-tv
 
+> **Resolution (2026-07-17, task `fix-28`):** the two "real imports" self-resolved (Iron Giant
+> re-matched on a proper re-import; Spider-Man: Homecoming's file was deleted → now a Radarr
+> auto-search, not an unmatched item). The remaining **9 junk-titled bulk-scan movies** (Pirates
+> 1–4, L.A. Confidential, Fast & Furious 6, The Happytime Murders, The Producers 2005, Star Trek:
+> Nemesis) were pinned via Plex Fix-Match to their correct tmdb ids — the Movies section now
+> reports **0 unmatched**. Each was the sole copy, so it was matched, not deleted. Guarded by the
+> `plex-unmatched-items` check. Runbook: `runbooks/media-library-correctness.md`.
 
 Plex Movies has 410 items, 396 with tmdb guids. 11 items carry no Guid at all: fresh imports 'Spider Man Homecoming' (2017, 13.7GB proper file, addedAt 07-14) and 'The Iron Giant' (1999, addedAt 07-14) plus bulk-scan junk-titled items ('01 THE CURSE OF THE BLACK PEARL' etc x4 Pirates, 'LA Confidential {1997}', 'Fast and Furious 6', 'The Happy Time Murders', ' Playnow the Producers', 'Star Trek10 2002 Nemesis'). They are playable (Parts exist) but display with mangled titles/no metadata, and are invisible to guid-based checks and seerr availability sync. Notably Alien (imported 07-15) matched fine, so matching currently works — the two 07-14 failures coincide with the analysis-storm window.
 
@@ -1361,6 +1368,15 @@ radarr tmdb 315635 file verified on disk: 13723924328 bytes Jul 14 08:23
 
 **Host:** nas · **Component:** sonarr + plex (TV matching) · **Auditor:** flow:movies-tv
 
+> **Resolution (2026-07-17, task `fix-28`):** *Over the Garden Wall* renamed via Sonarr to
+> `S01E01–E10` → Plex built the show (10 leaves, tvdb 281643). *Delicious in Dungeon* Fix-Matched
+> to tvdb 423257 (24 leaves). The wrong **"The Scooby-Doo Show"** series (tvdb 73817) and its
+> redundant lower-quality `[cedar]` avi files were retired — after verifying the BluRay
+> *Where Are You!* set (tvdb 78260) is present & playable — so Plex now serves 33 de-duplicated
+> BluRay leaves. *Househusband* (8 leaves, dual TVDB record 386049↔391005) and *Gossip Girl*
+> (120) were already correct. Series ids were re-resolved by `tvdbId` before acting (the audit's
+> remembered ids were wrong). Guarded by the `arr-plex-parity` check. Runbook:
+> `runbooks/media-library-correctness.md`.
 
 (1) Over the Garden Wall: 10 files/1.3GB in per-part release folders ('Over.The.Garden.Wall.Part01...' 2021), Plex title search 0 hits — whole miniseries green in Sonarr but unwatchable. (2) The Scooby-Doo Show (tvdb 73817, 25 files at /tv/Scooby Doo): the files are actually 'Scooby-Doo, Where Are You!' episodes ('01 What A Night For A Knight...'); Plex has no 'The Scooby-Doo Show' — Sonarr is tracking the wrong series against these files. (3) The Way of the Househusband: Sonarr tvdb 386049 with 8 files, Plex matched tvdb 391005 with only 5 leaves. (4) Delicious in Dungeon: all 24 eps present and playable in Plex but the show is unmatched (guid local://51799, no external ids) — invisible to id-based checks and request-layer availability.
 
@@ -1379,6 +1395,14 @@ Plex: 'Over the Garden Wall' 0 hits; Househusband guids ['tvdb://391005'] leaf 5
 
 **Host:** nas · **Component:** lidarr / plex+navidrome library · **Auditor:** flow:music
 
+> **Resolution (2026-07-17, task `fix-28`):** track 1 was never in the source download (the
+> slskd rip was a 17-track set missing the `A1` intro — not a deletion). The album was monitored,
+> so one supervised `AlbumSearch` grabbed a complete lossless `[FLAC][WEB]` release that imported
+> as an upgrade — album is now **18/18** with "Public Service Announcement 2000" on disk, and
+> Lidarr wanted/missing is empty. Also cleaned in this task: Navidrome was indexing 2 deleted
+> tracks from the NAS `#recycle` bin (fixed with a `.ndignore` marker) and an empty duplicate
+> Eminem album folder was removed. Guarded by the `lidarr-incomplete-albums` and
+> `navidrome-recycle-rows` checks. Runbook: `runbooks/media-library-correctness.md`.
 
 Lidarr album 5030 (Eminem - The Marshall Mathers LP) shows trackFileCount 17/18 and is the sole entry in wanted/missing; the missing track is #1 'Public Service Announcement 2000'. Lidarr history recorded 18 trackFileImported events for this album on 2026-07-10T05:00Z, so one imported file has since disappeared (or was displaced by an upgrade) — the NAS folder holds only 17 files. Album+artist are monitored so Lidarr will keep auto-searching, but until then Plex/Navidrome serve an incomplete album silently. Worth a manual AlbumSearch or import check (log-only, not performed).
 

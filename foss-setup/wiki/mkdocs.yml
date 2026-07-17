@@ -127,6 +127,7 @@ nav:
       - Secrets hygiene: runbooks/secrets-hygiene.md
       - Edge / WAN exposure: runbooks/edge-exposure.md
       - Media — green but not watchable: runbooks/media-watchable.md
+      - Media — library correctness (unmatched / partial / recycle): runbooks/media-library-correctness.md
   - Operations:
       - Overview: operations/index.md
       - Ansible & convergence: operations/ansible.md

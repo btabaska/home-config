@@ -22,6 +22,14 @@ services:
       ND_SESSIONTIMEOUT: 24h
       ND_BASEURL: ${ND_BASEURL:-}
       ND_MUSICFOLDER: /music
+      # fix-28 (M-hygiene): the NAS music mount exposes Synology's #recycle bin;
+      # Navidrome had indexed 2 user-deleted tracks from #recycle as live library rows.
+      # NOTE: the 0.62 "new scanner" does NOT honor ND_IGNOREDPATTERNS (same story as
+      # ND_SCANSCHEDULE above). The working guard is an empty `.ndignore` marker at the
+      # folder root on the NAS -> /volume1/music/#recycle/.ndignore (skips the whole
+      # folder). This env is kept as a documented legacy-scanner fallback; the
+      # navidrome-recycle-rows verification check enforces 0 rows under #recycle.
+      ND_IGNOREDPATTERNS: "#recycle/**"
       TZ: ${TZ:-America/New_York}
     volumes:
       - ./data:/data
