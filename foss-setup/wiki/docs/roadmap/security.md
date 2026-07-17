@@ -1,6 +1,6 @@
 # Roadmap — security
 
-14 task(s). Status mirrors `docs/progress.json` (the source of truth).
+15 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -18,5 +18,6 @@
 | `sec-07` | ntfy least-privilege: per-publisher users/tokens instead of everything on admin | ⬜ open | 1-2 hrs |
 | `sec-08` | Rotate credentials that left the fleet: Plex token (iCloud snapshot) + secrets printed in the committed audit doc; purge iCloud Recently Deleted | ⬜ open | 1-2 hrs |
 | `sec-09` | Cloudflare token least-privilege: read-only DNS token for verification; keep the write token vault-only | ⬜ open | 30-45 min |
+| `sec-10` | arr API keys committed in cleartext in the repo (unpackerr.conf) — rotate + externalize to a gitignored env | ⬜ open | 45-90 min |
 
 [← Roadmap overview](index.md)

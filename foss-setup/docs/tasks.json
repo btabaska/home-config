@@ -11535,5 +11535,50 @@
     "findings": [],
     "verify": "Re-importing a book that already exists in CWA does not produce a second library entry, or the new check flags it within a day.",
     "source": "fix-26 follow-through 2026-07-17"
+  },
+  {
+    "id": "sec-10",
+    "title": "arr API keys committed in cleartext in the repo (unpackerr.conf) \u2014 rotate + externalize to a gitignored env",
+    "host": "nas",
+    "type": "sync",
+    "depends_on": [],
+    "estimate": "45-90 min",
+    "required": false,
+    "track": "security",
+    "run": 5,
+    "mode": "ai",
+    "gate": "",
+    "summary": "Found during fix-27 (2026-07-17): foss-setup/configs/nas/media-automation/unpackerr/unpackerr.conf commits all five *arr API keys (sonarr/radarr/lidarr/readarr, and whisparr added by fix-27) in CLEARTEXT, and the repo is pushed to origin GitHub (btabaska/home-config) + forgejo. fix-27 matched the existing convention for anti-drift rather than diverge, but the pattern is secret-in-git. OPERATOR FIRST: confirm the GitHub repo is PRIVATE (if public, this is urgent \u2014 rotate immediately). Fix: move the keys out of the tracked file into a gitignored env/.env referenced by the unpackerr compose (or vault-injected at deploy), scrub the value from the tracked file, and rotate the keys if the repo was ever public. Rotation is fleet-wide: every consumer must update in lockstep (unpackerr, recyclarr, prowlarr app-sync, seerr/libreseerr/musicseerr, /etc/verification/env). Audit the repo for other cleartext keys while here.",
+    "steps": [
+      "Confirm GitHub repo visibility; if public, rotate all arr keys immediately.",
+      "Move keys from unpackerr.conf into a gitignored env file (compose env_file) or vault-inject at deploy; scrub the tracked file.",
+      "If rotating: regenerate each arr key and update every consumer (unpackerr, recyclarr, prowlarr, seerr layer, verification/env) in lockstep; verify all green.",
+      "grep the repo for other committed secrets."
+    ],
+    "findings": [],
+    "verify": "unpackerr.conf (and repo) hold no cleartext arr API key; unpackerr still polls all five arrs; if rotated, all consumers green.",
+    "source": "fix-27 follow-through 2026-07-17"
+  },
+  {
+    "id": "media-09",
+    "title": "fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs",
+    "host": "nas",
+    "type": "async",
+    "depends_on": [],
+    "estimate": "1-2 hrs",
+    "required": false,
+    "track": "media-pipeline",
+    "run": 5,
+    "mode": "ai",
+    "gate": "",
+    "summary": "Follow-through on fix-27 (2026-07-17, M60/H30). Two loose ends left deliberately: (1) FIVE wanted titles are honest-missing (hasFile=False, monitored) because their only on-disk copy is un-recoverable by extraction: The Matrix Resurrections (2160p, corrupt RAR CRC), Animaniacs S03E01-06 (corrupt RAR CRC), Castle in the Sky and The Addams Family (RAR contains only a Plex-unplayable ISO), The Intouchables (only a Subs.rar, no video). A Radarr/Sonarr interactive search should re-grab a proper release for each (or leave honestly-missing if none exists). These are the current media-extraction-backlog floor (stranded=3 movies + the 2 corrupt). (2) Extraction was done in place and left the original RAR sets ALONGSIDE the extracted videos (Gossip Girl S01-S06, Animaniacs, the recovered movies) ~200GB of now-redundant archives. They are seed-safe to delete (the seedbox holds the seeding copies; these library RARs are cruft). Reclaim by deleting the rar volumes only in dirs where a real imported video >50MB now exists.",
+    "steps": [
+      "Trigger MoviesSearch/EpisodeSearch for the 5 residual titles; verify import + Plex, or confirm no release exists.",
+      "Script a GUARDED rar reclaim: for each library dir containing a rar set, delete *.rar/*.r[0-9][0-9]/*.sfv ONLY when a non-sample video >50MB exists in that dir (never touch orphan-rar dirs).",
+      "Re-run media-extraction-backlog + df to confirm reclaim and a lower stranded count."
+    ],
+    "findings": [],
+    "verify": "The 5 titles are hasFile=True+in Plex or confirmed no-release; redundant RARs reclaimed (df shows the space back); media-extraction-backlog stranded count unchanged or lower.",
+    "source": "fix-27 follow-through 2026-07-17"
   }
 ]
