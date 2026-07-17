@@ -137,6 +137,11 @@ core.conf: "allow_remote":true,"daemon_port":3254 ; ss: LISTEN 0.0.0.0:3254 delu
 
 **Host:** mini + nas + seedbox · **Component:** seerr -> radarr -> deluge pipeline · **Auditor:** svc:request-layer
 
+> **Resolution (2026-07-17, task `fix-25`):** all three movies re-grabbed via MoviesSearch
+> (same releases re-acquired, tracked in the queue this time) and the class is now alarmed:
+> `arr-grabbed-not-imported` (verification, crit) sweeps all five arrs for 'grabbed' history
+> events >48h old with no follow-up event, absent from the queue, media still fileless.
+
 
 Seerr requests 13 (tmdb 556901 Teen Titans Go! vs Teen Titans), 14 (tmdb 16237 Teen Titans: Trouble in Tokyo), 17 (tmdb 13168 Smiley Face) approved 2026-07-05 and grabbed by Radarr at 02:05-02:07 that night to Deluge, but all three torrent hashes are absent from Deluge on the seedbox, Radarr queue is empty, hasFile=False, sizeOnDisk=0. The deluge-reaper is ruled out (sonarr labels only, '0 eligible' every run since 07-10). Movies are monitored and in Radarr's missing list (so a manual search can recover them) but nothing has retried in 10 days; seerr shows PROCESSING forever. Silent failure class: grab handed to download client, then lost with no error surfaced anywhere.
 
@@ -180,6 +185,12 @@ seerr /api/v1/request: id 12 tv req=APPROVED media=PROCESSING added=2026-07-05
 
 **Host:** mini + nas + seedbox · **Component:** libreseerr -> readarr -> deluge pipeline · **Auditor:** svc:request-layer
 
+> **Resolution (2026-07-17, task `fix-25`):** the torrent's payload WAS imported — into the
+> duplicate book record 262 (see H15, owned by fix-26); verified via `history?downloadId=` and
+> the torrent relabeled `readarr-imported`. Book 293 left deliberately unmonitored until fix-26
+> cleans the metadata dup (re-searching would risk repeating the mis-match). Readarr's Deluge
+> client now has a Post-Import Category (M23) so completed grabs leave tracking cleanly.
+
 
 Libreseerr request 1783906537581 (Naamah's Curse, Jacqueline Carey, readarr_book_id 293) was grabbed 2026-07-13T01:37 from MyAnonamouse to Deluge (hash C242EDA0...). The torrent is complete and seeding on the seedbox with label 'readarr' (never relabeled to imported), yet Readarr's queue is empty, the book has 0 files, and there is no import event in history — the completed download fell out of Readarr's tracking without importing and without any error surfaced. Libreseerr shows the request as 'processing' indefinitely. Same silent grabbed-never-imported class as the Radarr finding, but here the payload actually exists on the seedbox.
 
@@ -198,6 +209,13 @@ libreseerr GET /api/requests -> id 1783906537581 status=processing created 2026-
 ### H6. Libreseerr adds authors unmonitored (addOptions monitor:none) — failed book searches are never retried; 3 books stuck 'processing' with zero Readarr history
 
 **Host:** mini + nas · **Component:** libreseerr readarr.py add flow / readarr monitoring · **Auditor:** svc:request-layer
+
+> **Resolution (2026-07-17, task `fix-25`):** root cause patched — bind-mounted `readarr.py`
+> now forces `author.monitored=True` on every add/match path (`_ensure_author_monitored`;
+> books stay selectively monitored, `monitorNewItems` stays none). Authors Jacqueline Carey +
+> Terry Deary monitored; books 261/263/280/284(/293) now appear in wanted/missing so failed
+> searches auto-retry. 134 bibliography-noise monitored-book flags (+148 lidarr album flags)
+> cleared so the new `arr-orphan-monitor-flags` tripwire runs green and meaningful.
 
 
 Books 284 (Kushiel's Scion), 280 (The Rotten Romans), 261 (Kushiel's Justice) are monitored=True in Readarr but their authors are monitored=False because the bind-mounted /opt/stacks/libreseerr/readarr.py adds authors with monitored-author options 'none' (lines ~156-159: monitorNewItems:none, addOptions.monitor:none). Readarr's wanted/missing excludes books whose author is unmonitored — confirmed all 4 stuck books absent from the 130-item wanted list — so after the one-shot search at request time (0 grabs, zero history events for all three) they will NEVER be auto-searched again. Requests remain 'processing' in libreseerr forever. This is a residual stuck-book mechanism beyond the known edition-selection patch (KI-10): the patch fixed junk-edition 400s, but a no-result first search is now permanent.
@@ -368,6 +386,11 @@ Plex section 1 title search 'All About My Mother' -> 0 hits; 'Mamma Mia' -> Mamm
 
 **Host:** mini + nas · **Component:** musicseerr -> lidarr · **Auditor:** flow:music
 
+> **Resolution (2026-07-17, task `fix-25`):** artist 3OH!3 monitored in Lidarr + AlbumSearch
+> for album 6037 → 11/11 tracks imported same hour; musicseerr request flipped to 'imported'
+> (completed_at 2026-07-17T15:16Z). Class guard: `arr-orphan-monitor-flags` fires on any
+> monitored+fileless album/book hidden from wanted by an unmonitored artist/author.
+
 
 MusicSeerr request_history has exactly 1 non-imported request: 3OH!3 self-titled (mbid 4215d04a-8022-3c62-a616-be9fb4a5e9bd, lidarr_album_id 6037), status=downloading since 2026-07-13T20:17:16Z (2 days). Lidarr: album exists and album.monitored=True, but artist.monitored=False, 0/11 tracks on disk, 0 history events for the album (never grabbed), download queue totalRecords=0, and it is ABSENT from wanted/missing (Lidarr excludes albums whose artist is unmonitored) so automatic search will never pick it up. MusicSeerr queue.db has 0 pending_jobs and 0 dead_letters, so MusicSeerr is not retrying either — the request is permanently stuck showing 'downloading'. Variant of known issue 12 (there the album itself was monitored=False; here the artist-level monitor flag is the blocker, same phantom symptom). Fix (not applied, log-only): monitor artist 3OH!3 in Lidarr + trigger AlbumSearch for album 6037.
 
@@ -399,6 +422,12 @@ curl http://192.168.10.4:8787/api/v1/history?bookId=293 -> only '2026-07-13T01:3
 ### H16. 4 book requests stuck 'processing 0%' >48h with zero readarr download activity and no retry or error surfaced
 
 **Host:** mini · **Component:** libreseerr -> readarr request flow · **Auditor:** flow:books
+
+> **Resolution (2026-07-17, task `fix-25`):** the no-retry mechanism is fixed (see H6) — all
+> four books (incl. orphan 263) are in wanted/missing and re-search automatically; a fresh
+> BookSearch for 261/280/284 still found no release (indexers genuinely have nothing yet),
+> which now correctly remains a pending-retry state instead of a permanent silent stall.
+> Surfacing the stuck request state to the user is fix-26 (request-layer reconciliation).
 
 
 libreseerr requests created 2026-07-13 00:30-01:35 for Kushiel's Justice (readarr id 261), Kushiel's Scion (284), The Rotten Romans (280) and Naamah's Curse (293) are still status=processing, progress=0, error=null on 2026-07-15. Readarr has NO history at all for 261/280/284 (never grabbed anything — searches on IPTorrents/MyAnonamouse/Zenith returned nothing), queue is empty (totalRecords 0), and nothing retries the search, so these will sit forever with no error shown to the user. 293 is the mis-import case (separate finding). Also found readarr book 263 'Kushiel's Mercy' monitored with 0 files, empty history, and no libreseerr request tracking it at all (orphan monitored book). Adjacent to known issue 11's 'searches return ~0 grabs' pattern but that is logged for sonarr; the readarr-side silent stall is unlogged.
@@ -910,6 +939,9 @@ seerr /api/v1/request: id 10 movie req=APPROVED media=PROCESSING added=2026-07-0
 
 **Host:** mini + nas · **Component:** musicseerr -> lidarr · **Auditor:** svc:request-layer
 
+> **Resolution (2026-07-17, task `fix-25`):** duplicate of H14 — artist monitored, album
+> searched, 11/11 tracks imported, musicseerr request completed. See H14.
+
 
 musicseerr request_history has one active request: 3OH!3 - '3OH!3' (lidarr_album_id 6037) status='downloading' since 2026-07-13T20:17, completed_at NULL. In Lidarr the album is monitored=True but artistMonitored=False (monitor_artist=0 on the request), has 0/11 track files, empty history (never grabbed — initial search returned nothing), empty queue, and is NOT in wanted/missing (total=1) — so it will never be auto-retried. musicseerr polls Lidarr queue+history for it every 60 seconds, indefinitely, and will show downloading/0% forever. This is the known phantom-download class (KI-12) with a variant mechanism: album IS monitored, but zero grabs + unmonitored artist = permanently stuck. The other 13 musicseerr requests all imported successfully. queue.db pending_jobs/dead_letters are both empty.
 
@@ -1089,6 +1121,11 @@ Local: git clone /Users/brandontabaska/Documents/Home -> bash foss-setup/scripts
 ### M23. Post-Import Category (queue-clog fix) not applied to readarr and whisparr Deluge clients
 
 **Host:** nas (192.168.10.4) · **Component:** readarr + whisparr / Deluge download client · **Auditor:** svc:arr-stack
+
+> **Resolution (2026-07-17, task `fix-25`):** Deluge labels `readarr-imported` +
+> `tv-whisparr-imported` created; readarr `musicImportedCategory=readarr-imported` (gotcha:
+> Readarr's Deluge client inherits Lidarr's music* field names) and whisparr
+> `tvImportedCategory=tv-whisparr-imported` set. All five arrs now relabel on import.
 
 
 The known *arr queue-clog fix is setting a Deluge Post-Import Category so seeding items leave the arr's tracked category after import. Sonarr/radarr/lidarr have it (sonarr-imported/radarr-imported/lidarr-imported) but readarr and whisparr have importedCategory=None. Queues are empty right now so nothing is stuck, but any readarr/whisparr grab that keeps seeding will re-create the queue-clog class the fix was deployed for.
@@ -2181,6 +2218,12 @@ Apollo runs as a systemd USER unit (/usr/lib/systemd/user/apollo.service, enable
 ### L42. 273 of 375 torrents are 100% done >48h but still in pre-import labels; reaper only covers sonarr labels (radarr/lidarr/readarr residue accumulates)
 
 **Host:** seedbox · **Component:** deluge + deluge-reaper · **Auditor:** flow:movies-tv
+
+> **Resolution (2026-07-17, task `fix-25`):** `deluge-relabel-imported.py` verified each of
+> the 273 against the owning arr's import history and relabeled 272 to `*-imported` (1
+> in-flight re-grab correctly left); the reaper now covers all five *arr label pairs at the
+> same 14d/100% policy, guarded by the new `deluge-preimport-stuck` >48h alarm (nothing can
+> age toward a reap while silently unimported). Details: wiki deluge-queue-hygiene page.
 
 
 Labels: sonarr 257, sonarr-imported 84, radarr 4, radarr-imported 13, lidarr 5, readarr 7. 273 torrents are finished (100%, seeding, up to 313h old) but never relabeled to *-imported — spot-checks (Teen Titans Go S09E25/26/31/32, Simpsons S09E01-03, Big Fish, Ghost in the Shell, D.E.B.S.) confirm all WERE imported into the library, so no silent import misses; these predate the imported-category config (new flow works: 84 sonarr-imported/13 radarr-imported exist, arr queues are 0). deluge-reaper runs daily --live but LABELS={sonarr,sonarr-imported} only and age>=14d (oldest sonarr residue is 13d, so 'LIVE: 0 eligible' every day so far); radarr/lidarr/readarr-labeled residue will never be reaped. No error-state or stuck-incomplete torrents. 1.4TB in files/, 5.8TB free on the slot.

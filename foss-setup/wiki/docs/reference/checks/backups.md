@@ -1,6 +1,6 @@
 # Checks — backups
 
-`foss-setup/verification/checks.d/backups.yaml` — 5 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/backups.yaml` — 9 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `backup-immich-dump-fresh`
 
@@ -55,6 +55,50 @@ NAS Tier-1 Hyper Backup -> B2 succeeded within 50h
 
 ```bash
 find /volume1/@img_bkp_cache/ClientCache_cloud_image_aws_s3.*/last_version_inodedb -mmin -3000 2>/dev/null | grep -q . && echo tok=ok || echo tok=BAD
+```
+
+## `b2-restic-immutable`
+
+bucket-restic is actually immutable (retention + live delete refused 401)
+
+- **host:** `mini` · **severity:** `crit` · **guards task:** `fix-22` · **enabled:** True
+- **expects:** `^IMMUTABLE`
+
+```bash
+python3 /opt/verification/bin/b2-bucket-guard.py --immutable
+```
+
+## `b2-bucket-policy`
+
+B2 account bucket set + lock/lifecycle policy match the manifest
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-22` · **enabled:** True
+- **expects:** `^POLICY-OK`
+
+```bash
+python3 /opt/verification/bin/b2-bucket-guard.py --policy
+```
+
+## `restic-snapshot-hygiene-mini`
+
+mini restic repo: no synthetic-host/test junk snapshots
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-22` · **enabled:** True
+- **expects:** `^HYGIENE-OK`
+
+```bash
+sudo -n /usr/local/bin/restic-snapshot-hygiene
+```
+
+## `restic-snapshot-hygiene-rig`
+
+rig restic repo: no synthetic-host/test junk snapshots
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `fix-22` · **enabled:** True
+- **expects:** `^HYGIENE-OK`
+
+```bash
+sudo -n /usr/local/bin/restic-snapshot-hygiene
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

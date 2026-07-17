@@ -1,20 +1,23 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **117 checks across 12 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **146 checks across 15 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
 | [alerting](alerting.md) | 11 | 3 | 8 |
-| [backups](backups.md) | 5 | 3 | 2 |
+| [backups](backups.md) | 9 | 4 | 5 |
 | [dns](dns.md) | 5 | 4 | 1 |
 | [docker-fleet](docker-fleet.md) | 9 | 0 | 9 |
+| [edge](edge.md) | 5 | 1 | 4 |
 | [git-hygiene](git-hygiene.md) | 4 | 0 | 4 |
 | [ha](ha.md) | 6 | 2 | 4 |
-| [media](media.md) | 14 | 6 | 8 |
-| [mini-services](mini-services.md) | 21 | 6 | 15 |
+| [media](media.md) | 16 | 7 | 9 |
+| [mini-services](mini-services.md) | 26 | 10 | 16 |
 | [nas-services](nas-services.md) | 15 | 3 | 12 |
 | [network](network.md) | 1 | 0 | 1 |
-| [rig](rig.md) | 18 | 0 | 18 |
+| [rig](rig.md) | 21 | 2 | 19 |
+| [secrets](secrets.md) | 4 | 3 | 1 |
+| [seedbox](seedbox.md) | 6 | 4 | 2 |
 | [system](system.md) | 8 | 4 | 4 |
 
-_Total: 117 checks._
+_Total: 146 checks._

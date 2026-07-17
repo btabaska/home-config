@@ -306,3 +306,38 @@ checks:
     task_id: verify-06
     runbook: wiki/runbooks/verification.md
     enabled: true
+
+  # ---------------------------------------------------------------------------
+  # SILENT "grabbed -> never imported" class (added 2026-07-17, fix-25 / H3 H5
+  # H6 H14 H16). Two shapes from the quality gate: a grab handed to Deluge that
+  # then VANISHED (hash absent, queue empty, no error — 3 movies stuck 10 days),
+  # and a completed torrent that fell out of Readarr's tracking unimported.
+  # Every liveness check stayed green. arr-grab-audit.py probes the CONSUMER
+  # end: a 'grabbed' history event >48h old with no follow-up event, not in the
+  # queue, and media still fileless = silent loss. Keys in /etc/verification/env
+  # (vault arr_api_keys.*), all five arrs swept in one pass.
+  # ---------------------------------------------------------------------------
+  - id: arr-grabbed-not-imported
+    name: "*arr: no silent grabbed-never-imported downloads >48h (H3/H5 class)"
+    host: mini
+    cmd: python3 /opt/verification/bin/arr-grab-audit.py grabs
+    expect: '^GRABS_OK'
+    severity: crit
+    task_id: fix-25
+    runbook: wiki/docs/reference/seedbox/deluge-queue-hygiene.md
+    enabled: true
+
+  # ROOT-CAUSE tripwire for the no-retry half (H6/H14): monitored media whose
+  # PARENT is unmonitored is excluded from wanted/missing, so a failed first
+  # search is permanent — libreseerr added authors with monitor:none (patched,
+  # fix-25) and musicseerr left an artist unmonitored. Any recurrence of the
+  # flag combination fires this before a request ever wedges on it.
+  - id: arr-orphan-monitor-flags
+    name: "*arr: no monitored+fileless media hidden from wanted by unmonitored parent (H6/H14 class)"
+    host: mini
+    cmd: python3 /opt/verification/bin/arr-grab-audit.py monitor-flags
+    expect: '^FLAGS_OK'
+    severity: warn
+    task_id: fix-25
+    runbook: wiki/docs/reference/seedbox/deluge-queue-hygiene.md
+    enabled: true

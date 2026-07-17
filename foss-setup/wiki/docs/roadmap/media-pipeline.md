@@ -7,7 +7,7 @@
 | `betty-01` | Seedbox = Deluge only: install Deluge + create label folders | ✅ done | 20 min |
 | `docker-03` | Deploy Seerr media request portal (home, Mac mini) | ✅ done | 20 min |
 | `docker-16` | Deploy MusicSeerr on Mac mini (album request portal) | ✅ done | 20-30 min |
-| `fix-25` | Fix the silent "grabbed → never imported" class (download-client import + reaper label coverage) | ⬜ open | 1-3 hrs |
+| `fix-25` | Fix the silent "grabbed → never imported" class (download-client import + reaper label coverage) | ✅ done | 1-3 hrs |
 | `fix-26` | Reconcile stuck request-layer states (seerr/libreseerr/musicseerr dangling & unmonitored) | ⬜ open | 1-3 hrs |
 | `fix-27` | Remediate "green but not watchable": sample-file imports + unextracted RARs | ⬜ open | 1-3 hrs |
 | `media-05` | Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) | ⬜ open | 1-2 hrs |

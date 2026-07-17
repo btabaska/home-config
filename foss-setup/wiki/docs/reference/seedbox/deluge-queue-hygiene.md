@@ -43,25 +43,36 @@ Deluge runs on the seedbox (`betty.bysh.me`, **no root**). Sonarr/Radarr/Lidarr 
 !!! note "Validated against live betty (2026-07-14)"
     RPC `client.label.get_labels()` returns all nine labels: `lidarr`, `lidarr-imported`, `manual`, `radarr`, `radarr-imported`, `readarr`, `sonarr`, `sonarr-imported`, `tv-sonarr`. Live torrent counts by label: `sonarr`=262, `sonarr-imported`=79, `radarr`=6, `radarr-imported`=10, `lidarr`=5, `lidarr-imported`=5, `readarr`=7. The `*-imported` labels are populated as designed, confirming the Post-Import Category re-labeling is working.
 
-## Applied to all three *arr (2026-07-09)
+## Applied to all five *arr (2026-07-09; readarr + whisparr 2026-07-17, fix-25 M23)
 
 - Sonarr: `tvImportedCategory = sonarr-imported`
 - Radarr (API v3): `movieImportedCategory = radarr-imported`
 - Lidarr (API v1): `musicImportedCategory = lidarr-imported`
-- Deluge labels `radarr-imported` / `lidarr-imported` created.
-- All three keep `removeCompletedDownloads=False` (seeding preserved).
-- The reaper's `LABELS` set could be widened to include `radarr*`/`lidarr*` labels later if those need disk reclamation too.
+- Readarr (API v1): `musicImportedCategory = readarr-imported` — **gotcha:** Readarr's Deluge client inherits Lidarr's field names, so the category fields are `musicCategory`/`musicImportedCategory`, not `book*`.
+- Whisparr (API v3): `tvImportedCategory = tv-whisparr-imported` (tracked category is `tv-whisparr`)
+- Deluge labels `radarr-imported`/`lidarr-imported` created 2026-07-09; `readarr-imported`/`tv-whisparr-imported` created 2026-07-17.
+- All five keep `removeCompletedDownloads=False` (seeding preserved).
+- The reaper's `LABELS` set covers all five label pairs since fix-25 (below).
+
+## fix-25 (2026-07-17): the silent "grabbed → never imported" class
+
+The 2026-07-16 quality gate found completed torrents piling up in pre-import labels (L42: 273 of 375, because only sonarr had reaper coverage and readarr/whisparr lacked the Post-Import Category), plus grabs silently vanishing or falling out of arr tracking with no error anywhere (H3/H5). Resolution:
+
+1. **Backlog**: `deluge-relabel-imported.py` (in `configs/host/seedbox/`, run from a LAN workstation — the seedbox can't reach the arr APIs) verified each pre-import torrent against the owning arr's history (`/history?downloadId=<hash>` must show an import event) and relabeled confirmed ones to `<label>-imported`: **272 of 273 relabeled**, 1 legitimately in-flight torrent left alone. Unverified torrents are never relabeled — they trip the stuck alarm instead.
+2. **Alarm**: `deluge-preimport-stuck.py` (deployed to `~/scripts/`, check id `deluge-preimport-stuck` in `verification/checks.d/seedbox.yaml`) fails when any 100%-complete torrent sits in a pre-import label >48h — guarding the widened reaper: nothing can age toward the 14-day reap unnoticed.
+3. **Consumer-end sweep**: `arr-grab-audit.py` on the mini (`verification/checks.d/media.yaml`) probes all five arrs for 'grabbed' history events >48h old with no follow-up event, absent from the queue, and media still fileless (`arr-grabbed-not-imported`, crit) and for monitored+fileless media hidden from wanted/missing by an unmonitored author/artist — the H6/H14 no-retry root cause (`arr-orphan-monitor-flags`, warn). The libreseerr `readarr.py` add-flow was patched the same day to keep authors monitored (`_ensure_author_monitored`, stack `configs/docker-stack/stacks/libreseerr/`).
 
 ## `deluge-reaper.py`
 
-Age-based cleanup so the seedbox doesn't fill up. Removes torrents (**+data**) in labels `sonarr`/`sonarr-imported` whose age (`time_added`) ≥ 14 days **and** whose progress is ≥ 99.9%. NAS library copies are untouched. **Default is DRY-RUN**; pass `--live` to actually remove. Logs to `~/logs/deluge-reaper.log`.
+Age-based cleanup so the seedbox doesn't fill up. Removes torrents (**+data**) in every *arr label pair (fix-25 widened it from sonarr-only) whose age (`time_added`) ≥ 14 days **and** whose progress is ≥ 99.9%. NAS library copies are untouched. The `manual` label is deliberately excluded. 14 days comfortably satisfies private-tracker seeding requirements (books come from MyAnonamouse). **Default is DRY-RUN**; pass `--live` to actually remove. Logs to `~/logs/deluge-reaper.log`.
 
 Key constants in the script:
 
 ```python
 DRY = "--live" not in sys.argv
 MAX_AGE = 14*86400
-LABELS = {"sonarr", "sonarr-imported"}
+ARR_LABELS = {"sonarr", "tv-sonarr", "radarr", "lidarr", "readarr", "tv-whisparr"}
+LABELS = ARR_LABELS | {l + "-imported" for l in ARR_LABELS if l != "tv-sonarr"}
 LOG = os.path.expanduser("~/logs/deluge-reaper.log")
 ```
 
@@ -87,6 +98,9 @@ ssh seedbox '~/venvs/deluge/bin/python ~/scripts/deluge-reaper.py'
 
 !!! note "Validated against live betty (2026-07-14)"
     `~/scripts/deluge-reaper.py` is deployed and the crontab entry matches the documented line exactly (running in `--live` mode at 05:00). The last five `~/logs/deluge-reaper.log` entries (2026-07-10 → 2026-07-14) each read `LIVE: 0 eligible (age>=14d, labels=['sonarr', 'sonarr-imported']), 0.0 GB` — the reaper runs cleanly every day and nothing has yet crossed the 14-day age threshold. `~/logs/deluge-reaper.err` is present and empty (0 bytes).
+
+!!! note "Validated after the fix-25 widening (2026-07-17)"
+    The widened reaper's dry-run reports all eleven labels and `0 eligible` (that morning's cron had already reaped the first ≥14d item, a 37.4 GB Simpsons pack). Post-relabel label counts: `sonarr-imported`=341, `radarr-imported`=17, `lidarr-imported`=10, `readarr-imported`=7, `radarr`=3 (in-flight recovery grabs) — no residue in any other pre-import label. The `deluge-preimport-stuck` check runs green (`PREIMPORT_OK`).
 
 ---
 

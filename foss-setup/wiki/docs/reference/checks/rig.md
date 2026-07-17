@@ -1,6 +1,6 @@
 # Checks — rig
 
-`foss-setup/verification/checks.d/rig.yaml` — 18 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/rig.yaml` — 21 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `rig-ollama`
 
@@ -198,6 +198,39 @@ litellm end-to-end completion (gateway -> llama-swap -> model)
 
 ```bash
 curl -s -m 50 -H "Authorization: Bearer $LITELLM_MASTER_KEY" -H "Content-Type: application/json" -d '{"model":"utility","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}' http://cachyos.tailb31641.ts.net:4000/v1/chat/completions
+```
+
+## `rig-suspend-masked`
+
+rig systemd sleep targets masked (24/7 box must never suspend)
+
+- **host:** `rig` · **severity:** `crit` · **guards task:** `game-08` · **enabled:** True
+- **expects:** `^masked\s*$`
+
+```bash
+systemctl is-enabled sleep.target suspend.target hibernate.target hybrid-sleep.target | sort -u | tr '\n' ' '
+```
+
+## `rig-root-fs-writable`
+
+rig root + /home are READ-WRITE (real write probe — catches silent RO remount)
+
+- **host:** `rig` · **severity:** `crit` · **guards task:** `fix-20` · **enabled:** True
+- **expects:** `write=OK root=rw home=rw`
+
+```bash
+p="/home/btabaska/.verify-rw-probe"; if ( : > "$p" ) 2>/dev/null; then rm -f "$p"; w=OK; else w=FAIL; fi; echo "write=$w root=$(findmnt -no OPTIONS / | cut -d, -f1) home=$(findmnt -no OPTIONS /home | cut -d, -f1)"
+```
+
+## `rig-litellm-vkey-e2e`
+
+litellm answers a VIRTUAL-key completion (DB-auth path — catches litellm-db down that master-key probes miss)
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `fix-20` · **enabled:** True
+- **expects:** `"finish_reason"`
+
+```bash
+curl -s -m 50 -H "Authorization: Bearer $LITELLM_VKEY" -H "Content-Type: application/json" -d '{"model":"utility","messages":[{"role":"user","content":"Say OK"}],"max_tokens":5}' http://cachyos.tailb31641.ts.net:4000/v1/chat/completions
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

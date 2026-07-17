@@ -49,4 +49,16 @@ assert, sonarr→Deluge e2e test, slskd LoggedIn e2e, service manifest). Runbook
 - `startup/deluge` → live `~/.startup/deluge`
 - `slskd-native/slskd.yml` → live `~/slskd-native/slskd.yml` (no secrets; creds in `.env`)
 - `slskd-native/.env.example` → live `~/slskd-native/.env` (values in vault `soulseek.*`)
-- `deluge-reaper.py` — queue hygiene cron (connects to `127.0.0.1:3254`, unaffected)
+- `deluge-reaper.py` — queue hygiene cron (connects to `127.0.0.1:3254`, unaffected).
+  Since fix-25 (2026-07-17, quality-gate L42) it reaps **all** *arr label pairs
+  (`sonarr`/`radarr`/`lidarr`/`readarr`/`tv-whisparr` + `*-imported`, legacy `tv-sonarr`),
+  not just sonarr — safe because `deluge-preimport-stuck.py` alarms >48h-stuck
+  pre-import torrents long before the 14-day reap age.
+- `deluge-preimport-stuck.py` → live `~/scripts/` — verification probe (fix-25): fails if a
+  100%-complete torrent sits in a PRE-import label >48h (import path broken / Post-Import
+  Category regressed). Wired as `deluge-preimport-stuck` in `verification/checks.d/seedbox.yaml`.
+- `deluge-relabel-imported.py` — maintenance tool (fix-25), run **from a LAN workstation**
+  (not the seedbox: it needs the NAS arr APIs + `ssh seedbox`): verifies each pre-import
+  torrent against the owning arr's import history (`history?downloadId=`) and relabels
+  confirmed-imported ones to `<label>-imported`. Used 2026-07-17 to clear the 273-torrent
+  backlog (272 relabeled, 1 legitimately in-flight left alone). Dry-run by default.

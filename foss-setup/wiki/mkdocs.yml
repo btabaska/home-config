@@ -218,6 +218,7 @@ nav:
       - backups: reference/checks/backups.md
       - dns: reference/checks/dns.md
       - docker-fleet: reference/checks/docker-fleet.md
+      - edge: reference/checks/edge.md
       - git-hygiene: reference/checks/git-hygiene.md
       - ha: reference/checks/ha.md
       - media: reference/checks/media.md
@@ -225,6 +226,8 @@ nav:
       - nas-services: reference/checks/nas-services.md
       - network: reference/checks/network.md
       - rig: reference/checks/rig.md
+      - secrets: reference/checks/secrets.md
+      - seedbox: reference/checks/seedbox.md
       - system: reference/checks/system.md
       # END GENERATED CHECKS NAV
   - Scripts reference:

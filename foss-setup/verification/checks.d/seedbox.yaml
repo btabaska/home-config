@@ -87,3 +87,18 @@ checks:
     task_id: fix-21
     runbook: wiki/docs/runbooks/seedbox-exposure.md
     enabled: true
+
+  # -- import-path alarm (fix-25, L42/M23 class): a 100%-complete torrent still
+  #    in a PRE-import label >48h after finishing means the arr never imported /
+  #    never relabeled it (Post-Import Category regressed, import stalled, or a
+  #    grab fell out of tracking). Guards the widened reaper: nothing may age
+  #    toward the 14-day reap while stuck pre-import without this firing first.
+  - id: deluge-preimport-stuck
+    name: "seedbox: no torrent 100% done >48h still in a pre-import label"
+    host: seedbox
+    cmd: ~/venvs/deluge/bin/python ~/scripts/deluge-preimport-stuck.py
+    expect: '^PREIMPORT_OK'
+    severity: warn
+    task_id: fix-25
+    runbook: wiki/docs/reference/seedbox/deluge-queue-hygiene.md
+    enabled: true

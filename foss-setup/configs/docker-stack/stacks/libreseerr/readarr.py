@@ -74,8 +74,35 @@ class ReadarrClient:
             raise ValueError("No metadata profiles configured in Readarr")
         return profiles[0].get("id")
 
+    def _ensure_author_monitored(self, author: dict) -> dict:
+        """Force author.monitored=True (idempotent).
+
+        Adding with addOptions.monitor="none" (correct: we don't want the whole
+        bibliography) also sets author.monitored=False as a side effect — and
+        Readarr's wanted/missing EXCLUDES books whose author is unmonitored, so
+        a requested book whose one-shot search found nothing is never retried
+        (quality-gate H6/H16). monitorNewItems stays "none"; only the flag that
+        gates wanted/missing is repaired. -- local patch (fix-25)
+        """
+        if author.get("monitored"):
+            return author
+        author_id = author.get("id")
+        if author_id is None:
+            return author
+        try:
+            full = self.session.get(self._url(f"/author/{author_id}"), timeout=15).json()
+            full["monitored"] = True
+            resp = self.session.put(self._url(f"/author/{author_id}"), json=full, timeout=30)
+            if resp.ok:
+                logger.info("Monitored author id=%s '%s'", author_id, full.get("authorName"))
+                return resp.json()
+            logger.warning("Could not monitor author id=%s: HTTP %s", author_id, resp.status_code)
+        except Exception as e:
+            logger.warning("Could not monitor author id=%s: %s", author_id, e)
+        return author
+
     def _ensure_author(self, author_data: dict, quality_profile_id: int, root_folder: str) -> dict:
-        """Ensure the author exists in Readarr. Returns the author record."""
+        """Ensure the author exists in Readarr, monitored. Returns the author record."""
         author_name = author_data.get("authorName", "")
         foreign_author_id = author_data.get("foreignAuthorId", "")
 
@@ -100,7 +127,7 @@ class ReadarrClient:
             )
             if match:
                 logger.info("Author already exists (matched by ID): %s", match.get("authorName"))
-                return match
+                return self._ensure_author_monitored(match)
 
         # Match by name
         match = next(
@@ -109,7 +136,7 @@ class ReadarrClient:
         )
         if match:
             logger.info("Author already exists (matched by name): %s", match.get("authorName"))
-            return match
+            return self._ensure_author_monitored(match)
 
         # Author not in Readarr — need to add it
         # If we don't have a valid foreignAuthorId, look up the author by name
@@ -169,7 +196,7 @@ class ReadarrClient:
         )
 
         if resp.ok:
-            return resp.json()
+            return self._ensure_author_monitored(resp.json())
 
         # Still failing — check if author was added by another process
         updated = self.session.get(self._url("/author"), timeout=15).json()
@@ -178,13 +205,13 @@ class ReadarrClient:
             None,
         )
         if match:
-            return match
+            return self._ensure_author_monitored(match)
         match = next(
             (a for a in updated if a.get("authorName", "").lower() == author_name.lower()),
             None,
         )
         if match:
-            return match
+            return self._ensure_author_monitored(match)
 
         resp.raise_for_status()
 

@@ -1,6 +1,6 @@
 # Checks — media
 
-`foss-setup/verification/checks.d/media.yaml` — 14 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/media.yaml` — 16 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `music-library-dupes`
 
@@ -154,6 +154,28 @@ musicseerr: no request stuck 'downloading' while unmonitored in Lidarr
 
 ```bash
 LIDARR_URL="$LIDARR_URL" LIDARR_API_KEY="$LIDARR_API_KEY" python3 /opt/verification/bin/musicseerr-phantom-requests.py
+```
+
+## `arr-grabbed-not-imported`
+
+*arr: no silent grabbed-never-imported downloads >48h (H3/H5 class)
+
+- **host:** `mini` · **severity:** `crit` · **guards task:** `fix-25` · **enabled:** True
+- **expects:** `^GRABS_OK`
+
+```bash
+python3 /opt/verification/bin/arr-grab-audit.py grabs
+```
+
+## `arr-orphan-monitor-flags`
+
+*arr: no monitored+fileless media hidden from wanted by unmonitored parent (H6/H14 class)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-25` · **enabled:** True
+- **expects:** `^FLAGS_OK`
+
+```bash
+python3 /opt/verification/bin/arr-grab-audit.py monitor-flags
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

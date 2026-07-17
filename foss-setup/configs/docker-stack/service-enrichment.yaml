@@ -264,7 +264,11 @@ services:
       This is the junk-edition bug: upstream picks readarr_books[0] which can be a garbage rreading-glasses/Goodreads user edition. It is fixed by the bind-mounted ./app.py + ./readarr.py patch (candidate re-ranking + retry-until-accepted). Confirm both files are still mounted read-only in compose.yaml and present in the container; the ranking logic lives around app.py line ~1017.
   - symptom: After an image bump, book requests regress to 400s / junk editions again.
     fix: |-
-      The patch lives ONLY in the bind-mounted app.py/readarr.py, not in the upstream image. Every image bump can ship a new app.py signature — re-derive (re-apply) the local patch against the new upstream app.py before recreating. Marker comment in the code: "local patch (libreseerr-diagnosis 2026-07-12); re-derive on image bump."
+      The patch lives ONLY in the bind-mounted app.py/readarr.py, not in the upstream image. Every image bump can ship a new app.py signature — re-derive (re-apply) the local patch against the new upstream app.py before recreating. Marker comments in the code: "local patch (libreseerr-diagnosis 2026-07-12); re-derive on image bump" and "local patch (fix-25)" (the `_ensure_author_monitored` author-monitoring fix in readarr.py — without it requested books vanish from wanted/missing and are never re-searched).
+  - symptom: |-
+      A request sits 'processing 0%' forever with zero Readarr history — the first search found nothing and nothing ever retries it.
+    fix: |-
+      Quality-gate H6/H16 (fix-25, 2026-07-17): upstream added authors with addOptions.monitor="none", which also sets author.monitored=False, and Readarr's wanted/missing EXCLUDES books whose author is unmonitored — so a no-result first search was permanent. The bind-mounted readarr.py now forces author.monitored=True on every add/match path (books stay selectively monitored; monitorNewItems stays "none"). The `arr-orphan-monitor-flags` verification check fires if the flag combination ever reappears; the request itself completes as soon as an indexer has the book.
   - symptom: |-
       `docker compose pull` fails with "manifest unknown", or `up -d` won't start after an app.py edit.
     fix: |-

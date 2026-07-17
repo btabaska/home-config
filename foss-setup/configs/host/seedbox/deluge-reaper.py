@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-# Deluge reaper: remove sonarr/sonarr-imported torrents (+data) older than MAX_AGE.
+# Deluge reaper: remove *arr-labeled torrents (+data) older than MAX_AGE.
 # Library copies live on the NAS (separate copies), so this only frees seedbox disk.
+# Covers every *arr label pair since fix-25 (L42): pre-import residue is guarded by
+# the deluge-preimport-stuck verification check, which alarms >48h-stuck torrents
+# long before they reach reap age. "manual" is deliberately excluded.
 # Default DRY-RUN. Pass --live to actually remove.
 import sys, os, time
 from deluge.ui.client import client
@@ -8,7 +11,8 @@ from twisted.internet import reactor, defer
 
 DRY = "--live" not in sys.argv
 MAX_AGE = 14*86400
-LABELS = {"sonarr", "sonarr-imported"}
+ARR_LABELS = {"sonarr", "tv-sonarr", "radarr", "lidarr", "readarr", "tv-whisparr"}
+LABELS = ARR_LABELS | {l + "-imported" for l in ARR_LABELS if l != "tv-sonarr"}
 LOG = os.path.expanduser("~/logs/deluge-reaper.log")
 
 def localauth():

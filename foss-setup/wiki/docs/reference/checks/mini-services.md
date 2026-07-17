@@ -1,6 +1,6 @@
 # Checks — mini-services
 
-`foss-setup/verification/checks.d/mini-services.yaml` — 21 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/mini-services.yaml` — 26 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `mini-caddy-running`
 
@@ -110,6 +110,50 @@ miniflux answers on :8082
 
 ```bash
 curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8082/
+```
+
+## `mini-miniflux-feeds-fresh`
+
+miniflux scheduler polled a feed within 3h
+
+- **host:** `mini` · **severity:** `crit` · **guards task:** `fix-33` · **enabled:** True
+- **expects:** `^t$`
+
+```bash
+docker exec miniflux_db psql -U miniflux -d miniflux -tA -c "SELECT max(checked_at) > now() - interval '3 hours' FROM feeds"
+```
+
+## `mini-miniflux-articles-flowing`
+
+miniflux ingested at least one article in 48h
+
+- **host:** `mini` · **severity:** `crit` · **guards task:** `fix-33` · **enabled:** True
+- **expects:** `^t$`
+
+```bash
+docker exec miniflux_db psql -U miniflux -d miniflux -tA -c "SELECT count(*) > 0 FROM entries WHERE created_at > now() - interval '48 hours'"
+```
+
+## `mini-miniflux-no-bootstrap-admin`
+
+miniflux has no leftover bootstrap 'admin' user
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-33` · **enabled:** True
+- **expects:** `^0$`
+
+```bash
+docker exec miniflux_db psql -U miniflux -d miniflux -tA -c "SELECT count(*) FROM users WHERE username='admin'"
+```
+
+## `mini-container-dns`
+
+docker embedded DNS resolves external names from a container
+
+- **host:** `mini` · **severity:** `crit` · **guards task:** `fix-33` · **enabled:** True
+- **expects:** `^OK$`
+
+```bash
+docker exec miniflux_db nslookup miniflux.app 127.0.0.11 >/dev/null 2>&1 && echo OK
 ```
 
 ## `mini-mealie`
@@ -231,6 +275,17 @@ wiki->OWUI RAG sync ran clean in the last 26h (homelab-wiki fresh)
 
 ```bash
 st=$(systemctl show wiki-rag-sync.service -p ExecMainStatus --value); age=$(( $(date +%s) - $(stat -c %Y /var/lib/verification/wiki-rag-state.json 2>/dev/null || echo 0) )); echo "exit=$st age_h=$(( age / 3600 ))"; [ "$st" = "0" ] && [ "$age" -lt 93600 ] && echo RAG_FRESH || echo RAG_STALE
+```
+
+## `mini-root-fs-writable`
+
+mini root filesystem is READ-WRITE (real write probe — silent RO/ENOSPC tripwire)
+
+- **host:** `mini` · **severity:** `crit` · **guards task:** `fix-20` · **enabled:** True
+- **expects:** `write=OK root=rw`
+
+```bash
+p="/home/btabaska/.verify-rw-probe"; if ( : > "$p" ) 2>/dev/null; then rm -f "$p"; w=OK; else w=FAIL; fi; echo "write=$w root=$(findmnt -no OPTIONS / | cut -d, -f1)"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
