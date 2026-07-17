@@ -1,6 +1,6 @@
 # Roadmap — security
 
-10 task(s). Status mirrors `docs/progress.json` (the source of truth).
+11 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -14,5 +14,6 @@
 | `sec-03` | Immutable backups (B2 Object Lock + Borg append-only) + Healthchecks dead-man's-switch | ✅ done | 1-1.5 hrs |
 | `sec-04` | Harden exposed surfaces (CrowdSec + forward-auth on the seedbox/public ports) | ⬜ open | 1 hr |
 | `sec-05` | OS security patches (unattended-upgrades on Ubuntu; manual cadence on CachyOS) | ✅ done | 20 min |
+| `sec-06` | B2 master key custody: regenerate in console, store offline (Bitwarden/paper); optionally scope HB's key | ⬜ open | 15-30 min |
 
 [← Roadmap overview](index.md)
