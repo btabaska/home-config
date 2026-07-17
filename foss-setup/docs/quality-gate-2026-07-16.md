@@ -1377,6 +1377,15 @@ radarr tmdb 315635 file verified on disk: 13723924328 bytes Jul 14 08:23
 > (120) were already correct. Series ids were re-resolved by `tvdbId` before acting (the audit's
 > remembered ids were wrong). Guarded by the `arr-plex-parity` check. Runbook:
 > `runbooks/media-library-correctness.md`.
+>
+> **Follow-up logged (2026-07-17, not fixed here — out of fix-28 scope, needs its own careful
+> pass):** the *kept* BluRay series "Scooby-Doo, Where Are You!" (Sonarr id 138, tvdb 78260) has a
+> pre-existing broken internal mapping — Sonarr's **S1E01–08 slots are filled by the Season-2 DVD
+> `.avi` files** ("Nowhere to Hyde" etc.), while the real S1E01–09 `.avi` sit on disk untracked and
+> S1E10–17 exist only as `.avi`. S2 is duplicated (avi + mkv), S3 is mkv-only. The show is fully
+> watchable in Plex (33 leaves), so this is a correctness/tidiness bug, not an outage. It was
+> deliberately NOT rushed while closing fix-28 because a hasty delete/remap risks losing the
+> only copy of real S1 episodes. Should be re-curated as a dedicated media-polish item.
 
 (1) Over the Garden Wall: 10 files/1.3GB in per-part release folders ('Over.The.Garden.Wall.Part01...' 2021), Plex title search 0 hits — whole miniseries green in Sonarr but unwatchable. (2) The Scooby-Doo Show (tvdb 73817, 25 files at /tv/Scooby Doo): the files are actually 'Scooby-Doo, Where Are You!' episodes ('01 What A Night For A Knight...'); Plex has no 'The Scooby-Doo Show' — Sonarr is tracking the wrong series against these files. (3) The Way of the Househusband: Sonarr tvdb 386049 with 8 files, Plex matched tvdb 391005 with only 5 leaves. (4) Delicious in Dungeon: all 24 eps present and playable in Plex but the show is unmatched (guid local://51799, no external ids) — invisible to id-based checks and request-layer availability.
 

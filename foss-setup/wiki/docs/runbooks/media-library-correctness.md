@@ -93,11 +93,16 @@ The 0.62 "new scanner" does **not** honor `ND_IGNOREDPATTERNS`. The working guar
 `.ndignore` marker in the offending folder:
 
 ```
-touch "/volume1/music/#recycle/.ndignore"     # skip the whole folder
+# re-create the marker (idempotent; run ON the nas after any /volume1/music rebuild):
+bash foss-setup/scripts/nas/ensure-navidrome-music-ignore.sh   # touches /volume1/music/#recycle/.ndignore
 # purge already-indexed rows (ignore != missing, so a rescan won't remove them):
 docker exec navidrome sh -c 'sqlite3 /data/navidrome.db "delete from media_file where path like \"#recycle%\""'
 docker exec navidrome navidrome scan --full    # confirm rows stay gone
 ```
+
+The `.ndignore` marker lives on the NAS filesystem, not in git — `ensure-navidrome-music-ignore.sh`
+is the codified, idempotent re-creator to run after a music-share restore. Container health is
+now observable too (a `wget /ping` HEALTHCHECK was added to Navidrome's compose).
 
 ## Monitoring — the checks that now catch this class
 
