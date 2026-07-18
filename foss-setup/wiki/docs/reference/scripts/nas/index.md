@@ -1,10 +1,11 @@
 # NAS tasks scripts
 
-`foss-setup/scripts/nas/` — 8 script(s).
+`foss-setup/scripts/nas/` — 9 script(s).
 
 | Script | Role |
 |---|---|
 | [`apply-compose-restart-policy.sh`](apply-compose-restart-policy-sh.md) | Apply updated compose files (restart: always) on the NAS without recreating containers. |
+| [`ensure-navidrome-music-ignore.sh`](ensure-navidrome-music-ignore-sh.md) | run ON the nas (Synology DS920+). |
 | [`immich-db-dump.sh`](immich-db-dump-sh.md) | Nightly Immich Postgres dump (DSM Task Scheduler, 02:30) + Healthchecks ping. |
 | [`immich-pg-dump.sh`](immich-pg-dump-sh.md) | Nightly Immich Postgres dump for Hyper Backup (nas-08 follow-up). |
 | [`install-beets-task.sh`](install-beets-task-sh.md) | — |

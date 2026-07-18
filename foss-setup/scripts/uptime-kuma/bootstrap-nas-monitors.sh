@@ -32,6 +32,9 @@ MONITORS=(
   "NAS Whisparr|http://${NAS_IP}:6969|${ACCEPT_ARR}"
   "NAS Calibre Web|http://${NAS_IP}:8083|${ACCEPT_ARR}"
   "NAS Plex|http://${NAS_IP}:32400|${ACCEPT_PLEX}"
+  # fix-29 / L94: unpackerr was invisible to every external monitor (metrics port
+  # unpublished). The port is now published; probe its [webserver] /metrics.
+  "NAS Unpackerr|http://${NAS_IP}:5656/metrics|${ACCEPT_OK}"
 )
 
 sql() {
@@ -54,6 +57,30 @@ add_monitor() {
   echo "added $name → $url"
 }
 
+# fix-29 / M21: a monitor with no monitor_notification row goes DOWN silently.
+# The old flow inserted monitors and left "attach ntfy" as a manual step, so the
+# NAS Whisparr monitor (id 56) shipped unlinked. Attach the ntfy channel to EVERY
+# active monitor that lacks it — idempotent (INSERT ... WHERE NOT EXISTS), so
+# re-running never duplicates links and always heals any newly-added monitor.
+link_all_notifications() {
+  local ntfy_id
+  ntfy_id=$(sql "SELECT id FROM notification WHERE name LIKE '%ntfy%' AND active=1 ORDER BY id LIMIT 1;")
+  if [[ -z "$ntfy_id" ]]; then
+    echo "WARNING: no active ntfy notification found — monitors will alert nowhere." >&2
+    return 1
+  fi
+  sql "INSERT INTO monitor_notification (monitor_id, notification_id)
+       SELECT m.id, ${ntfy_id} FROM monitor m
+       WHERE m.active=1
+         AND NOT EXISTS (SELECT 1 FROM monitor_notification mn
+                         WHERE mn.monitor_id=m.id AND mn.notification_id=${ntfy_id});"
+  local unlinked
+  unlinked=$(sql "SELECT COUNT(*) FROM monitor m
+                  LEFT JOIN monitor_notification mn ON mn.monitor_id=m.id
+                  WHERE m.active=1 AND mn.id IS NULL;")
+  echo "linked all active monitors to ntfy (id ${ntfy_id}); unlinked-after=${unlinked}"
+}
+
 main() {
   if ! docker ps --format '{{.Names}}' | grep -qx "$CONTAINER"; then
     echo "Container $CONTAINER not running on this host." >&2
@@ -66,6 +93,10 @@ main() {
     IFS='|' read -r name url accept <<< "$row"
     add_monitor "$name" "$url" "$accept"
   done
+
+  echo
+  echo "Attaching the ntfy alert channel to every active monitor..."
+  link_all_notifications
 
   echo
   echo "Current monitors:"
@@ -82,8 +113,8 @@ main() {
        OR h.time IS NULL ORDER BY m.id;"
 
   echo
-  echo "Next: Uptime Kuma → Settings → Notifications → add ntfy webhook,"
-  echo "      then attach it to the NAS monitor group."
+  echo "Done. All active monitors are linked to ntfy (verified by the"
+  echo "kuma-all-monitors-notified verification check)."
 }
 
 main "$@"

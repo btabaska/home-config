@@ -10,6 +10,6 @@
 | [`gen-script-pages.py`](gen-script-pages-py.md) | generate wiki man-pages from scripts/ (wiki build-out). |
 | [`gen-todo.py`](gen-todo-py.md) | generate the single todo.md (all remaining project tasks). |
 | [`gen-wiki-services.py`](gen-wiki-services-py.md) | generate wiki service pages from compose files (wiki-02). |
-| [`publish-deploy.sh`](publish-deploy-sh.md) | publish foss-setup/ as the deployment repo (fix-07) |
+| [`publish-deploy.sh`](publish-deploy-sh.md) | publish the repo to the forgejo deploy remote (fix-07) |
 
 [← All scripts](../index.md)

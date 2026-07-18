@@ -25,6 +25,7 @@ Schedule in DSM Task Scheduler: root, daily ~02:30, run:
 ## See also
 
 - [`apply-compose-restart-policy.sh`](apply-compose-restart-policy-sh.md)
+- [`ensure-navidrome-music-ignore.sh`](ensure-navidrome-music-ignore-sh.md)
 - [`immich-db-dump.sh`](immich-db-dump-sh.md)
 - [`install-beets-task.sh`](install-beets-task-sh.md)
 - [`install-immich-dump-task.sh`](install-immich-dump-task-sh.md)

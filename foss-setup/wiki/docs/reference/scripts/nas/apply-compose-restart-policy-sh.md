@@ -17,6 +17,7 @@
 
 ## See also
 
+- [`ensure-navidrome-music-ignore.sh`](ensure-navidrome-music-ignore-sh.md)
 - [`immich-db-dump.sh`](immich-db-dump-sh.md)
 - [`immich-pg-dump.sh`](immich-pg-dump-sh.md)
 - [`install-beets-task.sh`](install-beets-task-sh.md)

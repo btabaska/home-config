@@ -306,6 +306,13 @@ services:
     volumes:
       - ./unpackerr/unpackerr.conf:/etc/unpackerr/unpackerr.conf:ro
       - *seedbox-mount                 # /seedbox (rslave) — MUST match the *arrs exactly
+    # fix-29 / L94: publish the [webserver] metrics port so unpackerr is visible
+    # to EXTERNAL monitors (Uptime-Kuma "NAS Unpackerr" + the
+    # unpackerr-poll-advancing verification check), not just the in-container
+    # healthcheck. Non-sensitive prometheus counters (no API keys); LAN/tailnet
+    # only (not WAN-forwarded), same publish convention as the sibling *arrs.
+    ports:
+      - "5656:5656"
     restart: always
     # Liveness for the "process up but poller WEDGED" class (2026-07-10:
     # unpackerr ran 2 days doing nothing while "Up", invisible to container-

@@ -1,39 +1,38 @@
 # `publish-deploy.sh`
 
-> publish foss-setup/ as the deployment repo (fix-07)
+> publish the repo to the forgejo deploy remote (fix-07)
 
 **Path:** `foss-setup/scripts/docs/publish-deploy.sh` · **Category:** [Docs & tracker generators](index.md) · **Type:** Bash
 
 ## Synopsis
 
 ```
-./foss-setup/scripts/docs/publish-deploy.sh [--force]
+./foss-setup/scripts/docs/publish-deploy.sh
 ```
 
 ## What it does
 
 ```text
- publish-deploy.sh — publish foss-setup/ as the deployment repo (fix-07)
+ publish-deploy.sh — publish the repo to the forgejo deploy remote (fix-07)
 
- Repo topology:
+ Repo topology (since 2026-07-14):
    origin  = github.com/btabaska/home-config      — the FULL planning repo
-   forgejo = forgejo:home/homelab (on the mini)   — DEPLOY repo = foss-setup/ subtree;
-             hosts run ansible-pull against it, so its root is configs/, scripts/, docs/
+   forgejo = forgejo:home/homelab (on the mini)   — the SAME full repo; hosts
+             consume it with paths prefixed foss-setup/ (ansible-pull plays
+             foss-setup/configs/ansible/site.yml, wiki-drift runs
+             foss-setup/scripts/wiki/wiki-drift-check.sh, etc.)
 
- This script splits the foss-setup/ prefix into a synthetic branch and pushes it
- to forgejo main. git subtree split is deterministic for a given history, so
- subsequent publishes fast-forward. Run from anywhere inside the repo.
+ HISTORY: home/homelab originally held only the foss-setup/ subtree, published
+ via `git subtree split`. On 2026-07-14 the full repo main was pushed there
+ (ai-01 session) and consumers were repointed to foss-setup/-prefixed paths,
+ so this script is now a plain push of main to both remotes.
 
- First publish after the 2026-07-07 topology reconciliation used --force (the
- old forgejo lineage was unrelated; its unique content was imported first —
- see commit "Import macmini sbom manifest exports").
-
- Usage: ./foss-setup/scripts/docs/publish-deploy.sh [--force]
+ Usage: ./foss-setup/scripts/docs/publish-deploy.sh
 ```
 
 ## Environment / variables referenced
 
-`FORCE`, `ROOT`, `SPLIT_SHA`
+`ROOT`
 
 ## See also
 

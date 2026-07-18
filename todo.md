@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**175/269 done** · **68 open** · **18 deferred** · 10 retired.
+**176/269 done** · **67 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -103,7 +103,6 @@
 - [ ] **`ha-32`** HA ops glue: SSH add-on, git-backed /config, nightly backups verify, checks.d/ha.yaml, Homepage _(est 1 h)_
 
 ### verification
-- [ ] **`fix-29`** Close the liveness-vs-reality monitoring gap (end-to-end checks for the failure classes just found) _(est 1-3 hrs)_
 - [ ] **`fix-30`** Repair the verification framework itself (LLM triage, false positives, deploy drift) _(est 1-3 hrs)_
 
 ### wiki

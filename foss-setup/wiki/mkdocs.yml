@@ -128,6 +128,7 @@ nav:
       - Edge / WAN exposure: runbooks/edge-exposure.md
       - Media — green but not watchable: runbooks/media-watchable.md
       - Media — library correctness (unmatched / partial / recycle): runbooks/media-library-correctness.md
+      - Monitoring coverage (liveness vs reality): runbooks/monitoring-coverage.md
   - Operations:
       - Overview: operations/index.md
       - Ansible & convergence: operations/ansible.md
@@ -224,8 +225,10 @@ nav:
       - git-hygiene: reference/checks/git-hygiene.md
       - ha: reference/checks/ha.md
       - media: reference/checks/media.md
+      - media-library-correctness: reference/checks/media-library-correctness.md
       - media-watchable: reference/checks/media-watchable.md
       - mini-services: reference/checks/mini-services.md
+      - monitoring-coverage: reference/checks/monitoring-coverage.md
       - nas-services: reference/checks/nas-services.md
       - network: reference/checks/network.md
       - rig: reference/checks/rig.md
@@ -241,11 +244,16 @@ nav:
           - wiki-rag-sync.py: reference/scripts/ai/wiki-rag-sync-py.md
       - Backup & restore:
           - Index: reference/scripts/backup/index.md
+          - b2-apply-bucket-policy.py: reference/scripts/backup/b2-apply-bucket-policy-py.md
           - ntfy-notify.sh: reference/scripts/backup/ntfy-notify-sh.md
           - pre-backup-db-dumps.sh: reference/scripts/backup/pre-backup-db-dumps-sh.md
           - restic-backup.sh: reference/scripts/backup/restic-backup-sh.md
           - restic-latest-age.sh: reference/scripts/backup/restic-latest-age-sh.md
+          - restic-snapshot-hygiene.sh: reference/scripts/backup/restic-snapshot-hygiene-sh.md
           - restore-test.sh: reference/scripts/backup/restore-test-sh.md
+      - beszel:
+          - Index: reference/scripts/beszel/index.md
+          - fix-notify-channels.sh: reference/scripts/beszel/fix-notify-channels-sh.md
       - Docs & tracker generators:
           - Index: reference/scripts/docs/index.md
           - build-wiki.sh: reference/scripts/docs/build-wiki-sh.md
@@ -295,6 +303,7 @@ nav:
       - NAS tasks:
           - Index: reference/scripts/nas/index.md
           - apply-compose-restart-policy.sh: reference/scripts/nas/apply-compose-restart-policy-sh.md
+          - ensure-navidrome-music-ignore.sh: reference/scripts/nas/ensure-navidrome-music-ignore-sh.md
           - immich-db-dump.sh: reference/scripts/nas/immich-db-dump-sh.md
           - immich-pg-dump.sh: reference/scripts/nas/immich-pg-dump-sh.md
           - install-beets-task.sh: reference/scripts/nas/install-beets-task-sh.md
@@ -313,6 +322,9 @@ nav:
       - Reading stack:
           - Index: reference/scripts/reading/index.md
           - syncthing-setup-cachyos.sh: reference/scripts/reading/syncthing-setup-cachyos-sh.md
+      - secrets:
+          - Index: reference/scripts/secrets/index.md
+          - vault-lint.py: reference/scripts/secrets/vault-lint-py.md
       - Host setup:
           - Index: reference/scripts/setup/index.md
           - cachyos-desktop-baseline.sh: reference/scripts/setup/cachyos-desktop-baseline-sh.md

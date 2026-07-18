@@ -98,11 +98,6 @@
           type: tautulli
           url: http://tautulli:8181
           key: "{{HOMEPAGE_VAR_TAUTULLI_KEY}}"
-    - Maintainerr:
-        icon: maintainerr.png
-        href: https://maintainerr.tabaska.us
-        description: Library cleanup rules
-        siteMonitor: http://maintainerr:6246
     - Deluge:
         icon: deluge.png
         href: https://deluge.tabaska.us

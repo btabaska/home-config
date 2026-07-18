@@ -30,8 +30,10 @@
 
 ## See also
 
+- [`b2-apply-bucket-policy.py`](b2-apply-bucket-policy-py.md)
 - [`ntfy-notify.sh`](ntfy-notify-sh.md)
 - [`pre-backup-db-dumps.sh`](pre-backup-db-dumps-sh.md)
 - [`restic-backup.sh`](restic-backup-sh.md)
+- [`restic-snapshot-hygiene.sh`](restic-snapshot-hygiene-sh.md)
 - [`restore-test.sh`](restore-test-sh.md)
 - [Backup & restore scripts](index.md) · [All scripts](../index.md)

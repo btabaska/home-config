@@ -1,0 +1,106 @@
+# fix-29 — close the liveness-vs-reality monitoring gap.
+# Every check here probes the CONSUMER end, not liveness: the audit (2026-07-16)
+# found monitors green while the thing they "watched" was functionally dead
+# (dead homepage tile, Kuma monitor with no alert channel, unpackerr invisible,
+# beszel email dead-path, litellm 401-liveness green while virtual-key clients
+# 503'd). Findings: M17, M21, M57, L28, L94.
+checks:
+  # ── M17 · homepage dead tiles ────────────────────────────────────────────
+  # A tile whose siteMonitor/widget is a bare docker-DNS name only resolves if a
+  # container by that name is running; a retired container leaves the tile as a
+  # getaddrinfo storm (Maintainerr: 264 errs/96h). Deterministic config->reality
+  # reconciliation — catches the exact bug AND any sibling retired-container tile.
+  - id: homepage-dead-tiles
+    name: "homepage has no tile pointing at a nonexistent container (M17 class)"
+    host: mini
+    cmd: python3 /opt/verification/bin/homepage-tiles-resolve.py
+    expect: '^DEAD_TILES=NONE$'
+    severity: warn
+    task_id: fix-29
+    runbook: wiki/docs/runbooks/monitoring-coverage.md
+    enabled: true
+
+  # Consumer-end runtime confirmation: homepage itself logs DNS-resolution
+  # failures (EAI_AGAIN/getaddrinfo) whenever the dashboard renders a dead tile.
+  # Zero over the last 2h = no dead tile is being served to viewers. Narrowed to
+  # DNS failures (the dead-tile signature) so a transient external blip on a live
+  # tile does not flap this.
+  - id: homepage-widget-errors
+    name: "homepage renders 0 dead-tile DNS errors in the last 2h (M17 consumer end)"
+    host: mini
+    cmd: >-
+      echo "errors=$(docker logs homepage --since 2h 2>&1 | grep -icE 'EAI_AGAIN|getaddrinfo')"
+    expect: '^errors=0$'
+    severity: warn
+    task_id: fix-29
+    runbook: wiki/docs/runbooks/monitoring-coverage.md
+    enabled: true
+
+  # ── M21 · every Uptime-Kuma monitor has an alert channel ─────────────────
+  # bootstrap-nas-monitors.sh used to insert monitors and leave "attach ntfy" as
+  # a manual step, so NAS Whisparr (id 56) shipped with no monitor_notification
+  # row — it would have gone DOWN silently. Class guard: no active monitor may
+  # lack a notification link (the bootstrap now auto-heals this too).
+  - id: kuma-all-monitors-notified
+    name: "every active Uptime-Kuma monitor is linked to an alert channel (M21)"
+    host: mini
+    cmd: docker exec uptime-kuma mariadb --socket=/app/data/run/mariadb.sock kuma -N -e "SELECT CONCAT('unlinked=', COUNT(*)) FROM monitor m LEFT JOIN monitor_notification mn ON mn.monitor_id=m.id WHERE m.active=1 AND mn.id IS NULL;"
+    expect: '^unlinked=0$'
+    severity: crit
+    task_id: fix-29
+    runbook: wiki/docs/runbooks/monitoring-coverage.md
+    enabled: true
+
+  # ── L94 · unpackerr is externally visible AND actually polling ───────────
+  # unpackerr's metrics port was unpublished, so nothing off-box could see it;
+  # the only signal was the in-container healthcheck. Port now published (compose)
+  # + Kuma "NAS Unpackerr" monitor. This check is the consumer-end wedge detector:
+  # it confirms unpackerr reaches every Starr app AND its poll counter advances
+  # (the 2026-07-10 "up but wedged 2 days" class that liveness could not see).
+  - id: unpackerr-poll-advancing
+    name: "unpackerr reaches every Starr app and its poll loop is advancing (L94)"
+    host: mini
+    cmd: python3 /opt/verification/bin/unpackerr-poll-advancing.py
+    expect: '^UNPACKERR_OK'
+    severity: warn
+    task_id: fix-29
+    runbook: wiki/docs/runbooks/monitoring-coverage.md
+    enabled: true
+
+  # ── L28 · beszel alert channels are coherent ─────────────────────────────
+  # An email destination with no SMTP configured is a silent dead path. Guard:
+  # no email dest unless SMTP is set, and at least one live webhook (ntfy) exists.
+  - id: beszel-notify-coherent
+    name: "beszel has no dead email path + keeps a live webhook channel (L28)"
+    host: mini
+    cmd: python3 /opt/verification/bin/beszel-notify-coherent.py
+    expect: '^BESZEL_COHERENT_OK'
+    severity: warn
+    task_id: fix-29
+    runbook: wiki/docs/runbooks/monitoring-coverage.md
+    enabled: true
+
+  # ── M57 · AI stack — CONSUMER end, not liveness ──────────────────────────
+  # During the RO-root incident, ai-stack-rig pinged 'up' and litellm answered
+  # /health/liveliness + /v1/models (master key) with 200, while EVERY virtual-key
+  # client got 503 no_db_connection (litellm-db was a corpse docker mislabeled
+  # healthy). The existing rig-litellm check ("401 without key = up") is exactly
+  # that blind liveness. This drives the real consumer path: a dedicated least-
+  # privilege virtual key (verify-probe, utility model only) must complete a chat
+  # request with real content — proving DB-backed key auth + model routing, the
+  # hop that silently failed. Key: rig ~/.config/fleet-mcp/env LITELLM_VERIFY_KEY
+  # (vault ai_stack.litellm_verify_key).
+  - id: rig-litellm-consumer-e2e
+    name: "litellm returns a real completion to a virtual-key client (M57 consumer end)"
+    host: rig
+    cmd: >-
+      set -a && . ~/.config/fleet-mcp/env && set +a &&
+      curl -s -m 90 http://localhost:4000/v1/chat/completions
+      -H "Authorization: Bearer $LITELLM_VERIFY_KEY" -H 'Content-Type: application/json'
+      -d '{"model":"utility","messages":[{"role":"user","content":"Reply with the single word PONG and nothing else."}],"max_tokens":16}'
+      | python3 -c 'import sys,json; d=json.load(sys.stdin); c=(d.get("choices") or [{}])[0].get("message",{}).get("content") if isinstance(d,dict) else None; print("LITELLM_CONSUMER_OK "+repr((c or "").strip()) if (c and c.strip()) else "LITELLM_CONSUMER_FAIL "+json.dumps(d)[:180])'
+    expect: '^LITELLM_CONSUMER_OK'
+    severity: warn
+    task_id: fix-29
+    runbook: wiki/docs/runbooks/monitoring-coverage.md
+    enabled: true

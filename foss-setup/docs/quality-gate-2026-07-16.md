@@ -1063,6 +1063,8 @@ $ docker ps -a | grep -i maintainerr -> no container; Caddyfile has no maintaine
 
 </details>
 
+> **RESOLVED (fix-29, 2026-07-17):** Maintainerr tile removed from `services.yaml` (live `/opt/stacks/homepage` + repo mirror `configs/docker-stack/stacks/homepage/`), homepage restarted → 0 `maintainerr` refs, 0 widget errors. Guards in `checks.d/monitoring-coverage.yaml`: `homepage-dead-tiles` (config→container reconciliation — flags any retired-container tile, not just this one) + `homepage-widget-errors` (2h render-error window), both green. Runbook `wiki/docs/runbooks/monitoring-coverage.md`.
+
 ### M18. RomM library is completely empty — 0 ROMs in DB, NAS games share contains zero files; every scan finds nothing
 
 **Host:** mini · **Component:** romm · **Auditor:** svc:infra-mini
@@ -1129,6 +1131,8 @@ docker exec uptime-kuma mariadb --socket=/app/data/run/mariadb.sock -D kuma -e '
 ```
 
 </details>
+
+> **RESOLVED (fix-29, 2026-07-17):** monitor 56 linked to the `ntfy → homelab-alerts` channel and all 54 active monitors backfilled (unlinked=0, 0 duplicates). Root cause fixed in `bootstrap-nas-monitors.sh` — a new `link_all_notifications` step idempotently attaches ntfy to every active monitor, so SQL-seeded monitors can no longer ship unlinked (the "NAS Unpackerr" monitor added for L94 inherited it automatically). Guard: `kuma-all-monitors-notified` (crit, unlinked==0), green. Runbook `wiki/docs/runbooks/monitoring-coverage.md`.
 
 ### M22. Real wiki drift on main: 2 generated script-doc pages are stale vs regeneration — keeps the daily sweep red
 
@@ -1885,6 +1889,8 @@ docker logs litellm (tail) -> continuous 'GET /health/liveliness 200' + 'GET /v1
 
 </details>
 
+> **RESOLVED (fix-29, 2026-07-17):** the incident itself is over (fix-20; the AI stack has since moved to llama-swap + LiteLLM per-client virtual keys under ai-01). The monitoring GAP is closed: a dedicated **least-privilege** virtual key (`verify-probe`, `utility` model only — vault `ai_stack.litellm_verify_key`, on rig `~/.config/fleet-mcp/env`) now drives a real completion through the **DB-backed key-auth path** via `rig-litellm-consumer-e2e` — exactly the consumer hop that 503'd while `/health/liveliness` + master-key `/v1/models` stayed 200. Green (`LITELLM_CONSUMER_OK 'PONG'`); the key is verified blocked (403) from every other model. This is the consumer-end pair for the liveness-only `rig-litellm` ("401 = up"). Runbook `wiki/docs/runbooks/monitoring-coverage.md`.
+
 ### M58. Second user (kaelyn92@icloud.com) was created with full admin rights and has never logged in; both accounts still flagged shouldChangePassword
 
 **Host:** nas · **Component:** immich · **Auditor:** gap:NAS Immich — root-cause the ZERO-assets finding via the readable Postgres dump (not just filesystem emptiness)
@@ -2199,6 +2205,8 @@ Retrieving forgejo logs with `docker logs forgejo --since 168h` fails with "Erro
 
 
 user_settings has emails:[brandon.tabaska@protonmail.com] alongside the working ntfy webhook, but the beszel container env contains only APP_URL and PATH — no SMTP_* vars — so any email alert send silently fails. The ntfy webhook (ntfy://:tk_78rb...@ntfy:80/homelab-alerts) is the only functional channel; its token was last used 09 Jul (test), and no alert has triggered since.
+
+> **RESOLVED (fix-29, 2026-07-17):** the dead email destination was stripped from beszel `user_settings` (the hub has no `SMTP_*` env, so email sends dropped silently); the working ntfy webhook is kept. Codified as idempotent `scripts/beszel/fix-notify-channels.sh` — it strips email dests **only** when SMTP is absent, so adding `SMTP_*` later re-enables email cleanly. Guard: `beszel-notify-coherent` (fails on an email dest without SMTP, or a missing webhook channel), green. Beszel-down remains independently caught by `alert-beszel-none-down` (mini sweep → ntfy). Runbook `wiki/docs/runbooks/monitoring-coverage.md`.
 
 ### L29. Uptime-kuma 16h uptime explained: clean operator restart 2026-07-15 00:54 UTC for the NAS-monitor bootstrap; history shows an embedded-MariaDB crash class (InnoDB crash recovery, fatal 'Connection lost' traces, NUL-corrupted log region)
 
@@ -2669,6 +2677,8 @@ Of the 55 rar'd release dirs in files/tv, 20 still contain the extracted mkv nex
 
 
 The [webserver] metrics endpoint added after the 2026-07-10 two-day wedge listens on 0.0.0.0:5656 but the compose service publishes no host port, so nothing off-box can probe it (curl from LAN returns an empty response). Uptime-Kuma monitors every other NAS media service by HTTP (NAS Sonarr/Radarr/Lidarr/Readarr/Prowlarr/FlareSolverr/Whisparr/Plex/Stash) but has no unpackerr monitor; healthchecks (192.168.10.2:8001) has no unpackerr entry either. The only consumer of unpackerr's health is verification/checks.d/docker-fleet.yaml check 'containers-health-nas' (runs from mini, sudo docker ps over SSH, flags unhealthy/restarting containers). That path is currently green — verification-* healthchecks entries are 'up' (verification-fast-mini last ping 2026-07-16T11:55:31Z), so no NAS container is unhealthy, which is the best available read-only confirmation that unpackerr is up. Net: unpackerr is indirectly monitored for the wedge class, but a direct external probe of its metrics is impossible; publishing 5656 (LAN-only) or adding a kuma HTTP monitor would close the gap.
+
+> **RESOLVED (fix-29, 2026-07-17):** the metrics port `5656` is now published (NAS compose + repo mirror `configs/nas/media-automation/docker-compose.yml`, container recreated), an Uptime-Kuma "NAS Unpackerr" monitor (id 57, ntfy-linked via the M21 auto-heal) added, and — beyond liveness — the `unpackerr-poll-advancing` check confirms unpackerr is reaching all 5 Starr apps AND that its poll counter advances (freezes >5 min ⇒ WEDGED, the 2026-07-10 "up but idle two days" class). Green (`apps=5`, counter climbing); negative-tested (frozen + unreachable both flag). Runbook `wiki/docs/runbooks/monitoring-coverage.md`.
 
 ### L95. 2 monitored Sonarr series sit on the unmanaged 'Any' quality profile, bypassing all recyclarr/TRaSH custom-format scoring
 

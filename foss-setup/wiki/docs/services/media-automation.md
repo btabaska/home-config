@@ -26,7 +26,7 @@ The full home `*arr` acquisition stack, running as the `media-automation` Compos
 | `readarr` | `docker.io/linuxserver/readarr:develop-0.4.18.2805-ls157` | `8787:8787` |
 | `rreading-glasses` | `blampe/rreading-glasses@sha256:dd996a1db19ac4ef18df47f1671f608c0f097ed43c4776ebde94dee20c6b43c8` | `8788:8788` |
 | `rreading-glasses-db` | `postgres:17.6` | — |
-| `unpackerr` | `golift/unpackerr:0.15.2` | — |
+| `unpackerr` | `golift/unpackerr:0.15.2` | `5656:5656` |
 | `whisparr` | `ghcr.io/hotio/whisparr@sha256:dfa198dc37a89f9f6b7a0fad39e66cfaa1153659a80e22fd9d9475b8b08bcac5` | `6969:6969` |
 
 ## Volumes
