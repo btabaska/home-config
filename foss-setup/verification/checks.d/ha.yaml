@@ -13,6 +13,28 @@ checks:
     runbook: wiki/runbooks/docker.md
     enabled: true
 
+  # PROXY E2E (added 2026-07-18, fix-32). ha-http above probes HA DIRECT on
+  # :8123 — which stayed green for the 11 days ha.tabaska.us served every user
+  # "400: Bad Request" (H9/H19/H21/M10: HA had no http.use_x_forwarded_for /
+  # trusted_proxies, so it rejected caddy's proxied requests). This is the
+  # consumer path: TLS through caddy on the mini, expecting the real frontend
+  # HTML. Fails if the HA-side http: block is lost (restore/factory reset), the
+  # caddy vhost/cert dies, or HA regresses proxy handling. warn not crit:
+  # direct :8123 still works when only the proxy path is down (ha-http crits
+  # on a full outage).
+  - id: ha-proxy-e2e
+    tier: fast
+    name: "ha.tabaska.us serves the HA frontend THROUGH caddy (proxy accepted, not 400)"
+    host: mini
+    cmd: >-
+      curl -sk -m 10 --resolve ha.tabaska.us:443:127.0.0.1 https://ha.tabaska.us/
+      | grep -o "<title>Home Assistant</title>" || echo HA_PROXY_BROKEN
+    expect: '^<title>Home Assistant</title>$'
+    severity: warn
+    task_id: fix-32
+    runbook: wiki/docs/runbooks/reverse-proxy.md
+    enabled: true
+
   - id: ha-api-auth
     name: "HA REST API authenticates (long-lived token valid)"
     host: mini

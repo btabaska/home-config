@@ -317,7 +317,6 @@ stash.{$DOMAIN} {
 		header_up X-Real-IP {remote_host}
 		header_up X-Forwarded-For {remote_host}
 		header_up X-Forwarded-Proto {scheme}
-		header_up X-Forwarded-Port {server_port}
 	}
 }
 
@@ -356,9 +355,9 @@ metube.{$DOMAIN} {
 # ---------------------------------------------------------------------------
 
 # Home Assistant (dedicated host — HA_IP in .env).
-# NOTE: HA will answer 400 "Bad Request" through this proxy until its
-# `http.use_x_forwarded_for` + `trusted_proxies` include the mini's Docker
-# networks — configured in run-5.
+# HA-side `http.use_x_forwarded_for` + `trusted_proxies: [192.168.10.2]` were
+# configured 2026-07-18 (fix-32) — without them HA answers every proxied request
+# with 400. Guarded by verification check ha-proxy-e2e.
 ha.{$DOMAIN} {
 	import local_tls
 	reverse_proxy {$HA_IP}:8123

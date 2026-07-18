@@ -12,6 +12,34 @@ checks:
     runbook: wiki/runbooks/docker.md
     enabled: true
 
+  # CONFIG-DRIFT TRIPWIRE (added 2026-07-18, fix-32; class check for H8/H18).
+  # The llamaswap vhost sat in the on-disk Caddyfile for 3 days while the
+  # running caddy (started Jul 9, never reloaded) had no route or cert for it —
+  # every client got a TLS "internal error". Liveness can't see this class: the
+  # container is healthy, the file is valid, the route is simply absent. This
+  # adapts the on-disk Caddyfile inside the container (same binary + env vars)
+  # and diffs the vhost set against the running config from the admin API; any
+  # mismatch means an edit without `docker exec caddy caddy reload` behind it.
+  - id: mini-caddy-live-config-current
+    name: "caddy running config matches on-disk Caddyfile (no edited-but-never-reloaded vhosts)"
+    host: mini
+    cmd: >-
+      { docker exec caddy caddy adapt --config /etc/caddy/Caddyfile 2>/dev/null;
+      echo __SPLIT__;
+      docker exec caddy wget -qO- http://localhost:2019/config/; }
+      | python3 -c "import sys,json;
+      raw=sys.stdin.read().split(\"__SPLIT__\");
+      hosts=lambda c: {h for s in c.get(\"apps\",{}).get(\"http\",{}).get(\"servers\",{}).values()
+      for r in s.get(\"routes\",[]) for m in r.get(\"match\",[]) for h in m.get(\"host\",[])};
+      disk=hosts(json.loads(raw[0])); live=hosts(json.loads(raw[1]));
+      print(\"caddy_config=current\" if disk==live
+      else \"caddy_config=DRIFT missing_live:%s extra_live:%s\" % (sorted(disk-live), sorted(live-disk)))"
+    expect: '^caddy_config=current$'
+    severity: warn
+    task_id: fix-32
+    runbook: wiki/docs/runbooks/reverse-proxy.md
+    enabled: true
+
   - id: mini-adguard-running
     tier: fast
     name: "adguardhome container running"

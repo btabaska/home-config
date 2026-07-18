@@ -271,6 +271,8 @@ last fetch error: 2026-07-09T11:18:52 ... dial tcp: lookup www.gunnerkrigg.com o
 
 ### H8. llamaswap.tabaska.us vhost added to Caddyfile but caddy never reloaded — route dead (TLS handshake fails)
 
+> **RESOLVED (fix-32, 2026-07-18):** already healed in the field — caddy was restarted/reloaded 2026-07-18 ~05:30 UTC (concurrent ai-01 session) and llamaswap.tabaska.us now serves 302 through the proxy (verified consumer-end). The CLASS is now guarded: `mini-caddy-live-config-current` adapts the on-disk Caddyfile in-container and diffs the vhost set against the admin-API running config, so any future edited-but-never-reloaded vhost alerts within a day instead of shipping TLS errors for 3 days. Green. Runbook `wiki/docs/runbooks/reverse-proxy.md`.
+
 **Host:** mini · **Component:** caddy · **Auditor:** svc:infra-mini
 
 
@@ -289,6 +291,8 @@ $ curl http://192.168.10.12:9292/health -> OK (upstream fine)
 </details>
 
 ### H9. ha.tabaska.us returns 400 Bad Request — HA rejects the proxy (trusted_proxies not honoring mini), route unusable
+
+> **RESOLVED (fix-32, 2026-07-18):** HA-side `http.use_x_forwarded_for: true` + `trusted_proxies: [192.168.10.2]` appended to `/config/configuration.yaml` on the HA Green (via the core_ssh add-on started temporarily over the Supervisor WS API — note the REST `/api/hassio/*` proxy 401s in HA 2026.x; add-on left installed but STOPPED, boot=manual), `ha core check` passed, core restarted 14:4x UTC. Consumer-end verified: `https://ha.tabaska.us/` serves the real frontend (200, `<title>Home Assistant</title>`) and `/api/` answers `API running.` through the proxy. Codified in `configs/homeassistant/configuration.yaml.example` (http block now live, not commented out); stale Caddyfile 'until run-5' note replaced. Regression guard `ha-proxy-e2e` (fast tier, probes THROUGH caddy — the direct `:8123` ha-http check stayed green for all 11 days of this outage), green. Runbook `wiki/docs/runbooks/reverse-proxy.md`.
 
 **Host:** mini · **Component:** caddy / home-assistant · **Auditor:** svc:infra-mini
 
@@ -483,6 +487,8 @@ ls -lat /volume1/docker/immich/backups -> immich-2026-07-08..15.sql.gz all 16,65
 
 ### H18. llamaswap vhost added to Caddyfile on disk but caddy never reloaded — TLS handshake fails, route dead
 
+> **RESOLVED (fix-32, 2026-07-18):** already healed in the field — caddy was restarted/reloaded 2026-07-18 ~05:30 UTC (concurrent ai-01 session) and llamaswap.tabaska.us now serves 302 through the proxy (verified consumer-end). The CLASS is now guarded: `mini-caddy-live-config-current` adapts the on-disk Caddyfile in-container and diffs the vhost set against the admin-API running config, so any future edited-but-never-reloaded vhost alerts within a day instead of shipping TLS errors for 3 days. Green. Runbook `wiki/docs/runbooks/reverse-proxy.md`.
+
 **Host:** mini · **Component:** caddy / llamaswap.tabaska.us · **Auditor:** flow:dns-proxy
 
 
@@ -502,6 +508,8 @@ curl -s -o /dev/null -w %{http_code} http://192.168.10.12:9292/ -> 302 (upstream
 </details>
 
 ### H19. ha.tabaska.us returns 400 Bad Request from HA — trusted_proxies never configured, proxy route broken
+
+> **RESOLVED (fix-32, 2026-07-18):** HA-side `http.use_x_forwarded_for: true` + `trusted_proxies: [192.168.10.2]` appended to `/config/configuration.yaml` on the HA Green (via the core_ssh add-on started temporarily over the Supervisor WS API — note the REST `/api/hassio/*` proxy 401s in HA 2026.x; add-on left installed but STOPPED, boot=manual), `ha core check` passed, core restarted 14:4x UTC. Consumer-end verified: `https://ha.tabaska.us/` serves the real frontend (200, `<title>Home Assistant</title>`) and `/api/` answers `API running.` through the proxy. Codified in `configs/homeassistant/configuration.yaml.example` (http block now live, not commented out); stale Caddyfile 'until run-5' note replaced. Regression guard `ha-proxy-e2e` (fast tier, probes THROUGH caddy — the direct `:8123` ha-http check stayed green for all 11 days of this outage), green. Runbook `wiki/docs/runbooks/reverse-proxy.md`.
 
 **Host:** mini · **Component:** caddy / ha.tabaska.us -> Home Assistant · **Auditor:** flow:dns-proxy
 
@@ -543,6 +551,8 @@ mini/data/00/0021514c... | retention: {"value": {"mode": null, "retainUntilTimes
 </details>
 
 ### H21. ha.tabaska.us returns 400 for every request — HA has no trusted_proxies/use_x_forwarded_for; recurring http.forwarded errors through today
+
+> **RESOLVED (fix-32, 2026-07-18):** HA-side `http.use_x_forwarded_for: true` + `trusted_proxies: [192.168.10.2]` appended to `/config/configuration.yaml` on the HA Green (via the core_ssh add-on started temporarily over the Supervisor WS API — note the REST `/api/hassio/*` proxy 401s in HA 2026.x; add-on left installed but STOPPED, boot=manual), `ha core check` passed, core restarted 14:4x UTC. Consumer-end verified: `https://ha.tabaska.us/` serves the real frontend (200, `<title>Home Assistant</title>`) and `/api/` answers `API running.` through the proxy. Codified in `configs/homeassistant/configuration.yaml.example` (http block now live, not commented out); stale Caddyfile 'until run-5' note replaced. Regression guard `ha-proxy-e2e` (fast tier, probes THROUGH caddy — the direct `:8123` ha-http check stayed green for all 11 days of this outage), green. Runbook `wiki/docs/runbooks/reverse-proxy.md`.
 
 **Host:** ha (192.168.10.50) + mini/caddy · **Component:** HA http integration / caddy reverse proxy (ha.tabaska.us) · **Auditor:** flow:ha-deep
 
@@ -913,6 +923,8 @@ GET /api/states (update domain): update.home_assistant_core_update on installed=
 </details>
 
 ### M10. ha.tabaska.us is a dead path: caddy proxies to HA but HA rejects proxied requests with 400 (trusted_proxies never configured)
+
+> **RESOLVED (fix-32, 2026-07-18):** HA-side `http.use_x_forwarded_for: true` + `trusted_proxies: [192.168.10.2]` appended to `/config/configuration.yaml` on the HA Green (via the core_ssh add-on started temporarily over the Supervisor WS API — note the REST `/api/hassio/*` proxy 401s in HA 2026.x; add-on left installed but STOPPED, boot=manual), `ha core check` passed, core restarted 14:4x UTC. Consumer-end verified: `https://ha.tabaska.us/` serves the real frontend (200, `<title>Home Assistant</title>`) and `/api/` answers `API running.` through the proxy. Codified in `configs/homeassistant/configuration.yaml.example` (http block now live, not commented out); stale Caddyfile 'until run-5' note replaced. Regression guard `ha-proxy-e2e` (fast tier, probes THROUGH caddy — the direct `:8123` ha-http check stayed green for all 11 days of this outage), green. Runbook `wiki/docs/runbooks/reverse-proxy.md`.
 
 **Host:** mini + ha · **Component:** caddy reverse proxy -> HA · **Auditor:** host:ha
 
@@ -2193,6 +2205,8 @@ Reading mealie's full container log history aborts with 'error from daemon in st
 
 ### L24. deptrack.tabaska.us is a dead path: in vault + wildcard DNS, but no Caddy vhost and no Dependency-Track container anywhere on mini
 
+> **RESOLVED (fix-32, 2026-07-18):** retirement completed — `dtrack.*` removed from the secrets vault and the stale `/opt/stacks/dependency-track` dir (template .env with placeholder password only) deleted from the mini. `deptrack.tabaska.us` resolving on the LAN wildcard and failing TLS is the normal state for any retired/nonexistent name (documented in `wiki/docs/runbooks/reverse-proxy.md`).
+
 **Host:** mini · **Component:** caddy / secrets-vault · **Auditor:** svc:infra-mini
 
 
@@ -2206,6 +2220,8 @@ The secrets vault carries dtrack admin creds and url https://deptrack.tabaska.us
 Two more recurring widget failures: (1) Sunshine tile siteMonitor https://192.168.10.12:47990 fails with ECONNRESET/'socket hang up' (119 errors/96h) because Apollo serves a self-signed cert homepage won't accept — caddy's apollo vhost (with tls_insecure_skip_verify) works fine (307). (2) Healthchecks tile siteMonitor http://healthchecks:8000 logs 'Parse Error: Expected HTTP/, RTSP/ or ICE/' (119 errors/96h) even though a manual GET from inside the homepage container returns a clean 302->200 and health.tabaska.us works — the widget probe itself misfires. Both tiles show a broken state for healthy services (dashboard lies). Related in spirit to known-issue #15 (monitoring != correctness) but these are specific new tile bugs.
 
 ### L26. stash vhost sends literal '{server_port}' as X-Forwarded-Port ({server_port} is not a valid Caddyfile placeholder)
+
+> **RESOLVED (fix-32, 2026-07-18):** the invalid `header_up X-Forwarded-Port {server_port}` line was removed from the stash vhost (live Caddyfile + /opt/stacks git + repo mirror), caddy validated and graceful-reloaded; stash.tabaska.us → 200 and the literal string no longer exists in the running config.
 
 **Host:** mini · **Component:** caddy · **Auditor:** svc:infra-mini
 
@@ -2397,6 +2413,8 @@ Root of /volume1 contains crash core dumps: '@Plex Transcoder...core.gz' (1.4MB,
 
 ### L52. deptrack.tabaska.us is a dead name: Dependency-Track retired 2026-07-11, but vault creds + leftover stack dir remain
 
+> **RESOLVED (fix-32, 2026-07-18):** retirement completed — `dtrack.*` removed from the secrets vault and the stale `/opt/stacks/dependency-track` dir (template .env with placeholder password only) deleted from the mini. `deptrack.tabaska.us` resolving on the LAN wildcard and failing TLS is the normal state for any retired/nonexistent name (documented in `wiki/docs/runbooks/reverse-proxy.md`).
+
 **Host:** mini · **Component:** secrets vault + /opt/stacks/dependency-track + DNS wildcard · **Auditor:** flow:dns-proxy
 
 
@@ -2419,6 +2437,8 @@ Every other service name is correctly NXDOMAIN in public DNS, but www.tabaska.us
 adguard-mini upstreams to udp://unbound:5335 (local recursive DNSSEC resolver, per design). adguard-nas upstreams to https://dns10.quad9.net/dns-query. The unbound compose doc explicitly says the second AdGuard should point at 'its own Unbound (or this one over Tailscale)'. Functional (external names resolve fine) but the privacy/DNSSEC posture differs between primary and secondary resolvers, and secondary queries leave the LAN to a third party. Additionally adguard-nas sees ALL clients as 172.23.0.1 (docker bridge NAT), so per-client stats/rules are impossible on the secondary.
 
 ### L55. stash vhost sends literal '{server_port}' as X-Forwarded-Port (invalid Caddy placeholder)
+
+> **RESOLVED (fix-32, 2026-07-18):** the invalid `header_up X-Forwarded-Port {server_port}` line was removed from the stash vhost (live Caddyfile + /opt/stacks git + repo mirror), caddy validated and graceful-reloaded; stash.tabaska.us → 200 and the literal string no longer exists in the running config.
 
 **Host:** mini · **Component:** caddy stash vhost · **Auditor:** flow:dns-proxy
 

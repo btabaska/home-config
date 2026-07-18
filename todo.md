@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**178/269 done** · **65 open** · **18 deferred** · 10 retired.
+**179/269 done** · **64 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -54,7 +54,6 @@
 - [ ] **`net-15`** Edge/verification doc-truth trivia: stale seedbox-SSH claim in verification README; Plex ManualPortMappingMode mismatch _(est 20 min)_
 
 ### ops
-- [ ] **`fix-32`** Fix Caddy reverse-proxy routes (ha.tabaska.us 400, llamaswap not reloaded, stray placeholders/vhosts) _(est 1-3 hrs)_
 - [ ] **`fix-41`** Repo-vs-live drift codification (forgejo stack, manifests, .env keys, ansible units) _(est 1-3 hrs)_
 
 ### photos

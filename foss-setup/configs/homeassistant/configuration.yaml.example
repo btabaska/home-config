@@ -17,13 +17,19 @@ default_config:
 # Needed if "Settings > Voice assistants" shows no assistants (non-default config).
 assist_pipeline:
 
-# --- Reverse proxy (only if HA sits behind nginx/Traefik on the Trusted VLAN) ---
-# Required for OAuth (Nest) over HTTPS. Set trusted_proxies to your proxy's IP.
-# http:
-#   use_x_forwarded_for: true
-#   trusted_proxies:
-#     - 192.168.10.2        # your reverse proxy on the Trusted VLAN
-#     - 127.0.0.1
+# --- Reverse proxy (LIVE on the HA Green since 2026-07-18, fix-32) ---
+# Caddy on the mini fronts https://ha.tabaska.us -> 192.168.10.50:8123. Without
+# this block HA rejects EVERY proxied request with "400: Bad Request" (that
+# exact outage ran Jul 7-18, quality-gate H9/H19/H21/M10). Keep it in sync with
+# /config/configuration.yaml on the HA Green; guarded by verification check
+# ha-proxy-e2e. Edit path when SSH is needed: the Terminal & SSH add-on
+# (core_ssh) is installed but STOPPED, boot=manual — start it via the
+# Supervisor WS API, edit, `ha core check`, `ha core restart`, stop it again
+# (see wiki/docs/runbooks/reverse-proxy.md).
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 192.168.10.2        # caddy on the mini (docker NAT egresses as the host IP)
 
 # --- Philips Hue ---
 # Hue is local LAN via the Hue Bridge (keep the bridge). Add it in the UI:

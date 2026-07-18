@@ -129,6 +129,7 @@ nav:
       - Media — green but not watchable: runbooks/media-watchable.md
       - Media — library correctness (unmatched / partial / recycle): runbooks/media-library-correctness.md
       - Monitoring coverage (liveness vs reality): runbooks/monitoring-coverage.md
+      - Reverse proxy (caddy routes / HA proxy path): runbooks/reverse-proxy.md
       - Verification framework (self-checks): runbooks/verification-self.md
       - Power resilience (UPS retired / journal caps): runbooks/power-resilience.md
   - Operations:
