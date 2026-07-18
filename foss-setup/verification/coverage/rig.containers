@@ -1,5 +1,7 @@
 amp
 beszel-agent
+comfyui
+gpu-arbiter
 litellm
 litellm-db
 llama-swap

@@ -143,6 +143,35 @@ checks:
     runbook: wiki/runbooks/rig.md
     enabled: true
 
+  # ---- ComfyUI image-gen backend + gpu-arbiter (added 2026-07-18) ----
+  # ComfyUI (:8188) drives RP image gen (Z-Image Turbo / NoobAI-XL / Flux.2 Klein)
+  # for OWUI/Lumiverse/Marinara. The gpu-arbiter (:8189) is a take-turns proxy that
+  # force-unloads llama-swap before a gen and /free's ComfyUI after, so image gen and
+  # the 73k-ctx 24B LLMs share the single 3090 Ti without OOM. rig-comfyui asserts all
+  # 3 model stacks are actually loaded (catches a dropped model mount, not just
+  # liveness); rig-comfyui-arbiter probes the :8189 path the frontends hit. Big-model
+  # generation stays OUT of the recurring loop (heavy — a gen loads a ~20 GiB model);
+  # all 3 were validated end-to-end once at deploy via the arbiter.
+  - id: rig-comfyui
+    name: "ComfyUI up + serves the 3 image models (z-image / noobai / flux2-klein)"
+    host: url
+    cmd: curl -s -m 10 http://cachyos.tailb31641.ts.net:8188/object_info
+    expect: '(?s)(?=.*z_image_turbo_bf16)(?=.*NoobAI-XL)(?=.*flux-2-klein-9b)'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
+  - id: rig-comfyui-arbiter
+    name: "gpu-arbiter proxies ComfyUI on rig:8189 (take-turns path frontends use)"
+    host: url
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:8189/system_stats
+    expect: '^200$'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
   # ai-01 GPU-yield behavioral check: a model loads ON DEMAND, answers, then
   # the admin unload frees VRAM (measured 182ms; gaming gets the full card).
   # Uses the tiny fast-3b (2.8GB, ~2s cold) to keep GPU cost negligible. The

@@ -99,6 +99,33 @@ Caddy** vhost with `basic_auth` instead. Keys/secrets live in the rig `.env` +
 vault `ai_stack.*`; the end-to-end path (frontend → LiteLLM key → llama-swap →
 model, with non-scoped models rejected 403) was validated live at deploy.
 
+## Image generation (ComfyUI, added 2026-07-18)
+
+**ComfyUI** (`mmartial/comfyui-nvidia-docker`, CDI GPU, `:8188`,
+`comfyui.tabaska.us`) is the RP image-gen backend, in the same
+`local-ai-tooling/docker` compose. Three stacks, all verified generating
+end-to-end (models in `/opt/comfyui/models`, outside /home like /opt/llm):
+
+| stack | model | ComfyUI recipe | ~time / peak VRAM |
+|---|---|---|---|
+| realistic | Z-Image Turbo (`Comfy-Org/z_image_turbo`) | UNET + **`lumina2`** CLIP (qwen_3_4b) + ModelSamplingAuraFlow, 8 steps cfg 1 | ~12 s / 21.4 GiB |
+| anime | NoobAI-XL 1.1 (`Laxhar/noobai-XL-1.1`, Illustrious) | standard SDXL, 28 steps cfg 5 | ~8 s / 8.3 GiB |
+| realistic alt | Flux.2 Klein 9B (`unsloth/FLUX.2-klein-9B-GGUF`, `flux2` CLIP qwen_3_8b) | GGUF UNET + SamplerCustomAdvanced, 20 steps cfg 5 | ~64 s / 21.2 GiB |
+
+A single image model peaks **~21 GiB** and the 73k-ctx 24B LLMs sit at
+**~22.8 GiB**, so they can't co-reside. The **gpu-arbiter** (`:8189`,
+`docker/gpu-arbiter.py`) is a transparent ComfyUI reverse proxy that enforces
+**take-turns**: on `POST /prompt` it force-unloads llama-swap (the existing
+182 ms gpu-yield endpoint); when ComfyUI's queue drains it POSTs `/free` so the
+LLM reloads on the next chat turn. Frontends point their ComfyUI URL at
+**`:8189`, not `:8188`**. Verified API workflows: `local-ai-tooling/comfyui-workflows/`.
+
+Notes: HF base checkpoints are uncensored-capable; the premium Civitai NSFW
+retrains (Moody / CyberRealistic ZIT) need a Civitai API token (not yet in the
+vault). GGUF loading needs the ComfyUI-GGUF node + its `gguf` pip dep installed
+into the venv **as uid 1000** (the `WANTED_UID` owner; the container's default
+shell user 1025 can't write the venv).
+
 Model files live in `/opt/llm/models` — **deliberately outside /home** so
 restic never backs up re-pullable weights (removed ollama blobs are hardlink-
 archived in `/opt/llm/models/archive/`). Configs are the backup: everything
