@@ -1150,6 +1150,8 @@ Local: git clone /Users/brandontabaska/Documents/Home -> bash foss-setup/scripts
 
 </details>
 
+> **NOTE (fix-29, 2026-07-17):** the wiki-drift *symptom* here was flushed as a side effect of fix-29 (`b29646a`) running all `gen-*.py` — both stale pages (`reference/scripts/docs/index.md` + `publish-deploy-sh.md`) were regenerated and committed to origin + forgejo; `scripts/wiki/wiki-drift-check.sh` now exits 0 and the daily sweep clears. This finding stays owned by **fix-44** (still open) — do NOT re-run the wiki regen for M22; fix-44's remaining scope is M46/M47/M55 (tracker orphan ids / arithmetic / other stale pages).
+
 ### M23. Post-Import Category (queue-clog fix) not applied to readarr and whisparr Deluge clients
 
 **Host:** nas (192.168.10.4) · **Component:** readarr + whisparr / Deluge download client · **Auditor:** svc:arr-stack
