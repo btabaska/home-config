@@ -23,6 +23,15 @@ Environment=ENV_FILE=/etc/restic/env
 CacheDirectory=restic
 Environment=RESTIC_CACHE_DIR=/var/cache/restic
 ExecStart=/opt/scripts/restic-backup.sh
+# Freshness marker for restic-latest-age (the restic-snapshot-fresh-{mini,rig}
+# checks). Written HERE, at backup-success time (ExecStartPost only runs when
+# ExecStart — incl. the final `restic check` — returned 0), NOT by the checker.
+# M20/M39: the checker used to be the only writer, so a reboot between the
+# nightly backup and the next verification sweep wiped systemd's
+# ExecMainExitTimestamp AND left the checker's marker stale → a false STALE
+# alert while the backup had actually succeeded. Writing it from the unit makes
+# the marker reboot-durable and reflect the real last-success time.
+ExecStartPost=/bin/sh -c 'mkdir -p /var/lib/restic-mon && touch /var/lib/restic-mon/last-success'
 Nice=10
 IOSchedulingClass=best-effort
 IOSchedulingPriority=7

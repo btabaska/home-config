@@ -9,6 +9,14 @@ Type=oneshot
 User=btabaska
 EnvironmentFile=-/etc/verification/env
 ExecStart=/opt/verification/bin/verify-cycle.sh
+# Dead-man: healthchecks "verification-mini" (daily sweep proved it EXECUTED;
+# ntfy on silence). verify-cycle.sh always exits 0 (it reports check state via
+# its results.json, not the unit's exit code), so this ExecStartPost fires on
+# every completed sweep and the check flips "down" only if a sweep never runs.
+# URL from /etc/verification/env as VERIFY_DAILY_PING_URL — was previously only
+# in an etckeeper-tracked drop-in (verification.service.d/healthchecks.conf),
+# so the base unit was not reproducible from git (M53). Now it is.
+ExecStartPost=/usr/bin/curl -fsS -m 10 --retry 3 -o /dev/null ${VERIFY_DAILY_PING_URL}
 TimeoutStartSec=30min
 Nice=10
 

@@ -600,6 +600,8 @@ ssh rig 'systemctl list-timers | grep restic' → restic-backup.timer last ran T
 
 **Host:** mini · **Component:** verification / llm-triage (verify-03/04) · **Auditor:** repo:verification-suite
 
+> **RESOLVED 2026-07-17 (fix-30).** Stale `LLM_BASE_URL`/`LLM_MODEL` override deleted from `/etc/verification/env`; the script default (llama-swap `:9292` / `qwen3.6-35b-a3b`) is now authoritative and `llm_triage.py`'s fallback was aligned to match. Verified a real completion returns valid JSON (`max_tokens` 600 clears the reasoning-model empty-content trap). Consumer-end guard: `llm-triage-completion-e2e` (a real completion, not a `/models` 200). Runbook: [`verification-self.md`](../../wiki/docs/runbooks/verification-self.md).
+
 
 llm-triage.sh (repo + deployed, updated Jul 15) now defaults to llama-swap :9292 / qwen3.6-35b-a3b, but it sources /etc/verification/env first and env still sets LLM_BASE_URL=http://cachyos.tailb31641.ts.net:11434/v1 and LLM_MODEL=qwen3-coder:30b. The ollama shim only holds nomic-embed-text, tag:fast, llama3.2:3b, so chat completions return HTTP 404. The llm_up() gate only GETs /models, which the shim answers 200 — so the WoL/incident path never trips and the failure is silent: triage-2026-07-15.md contains only 'triage failed — model did not return valid JSON / HTTP Error 404' escalate:true stubs for both failed checks. verify-03/04 has produced zero useful verdicts since the ai-01 model trim. Repo README ('Default: ollama ... qwen3-coder:30b') and systemd/env.example still document the dead endpoint, so a rebuild would re-create the bug.
 
@@ -1088,6 +1090,8 @@ $ docker logs romm: '[scan][2026-07-14 21:19:23] No roms found, verify that the 
 
 **Host:** mini · **Component:** verification / llm_triage · **Auditor:** svc:monitoring-stack
 
+> **RESOLVED 2026-07-17 (fix-30).** Same fix as H24 — env override removed, script default (`:9292` / `qwen3.6-35b-a3b`) wins, verified end-to-end. Guarded by `llm-triage-completion-e2e`.
+
 
 The daily verification sweep's LLM triage layer fails on every run. /etc/verification/env still pins LLM_BASE_URL=http://cachyos.tailb31641.ts.net:11434/v1 and LLM_MODEL=qwen3-coder:30b; on 2026-07-15 Ollama :11434 was demoted to a 3-small-model shim (big models moved behind llama-swap :9292). The shim answers /v1/models 200 but a qwen3-coder:30b completion returns 404, so triage-2026-07-15.md records 'triage failed — model did not return valid JSON / HTTP Error 404' with confidence 0.0 and escalate:true for BOTH failed checks. /opt/verification/bin/llm-triage.sh was already updated (defaults to :9292) but the EnvironmentFile override wins. Checks and ntfy alerting still work; only auto-diagnosis is dead.
 
@@ -1103,6 +1107,8 @@ ssh mini 'grep -E "LLM|MODEL" /etc/verification/env' -> LLM_BASE_URL=http://cach
 ### M20. restic-snapshot-fresh-rig is a FALSE POSITIVE: backup succeeded today at 01:40 EDT, but the 06:50 rig reboot wiped the systemd success record and the marker file is only updated by the checker, not the backup unit
 
 **Host:** rig · **Component:** verification / restic-latest-age · **Auditor:** svc:monitoring-stack
+
+> **RESOLVED 2026-07-17 (fix-30).** `restic-backup.service` now writes `/var/lib/restic-mon/last-success` via `ExecStartPost` at backup-success time (rig **and** mini), so the marker is reboot-durable and independent of the checker. Verified live: a fresh backup moved the marker mtime to its completion time, and the simulated post-reboot path (`RESTIC_UNIT=<absent>`) reads `FRESH (marker)`. Guard: `restic-marker-writer-{rig,mini}`. Runbook: [`verification-self.md`](../../wiki/docs/runbooks/verification-self.md).
 
 
 Today's main sweep (14:16 UTC) reports restic-snapshot-fresh-rig FAIL 'STALE age_hours=36 (marker)' and ntfy alerted it at 10:16 EDT as a NEW failure. But journalctl proves restic-backup.service on rig completed successfully at 01:40:59 EDT today (12/12 snapshots checked, 'no errors were found', 'All done'), and healthchecks restic-backup-rig got its success ping at 05:40:59Z. The rig rebooted at 06:50:56 EDT (maintenance window), which cleared ExecMainExitTimestamp (now empty), so /usr/local/bin/restic-latest-age fell back to its persisted marker /var/lib/restic-mon/last-success — last touched 2026-07-13 21:44 EDT, because the marker is only refreshed when the CHECKER runs while systemd still holds the record. Design gap: any reboot between the nightly backup and the next sweep loses the success signal and raises a false STALE. Fix direction (not applied): touch the marker from restic-backup.service itself (ExecStartPost).
@@ -1498,6 +1504,8 @@ bucket-hyper-backup: 3695 file versions, 72.71 GB
 
 **Host:** mini · **Component:** /opt/verification vs repo foss-setup/verification · **Auditor:** flow:coverage-tripwire
 
+> **RESOLVED 2026-07-17 (fix-30).** New `scripts/verification/deploy.sh` assembles the **complete** tree (`verification/` + the four external scripts from `scripts/{gaming,ai,media}/`) so `--delete` is safe, **refuses to deploy** if any referenced `bin/<x>` is missing, strips `._*`/`__pycache__` junk, and normalizes modes so the root-owned tree stays runner-readable. `verification-fast`/`-quick` units are now staged. README rewritten. Standing guard: `verification-bin-refs-present`. Runbook: [`verification-self.md`](../../wiki/docs/runbooks/verification-self.md).
+
 
 Deployed-only (NOT in git): bin/mc-status-ping.py and bin/mc-bedrock-ping.py — referenced by the repo's own checks.d/rig.yaml lines 250/264 (playit-java-public, playit-bedrock-public), so the committed checks call scripts that do not exist in the repo; bin/wiki-rag-sync.py — referenced by live /etc/systemd/system/wiki-rag-sync.service (unit itself also not in repo); bin/window-maint-unpackerr-rclone.sh. Repo-only (never staged to /opt/verification/systemd): verification-fast.{service,timer} and verification-quick.{service,timer} (installed in /etc/systemd/system but staging copy stale), plus a stale env.example missing the PLEX/LIDARR var documentation. The documented deploy flow (README: rsync -a --delete foss-setup/verification/ -> /opt/verification) would silently delete the four live-only scripts, breaking both Minecraft public-path checks and the wiki-rag sync unit. Distinct from known issue #7 (backup-role/sops DR gap) — this is the verification suite itself being non-reproducible from git.
 
@@ -1518,6 +1526,8 @@ README.md deploy: 'rsync -a --delete foss-setup/verification/ mini:/tmp/... && s
 ### M39. False-positive STALE in today's daily run: rig backup actually succeeded, but the freshness marker is only written by the checker, so any reboot between backup (01:38 EDT) and the daily sweep (10:15 EDT) fabricates a stale alert
 
 **Host:** rig · **Component:** restic-snapshot-fresh-rig check (/usr/local/bin/restic-latest-age) · **Auditor:** flow:coverage-tripwire
+
+> **RESOLVED 2026-07-17 (fix-30).** Same fix as M20 — the freshness marker is written by the backup unit, not the checker, so a post-backup/pre-sweep reboot can no longer fabricate `STALE`. Guarded by `restic-marker-writer-{rig,mini}`.
 
 
 Today's 14:16Z run reported 'STALE age_hours=36 (marker)' for restic-snapshot-fresh-rig, yet the backup demonstrably succeeded: restic-backup.timer LAST=01:40:38 EDT today and the healthchecks dead-man restic-backup-rig pinged up at 05:40:59Z (pings only fire on success). Root cause: restic-latest-age reads systemd's per-boot ExecMainExitTimestamp first, falling back to /var/lib/restic-mon/last-success; but the marker is touched only when restic-latest-age itself runs while the systemd record is still visible. Rig rebooted 06:51 EDT (after the 01:40 backup, before the 10:16 sweep), wiping the systemd record; the marker was last set 2026-07-13 21:44 -> false STALE. The marker should be written by restic-backup.service on success (e.g. ExecStartPost), not by the checker. Self-heals tomorrow if no reboot intervenes, but the false-positive class recurs on every post-backup pre-sweep reboot, and it erodes trust in a backup-freshness signal (ties into known 'monitoring vs reality' theme, but this exact bug is unlogged).
@@ -1797,6 +1807,8 @@ $ diff scripts/backup/restic-backup.service <(ssh mini cat /etc/systemd/system/r
 ### M53. Four live scripts in /opt/verification/bin are not in repo verification/ — the README's rsync --delete deploy would delete them and break checks + a service; quick unit's ping URL exists only as a hand-edit
 
 **Host:** mini · **Component:** verification deploy procedure (/opt/verification vs repo verification/) · **Auditor:** repo:verification-suite
+
+> **RESOLVED 2026-07-17 (fix-30).** Same deploy fix as M38. Additionally: the quick unit's `HC_QUICK_PING_URL` placeholder and the daily etckeeper-only drop-in are folded into `${VERIFY_QUICK_PING_URL}`/`${VERIFY_DAILY_PING_URL}` env vars (repo units install verbatim; all three ping URLs vaulted); host `._*` junk purged. Guarded by `verification-bin-refs-present`.
 
 
 Deployed-but-not-in-verification/: mc-status-ping.py + mc-bedrock-ping.py (repo copies live in scripts/gaming/ — used by playit-java-public / playit-bedrock-public), wiki-rag-sync.py (repo copy scripts/ai/ — ExecStart of wiki-rag-sync.service), window-maint-unpackerr-rclone.sh (repo copy scripts/media/). README's documented deploy is 'rsync -a --delete foss-setup/verification/ ... /opt/verification/', which would remove all four, breaking both Minecraft public-path checks and the RAG sync service. Additionally: (a) repo verification-quick.service carries the literal placeholder HC_QUICK_PING_URL in ExecStartPost (installed unit has the real URL hand-substituted) — installing the repo unit verbatim kills the quick dead-man ping; (b) the daily unit's verification-mini dead-man ping exists only in a drop-in /etc/systemd/system/verification.service.d/healthchecks.conf that is not in repo verification/systemd/ at all (tracked only by etckeeper). All other deployed files (bin/, checks.d/, coverage/, skills/) md5-match the repo.

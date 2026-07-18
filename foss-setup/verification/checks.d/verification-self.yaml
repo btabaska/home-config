@@ -1,0 +1,59 @@
+# verification-self.yaml — the verification framework checking ITSELF (fix-30).
+# The 2026-07-16 quality gate found the monitoring layer silently broken in ways
+# liveness could never catch: LLM triage 404ing behind a /models-200 shim, a
+# backup-freshness marker only written by the checker (false STALE after a
+# reboot), and committed checks calling scripts a `rsync --delete` deploy would
+# delete. These probe the CONSUMER end of each so those classes can't recur.
+checks:
+  # --- H24 / M19: LLM auto-triage endpoint drift (regression + class) ---------
+  # Real completion against the resolved endpoint+model, not a /models liveness
+  # ping. Catches a stale LLM_BASE_URL/LLM_MODEL override, a retired model, AND
+  # the reasoning-model empty-content trap. See llm-triage-probe.sh.
+  - id: llm-triage-completion-e2e
+    name: "verify-04 LLM triage: real completion succeeds (not just /models 200)"
+    host: mini
+    cmd: /opt/verification/bin/llm-triage-probe.sh
+    expect: TRIAGE_LLM_OK
+    severity: warn
+    task_id: fix-30
+    runbook: wiki/docs/runbooks/verification-self.md
+    enabled: true
+
+  # --- M20 / M39: restic freshness marker written by the backup unit ----------
+  # Anti-recurrence assertion: restic-backup.service must carry the ExecStartPost
+  # that writes /var/lib/restic-mon/last-success at backup-success time, so a
+  # reboot between the nightly backup and the next sweep can't fabricate a STALE
+  # alert. If the unit is ever redeployed without it, this flips.
+  - id: restic-marker-writer-rig
+    name: "rig restic-backup.service writes the freshness marker (reboot-durable)"
+    host: rig
+    cmd: systemctl cat restic-backup.service | grep -q 'restic-mon/last-success' && echo MARKER_WRITER_PRESENT || echo MARKER_WRITER_MISSING
+    expect: MARKER_WRITER_PRESENT
+    severity: warn
+    task_id: fix-30
+    runbook: wiki/docs/runbooks/verification-self.md
+    enabled: true
+
+  - id: restic-marker-writer-mini
+    name: "mini restic-backup.service writes the freshness marker (reboot-durable)"
+    host: mini
+    cmd: systemctl cat restic-backup.service | grep -q 'restic-mon/last-success' && echo MARKER_WRITER_PRESENT || echo MARKER_WRITER_MISSING
+    expect: MARKER_WRITER_PRESENT
+    severity: warn
+    task_id: fix-30
+    runbook: wiki/docs/runbooks/verification-self.md
+    enabled: true
+
+  # --- M38 / M53: deploy reproducibility (class) ------------------------------
+  # Every /opt/verification/bin/<x> a check references must exist on disk. This
+  # is the standing guard against the `rsync --delete` footgun re-appearing —
+  # any committed check that calls a script the deploy didn't stage trips it.
+  - id: verification-bin-refs-present
+    name: "verification: every check-referenced bin script is deployed"
+    host: mini
+    cmd: /opt/verification/bin/bin-refs-present.sh
+    expect: BIN_REFS_OK
+    severity: warn
+    task_id: fix-30
+    runbook: wiki/docs/runbooks/verification-self.md
+    enabled: true

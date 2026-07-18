@@ -5,7 +5,7 @@
 | Task | Title | Status | Effort |
 |---|---|---|---|
 | `fix-29` | Close the liveness-vs-reality monitoring gap (end-to-end checks for the failure classes just found) | ✅ done | 1-3 hrs |
-| `fix-30` | Repair the verification framework itself (LLM triage, false positives, deploy drift) | ⬜ open | 1-3 hrs |
+| `fix-30` | Repair the verification framework itself (LLM triage, false positives, deploy drift) | ✅ done | 1-3 hrs |
 | `verify-01` | Probe library — checks.d/*.yaml per service and host | ✅ done | 2 hr |
 | `verify-02` | Runner + schedule — run-checks over SSH from mini, ntfy on regression | ✅ done | 2 hr |
 | `verify-03` | Local-LLM triage skills — scoped prompts, one failure per context | ✅ done | 2-3 hr |

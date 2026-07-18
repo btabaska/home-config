@@ -114,17 +114,36 @@ regression) that stays with the human/AI session.
 
 ## Deploy
 
+**Always deploy with the script — never a raw `rsync --delete`.**
+
 ```bash
-rsync -a --delete foss-setup/verification/ mini:/tmp/verification-deploy/
-ssh mini '
-  sudo rsync -a --delete /tmp/verification-deploy/ /opt/verification/ &&
-  sudo chown -R root:root /opt/verification &&
-  sudo chmod 755 /opt/verification/bin/*.sh /opt/verification/bin/*.py &&
-  sudo install -d -o btabaska -g btabaska /var/lib/verification &&
-  sudo install -m 644 /opt/verification/systemd/verification.service /etc/systemd/system/ &&
-  sudo install -m 644 /opt/verification/systemd/verification.timer /etc/systemd/system/ &&
-  sudo systemctl daemon-reload && sudo systemctl enable --now verification.timer'
-# once: create /etc/verification/env from systemd/env.example with a real token:
+foss-setup/scripts/verification/deploy.sh          # idempotent; re-run any time
+```
+
+The suite is **not self-contained** under `verification/`: four scripts it runs
+from `/opt/verification/bin` live canonically elsewhere in the repo
+(`scripts/gaming/mc-{status,bedrock}-ping.py`, `scripts/ai/wiki-rag-sync.py`,
+`scripts/media/window-maint-unpackerr-rclone.sh`). A naïve
+`rsync -a --delete foss-setup/verification/ → /opt/verification/` **deletes all
+four** (they aren't under `verification/`), silently breaking two checks and a
+service — this was quality-gate finding M38/M53. `deploy.sh`:
+
+- assembles a **complete** staging tree (`verification/` + those four scripts),
+  so `--delete` is safe, and strips macOS `._*` / `__pycache__` / `*.pyc` junk;
+- **refuses to deploy** if any `/opt/verification/bin/<x>` a check or unit
+  references is missing from the tree (the standing guard, mirrored by the
+  `verification-bin-refs-present` check);
+- normalizes modes so the root-owned tree stays readable by the `btabaska`
+  runner (a `600` source file + `chown root:root` once broke the coverage
+  checks), (re)installs the daily/quick/fast systemd units + timers, and retires
+  the old etckeeper-only `verification.service.d/healthchecks.conf` drop-in (the
+  daily dead-man ping now lives in the base unit via `${VERIFY_DAILY_PING_URL}`).
+
+```bash
+# once, on mini: create /etc/verification/env from systemd/env.example, filling
+# values from the vault (NTFY_TOKEN, VERIFY_{FAST,QUICK,DAILY}_PING_URL, PLEX/
+# LIDARR keys, …). LLM_BASE_URL/LLM_MODEL stay UNSET so the script default
+# (llama-swap :9292 / qwen3.6-35b-a3b) wins — a stale override 404s all triage.
 #   docker exec ntfy ntfy token add --label verification admin
 ```
 

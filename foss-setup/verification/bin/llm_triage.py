@@ -17,9 +17,15 @@ import urllib.request
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SKILLS_DIR = os.path.join(os.path.dirname(SCRIPT_DIR), "skills")
 STATE_DIR = os.environ.get("VERIFICATION_STATE_DIR", "/var/lib/verification")
+# Defaults MUST match llm-triage.sh (ai-01, 2026-07-15): big models moved behind
+# llama-swap :9292; the old ollama :11434 is a 3-small-model shim that answers
+# /v1/models 200 but 404s a big-model completion. Keeping a stale default here
+# (or an override in /etc/verification/env) silently 404s every triage — the
+# H24/M19 quality-gate bug. The .sh wrapper exports these; this fallback only
+# bites a standalone `python3 llm_triage.py`, so it must point live too.
 BASE_URL = os.environ.get("LLM_BASE_URL",
-                          "http://cachyos.tailb31641.ts.net:11434/v1").rstrip("/")
-MODEL = os.environ.get("LLM_MODEL", "qwen3-coder:30b")
+                          "http://cachyos.tailb31641.ts.net:9292/v1").rstrip("/")
+MODEL = os.environ.get("LLM_MODEL", "qwen3.6-35b-a3b")
 API_KEY = os.environ.get("LLM_API_KEY", "")
 MAX_CHECKS = int(os.environ.get("TRIAGE_MAX_CHECKS", "15"))
 

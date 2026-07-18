@@ -174,6 +174,11 @@ def main():
                                    "(e.g. --tier fast); writes results-tier-<name>.json "
                                    "and, unlike --host, RESPECTS 'enabled' — it is a "
                                    "scheduled tier, not an operator override")
+    ap.add_argument("--respect-enabled", action="store_true",
+                    help="with --host, DON'T resurrect disabled checks — makes a "
+                         "scheduled --host tier (the quick units) honor 'enabled' "
+                         "like --tier does, instead of the ad-hoc operator default "
+                         "of running everything host-matched")
     args = ap.parse_args()
 
     load_env_file(ENV_FILE)
@@ -194,10 +199,16 @@ def main():
     if args.host:
         checks = [c for c in checks
                   if c["host"] == args.host or c["domain"] == args.host]
-        # explicit host filter is an operator action: include disabled checks
-        # (e.g. checks still disabled for other reasons, like the seedbox;
-        # rig checks are enabled in the daily cycle now — rig is 24/7)
-        runnable = checks
+        if args.respect_enabled:
+            # scheduled --host tier (the quick units): honor `enabled` so a
+            # deliberately-disabled check (e.g. the dns-02 NAS-secondary crits)
+            # is NOT silently resurrected and paged hourly. Was the quirk: the
+            # quick tier used the operator --host default below.
+            runnable = [c for c in checks if c.get("enabled", True)]
+        else:
+            # ad-hoc operator run: include disabled checks (e.g. seedbox SSH;
+            # rig checks are enabled in the daily cycle now — rig is 24/7).
+            runnable = checks
     elif args.tier:
         # scheduled fast tier: run only checks tagged `tier: <name>`, and — unlike
         # --host — RESPECT `enabled` (a scheduled tier must not resurrect a
@@ -212,7 +223,7 @@ def main():
         entry = {k: c.get(k) for k in
                  ("id", "name", "host", "domain", "cmd", "severity",
                   "task_id", "runbook")}
-        if c in runnable and (args.host or c.get("enabled", True)):
+        if c in runnable:
             entry.update(run_check(c))
         else:
             entry.update({"status": "skipped", "exit_code": None,
@@ -312,7 +323,10 @@ def main():
             parts.append("crit: " + ", ".join(r["id"] for r in page_crit))
         if reopen:
             parts.append("reopen candidates: " + ", ".join(reopen))
-        tier = f" [{args.host} tier]" if filtered else ""
+        # ntfy title tag: name the tier that actually ran. args.host is None on a
+        # --tier run, which used to render "[None tier]"; prefer the tier label.
+        tier_label = args.tier or args.host
+        tier = f" [{tier_label} tier]" if filtered else ""
         if page_new:
             title = f"Verification{tier}: {len(page_new)} NEW failure(s)"
         elif page_failed_ids:

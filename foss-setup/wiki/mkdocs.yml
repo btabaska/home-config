@@ -129,6 +129,7 @@ nav:
       - Media — green but not watchable: runbooks/media-watchable.md
       - Media — library correctness (unmatched / partial / recycle): runbooks/media-library-correctness.md
       - Monitoring coverage (liveness vs reality): runbooks/monitoring-coverage.md
+      - Verification framework (self-checks): runbooks/verification-self.md
   - Operations:
       - Overview: operations/index.md
       - Ansible & convergence: operations/ansible.md
