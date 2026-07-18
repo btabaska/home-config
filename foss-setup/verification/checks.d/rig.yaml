@@ -83,6 +83,22 @@ checks:
     runbook: wiki/runbooks/rig.md
     enabled: true
 
+  # 2026-07-18: three creative/RP models added (cydonia, dolphin-venice, goetia —
+  # Mistral-Small-24B Q5_K_M, Tekken template). This asserts all three stay
+  # CONFIGURED in llama-swap (order-independent lookaheads), catching a dropped
+  # entry / reverted config. Cheap by design — lists config, does NOT load a
+  # model; per the established pattern, big-model generation stays out of the
+  # recurring loop (validated end-to-end once at deploy via LiteLLM `cydonia`).
+  - id: rig-llama-swap-creative
+    name: "llama-swap serves the creative/RP lineup (cydonia + dolphin-venice + goetia)"
+    host: url
+    cmd: curl -s -m 8 http://cachyos.tailb31641.ts.net:9292/v1/models
+    expect: '(?s)(?=.*cydonia-24b)(?=.*dolphin-venice-24b)(?=.*goetia-24b)'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
   # ai-01 GPU-yield behavioral check: a model loads ON DEMAND, answers, then
   # the admin unload frees VRAM (measured 182ms; gaming gets the full card).
   # Uses the tiny fast-3b (2.8GB, ~2s cold) to keep GPU cost negligible. The

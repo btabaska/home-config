@@ -57,6 +57,9 @@ rig (192.168.10.12) ─ docker compose │ (local-ai-tooling/docker/)
 | `coder-strong` | qwen3.6-27b **MTP** UD-Q4_K_XL **112k ctx** (~50 t/s) | long/hard tasks |
 | `chat` | gemma4-31b-qat 72k | general chat |
 | `chat-creative` | deckard-heretic 48k | creative |
+| `cydonia` | Cydonia-24B-v4.3 Q5_K_M 64k | storytelling / roleplay (#1 pick) |
+| `dolphin-venice` | Dolphin-Mistral-24B-Venice Q5_K_M 64k | uncensored, system-prompt-steered |
+| `goetia` | Goetia-24B-v1.3 Q5_K_M 64k | dark / edgy roleplay |
 | `fast` | qwen2.5-coder-7b 32k (native max) | autocomplete/cheap tool loop |
 | `utility` | fast-3b (llama3.2, temp 0) 128k (native max) | titles/tags/classification |
 | `embed` | Qwen3-Embedding-0.6B Q8 (CPU, `--pooling last`, instruct query prefix) | RAG embeddings |
@@ -69,6 +72,15 @@ llama-swap (`--temp/--top-p/--top-k/...`), mirrored in the OWUI model params.
 Enabler discovered en route: `-ngl 0` alone still left ~2.8 GiB of CUDA batch
 buffers on the card for the embedder — `CUDA_VISIBLE_DEVICES=""` in its
 llama-swap `env` freed it and raised every big model's ceiling.
+
+The three creative/RP models (`cydonia`, `dolphin-venice`, `goetia`, added
+2026-07-18) are all Mistral-Small-3.2-24B Q5_K_M served with the Mistral v7
+"Tekken" template (embedded, via `--jinja`) plus DRY sampling for long-chat
+repetition. Their 65536 ctx is a **safe default, not a ceiling-probe** — a
+Q5 24B (~16.8 GiB weights) has more headroom (deckard's 31B Q6 fit 49152), so
+push higher if you want. Dolphin-Venice ships near-unaligned: its behavior is
+set by the **system prompt**, and its card's temp 0.15 (factual use) is
+deliberately overridden to 0.7 here for creative/RP.
 
 Model files live in `/opt/llm/models` — **deliberately outside /home** so
 restic never backs up re-pullable weights (removed ollama blobs are hardlink-
