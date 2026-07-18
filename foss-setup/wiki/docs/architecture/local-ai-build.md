@@ -57,9 +57,9 @@ rig (192.168.10.12) ─ docker compose │ (local-ai-tooling/docker/)
 | `coder-strong` | qwen3.6-27b **MTP** UD-Q4_K_XL **112k ctx** (~50 t/s) | long/hard tasks |
 | `chat` | gemma4-31b-qat 72k | general chat |
 | `chat-creative` | deckard-heretic 48k | creative |
-| `cydonia` | Cydonia-24B-v4.3 Q5_K_M **72k** | storytelling / roleplay (#1 pick) |
-| `dolphin-venice` | Dolphin-Mistral-24B-Venice Q5_K_M **72k** | uncensored, system-prompt-steered |
-| `goetia` | Goetia-24B-v1.3 Q5_K_M **72k** | dark / edgy roleplay |
+| `cydonia` | Cydonia-24B-v4.3 Q5_K_M **60k + vision** | storytelling / roleplay (#1 pick) |
+| `dolphin-venice` | Dolphin-Mistral-24B-Venice Q5_K_M **60k + vision** | uncensored, system-prompt-steered |
+| `goetia` | Goetia-24B-v1.3 Q5_K_M **60k + vision** | dark / edgy roleplay |
 | `fast` | qwen2.5-coder-7b 32k (native max) | autocomplete/cheap tool loop |
 | `utility` | fast-3b (llama3.2, temp 0) 128k (native max) | titles/tags/classification |
 | `embed` | Qwen3-Embedding-0.6B Q8 (CPU, `--pooling last`, instruct query prefix) | RAG embeddings |
@@ -76,8 +76,12 @@ llama-swap `env` freed it and raised every big model's ceiling.
 The three creative/RP models (`cydonia`, `dolphin-venice`, `goetia`, added
 2026-07-18) are all Mistral-Small-3.2-24B Q5_K_M served with the Mistral v7
 "Tekken" template (embedded, via `--jinja`) plus DRY sampling for long-chat
-repetition. Their **73728 ctx is the measured ceiling** (`bakeoff/ctx-ceiling-probe.sh`,
-2026-07-18): 73728 loads at 22.8 GiB (1.2 GiB free), 81920 OOMs — all three
+repetition. **Vision is enabled** (2026-07-18): one shared Mistral-Small-3.2-2506
+vision tower (`mmproj-mistral-small-3.2-f16.gguf`, 838 MB) serves all three
+finetunes via `--mmproj`, so image attachments work in Marinara/Lumiverse/OWUI.
+The tower + compute buffer cost ~1.3 GiB, so ctx runs **61440** (the text-only
+measured ceiling was 73728 at 22.8 GiB / 1.2 GiB free, 81920 OOMs —
+`bakeoff/ctx-ceiling-probe.sh`; 65536+mmproj left only 0.5 GiB free). All three
 byte-identical Q5 24B, so an identical ceiling (edge fit, gaming force-unload is
 the safety valve). Dolphin-Venice ships near-unaligned: its behavior is set by
 the **system prompt**, and its card's temp 0.15 (factual use) is deliberately
