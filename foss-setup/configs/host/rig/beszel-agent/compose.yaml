@@ -1,6 +1,6 @@
 # Beszel agent (WebSocket mode) — dials the hub on the mini, no inbound port needed.
-# .env (NOT committed): BESZEL_HUB_URL, BESZEL_AGENT_TOKEN (vault: beszel.agent_token_rig),
-#                       BESZEL_AGENT_KEY (hub public key).
+# .env (NOT committed) — all values from the vault (beszel.*): BESZEL_HUB_URL (hub_url),
+#   BESZEL_AGENT_TOKEN (agent_token_rig), BESZEL_AGENT_KEY (agent_key = the shared hub public key).
 services:
   beszel-agent:
     image: henrygd/beszel-agent:0.18.7
