@@ -36,7 +36,29 @@
 # Usage:
 #   sudo NAS_IP=192.168.1.7 ./nut-client-ubuntu.sh
 #   sudo NAS_IP=192.168.1.7 UPS_NAME=ups UPS_USER=monuser UPS_PASS=secret ./nut-client-ubuntu.sh
+#
+# ─── RETIRED 2026-07-17 (quality-gate fix-31 / findings H1, H29, M59) ─────────
+# This netclient was RETIRED because no UPS is attached to the NAS and DSM UPS
+# support is off, so the NAS never runs upsd:3493 — mini's upsmon spammed
+# ~120k errors and 4G+ of journal in 7 days for ZERO protection. It was masked
+# by scripts/setup/nut-client-retire.sh; folds into deferred glue-01 (no UPS
+# budget). Running this script would REVIVE the doomed client, so it now REFUSES
+# to run unless you have actually attached a UPS + enabled DSM UPS support and
+# set NUT_REENABLE=1 to acknowledge that. See wiki runbook power-resilience.md.
+# ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
+
+# Anti-revival guard (fix-31): this client is retired. Only run when a UPS is
+# genuinely in place and you opt in explicitly.
+if [[ "${NUT_REENABLE:-0}" != "1" ]]; then
+  printf '\033[1;31m[nut][x]\033[0m %s\n' \
+    "RETIRED (fix-31): no UPS is attached to the NAS, so this netclient only spams." >&2
+  printf '  %s\n' \
+    "To re-enable after wiring a UPS to the NAS + enabling DSM UPS support:" \
+    "    sudo NUT_REENABLE=1 NAS_IP=192.168.10.4 $0" \
+    "See wiki/docs/runbooks/power-resilience.md." >&2
+  exit 1
+fi
 
 NAS_IP="${NAS_IP:-}"
 UPS_NAME="${UPS_NAME:-ups}"            # Synology default UPS name
@@ -126,6 +148,10 @@ EOF
 restart_monitor() {
   # Service name differs across NUT packaging; try the modern split unit first.
   log "Restarting the NUT monitor service."
+  # Re-enable path (fix-31): the client may have been masked by
+  # nut-client-retire.sh. Unmask before enabling, or `enable --now` fails.
+  systemctl unmask nut-monitor.service 2>/dev/null || true
+  systemctl unmask nut-client.service  2>/dev/null || true
   if systemctl list-unit-files | grep -q '^nut-monitor\.service'; then
     systemctl enable --now nut-monitor.service
     systemctl restart nut-monitor.service

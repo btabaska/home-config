@@ -47,5 +47,6 @@
 
 - [`install-docker-ubuntu.sh`](install-docker-ubuntu-sh.md)
 - [`install-haos-vm.sh`](install-haos-vm-sh.md)
+- [`nut-client-retire.sh`](nut-client-retire-sh.md)
 - [`nut-client-ubuntu.sh`](nut-client-ubuntu-sh.md)
 - [Host setup scripts](index.md) · [All scripts](../index.md)

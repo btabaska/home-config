@@ -1,0 +1,66 @@
+# power-journal.yaml — quality-gate fix-31 (findings H1, H29, M59).
+#
+# The dead UPS chain: mini was configured as a NUT netclient monitoring a UPS on
+# the NAS, but no UPS is physically attached anywhere and DSM UPS support is off,
+# so the NAS never runs upsd:3493. mini's upsmon retried every ~5s for 7+ days —
+# ~120k "Connection refused" errors and 4.1G of journal bloat — for ZERO power
+# protection. Operator decision (2026-07-17): no UPS budget now, so the client is
+# RETIRED (masked + MODE=none + commented MONITOR), folding into deferred glue-01.
+#
+# Consumer-end, not liveness: a masked unit literally cannot run, so these assert
+# the dead client is truly silent (regression) AND that no chatty service can eat
+# the disk again now that journald is capped (class — the root enabler of the 4G
+# bloat). The journald cap is applied by configs/host/common/journald/.
+checks:
+  # ── H1 / H29 / M59 · regression: the dead NUT netclient stays retired ───────
+  # Masked + inactive + zero connect-failed errors in the recent window. If a
+  # re-run of nut-client-ubuntu.sh, an unmask, or a package update ever revives
+  # the every-5s "Connection refused" spam, this flips.
+  - id: nut-monitor-retired
+    name: "fix-31 mini nut-monitor is retired (masked+inactive, no dead-poll spam)"
+    host: mini
+    cmd: >-
+      a=$(systemctl is-active nut-monitor.service 2>/dev/null || true);
+      e=$(systemctl is-enabled nut-monitor.service 2>/dev/null || true);
+      errs=$(journalctl -u nut-monitor.service --since '-2 min' 2>/dev/null | grep -c 'connect failed' || true);
+      if [ "$a" != active ] && [ "$e" = masked ] && [ "${errs:-1}" -eq 0 ];
+      then echo NUT_RETIRED_OK;
+      else echo "NUT_NOT_RETIRED active=$a enabled=$e errs2m=${errs:-?}"; fi
+    expect: '^NUT_RETIRED_OK$'
+    severity: warn
+    task_id: fix-31
+    runbook: wiki/docs/runbooks/power-resilience.md
+    enabled: true
+
+  # ── class: no host journal is bloated (the 4G-eating-service class) ─────────
+  # journald is now capped at SystemMaxUse=1G on mini + rig; alert if usage ever
+  # exceeds 2G (double the cap), which means the cap was lost or a burst outran
+  # rotation. This is the sibling-catcher: it fires for ANY runaway logger, not
+  # just upsmon. NAS runs DSM (own rotation) and is excluded by design.
+  - id: journal-not-bloated-mini
+    name: "fix-31 mini systemd journal is under the size cap (<2G)"
+    host: mini
+    cmd: >-
+      u=$(journalctl --disk-usage 2>/dev/null | grep -oE '[0-9.]+[KMGT]' | tail -n1);
+      b=$(numfmt --from=iec "$u" 2>/dev/null || echo 0);
+      if [ "${b:-0}" -lt 2147483648 ]; then echo "JOURNAL_OK usage=$u";
+      else echo "JOURNAL_BLOAT usage=$u cap=2G"; fi
+    expect: '^JOURNAL_OK'
+    severity: warn
+    task_id: fix-31
+    runbook: wiki/docs/runbooks/power-resilience.md
+    enabled: true
+
+  - id: journal-not-bloated-rig
+    name: "fix-31 rig systemd journal is under the size cap (<2G)"
+    host: rig
+    cmd: >-
+      u=$(journalctl --disk-usage 2>/dev/null | grep -oE '[0-9.]+[KMGT]' | tail -n1);
+      b=$(numfmt --from=iec "$u" 2>/dev/null || echo 0);
+      if [ "${b:-0}" -lt 2147483648 ]; then echo "JOURNAL_OK usage=$u";
+      else echo "JOURNAL_BLOAT usage=$u cap=2G"; fi
+    expect: '^JOURNAL_OK'
+    severity: warn
+    task_id: fix-31
+    runbook: wiki/docs/runbooks/power-resilience.md
+    enabled: true

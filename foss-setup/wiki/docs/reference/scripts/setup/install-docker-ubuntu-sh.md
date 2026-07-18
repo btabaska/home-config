@@ -33,5 +33,6 @@ Safe to re-run: it skips steps already satisfied. Run with sudo (or as root).
 
 - [`cachyos-desktop-baseline.sh`](cachyos-desktop-baseline-sh.md)
 - [`install-haos-vm.sh`](install-haos-vm-sh.md)
+- [`nut-client-retire.sh`](nut-client-retire-sh.md)
 - [`nut-client-ubuntu.sh`](nut-client-ubuntu-sh.md)
 - [Host setup scripts](index.md) · [All scripts](../index.md)

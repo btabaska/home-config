@@ -111,6 +111,8 @@ ssh mini 'journalctl -p err -S -7days | ... uniq -c | sort -rn' -> '106834 upsmo
 
 </details>
 
+> **RESOLVED 2026-07-17 (fix-31).** Root cause is H29: no UPS is attached to the NAS and DSM UPS support is off, so `upsd` never runs and the netclient could never succeed. Operator decision (no UPS budget now): mini's `nut-monitor` was **retired** — `scripts/setup/nut-client-retire.sh` stops + disables + **masks** it, sets `MODE=none`, and comments the `MONITOR` block, so a masked unit cannot spam. The 4.1G journal was vacuumed to 1.0G and journald capped at `SystemMaxUse=1G` on mini + rig so no chatty service can eat the disk again. Guards in `verification/checks.d/power-journal.yaml`: `nut-monitor-retired` (masked+inactive, 0 recent connect-failed) + `journal-not-bloated-{mini,rig}` (<2G), all green. Folds into deferred glue-01. Runbook: [`power-resilience.md`](../../wiki/docs/runbooks/power-resilience.md).
+
 ### H2. Deluge RPC (3254), deluge-web (5945, plain HTTP) and qBittorrent WebUI (13091) are bound to 0.0.0.0/public IP and reachable from the open internet
 
 > **RESOLVED 2026-07-17 (fix-21).** Deluge RPC/web bind 127.0.0.1 (`allow_remote:false`, web `interface:127.0.0.1`); qBittorrent retired; all five admin ports probe closed from the WAN. Consumers (arr Deluge clients + Remote Path Mappings, Caddy vhost) repointed to the tailnet `100.119.134.94` (userspace tailscaled forwards inbound tailnet→loopback). Guarded by `verification/checks.d/seedbox.yaml` (`seedbox-public-lockdown`, `seedbox-loopback-binds`, `seedbox-arr-deluge-e2e` — all green). Runbook: `wiki/docs/runbooks/seedbox-exposure.md`.
@@ -719,6 +721,8 @@ $ curl 'http://192.168.10.4:5000/webapi/entry.cgi?api=SYNO.Core.ExternalDevice.U
 ```
 
 </details>
+
+> **RESOLVED 2026-07-17 (fix-31) — retired, not restored.** Re-confirmed live: NAS has no UPS hardware (`/dev/ups*` absent, no `/sys/class/power_supply/`), `3493` NO_LISTENER, DSM UPS `enable=false`. Operator decision is to **retire** the dead chain rather than buy/attach hardware — folds into deferred glue-01. The reversible re-enable path (wire a UPS → enable DSM UPS + network UPS server + permit `192.168.10.2` → `sudo NUT_REENABLE=1 NAS_IP=192.168.10.4 nut-client-ubuntu.sh`) is documented in the runbook. Guarded by `nut-monitor-retired`. Runbook: [`power-resilience.md`](../../wiki/docs/runbooks/power-resilience.md).
 
 ### H30. Gossip Girl signature quantified: 177 items tracked green but only a sample on disk (154 Sonarr episodes across 8 series + 23 Radarr movies) — and one NEW occurrence yesterday (2026-07-15) `known-issue`
 
@@ -1948,6 +1952,8 @@ bash: connect: Connection refused
 ```
 
 </details>
+
+> **RESOLVED 2026-07-17 (fix-31).** The permanently-dead netclient is retired: `nut-monitor` masked + inactive, `MODE=none`, `MONITOR` block commented (the inert `monuser/secret` NUT-default credential is commented out with it). A stray re-run of `nut-client-ubuntu.sh` can no longer revive it — the script now refuses to run unless `NUT_REENABLE=1`. Guard: `nut-monitor-retired` (regression). Runbook: [`power-resilience.md`](../../wiki/docs/runbooks/power-resilience.md).
 
 ### M60. 606 unextracted rar/r00 files inside the Plex library roots: 289 release dirs, 252 with no playable video alongside — a legacy backlog unpackerr can never process
 

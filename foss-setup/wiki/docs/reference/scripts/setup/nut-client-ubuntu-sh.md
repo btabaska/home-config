@@ -43,15 +43,26 @@
  Usage:
    sudo NAS_IP=192.168.1.7 ./nut-client-ubuntu.sh
    sudo NAS_IP=192.168.1.7 UPS_NAME=ups UPS_USER=monuser UPS_PASS=secret ./nut-client-ubuntu.sh
+
+ ─── RETIRED 2026-07-17 (quality-gate fix-31 / findings H1, H29, M59) ─────────
+ This netclient was RETIRED because no UPS is attached to the NAS and DSM UPS
+ support is off, so the NAS never runs upsd:3493 — mini's upsmon spammed
+ ~120k errors and 4G+ of journal in 7 days for ZERO protection. It was masked
+ by scripts/setup/nut-client-retire.sh; folds into deferred glue-01 (no UPS
+ budget). Running this script would REVIVE the doomed client, so it now REFUSES
+ to run unless you have actually attached a UPS + enabled DSM UPS support and
+ set NUT_REENABLE=1 to acknowledge that. See wiki runbook power-resilience.md.
+ ─────────────────────────────────────────────────────────────────────────────
 ```
 
 ## Environment / variables referenced
 
-`EUID`, `MINSUPPLIES`, `NAS_IP`, `NUT_CONF`, `UPSMON_CONF`, `UPS_NAME`, `UPS_PASS`, `UPS_USER`
+`EUID`, `MINSUPPLIES`, `NAS_IP`, `NUT_CONF`, `NUT_REENABLE`, `UPSMON_CONF`, `UPS_NAME`, `UPS_PASS`, `UPS_USER`
 
 ## See also
 
 - [`cachyos-desktop-baseline.sh`](cachyos-desktop-baseline-sh.md)
 - [`install-docker-ubuntu.sh`](install-docker-ubuntu-sh.md)
 - [`install-haos-vm.sh`](install-haos-vm-sh.md)
+- [`nut-client-retire.sh`](nut-client-retire-sh.md)
 - [Host setup scripts](index.md) · [All scripts](../index.md)

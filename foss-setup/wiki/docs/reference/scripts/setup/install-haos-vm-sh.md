@@ -37,5 +37,6 @@
 
 - [`cachyos-desktop-baseline.sh`](cachyos-desktop-baseline-sh.md)
 - [`install-docker-ubuntu.sh`](install-docker-ubuntu-sh.md)
+- [`nut-client-retire.sh`](nut-client-retire-sh.md)
 - [`nut-client-ubuntu.sh`](nut-client-ubuntu-sh.md)
 - [Host setup scripts](index.md) · [All scripts](../index.md)

@@ -130,6 +130,7 @@ nav:
       - Media — library correctness (unmatched / partial / recycle): runbooks/media-library-correctness.md
       - Monitoring coverage (liveness vs reality): runbooks/monitoring-coverage.md
       - Verification framework (self-checks): runbooks/verification-self.md
+      - Power resilience (UPS retired / journal caps): runbooks/power-resilience.md
   - Operations:
       - Overview: operations/index.md
       - Ansible & convergence: operations/ansible.md
@@ -232,6 +233,7 @@ nav:
       - monitoring-coverage: reference/checks/monitoring-coverage.md
       - nas-services: reference/checks/nas-services.md
       - network: reference/checks/network.md
+      - power-journal: reference/checks/power-journal.md
       - rig: reference/checks/rig.md
       - secrets: reference/checks/secrets.md
       - seedbox: reference/checks/seedbox.md
@@ -332,6 +334,7 @@ nav:
           - cachyos-desktop-baseline.sh: reference/scripts/setup/cachyos-desktop-baseline-sh.md
           - install-docker-ubuntu.sh: reference/scripts/setup/install-docker-ubuntu-sh.md
           - install-haos-vm.sh: reference/scripts/setup/install-haos-vm-sh.md
+          - nut-client-retire.sh: reference/scripts/setup/nut-client-retire-sh.md
           - nut-client-ubuntu.sh: reference/scripts/setup/nut-client-ubuntu-sh.md
       - Uptime Kuma:
           - Index: reference/scripts/uptime-kuma/index.md

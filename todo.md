@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**177/269 done** · **66 open** · **18 deferred** · 10 retired.
+**178/269 done** · **65 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -48,7 +48,6 @@
 - [ ] **`fix-37`** Media-aux service config fixes (navidrome backup, kometa, pinchflat/bgutil, RomM empty) _(est 1-3 hrs)_
 
 ### nas-foundation
-- [ ] **`fix-31`** Restore UPS/NUT power-loss protection (or cleanly retire the dead client) _(est 1-3 hrs)_
 - [ ] **`fix-40`** NAS host hygiene: timezone drift, soularr parked import, core dumps, junk files, single-disk note _(est 1-3 hrs)_
 
 ### network
