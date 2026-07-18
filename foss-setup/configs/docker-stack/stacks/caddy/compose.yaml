@@ -39,6 +39,10 @@ services:
       - HA_IP=${HA_IP:-} # Home Assistant host (ha.<domain>)
       - SEEDBOX_IP=${SEEDBOX_IP:-} # Betty Tailscale IP (Deluge + slskd)
       - HOST_IP=${HOST_IP:-} # Mac mini LAN IP for host-network stacks (e.g. MeTube)
+      # Basic Auth gate for marinara.tabaska.us (rig frontend; its own auth is void
+      # behind Docker userland-proxy). Hash = `caddy hash-password`; value in .env only.
+      - MARINARA_BASICAUTH_USER=${MARINARA_BASICAUTH_USER:-marinara}
+      - MARINARA_BASICAUTH_HASH=${MARINARA_BASICAUTH_HASH:-}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - /opt/stacks/wiki/site:/srv/wiki:ro # static wiki (built by the wiki stack; 404 until populated)

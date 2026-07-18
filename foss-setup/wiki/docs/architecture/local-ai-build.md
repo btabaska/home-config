@@ -83,6 +83,22 @@ the safety valve). Dolphin-Venice ships near-unaligned: its behavior is set by
 the **system prompt**, and its card's temp 0.15 (factual use) is deliberately
 overridden to 0.7 here for creative/RP.
 
+**Two creative/RP web frontends ride LiteLLM for these models** (added
+2026-07-18): **Lumiverse** (`ghcr.io/prolix-oc/lumiverse`, pinned by digest;
+`lumiverse.tabaska.us` → rig `:3001`) and **Marinara-Engine**
+(`ghcr.io/pasta-devs/marinara-engine:1.5.0`, alpha; `marinara.tabaska.us` → rig
+`:3002`), both in the same `local-ai-tooling/docker` compose. Neither has a
+server-side model allowlist, so each is pointed (via an **in-app** Custom
+OpenAI-compatible connection — `http://litellm:4000/v1`) at a **per-app LiteLLM
+virtual key scoped to exactly `cydonia`/`dolphin-venice`/`goetia`** — that key
+*is* the model restriction. Two security notes drove the config: Lumiverse has
+a live critical-CVE history (pin a patched image, LAN/tailnet-only), and
+Marinara's own Basic Auth is void behind Docker's userland-proxy (it only ever
+sees a trusted private/Docker source IP), so its auth is enforced at the **mini
+Caddy** vhost with `basic_auth` instead. Keys/secrets live in the rig `.env` +
+vault `ai_stack.*`; the end-to-end path (frontend → LiteLLM key → llama-swap →
+model, with non-scoped models rejected 403) was validated live at deploy.
+
 Model files live in `/opt/llm/models` — **deliberately outside /home** so
 restic never backs up re-pullable weights (removed ollama blobs are hardlink-
 archived in `/opt/llm/models/archive/`). Configs are the backup: everything

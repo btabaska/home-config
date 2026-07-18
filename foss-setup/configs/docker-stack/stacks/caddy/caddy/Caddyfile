@@ -207,6 +207,26 @@ mcpo.{$DOMAIN} {
 	reverse_proxy {$RIG_IP}:8000
 }
 
+# Lumiverse — creative/RP chat frontend (rig, on-demand; ghcr prolix-oc/lumiverse).
+# App login (BetterAuth) gates it; models restricted to cydonia/dolphin-venice/goetia
+# via a LiteLLM virtual key. Added 2026-07-18.
+lumiverse.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$RIG_IP}:3001
+}
+
+# Marinara-Engine — creative/RP chat (rig, on-demand; ghcr pasta-devs/marinara-engine,
+# ALPHA). Its own Basic Auth is void behind Docker userland-proxy (the app only sees a
+# trusted private/Docker IP), so Caddy is the auth gate here (user+bcrypt hash in .env).
+# Same 3-model LiteLLM virtual-key restriction. Added 2026-07-18.
+marinara.{$DOMAIN} {
+	import local_tls
+	basic_auth {
+		{$MARINARA_BASICAUTH_USER} {$MARINARA_BASICAUTH_HASH}
+	}
+	reverse_proxy {$RIG_IP}:3002
+}
+
 # Apollo game-stream host UI (rig, 24/7 — HTTPS on :47990). Sunshine fork.
 apollo.{$DOMAIN}, sunshine.{$DOMAIN} {
 	import local_tls

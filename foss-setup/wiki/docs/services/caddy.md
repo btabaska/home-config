@@ -39,6 +39,9 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `SEEDBOX_IP`
 - `HA_IP`
 - `HOST_IP`
+- `RIG_IP`
+- `MARINARA_BASICAUTH_USER`
+- `MARINARA_BASICAUTH_HASH`
 
 ## Troubleshooting
 

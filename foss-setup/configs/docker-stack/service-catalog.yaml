@@ -262,6 +262,20 @@ services:
     url: https://llm.tabaska.us
     on_demand: false
     notes: OpenAI-compatible gateway (/ui admin), always-on on the rig. (A mini-fallback stack dir exists in the repo but was NEVER deployed — decision pending, 2026-07-09 audit.)
+  - name: lumiverse
+    category: AI & Gaming
+    host: rig
+    port: 3001
+    url: https://lumiverse.tabaska.us
+    on_demand: false
+    notes: Creative/RP chat frontend (prolix-oc/Lumiverse, TS+Bun; pinned by digest = patched v1.0.0+ for the CVE-2026-44449 RCE cluster). Rides LiteLLM via an in-app Custom connection (virtual key scoped to cydonia/dolphin-venice/goetia — the only model gate). App login = BetterAuth (owner seeded from env). Added 2026-07-18. Rig runs 24/7.
+  - name: marinara
+    category: AI & Gaming
+    host: rig
+    port: 3002
+    url: https://marinara.tabaska.us
+    on_demand: false
+    notes: Creative/RP chat + game engine (pasta-devs/marinara-engine 1.5.0 image, ALPHA/AGPL). Rides LiteLLM via an in-app connection (same 3-model virtual key). Auth-gated at the mini Caddy (basic_auth, user `marinara`) because its own IP-based auth is void behind docker userland-proxy. Added 2026-07-18. Rig runs 24/7.
   - name: ollama
     category: AI & Gaming
     host: rig

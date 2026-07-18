@@ -174,6 +174,16 @@
         href: https://llm.tabaska.us
         description: LLM gateway (mini fallback for resilience)
         siteMonitor: http://192.168.10.12:4000
+    - Lumiverse:
+        icon: mdi-drama-masks
+        href: https://lumiverse.tabaska.us
+        description: Creative/RP chat (cydonia · dolphin-venice · goetia)
+        siteMonitor: http://192.168.10.12:3001
+    - Marinara:
+        icon: mdi-pasta
+        href: https://marinara.tabaska.us
+        description: Creative/RP chat + game engine (Caddy Basic Auth)
+        siteMonitor: http://192.168.10.12:3002
     - Ollama:
         icon: ollama.png
         href: https://ollama.tabaska.us

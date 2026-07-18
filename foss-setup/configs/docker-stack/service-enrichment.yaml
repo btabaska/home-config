@@ -603,3 +603,33 @@ services:
       Broken links, redirect loops, or session/cookie issues after changing how the site is reached.
     fix: |-
       SYMFONY__ENV__DOMAIN_NAME (from WALLABAG_DOMAIN_NAME in .env) must exactly match the public URL (https://wallabag.tabaska.us). If it drifts from the Caddy domain, fix .env on mini and `cd /opt/stacks/wallabag && docker compose up -d` to recreate the container.
+- name: lumiverse
+  about: |-
+    Lumiverse is a self-hosted creative/roleplay chat frontend (prolix-oc/Lumiverse, a TypeScript + Bun SillyTavern-style app) running on `rig` from `~/Documents/GitHub/local-ai-tooling/docker/docker-compose.yml` as container `lumiverse`, published on host `:3001` (container `:7860`) and reached through the mini Caddy at https://lumiverse.tabaska.us. It is pinned BY DIGEST to the current `:latest` (past the v1.0.0 git release that patches the CVE-2026-44449 RCE cluster) rather than a floating tag, because the app ships no semver image tags and has a live-CVE history — never float it, and keep it LAN/tailnet-only. It rides the same LiteLLM gateway as Open WebUI, but the connection is created IN THE APP (Connections -> Custom -> API URL http://litellm:4000/v1, the LUMIVERSE_LITELLM_KEY virtual key, model typed by hand) — there is no declarative env for it. Model choice is restricted to cydonia/dolphin-venice/goetia by scoping that virtual key at LiteLLM; the app itself has no allowlist. Auth is BetterAuth: the owner account is seeded from OWNER_USERNAME/OWNER_PASSWORD (in the rig `.env`, mirrored to the vault at ai_stack.lumiverse_owner_password), and protected API routes return 403 without a session. All state lives in the `lumiverse-data` volume, including `data/lumiverse.identity` — the master key for stored secrets, which must be backed up or every saved connection key is unrecoverable.
+  troubleshoot:
+  - symptom: |-
+      A model dropdown / connection cannot reach the backend, or chats error with a connection failure.
+    fix: |-
+      The LiteLLM connection is per-install and set in the UI, not in compose. In Connections add a Custom (OpenAI-compatible) provider with API URL http://litellm:4000/v1, the LUMIVERSE_LITELLM_KEY value from the rig `.env` (or vault ai_stack.litellm_lumiverse_key), and one of cydonia / dolphin-venice / goetia as the model name. Confirm reachability from inside the container with `ssh rig "docker exec lumiverse bun -e 'fetch(\"http://litellm:4000/v1/models\",{headers:{Authorization:\"Bearer \"+process.env.K}}).then(r=>r.json()).then(j=>console.log(j.data.map(m=>m.id)))'"` after exporting K.
+  - symptom: |-
+      Only cydonia/dolphin-venice/goetia are usable even though LiteLLM serves more models.
+    fix: |-
+      By design. The frontend's virtual key is scoped to exactly those three at LiteLLM (the app has no model allowlist). To change the set, re-mint the key with the desired `models` list via the LiteLLM master key and update the in-app connection.
+  - symptom: Lost owner password, or the app rejects the login.
+    fix: |-
+      Reset it with `ssh rig "docker exec lumiverse bun run reset-password"`, or set a fresh OWNER_PASSWORD in the rig docker/.env and recreate the container. The hashed credential lives in `data/owner.credentials` inside the lumiverse-data volume.
+- name: marinara
+  about: |-
+    Marinara-Engine is a self-hosted creative/roleplay chat + game engine (pasta-devs/marinara-engine, AGPL-3.0, self-described ALPHA) running on `rig` from `~/Documents/GitHub/local-ai-tooling/docker/docker-compose.yml` as container `marinara`, pinned to image `1.5.0` (the GHCR image semver line differs from the repo's git tags), published on host `:3002` (container `:7860`) and reached through the mini Caddy at https://marinara.tabaska.us. It rides the LiteLLM gateway via an in-app connection (API URL http://litellm:4000/v1 with the MARINARA_LITELLM_KEY virtual key scoped to cydonia/dolphin-venice/goetia); PROVIDER_LOCAL_URLS_ENABLED=true is required so it may reach that private URL. The important operational fact: Marinara's own IP-based Basic Auth is INEFFECTIVE behind Docker's userland-proxy — the container only ever sees a trusted private/Docker source IP (gateway 10.201.1.1 or a 10.201.1.x peer), so no combination of BASIC_AUTH_*, BYPASS_AUTH_DOCKER=false, or REQUIRE_AUTH_FOR_DOCKER_PROXY makes it demand a password. Authentication is therefore enforced at the mini Caddy vhost with `basic_auth` (user `marinara`, bcrypt hash in the caddy `.env` as MARINARA_BASICAUTH_HASH, escaped `$$` so compose does not interpolate it). Auto-update is disabled and the image is pinned because it is alpha. State lives in the `marinara-data` volume; set ENCRYPTION_KEY so encrypted connection secrets survive restarts.
+  troubleshoot:
+  - symptom: |-
+      marinara.tabaska.us serves without asking for a password, or the auth check rig-marinara-auth-gate fails.
+    fix: |-
+      The gate is the mini Caddy `basic_auth`, not the app. Confirm the caddy `.env` has MARINARA_BASICAUTH_USER and MARINARA_BASICAUTH_HASH (hash with every `$` written as `$$`) and that the caddy container has them: `ssh mini "docker exec caddy sh -c 'echo \$MARINARA_BASICAUTH_USER \${#MARINARA_BASICAUTH_HASH}'"`. Recreate caddy after any change (`cd /opt/stacks/caddy && docker compose up -d caddy`) — a plain `caddy reload` will NOT pick up a new env var. Regenerate a hash with `docker exec caddy caddy hash-password`.
+  - symptom: |-
+      Connections error with a blocked/refused local URL, or the model cannot be reached.
+    fix: |-
+      Marinara blocks private/loopback provider URLs unless PROVIDER_LOCAL_URLS_ENABLED=true (already set in compose). Verify it, then in the app add a Custom OpenAI-compatible connection to http://litellm:4000/v1 with the MARINARA_LITELLM_KEY value (rig `.env` / vault ai_stack.litellm_marinara_key) and a cydonia/dolphin-venice/goetia model.
+  - symptom: Docker Compose warns "variable is not set. Defaulting to a blank string" when starting caddy.
+    fix: |-
+      The bcrypt hash in the caddy `.env` contains `$` which compose interprets as interpolation. Escape every `$` as `$$` on the MARINARA_BASICAUTH_HASH line, then recreate caddy. Confirm the container env holds the full 60-char `$2a$...` hash.

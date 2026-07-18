@@ -99,6 +99,50 @@ checks:
     runbook: wiki/runbooks/rig.md
     enabled: true
 
+  # ---- creative/RP frontends (added 2026-07-18): lumiverse + marinara-engine ----
+  # Both ride LiteLLM via an in-app connection whose virtual key is scoped to
+  # cydonia/dolphin-venice/goetia (the only model gate — neither app has an
+  # allowlist). These are liveness probes; the FULL consumer path
+  # (frontend -> LiteLLM -> llama-swap -> the 3 models) + key model-scoping were
+  # validated end-to-end at deploy: an in-container fetch to http://litellm:4000
+  # from each frontend returned exactly the 3 models, a completion returned via
+  # each virtual key, and a non-allowed model was rejected 403. The auth-gate
+  # check below IS a consumer-end assertion (marinara's own auth is void behind
+  # docker userland-proxy, so the mini Caddy basic_auth is its real gate).
+  - id: rig-lumiverse
+    name: "lumiverse creative/RP frontend answers on rig:3001"
+    host: url
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:3001/
+    expect: '^200$'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
+  - id: rig-marinara
+    name: "marinara-engine creative/RP frontend answers on rig:3002"
+    host: url
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:3002/
+    expect: '^200$'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
+  # Consumer-path guard: marinara.tabaska.us MUST stay auth-gated at Caddy. A
+  # Caddyfile regression that dropped basic_auth would leave the LLM-wired chat
+  # open on the LAN — this catches it (401 = the gate is up). Runner + Caddy are
+  # both on the mini, so resolve the vhost to local Caddy.
+  - id: rig-marinara-auth-gate
+    name: "marinara.tabaska.us is auth-gated at Caddy (401 without credentials)"
+    host: url
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' --resolve marinara.tabaska.us:443:127.0.0.1 https://marinara.tabaska.us/
+    expect: '^401$'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
   # ai-01 GPU-yield behavioral check: a model loads ON DEMAND, answers, then
   # the admin unload frees VRAM (measured 182ms; gaming gets the full card).
   # Uses the tiny fast-3b (2.8GB, ~2s cold) to keep GPU cost negligible. The
