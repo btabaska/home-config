@@ -102,13 +102,19 @@ checks:
   # ---- creative/RP frontends (added 2026-07-18): lumiverse + marinara-engine ----
   # Both ride LiteLLM via an in-app connection whose virtual key is scoped to
   # cydonia/dolphin-venice/goetia (the only model gate — neither app has an
-  # allowlist). These are liveness probes; the FULL consumer path
-  # (frontend -> LiteLLM -> llama-swap -> the 3 models) + key model-scoping were
-  # validated end-to-end at deploy: an in-container fetch to http://litellm:4000
-  # from each frontend returned exactly the 3 models, a completion returned via
-  # each virtual key, and a non-allowed model was rejected 403. The auth-gate
-  # check below IS a consumer-end assertion (marinara's own auth is void behind
-  # docker userland-proxy, so the mini Caddy basic_auth is its real gate).
+  # allowlist). Wiring session 2026-07-18 (HANDOFF-ai-02 in local-ai-tooling):
+  # connections now target the PUBLIC gateways (https://llm.tabaska.us/v1 and
+  # https://comfyui.tabaska.us via the gpu-arbiter) and were re-validated end to
+  # end — real completions for all 3 models through both apps' keys + real image
+  # gens for all 3 workflows through both apps, take-turns observed per gen.
+  # Connections live ONLY in each app's data volume; the rebuild path is
+  # local-ai-tooling scripts/seed-{marinara,lumiverse}-connections.sh (rig).
+  # The auth-gate check below IS a consumer-end assertion (marinara's own auth
+  # is void behind docker userland-proxy, so mini Caddy basic_auth is its real
+  # gate). Blind spot (documented, deliberate): recurring checks do NOT run a
+  # real image generation (too heavy for the loop, established pattern) — a
+  # corrupted workflow JSON inside a connection row only surfaces at use time;
+  # the rig-*-connections checks below catch wiped/missing/re-pointed rows.
   - id: rig-lumiverse
     name: "lumiverse creative/RP frontend answers on rig:3001"
     host: url
@@ -143,6 +149,62 @@ checks:
     runbook: wiki/runbooks/rig.md
     enabled: true
 
+  # ai-01 consumer-end (2026-07-18): marinara's connections are rows in its
+  # encrypted SQLite volume — every liveness probe stays green with all of them
+  # wiped. Its API is unauthenticated inside the LAN (the Caddy basic_auth gate
+  # is only on the public vhost), so this asserts the rows exist and still point
+  # at the public gateways. Red => rerun seed-marinara-connections.sh on rig.
+  - id: rig-marinara-connections
+    name: "marinara in-app connections present (LiteLLM Creative + 3 ComfyUI image conns)"
+    host: url
+    cmd: curl -s -m 8 http://cachyos.tailb31641.ts.net:3002/api/connections
+    expect: '(?s)(?=.*LiteLLM Creative)(?=.*https://llm\.tabaska\.us/v1)(?=.*Anime Image)(?=.*Z-Image Turbo)(?=.*Flux\.2 Klein)(?=.*https://comfyui\.tabaska\.us)'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
+  # Same class for lumiverse, but its API needs a BetterAuth session (and sign-in
+  # is rate-limited 8/5min + lockout — unfit for an hourly probe), so this reads
+  # the app DB read-only via the container's own bun runtime instead. key1 =
+  # has_api_key flag on the LLM row. Red => seed-lumiverse-connections.sh on rig.
+  - id: rig-lumiverse-connections
+    name: "lumiverse in-app connections present (LLM row w/ key + 3 ComfyUI image conns)"
+    host: rig
+    cmd: >-
+      docker exec lumiverse bun -e "const {Database}=require('bun:sqlite');
+      const db=new Database('/app/data/lumiverse.db',{readonly:true});
+      const l=db.query('select name,api_url,has_api_key from connection_profiles').all();
+      const i=db.query('select name,api_url from image_gen_connections').all();
+      console.log('llm='+l.map(r=>r.name+'|'+r.api_url+'|key'+r.has_api_key).join(';'));
+      console.log('img='+i.map(r=>r.name+'|'+r.api_url).join(';'))"
+    expect: '(?s)(?=.*LiteLLM Creative\|https://llm\.tabaska\.us/v1\|key1)(?=.*NoobAI-XL\)\|https://comfyui\.tabaska\.us)(?=.*Z-Image Turbo)(?=.*Flux\.2 Klein)'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
+  # ai-01 scoped-key consumer check: the frontends' virtual keys through the
+  # FULL public path (Cloudflare DNS -> mini Caddy -> LiteLLM -> key scoping).
+  # Asserts each key is valid AND scoped to exactly the RP trio (a revoked key
+  # kills the KEYSCOPE line; an over-exposed key changes the sorted list).
+  # Cheap by design: /models only, no model load. Needs MARINARA_LITELLM_KEY +
+  # LUMIVERSE_LITELLM_KEY in /etc/verification/env (vault
+  # ai_stack.litellm_marinara_key / ai_stack.litellm_lumiverse_key).
+  - id: rig-llm-scoped-keys-public
+    name: "frontend scoped keys valid via llm.tabaska.us + scoped to exactly the RP trio"
+    host: url
+    cmd: >-
+      for k in "$MARINARA_LITELLM_KEY" "$LUMIVERSE_LITELLM_KEY"; do
+      curl -s -m 10 -H "Authorization: Bearer $k" https://llm.tabaska.us/v1/models
+      | python3 -c 'import json,sys; print("KEYSCOPE="+",".join(sorted(m["id"] for m in json.load(sys.stdin)["data"])))';
+      done
+    expect: '(?s)KEYSCOPE=cydonia,dolphin-venice,goetia.*KEYSCOPE=cydonia,dolphin-venice,goetia'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
   # ---- ComfyUI image-gen backend + gpu-arbiter (added 2026-07-18) ----
   # ComfyUI (:8188) drives RP image gen (Z-Image Turbo / NoobAI-XL / Flux.2 Klein)
   # for OWUI/Lumiverse/Marinara. The gpu-arbiter (:8189) is a take-turns proxy that
@@ -167,6 +229,23 @@ checks:
     host: url
     cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:8189/system_stats
     expect: '^200$'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
+  # Regression guard for the 2026-07-18 arbiter fix: the unload hook originally
+  # matched path == "/prompt" EXACTLY, and ComfyUI web-UI/API clients POST
+  # /api/prompt — so the LLM was never unloaded before a gen (OOM risk with a
+  # 22.8 GiB LLM resident). Greps the file as mounted IN the running container.
+  # Caveat: a single-file bind mount keeps the old inode across host edits — the
+  # running process can still hold old code until the container is RECREATED
+  # (not restarted); this catches repo reverts and stale-mount containers.
+  - id: rig-gpu-arbiter-unload-hook
+    name: "gpu-arbiter unload hook covers /api/prompt (take-turns fix guard)"
+    host: rig
+    cmd: docker exec gpu-arbiter grep -c /api/prompt /app/gpu-arbiter.py
+    expect: '^[1-9]$'
     severity: warn
     task_id: ai-01
     runbook: wiki/runbooks/rig.md
