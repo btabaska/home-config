@@ -1,0 +1,9 @@
+[Unit]
+Description=End-to-end Bedrock UDP tunnel probe + playit self-heal (fix-34 M30)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/playit-udp-guard.env
+ExecStart=/usr/local/bin/playit-udp-guard.sh

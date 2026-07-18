@@ -1,0 +1,10 @@
+[Unit]
+Description=Run playit-udp-guard every 10 minutes
+
+[Timer]
+OnCalendar=*:4/10
+RandomizedDelaySec=30
+Persistent=true
+
+[Install]
+WantedBy=timers.target

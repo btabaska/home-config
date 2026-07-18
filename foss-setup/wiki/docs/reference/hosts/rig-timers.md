@@ -1,17 +1,18 @@
-# rig — background timers (music mirror + AI-stack watchdog)
+# rig — background timers (music mirror + AI-stack watchdog + playit UDP guard)
 
-> The three systemd timers running on the rig (192.168.10.12): two that keep `~/Music` mirrored from the NAS master library, and one dead-man watchdog for the container→host Ollama hop.
+> The systemd timers running on the rig (192.168.10.12): the `~/Music` mirror from the NAS master library, a dead-man watchdog for the container→host Ollama hop, and the playit UDP tunnel guard.
 
-_Source: `foss-setup/configs/host/rig/music-mirror/music-mirror.service`, `foss-setup/configs/host/rig/music-mirror/music-mirror.timer`, `foss-setup/configs/host/rig/music-mirror/nas-music-mirror.service`, `foss-setup/configs/host/rig/music-mirror/nas-music-mirror.timer`, `foss-setup/configs/host/rig/ai-stack-watchdog/ai-stack-watchdog.service`, `foss-setup/configs/host/rig/ai-stack-watchdog/ai-stack-watchdog.timer` · migrated + validated 2026-07-14_
+_Source: `foss-setup/configs/host/rig/music-mirror/music-mirror.service`, `foss-setup/configs/host/rig/music-mirror/music-mirror.timer`, `foss-setup/configs/host/rig/music-mirror/nas-music-mirror.service`, `foss-setup/configs/host/rig/music-mirror/nas-music-mirror.timer`, `foss-setup/configs/host/rig/ai-stack-watchdog/ai-stack-watchdog.service`, `foss-setup/configs/host/rig/ai-stack-watchdog/ai-stack-watchdog.timer`, `foss-setup/configs/host/rig/playit-udp-guard/*` · migrated + validated 2026-07-14 · playit-udp-guard added 2026-07-18 (fix-34)_
 
 ## Overview
 
-The rig runs two `oneshot`-service + `.timer` pairs, all installed under `/etc/systemd/system/` and enabled:
+The rig runs three `oneshot`-service + `.timer` pairs, all installed under `/etc/systemd/system/` and enabled:
 
 | Timer | Schedule (OnCalendar) | Service it triggers | What it does |
 |---|---|---|---|
 | `nas-music-mirror.timer` | `*-*-* 05:00:00` (host TZ) | `nas-music-mirror.service` | **Sole** `~/Music` mirror — transcode FLAC→ALAC (.m4a), copy mp3/aac verbatim, prune orphans; pings the `music-mirror-rig` dead-man |
 | `ai-stack-watchdog.timer` | `*:0/10` (every 10 min) | `ai-stack-watchdog.service` | Dead-man ping for the open-webui→host Ollama hop |
+| `playit-udp-guard.timer` | `*:4/10` (every 10 min) | `playit-udp-guard.service` | End-to-end RakNet probe of the public Bedrock UDP tunnel + playit self-heal (fix-34 M30) |
 
 !!! success "media-06 resolved (2026-07-14): one authoritative ~/Music mirror"
     There used to be a **second** pair, `music-mirror.timer`/`.service` (05:30) that did `rsync -rt --delete-after /mnt/nas-music-ro/ ~/Music/` — a *verbatim* mirror. It copied FLAC onto the rig and, worse, its `--delete-after` removed the `.m4a` files the 05:00 ALAC job had just made (they don't exist on the NAS source), so the two fought nightly. Per the owner's decision (**ALAC on the rig, FLAC on the NAS, no duplicates**), the rsync pair was **retired** (unit files removed) and the leftover `~/Music/*.flac` deleted. `nas-music-mirror.service` is now the single source and inherited the `music-mirror-rig` healthchecks dead-man via `ExecStartPost`. Guarded by the `rig-music-no-flac` verification check.
@@ -157,16 +158,33 @@ Logic:
 
 ---
 
+## 4. playit-udp-guard — public Bedrock UDP tunnel probe + self-heal (every 10 min)
+
+Guards the **playit UDP path** (fix-34 M30). The agent's UDP claim registration wedges ~daily (`got unexpected response from register request ...UdpChannelDetails`) and every UDP tunnel (Bedrock :1111, Palworld :1105) goes dark until the agent restarts — while Java/TCP keeps serving, so port-liveness stays green. The guard probes the **consumer path**: a RakNet unconnected ping to `bedrock.tabaska.us:1111` through playit's edge.
+
+Decision tree (script: `foss-setup/configs/host/rig/playit-udp-guard/playit-udp-guard.sh` → `/usr/local/bin/playit-udp-guard.sh`, root 0755):
+
+- local Geyser `127.0.0.1:19132` dead → **Geyser/AMP problem, playit untouched**, ping `PING_URL/fail`.
+- local ok + public `bedrock.tabaska.us:1111` ok → healthy, ping the healthchecks dead-man.
+- local ok + public dead → `docker restart playit` **once** (skipped when the container is <10 min old — flap guard), re-probe after 45 s, report success/fail.
+
+Units mirror the watchdog pattern: `Type=oneshot`, `After=docker.service`, `EnvironmentFile=/etc/playit-udp-guard.env` (`root:root 600`, supplies `PING_URL`; vault key `healthchecks.playit_udp_rig_ping_url`, healthchecks check `playit-udp-rig`, 20-min period / 15-min grace, ntfy-routed). Timer `OnCalendar=*:4/10` (offset from the watchdog's `*:0/10`), `RandomizedDelaySec=30`, `Persistent=true`.
+
+Manual install (rebuild): `install -m 755 playit-udp-guard.sh /usr/local/bin/playit-udp-guard.sh`, units → `/etc/systemd/system/`, write `/etc/playit-udp-guard.env` with `PING_URL=<vault healthchecks.playit_udp_rig_ping_url>` (chmod 600), `systemctl daemon-reload && systemctl enable --now playit-udp-guard.timer`. Verified from the outside by the `game-playit-bedrock-udp` verification check (mini) — see `wiki/docs/runbooks/game-backups.md`.
+
+---
+
 ## Operations quick reference
 
 ```bash
-# status of all three timers + next-fire
-ssh rig "systemctl status music-mirror.timer nas-music-mirror.timer ai-stack-watchdog.timer --no-pager"
-ssh rig "systemctl list-timers --no-pager | grep -E 'music|ai-stack'"
+# status of all timers + next-fire
+ssh rig "systemctl status music-mirror.timer nas-music-mirror.timer ai-stack-watchdog.timer playit-udp-guard.timer --no-pager"
+ssh rig "systemctl list-timers --no-pager | grep -E 'music|ai-stack|playit'"
 
 # run a job on demand (the .service, not the .timer)
 ssh rig "systemctl start nas-music-mirror.service"   # ALAC transcode mirror (the sole ~/Music mirror)
 ssh rig "systemctl start ai-stack-watchdog.service"  # ollama hop probe
+ssh rig "sudo systemctl start playit-udp-guard.service"  # e2e Bedrock UDP tunnel probe
 
 # logs
 ssh rig "journalctl -u nas-music-mirror.service -n 50 --no-pager"

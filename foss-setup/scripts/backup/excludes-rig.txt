@@ -57,5 +57,9 @@
 /opt/stacks/amp/config/.ampdata/instances/*/Minecraft/cache
 /opt/stacks/amp/config/.ampdata/instances/*/Minecraft/crash-reports
 /opt/stacks/amp/config/.ampdata/instances/*/Minecraft/logs
+# AMP's own local backup zips (fix-34): compressed hourly zips of the same world
+# restic already snapshots — they dedup terribly and bloated B2 by ~12G. The live
+# world dir stays in the set; AMP zips are a local-only convenience tier.
+/opt/stacks/amp/config/.ampdata/instances/*/Backups
 # server + mod/plugin JARs are re-downloadable from the modpack/version manifest
 **/*.jar

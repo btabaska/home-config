@@ -43,6 +43,8 @@ Hosts referenced below: `mini` = 192.168.10.2, `nas` = 192.168.10.4 (Synology; r
 | ~~`music-mirror.service`/`.timer`~~ | rig | **RETIRED (media-06, 2026-07-14)** — the 05:30 `rsync -rt --delete-after` verbatim mirror copied FLAC to the rig and deleted the ALAC the 05:00 job made. Removed so the rig holds ALAC-only. | — | — |
 | `pcie-aer-monitor.service` | rig | oneshot: PCIe AER monitor for OS NVMe (`74:00.0`) → ntfy alert (`/opt/pcie-aer-monitor/pcie-aer-monitor.sh`, `Nice=10`). See `reference/hosts/rig-pcie-aer-monitor.md` | (via timer) | `foss-setup/configs/host/rig/pcie-aer-monitor/pcie-aer-monitor.service` |
 | `pcie-aer-monitor.timer` | rig | every 20 min | `OnBootSec=5min`, `OnUnitActiveSec=20min`, `Persistent=true`. See `reference/hosts/rig-pcie-aer-monitor.md` | `foss-setup/configs/host/rig/pcie-aer-monitor/pcie-aer-monitor.timer` |
+| `playit-udp-guard.service` | rig | oneshot: e2e RakNet probe of the public Bedrock UDP tunnel (`bedrock.tabaska.us:1111`) → restart playit only when local origin healthy + public dead (flap-guarded) → healthchecks dead-man `playit-udp-rig`; `EnvironmentFile=/etc/playit-udp-guard.env`, `After=docker.service`. See `reference/hosts/rig-timers.md` (fix-34 M30) | (via timer) | `foss-setup/configs/host/rig/playit-udp-guard/playit-udp-guard.service` |
+| `playit-udp-guard.timer` | rig | every 10 min | `OnCalendar=*:4/10`, `RandomizedDelaySec=30`, `Persistent=true`. See `reference/hosts/rig-timers.md` | `foss-setup/configs/host/rig/playit-udp-guard/playit-udp-guard.timer` |
 
 !!! note "Validated against live mini + rig (2026-07-14)"
     Checked `systemctl is-enabled`/`is-active` for the key units on both hosts.
@@ -52,7 +54,7 @@ Hosts referenced below: `mini` = 192.168.10.2, `nas` = 192.168.10.4 (Synology; r
 ## Host distribution at a glance
 
 - **mini (192.168.10.2)** — control/verification hub: `ansible-pull`, `restic-backup`, `verification`, `verification-quick`, `export-manifests`, `wake-rig-listener`, `net-selfheal`, `apply-static-ip`. `ntfy-notify@` is the shared failure notifier target.
-- **rig (192.168.10.12)** — 24/7 since 2026-07-08, GPU/AI/media-mirror host: `ansible-pull`, `restic-backup`, `gpu-power-tune`, `display-policy` (user), `ai-stack-watchdog`, `music-mirror`, `nas-music-mirror`, `pcie-aer-monitor`.
+- **rig (192.168.10.12)** — 24/7 since 2026-07-08, GPU/AI/media-mirror host: `ansible-pull`, `restic-backup`, `gpu-power-tune`, `display-policy` (user), `ai-stack-watchdog`, `music-mirror`, `nas-music-mirror`, `pcie-aer-monitor`, `playit-udp-guard` (fix-34).
 - **betty (seedbox)** — Ansible-managed: `ansible-pull`, `restic-backup` (via role).
 - **nas (192.168.10.4)** — Synology, Docker-based (`sonarr radarr lidarr readarr prowlarr unpackerr flaresolverr rreading-glasses soularr beets calibre-web-automated stash immich adguardhome-nas beszel-agent diun`); Plex is a Synology **package**; slskd runs on betty. No systemd fleet units in this repo.
 
@@ -62,7 +64,7 @@ Hosts referenced below: `mini` = 192.168.10.2, `nas` = 192.168.10.4 (Synology; r
 
 ## Dedicated detail pages
 
-The host-specific units are summarized above but documented in full elsewhere — see `reference/hosts/mini-network-resilience.md` (net-selfheal + apply-static-ip), `reference/hosts/rig-pcie-aer-monitor.md` (pcie-aer-monitor), and `reference/hosts/rig-timers.md` (ai-stack-watchdog, music-mirror, nas-music-mirror).
+The host-specific units are summarized above but documented in full elsewhere — see `reference/hosts/mini-network-resilience.md` (net-selfheal + apply-static-ip), `reference/hosts/rig-pcie-aer-monitor.md` (pcie-aer-monitor), and `reference/hosts/rig-timers.md` (ai-stack-watchdog, music-mirror, nas-music-mirror, playit-udp-guard).
 
 ---
 

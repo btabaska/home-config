@@ -1,0 +1,113 @@
+# gaming (rig game stack: AMP/Minecraft + playit tunnels) — fix-34 (H10/M29/M30).
+# H10: AMP's hourly Minecraft backups silently froze for 5 days ("Backup count
+# limit reached", ReplacePolicy=DoNothing) with nothing watching the consumer
+# end — the backups themselves. M30: playit UDP claims historically break
+# ~daily while TCP keeps working, so port-liveness never noticed.
+# These probe outcomes, not liveness: a backup that EXISTS and is FRESH, a
+# policy that cannot silently refuse again, and a RakNet ping that travels the
+# same public UDP path a Bedrock player does. The M29 restic-bloat class lives
+# in the restic-snapshot-hygiene helper (BLOAT scan, backups.yaml checks +
+# restic-bloat-rig below is intentionally NOT duplicated here). On-rig
+# self-heal: playit-udp-guard.timer + healthchecks dead-man 'playit-udp-rig'.
+checks:
+  # regression for the exact H10 bug: newest local AMP zip < 4h old (schedule
+  # is hourly) AND the most recent backup event in today's AMP log is not a
+  # "Backup not taken" refusal.
+  - id: game-amp-backup-fresh
+    name: "MinecraftCross01 hourly AMP backup ran within 4h and wasn't refused (H10)"
+    host: rig
+    cmd: >
+      B=/opt/stacks/amp/config/.ampdata/instances/MinecraftCross01/Backups;
+      D="/opt/stacks/amp/config/.ampdata/instances/MinecraftCross01/AMP_Logs";
+      z=$(ls -t "$B"/*.zip 2>/dev/null | head -1);
+      if [ -z "$z" ]; then echo NO-BACKUPS; else
+      age=$(( $(date +%s) - $(stat -c %Y "$z") ));
+      L="$D/$(ls -t "$D" | head -1)";
+      last=$(grep -aE 'Creating Backup|Backup not taken' "$L" | tail -1);
+      case "$last" in
+      *"Backup not taken"*) echo "BACKUP-REFUSED age=${age}s";;
+      *) if [ "$age" -lt 14400 ]; then echo "BACKUP-OK age=${age}s"; else echo "BACKUP-STALE age=${age}s"; fi;;
+      esac; fi
+    expect: '^BACKUP-OK'
+    severity: warn
+    task_id: fix-34
+    runbook: wiki/docs/runbooks/game-backups.md
+    enabled: true
+
+  # class guard for H10's root cause: no AMP instance may carry the
+  # silently-refusing DoNothing replace policy (catches future instances too).
+  - id: game-amp-backup-policy
+    name: "no AMP instance has Backup ReplacePolicy=DoNothing (H10 root cause)"
+    host: rig
+    cmd: >
+      bad=$(grep -l '^Limits.ReplacePolicy=DoNothing'
+      /opt/stacks/amp/config/.ampdata/instances/*/LocalFileBackupPlugin.kvp 2>/dev/null
+      | xargs -r -n1 dirname | xargs -r -n1 basename | tr '\n' ' ');
+      if [ -z "$bad" ]; then echo POLICY-OK; else echo "POLICY-DONOTHING: $bad"; fi
+    expect: '^POLICY-OK'
+    severity: crit
+    task_id: fix-34
+    runbook: wiki/docs/runbooks/game-backups.md
+    enabled: true
+
+  # M29 class guard: latest AMP-bearing restic snapshot ships no app-internal
+  # backup zips (the dedup-hostile bloat that inflated B2 by ~12G). Scan lives
+  # in the root restic-snapshot-hygiene helper; its HYGIENE verdict is asserted
+  # separately by backups.yaml (fix-22).
+  - id: restic-bloat-rig
+    name: "rig restic latest snapshot free of AMP backup-zip bloat (M29)"
+    host: rig
+    cmd: sudo -n /usr/local/bin/restic-snapshot-hygiene
+    expect: '^BLOAT-OK'
+    severity: warn
+    task_id: fix-34
+    runbook: wiki/docs/runbooks/game-backups.md
+    enabled: true
+
+  # M30 consumer-end regression: RakNet unconnected ping from mini through the
+  # PUBLIC playit UDP tunnel to Geyser — the exact path a Bedrock player uses,
+  # and the exact path the UDP-claim register error severs while TCP stays up.
+  - id: game-playit-bedrock-udp
+    name: "Bedrock answers a RakNet ping via playit UDP tunnel bedrock.tabaska.us:1111 (M30)"
+    host: mini
+    cmd: |
+      python3 - <<'PY'
+      import socket, struct, sys
+      MAGIC = bytes.fromhex("00ffff00fefefefefdfdfdfd12345678")
+      pkt = b"\x01" + struct.pack(">Q", 0) + MAGIC + struct.pack(">Q", 0x3412)
+      for _ in range(2):
+          s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+          s.settimeout(8)
+          try:
+              s.sendto(pkt, ("bedrock.tabaska.us", 1111))
+              d, a = s.recvfrom(4096)
+              if d[:1] == b"\x1c":
+                  print("PONG from", a[0])
+                  sys.exit(0)
+          except OSError:
+              pass
+          finally:
+              s.close()
+      print("NO-PONG")
+      sys.exit(1)
+      PY
+    expect: '^PONG'
+    severity: crit
+    task_id: fix-34
+    runbook: wiki/docs/runbooks/game-backups.md
+    enabled: true
+
+  # M30 class guard: the register-error signature in the agent log covers ALL
+  # UDP tunnels (Palworld has no query protocol to probe directly). The guard
+  # self-heals within 10 min; this surfaces that the class recurred at all.
+  - id: game-playit-udp-register-errors
+    name: "playit agent logged no UDP-claim register errors in 24h (M30 class)"
+    host: rig
+    cmd: >
+      n=$(docker logs --since 24h playit 2>&1 | grep -ac 'unexpected response from register');
+      if [ "${n:-0}" -eq 0 ]; then echo REGISTER-OK; else echo "REGISTER-ERRORS:${n}"; fi
+    expect: '^REGISTER-OK'
+    severity: warn
+    task_id: fix-34
+    runbook: wiki/docs/runbooks/game-backups.md
+    enabled: true

@@ -132,6 +132,7 @@ nav:
       - Reverse proxy (caddy routes / HA proxy path): runbooks/reverse-proxy.md
       - Verification framework (self-checks): runbooks/verification-self.md
       - Power resilience (UPS retired / journal caps): runbooks/power-resilience.md
+      - Game backups & tunnels (AMP freeze / playit UDP): runbooks/game-backups.md
   - Operations:
       - Overview: operations/index.md
       - Ansible & convergence: operations/ansible.md

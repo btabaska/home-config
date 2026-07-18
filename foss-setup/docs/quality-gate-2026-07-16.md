@@ -336,6 +336,14 @@ Limits.MaxTotalSizeMB=20280
 
 </details>
 
+> **Resolution (2026-07-18, task `fix-34`):** rotation fixed live via the AMP API (no instance
+> restart): `Limits.ReplacePolicy` DoNothing→`ReplaceOldest` ("Delete Single Oldest"),
+> `MaxBackupCount` 28→24. All 28 frozen zips deleted through `DeleteLocalBackup` (manifest kept
+> consistent); a fresh backup completed at 15:08Z the same minute the config landed, and the next
+> hourly scheduled run succeeded. Guarded by `game-amp-backup-fresh` (freshness + refusal grep)
+> and the crit class check `game-amp-backup-policy` (no instance may ever carry DoNothing again).
+> Runbook: `wiki/docs/runbooks/game-backups.md`.
+
 ### H11. Gossip Girl: all 120 'imported' episode files are Sample/*.avi junk; real content is 43GB of unextracted RARs; show absent from Plex
 
 **Host:** nas · **Component:** sonarr + plex (TV library) · **Auditor:** flow:movies-tv
@@ -1323,6 +1331,13 @@ BACKUP_PATHS="/etc /home/btabaska /opt/stacks/palworld/game/Pal/Saved /opt/stack
 
 </details>
 
+> **Resolution (2026-07-18, task `fix-34`):** the 12G of frozen zips was deleted (via AMP API,
+> see H10) and `/opt/stacks/amp/config/.ampdata/instances/*/Backups` added to
+> `scripts/backup/excludes-rig.txt` → deployed to rig `/etc/restic/excludes.txt`. The first
+> post-fix restic run (snapshot `1527ebfb`) verified clean: 0 AMP backup zips in the set,
+> `restic check` no errors. B2 bloat ages out via nightly forget + Sunday prune. Class guard:
+> BLOAT scan added to `restic-snapshot-hygiene` (asserted by `restic-bloat-rig`).
+
 ### M30. playit currently connected (3 tunnels, verified) but UDP register errors recur ~daily across sessions — the known UDP-claim gotcha is still live `known-issue`
 
 **Host:** rig · **Component:** playit agent (playit container) · **Auditor:** svc:gaming
@@ -1345,6 +1360,14 @@ docker inspect playit env: SECRET_KEY=83e2263969d3ced334c1f28e09a0c527dd73f49dfd
 ```
 
 </details>
+
+> **Resolution (2026-07-18, task `fix-34`):** the UDP-claim class now self-heals:
+> `playit-udp-guard.timer` on rig (every 10 min) RakNet-pings local Geyser AND the public
+> `bedrock.tabaska.us:1111` tunnel, restarts the agent only on local-ok/public-dead (10-min flap
+> guard), and feeds the healthchecks dead-man `playit-udp-rig` (ntfy-routed). Consumer-end e2e
+> check `game-playit-bedrock-udp` (mini, crit) + 24h log-signature class check
+> `game-playit-udp-register-errors`. Verified live: RakNet pong through the tunnel from mini.
+> Runbook: `wiki/docs/runbooks/game-backups.md`.
 
 ### M31. Two ISO 'imports' (81GB total) are green in Radarr but invisible/unplayable in Plex
 

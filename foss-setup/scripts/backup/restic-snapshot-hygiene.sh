@@ -2,7 +2,10 @@
 # restic-snapshot-hygiene — assert every snapshot in this host's restic repo
 # belongs to a real fleet hostname and carries no test/junk tags (fix-22 L57:
 # 8-byte 'ao-verify' smoke-test snapshots with synthetic hostnames fell into
-# their own forget group and would have been retained forever).
+# their own forget group and would have been retained forever), and that the
+# latest snapshot ships no dedup-hostile bloat (fix-34 M29: 12G of AMP's own
+# compressed backup zips rode along in BACKUP_PATHS and inflated B2 by ~12G —
+# the class is "an app's internal backup artifacts inside the restic set").
 #
 # Deployed to /usr/local/bin/restic-snapshot-hygiene (root 0755) on mini + rig;
 # invoked via /etc/sudoers.d/verification-restic by the daily verification
@@ -46,3 +49,23 @@ if junk:
     sys.exit(1)
 print(f"HYGIENE-OK {len(snaps)} snapshots, hosts+tags clean")
 PY
+rc=$?
+[ "$rc" -eq 0 ] || exit "$rc"
+
+# --- dedup-hostile-bloat scan (fix-34 M29). Only meaningful where the backup
+# set contains the AMP instances dir, so hosts without it skip for free.
+latest=$(printf '%s' "$json" | python3 -c '
+import json, sys
+snaps = json.load(sys.stdin)
+amp = [s for s in snaps if any("/.ampdata/instances" in p for p in s.get("paths", []))]
+print(amp[-1]["short_id"] if amp else "")')
+if [ -n "$latest" ]; then
+  zips=$("$RESTIC" --no-lock ls "$latest" 2>/dev/null \
+    | grep -cE '/\.ampdata/instances/[^/]+/Backups/.+\.zip$')
+  if [ "${zips:-0}" -gt 0 ]; then
+    echo "BLOAT latest snapshot $latest carries $zips AMP backup zip(s) —" \
+         "excludes-rig.txt Backups exclusion missing or bypassed (fix-34 M29)"
+    exit 1
+  fi
+  echo "BLOAT-OK latest AMP-bearing snapshot $latest ships no app-internal backup zips"
+fi

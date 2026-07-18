@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**179/269 done** · **64 open** · **18 deferred** · 10 retired.
+**180/269 done** · **63 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -28,7 +28,6 @@
 - [ ] **`ebook-06`** End-to-end ebook verification (Libreseerr → Betty → Readarr → CWA → Plex/Kobo) _(est 30-45 min)_
 
 ### gaming
-- [ ] **`fix-34`** Fix AMP scheduled backups (silently failing) + backup-bloat in restic + playit UDP churn _(est 1-3 hrs)_
 - [ ] **`game-09`** Rig idle-power tuning (24/7 baseline) _(est 20-30 min)_
 - [ ] **`game-12`** Save-game sync with Ludusavi + Syncthing _(est 30 min)_
 - [ ] **`retro-03`** Save/state sync mesh (Syncthing) _(est 60 min)_ — ⛔ gate: device pairing approvals
