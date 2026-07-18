@@ -236,6 +236,7 @@ nav:
       - secrets: reference/checks/secrets.md
       - seedbox: reference/checks/seedbox.md
       - system: reference/checks/system.md
+      - verification-self: reference/checks/verification-self.md
       # END GENERATED CHECKS NAV
   - Scripts reference:
       # BEGIN GENERATED SCRIPTS NAV (managed by scripts/docs/gen-script-pages.py — do not edit by hand)
@@ -337,6 +338,9 @@ nav:
           - add-functional-monitors.sh: reference/scripts/uptime-kuma/add-functional-monitors-sh.md
           - bootstrap-nas-monitors.sh: reference/scripts/uptime-kuma/bootstrap-nas-monitors-sh.md
           - seed-monitors.sh: reference/scripts/uptime-kuma/seed-monitors-sh.md
+      - verification:
+          - Index: reference/scripts/verification/index.md
+          - deploy.sh: reference/scripts/verification/deploy-sh.md
       - wiki:
           - Index: reference/scripts/wiki/index.md
           - wiki-drift-check.sh: reference/scripts/wiki/wiki-drift-check-sh.md
