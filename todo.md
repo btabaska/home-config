@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**181/269 done** · **62 open** · **18 deferred** · 10 retired.
+**182/269 done** · **61 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -79,7 +79,6 @@
 - [ ] **`sec-10`** arr API keys committed in cleartext in the repo (unpackerr.conf) — rotate + externalize to a gitignored env _(est 45-90 min)_
 
 ### smart-home
-- [ ] **`fix-36`** Home Assistant health: unavailable entities, dead integrations, pending updates _(est 1-3 hrs)_
 - [ ] **`ha-04`** Install HACS (community store) _(est 15 min)_
 - [ ] **`ha-06`** Thermostat: install ecobee Premium (in box) — local HomeKit control; retire Nest SDM plan _(est 45-60 min)_
 - [ ] **`ha-07`** Add Midea AC + dehumidifier via midea_ac_lan (local) — and BACK UP the .json _(est 30 min)_

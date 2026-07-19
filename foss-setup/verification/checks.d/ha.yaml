@@ -63,6 +63,11 @@ checks:
   # light.* entities (>=50), so a whole room going 'unavailable' still passes.
   # This availability sibling fails when more than 12 lights are unavailable/
   # unknown (baseline ~8, so 12 is headroom that still catches a room going dark).
+  # fix-36 (2026-07-19, M40): the ~8-light baseline is ACCEPTED household usage —
+  # those bulbs are cut at wall switches (the Hue bridge itself reports zigbee
+  # 'connectivity_issue' for exactly those devices, and the set churns as
+  # switches get used). Do NOT tighten below 12; the dead-bulb case (dark for
+  # weeks) is caught by ha-availability-drift below. Runbook: ha-health.md.
   - id: ha-lights-available
     name: "HA lights available (not a whole room dark; >12 unavailable = alert)"
     host: mini
@@ -76,6 +81,84 @@ checks:
     severity: warn
     task_id: ha-05
     runbook: wiki/runbooks/docker.md
+    enabled: true
+
+  # UPDATE STALENESS (added 2026-07-19, fix-36/M9). The audit found Core one
+  # monthly release behind and HAOS TWO major versions behind (16.3 vs 18.1) —
+  # update entities were 'on' for weeks and nobody was told (the class: pending
+  # updates surface in a UI nobody watches). This fires when any update.*
+  # entity has been pending for >=21 days (last_changed age; conservative —
+  # a core restart resets the clock, so it never false-positives after a
+  # fresh update round). Green means "nothing has sat pending for 3 weeks."
+  - id: ha-updates-pending
+    name: "HA updates not left pending >=21 days (core/OS/add-ons)"
+    host: mini
+    cmd: >-
+      curl -s -m 12 -H "Authorization: Bearer $HA_TOKEN"
+      http://192.168.10.50:8123/api/states
+      | python3 -c "import sys,json,datetime; d=json.load(sys.stdin);
+      now=datetime.datetime.now(datetime.timezone.utc);
+      old=[e['entity_id'] for e in d if e['entity_id'].startswith('update.') and e['state']=='on'
+      and (now-datetime.datetime.fromisoformat(e['last_changed'])).days>=21];
+      print('updates=ok' if not old else 'updates=STALE:'+','.join(old))"
+    expect: '^updates=ok$'
+    severity: warn
+    task_id: fix-36
+    runbook: wiki/docs/runbooks/ha-health.md
+    enabled: true
+
+  # AVAILABILITY DRIFT (added 2026-07-19, fix-36/M11+M40+M42 class check). The
+  # audit's 'unavailable' clusters (11 iPhone companion sensors dead since
+  # 07-07, 8 wall-switched Hue lights) sat for weeks because nothing looked at
+  # entity availability beyond lights. Accepted baseline: light.* unavailable
+  # (wall switches, counted by ha-lights-available) and up to 11
+  # sensor.btiphone_* (phone-side fix deferred by user 2026-07-18). This fires
+  # on (a) ANY other entity going 'unavailable' (an integration silently
+  # dying), (b) the btiphone cluster GROWING past 11, or (c) a light staying
+  # dark >=30 days (dead bulb, not a wall switch — clock resets on HA restart
+  # so it under-fires, never cries wolf).
+  - id: ha-availability-drift
+    name: "HA entity availability matches accepted baseline (no silent integration death)"
+    host: mini
+    cmd: >-
+      curl -s -m 12 -H "Authorization: Bearer $HA_TOKEN"
+      http://192.168.10.50:8123/api/states
+      | python3 -c "import sys,json,datetime; d=json.load(sys.stdin);
+      now=datetime.datetime.now(datetime.timezone.utc);
+      unav=[e for e in d if e['state']=='unavailable'];
+      bt=[e for e in unav if e['entity_id'].startswith('sensor.btiphone_')];
+      lights=[e for e in unav if e['entity_id'].startswith('light.')];
+      other=[e['entity_id'] for e in unav if not e['entity_id'].startswith(('sensor.btiphone_','light.'))];
+      dark=[e['entity_id'] for e in lights if (now-datetime.datetime.fromisoformat(e['last_changed'])).days>=30];
+      msg=([('DRIFT:'+','.join(other))] if other else [])+([('BTIPHONE:%d'%len(bt))] if len(bt)>11 else [])+([('DARK30:'+','.join(dark))] if dark else []);
+      print('avail=ok' if not msg else 'avail='+';'.join(msg))"
+    expect: '^avail=ok$'
+    severity: warn
+    task_id: fix-36
+    runbook: wiki/docs/runbooks/ha-health.md
+    enabled: true
+
+  # IPHONE PRESENCE E2E (added 2026-07-19, fix-36/M11+M42 regression). With the
+  # 11 telemetry sensors accepted-dead (user will re-enable in the app per the
+  # runbook), presence is the part of mobile_app we still RELY on:
+  # device_tracker.brandon_iphone must report a real zone and battery_level a
+  # number. Fires if the whole integration dies — the failure mode that would
+  # actually matter and that the accepted-baseline check above deliberately
+  # ignores.
+  - id: ha-iphone-presence
+    name: "iPhone companion presence pipeline alive (tracker + battery report real values)"
+    host: mini
+    cmd: >-
+      curl -s -m 12 -H "Authorization: Bearer $HA_TOKEN"
+      http://192.168.10.50:8123/api/states
+      | python3 -c "import sys,json; d={e['entity_id']:e['state'] for e in json.load(sys.stdin)};
+      dt=d.get('device_tracker.brandon_iphone','missing'); bl=d.get('sensor.btiphone_battery_level','missing');
+      ok=dt not in ('missing','unavailable','unknown') and bl.replace('.','',1).isdigit();
+      print('presence=ok' if ok else 'presence=DEAD:dt=%s,batt=%s'%(dt,bl))"
+    expect: '^presence=ok$'
+    severity: warn
+    task_id: fix-36
+    runbook: wiki/docs/runbooks/ha-health.md
     enabled: true
 
   # BACKUP DEAD-MAN (added 2026-07-13, #11). HAOS ran with backups ONLY on the

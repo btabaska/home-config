@@ -134,6 +134,7 @@ nav:
       - Power resilience (UPS retired / journal caps): runbooks/power-resilience.md
       - Game backups & tunnels (AMP freeze / playit UDP): runbooks/game-backups.md
       - Photos (Immich empty-library / backup freshness): runbooks/photos.md
+      - HA health (updates / availability / Apple pairing): runbooks/ha-health.md
   - Operations:
       - Overview: operations/index.md
       - Ansible & convergence: operations/ansible.md

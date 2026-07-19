@@ -920,6 +920,19 @@ newest: archer.2009.s10e03 (Jul 10 03:42). reaper LABELS={sonarr,sonarr-imported
 
 ### M9. HA Core 1 monthly release behind; HAOS two major versions behind (16.3 vs 18.1)
 
+> **RESOLVED (fix-36, 2026-07-19):** all applied via `update.install` service
+> calls (no UI): Matter Server 9.0.3→9.1.0, Core 2026.6.4→2026.7.2 (pre-update
+> backup, copied to the NAS agent), HAOS 16.3→18.1. Gotcha worth keeping: the
+> HAOS install wrote the new slot but did NOT auto-reboot — Supervisor
+> `/os/info` claimed 18.1 while `/host/info` still ran 16.3 with a
+> `reboot_required` issue sitting in the resolution center (the exact
+> update-surfaced-but-not-actioned failure mode of this finding). Explicit
+> `/host/reboot` finished it. Verified end-to-end after reboot:
+> `operating_system: Home Assistant OS 18.1`, kernel 6.18.37-haos, fresh
+> boot_timestamp, core 2026.7.2 RUNNING, all 18 config entries loaded, every
+> update.* entity `off`. Guard: `ha-updates-pending` fires when anything sits
+> pending ≥21 days. Runbook `wiki/docs/runbooks/ha-health.md`.
+
 **Host:** ha (192.168.10.50) · **Component:** core/OS version · **Auditor:** host:ha
 
 
@@ -953,6 +966,14 @@ curl -sk https://ha.tabaska.us/ -> HTTP 400 '400: Bad Request'. /opt/stacks/cadd
 </details>
 
 ### M11. All 11 iPhone companion-app sensors unavailable (only device_tracker still updates)
+
+> **ACCEPTED-DEFERRED (fix-36, 2026-07-19):** the fix is phone-side (re-enable
+> sensors in the companion app / iOS permissions) and the user deferred the
+> hands-on step. Exact steps live in `wiki/docs/runbooks/ha-health.md`. What we
+> still rely on — presence — is now monitored end-to-end (`ha-iphone-presence`:
+> tracker must report a real zone + numeric battery), and
+> `ha-availability-drift` fires if the dead-sensor cluster grows past the
+> accepted 11. Same item as M42.
 
 **Host:** ha (192.168.10.50) · **Component:** mobile_app (Btiphone companion) · **Auditor:** host:ha
 
@@ -1590,6 +1611,15 @@ restic-latest-age source: marker only updated inside the systemd-record branch (
 
 ### M40. 8 of 71 Hue lights unavailable — 7 continuously since HA start 2026-06-27 (18 days), 1 since 2026-07-14; bridge itself healthy
 
+> **ACCEPTED AS USAGE (fix-36, 2026-07-19):** root-caused to wall-switch power
+> cuts, not HA/bridge fault — the Hue bridge's own diagnostics show zigbee
+> `connectivity_issue` for exactly the 8 unavailable devices, and the set
+> churns with household use (dining recovered, attic went dark between audit
+> and fix). User confirmed this is how the house works. Baseline of ~8
+> documented; tripwires: `ha-lights-available` (>12 = a room went dark) and
+> `ha-availability-drift` `DARK30` (any light unavailable ≥30 days = dead
+> bulb, not a switch). Runbook `wiki/docs/runbooks/ha-health.md`.
+
 **Host:** ha (192.168.10.50) · **Component:** hue integration (bridge 192.168.20.100) · **Auditor:** flow:ha-deep
 
 
@@ -1609,6 +1639,16 @@ homekit diagnostics: 8x /data/bridge/<aid>/entity_state/state = unavailable
 
 ### M41. HomePod<->hub gap: bridge is running and paired to 2 clients, but an Apple client at 192.168.1.79 was rejected on pair-verify (stale/never-completed pairing) — and it sits on an unexpected subnet `known-issue`
 
+> **ACCEPTED-DEFERRED (fix-36, 2026-07-19):** the client (same uuid
+> `51d8dbec…`) has since MOVED to the trusted VLAN — now at 192.168.10.42
+> (Apple MAC `48:e1:5c:96:f6:a9`), so the off-subnet half is resolved — but it
+> still holds stale pairing keys and was rejected 4× on 2026-07-19 alone. The
+> remaining fix is Apple-side (remove stale HASS Bridge accessory / reset the
+> device's Home association, re-pair with the code from HA) and the user
+> deferred the hands-on step; procedure in `wiki/docs/runbooks/ha-health.md`.
+> The bridge itself is healthy with 2 working paired clients; the rejects are
+> log noise until re-paired.
+
 **Host:** ha (192.168.10.50) · **Component:** homekit bridge (HASS Bridge:21064) · **Auditor:** flow:ha-deep
 
 
@@ -1625,6 +1665,11 @@ WS system_log: [ERROR] x1 pyhap.hap_handler 2026-07-13T09:59:54 "HASS Bridge: Cl
 </details>
 
 ### M42. 11 of 18 iPhone companion-app sensors unavailable since 2026-07-07 (kiosk pair since 07-11); core presence still works
+
+> **ACCEPTED-DEFERRED (fix-36, 2026-07-19):** same item as M11 — see its
+> resolution note (phone-side steps in `wiki/docs/runbooks/ha-health.md`;
+> presence monitored by `ha-iphone-presence`, cluster growth by
+> `ha-availability-drift`).
 
 **Host:** ha (192.168.10.50) · **Component:** mobile_app integration (Btiphone) · **Auditor:** flow:ha-deep
 
