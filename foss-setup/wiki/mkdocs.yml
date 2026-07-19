@@ -137,6 +137,7 @@ nav:
       - HA health (updates / availability / Apple pairing): runbooks/ha-health.md
       - Media-aux (navidrome backup / kometa / POT / romm): runbooks/media-aux.md
       - Reading / CWA (Kobo sync, fork image, library hygiene): runbooks/reading-cwa.md
+      - Host hygiene (dead services / silent crons / spent timers): runbooks/host-hygiene.md
   - Operations:
       - Overview: operations/index.md
       - Ansible & convergence: operations/ansible.md

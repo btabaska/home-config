@@ -1,0 +1,10 @@
+[Unit]
+Description=Prune tv-torrent leftovers older than 30 days (fix-39/M62)
+Documentation=file:/usr/local/sbin/tv-torrent-cleanup.sh
+OnFailure=ntfy-notify@%n.service
+
+[Service]
+Type=oneshot
+User=btabaska
+EnvironmentFile=-/etc/default/tv-torrent-cleanup
+ExecStart=/usr/local/sbin/tv-torrent-cleanup.sh

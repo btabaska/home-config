@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly tv-torrent leftovers prune (Sun 08:30 UTC = 4:30AM ET window)
+
+[Timer]
+OnCalendar=Sun *-*-* 08:30:00 UTC
+Persistent=true
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target

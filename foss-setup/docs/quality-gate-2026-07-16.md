@@ -775,6 +775,8 @@ EverAfter | Ever After A Cinderella Story 1998 BRRip XvidHD 720p-NPW-Sample.avi 
 
 ### M1. Dead Pterodactyl panel from Jun 2025 still runs a full LEMP+redis stack on the host: every-minute root cron, zombie nginx listening on no ports, daily telemetry errors
 
+> **RESOLVED (fix-39, 2026-07-19):** Full purge with archive first (panel DB dump + www tarball + units/crontab at mini `/var/backups/pterodactyl-retired-20260719/`, root 600). Root cron removed; nginx/php8.3-fpm/mariadb/redis stopped, disabled, apt-purged; `/var/www/pterodactyl`, `/var/lib/mysql`, `/var/lib/redis`, composer deleted. Zero LEMP packages, zero 3306/6379 listeners remain. Guard: checks.d/host-hygiene.yaml `ptero-lemp-retired`; runbook wiki/runbooks/host-hygiene.md.
+
 **Host:** mini · **Component:** host OS: pterodactyl leftovers (nginx, php8.3-fpm, mariadb, redis-server, root cron) · **Auditor:** host:mini
 
 
@@ -791,6 +793,8 @@ grep CRON /var/log/syslog | tail -> '(root) CMD (php /var/www/pterodactyl/artisa
 
 ### M2. etckeeper commits intermittently fail on /etc/.git/index.lock races — 26 failures Jul 07-15 including 3 today
 
+> **RESOLVED (fix-39, 2026-07-19):** All systemd-side etckeeper invocations (etc-watch commit + daily autocommit) now run through `/usr/local/sbin/etckeeper-serialized.sh` — host-wide flock + retry-with-backoff for lock holders that can't be wrapped (apt's DPkg hook invokes etckeeper directly; flock alone still lost to it during the M1 purge). Deterministically tested: a held index.lock no longer drops the commit. Codified in `scripts/inventory/etckeeper-setup.sh` (idempotent, rerun on mini). Guard: checks.d/host-hygiene.yaml `etckeeper-lock-races`.
+
 **Host:** mini · **Component:** etckeeper-commit.service · **Auditor:** host:mini
 
 
@@ -806,6 +810,8 @@ journalctl -S '2026-07-15 13:55:30' -U '2026-07-15 13:57:00' -> 'etckeeper[67605
 </details>
 
 ### M3. One-shot media maintenance (unpackerr wedge clear) FAILED on 2026-07-11 and will never retry — timer is dead
+
+> **RESOLVED (fix-39, 2026-07-19):** The maintenance objective is met — unpackerr is healthy on the NAS (queue empty, all four *arrs polling, Uptime-Kuma scraping /metrics) — so the spent units were deleted, not rescheduled: media-window-maint.service/.timer removed, deployed script removed, daemon reloaded. Sibling spent timer apply-static-ip.timer stopped (unit removal is fix-43). Guard: checks.d/host-hygiene.yaml `spent-enabled-timers` (class check: any enabled/active timer with NEXT=n/a that has fired before).
 
 **Host:** mini · **Component:** media-window-maint.service/.timer · **Auditor:** host:mini
 
@@ -2100,6 +2106,8 @@ LAN cross-check (mini -> 192.168.10.4:32400/identity) machineIdentifier matches 
 </details>
 
 ### M62. Broken daily cron entry '0 0 * * * /home/btabaska/bin' executes a directory and fails silently every night; the tv-torrent cleanup it points at never runs
+
+> **RESOLVED (fix-39, 2026-07-19):** Broken cron entry and Feb-2024 script removed (script archived with the M1 bundle). Correction to the audit: `/mnt/share/torrents` is a LOCAL dir on the mini's root LV (the NAS mount left fstab long ago; nothing wrote since Oct 2025), so no seedbox re-copy risk. Replaced with `tv-torrent-cleanup.timer` (weekly Sun 08:30 UTC, 30-day prune, journal-logged, ntfy on failure, healthchecks dead-man `tv_cleanup_mini_ping_url`); first run purged the 27G/28-entry backlog. Owned by `configs/host/mini/tv-cleanup/`. Guards: checks.d/host-hygiene.yaml `cron-targets-exist` (class), `tv-share-no-ancient-leftovers` (consumer end), `tv-cleanup-timer-armed`.
 
 **Host:** mini · **Component:** cron (btabaska crontab) · **Auditor:** gap:recyclarr (custom-format / quality-profile sync to radarr+sonarr) — deployed and monitored but never audited for sync correctness
 

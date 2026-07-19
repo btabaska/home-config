@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**184/269 done** · **59 open** · **18 deferred** · 10 retired.
+**185/269 done** · **58 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -21,7 +21,6 @@
 - [ ] **`glue-04b`** Apply chezmoi dotfiles to rig + mini (fleet rollout) _(est 20-30 min)_
 
 ### docker-host
-- [ ] **`fix-39`** mini host cleanup: dead Pterodactyl LEMP + root cron, broken crons, dead stack dirs, reclaimable docker _(est 1-3 hrs)_
 - [ ] **`fix-45`** Fleet hygiene batch: host junk, core dumps, stale caches, log/backup bloat (mini/rig/seedbox) _(est 1-3 hrs)_
 
 ### ebook-mgmt

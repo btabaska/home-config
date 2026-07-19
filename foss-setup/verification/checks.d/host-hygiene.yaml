@@ -1,0 +1,102 @@
+# fix-39 — mini host hygiene: dead-service leftovers + the silent-failure
+# surface that let them rot unnoticed.
+#   M1:  a dead Pterodactyl panel ran a full LEMP stack + per-minute root cron
+#        for 13 months after game hosting moved to AMP on rig.
+#   M2:  concurrent etckeeper runs raced on /etc/.git/index.lock and silently
+#        dropped /etc history commits (26 failures Jul 01-15).
+#   M3:  a spent one-shot timer (media-window-maint) FAILED its only run and
+#        sat enabled with NEXT=n/a — the maintenance silently never happened.
+#   M62: a cron exec'd a DIRECTORY every midnight for ~2.5 years with zero
+#        signal; the tv-torrent cleanup it named never ran (27G accumulated).
+# Regression checks pin each exact bug; class checks probe the silent-failure
+# mechanism itself (rotten cron targets, spent-but-armed timers, lock races).
+checks:
+  # ── M1 regression · pterodactyl LEMP stays retired ───────────────────────
+  # Consumer end = the host's attack/RAM surface: no LEMP packages installed,
+  # no artisan cron entry, no app dir. Archive: mini
+  # /var/backups/pterodactyl-retired-20260719 (DB dump + www tarball).
+  - id: ptero-lemp-retired
+    name: "pterodactyl LEMP stays retired: no packages, no artisan cron, no app dir (M1)"
+    host: mini
+    cmd: >-
+      echo "pkgs=$(dpkg -l 2>/dev/null | awk '$1=="ii"{print $2}' | grep -cE '^(nginx|php8\.3-fpm|mariadb-server|redis-server)$'):cron=$(sudo -n crontab -l 2>/dev/null | grep -c artisan):www=$([ -e /var/www/pterodactyl ] && echo present || echo absent)"
+    expect: '^pkgs=0:cron=0:www=absent$'
+    severity: warn
+    task_id: fix-39
+    runbook: wiki/docs/runbooks/host-hygiene.md
+    enabled: true
+
+  # ── M2 regression · etckeeper commits are not dropped on lock races ──────
+  # Post-fix signature only: the serializing wrapper exhausting its retries
+  # (fatal from etckeeper-serialized.sh, or unit exit 75/EX_TEMPFAIL). A quiet
+  # journal here means every /etc change landed in git — the consumer end of
+  # /etc version history.
+  - id: etckeeper-lock-races
+    name: "etckeeper dropped no /etc commit to an index.lock race in 24h (M2)"
+    host: mini
+    cmd: >-
+      echo "races=$(journalctl -S -24h --no-pager 2>/dev/null | grep -cE 'etckeeper-serialized[^ ]*: fatal.*index\.lock|etckeeper.*code=exited, status=75')"
+    expect: '^races=0$'
+    severity: warn
+    task_id: fix-39
+    runbook: wiki/docs/runbooks/host-hygiene.md
+    enabled: true
+
+  # ── M3 class · no spent one-shot timer is still armed ────────────────────
+  # A timer with NEXT=n/a that HAS fired before but is still enabled/active is
+  # a maintenance job that silently stopped rescheduling (media-window-maint's
+  # exact failure mode). Dormant event-armed stock timers (LAST=n/a) pass.
+  - id: spent-enabled-timers
+    name: "no spent one-shot systemd timer is still enabled/active (M3 class)"
+    host: mini
+    cmd: /opt/verification/bin/spent-timers.sh
+    expect: '^SPENT_ENABLED=NONE$'
+    severity: warn
+    task_id: fix-39
+    runbook: wiki/docs/runbooks/host-hygiene.md
+    enabled: true
+
+  # ── M62 class · every absolute-path cron target exists and is executable ─
+  # Validates user crontabs + /etc/cron.d so a cron entry whose target rotted
+  # (deleted script, renamed dir, exec-of-a-directory) is caught the day it
+  # breaks instead of failing silently to nonexistent local mail for years.
+  - id: cron-targets-exist
+    name: "every absolute-path cron command is an existing executable file (M62 class)"
+    host: mini
+    cmd: /opt/verification/bin/cron-target-sanity.sh
+    expect: '^BROKEN_CRON=NONE$'
+    severity: warn
+    task_id: fix-39
+    runbook: wiki/docs/runbooks/host-hygiene.md
+    enabled: true
+
+  # ── M62 regression · the tv-torrent share actually stays pruned ──────────
+  # Consumer end of the cleanup: no entry older than 40d may exist (the timer
+  # prunes at 30d weekly; 40d = one missed week + slack). Guards both "timer
+  # quietly dead" and "timer runs but deletes nothing" — the two ways the old
+  # cron failed.
+  - id: tv-share-no-ancient-leftovers
+    name: "tv-torrent share holds nothing older than 40 days (M62 consumer end)"
+    host: mini
+    cmd: >-
+      echo "stale=$(find /mnt/share/torrents/tv -mindepth 1 -maxdepth 1 -mtime +40 2>/dev/null | wc -l)"
+    expect: '^stale=0$'
+    severity: warn
+    task_id: fix-39
+    runbook: wiki/docs/runbooks/host-hygiene.md
+    enabled: true
+
+  # ── M62/M3 · the replacement timer is armed and scheduled ────────────────
+  # Belt to the healthchecks dead-man's braces (tv-torrent-cleanup pings
+  # healthchecks.tv_cleanup_mini_ping_url; grace 6h): if the timer is disabled
+  # or has no next elapse, this goes red locally before the dead-man fires.
+  - id: tv-cleanup-timer-armed
+    name: "tv-torrent-cleanup.timer is enabled with a next fire scheduled"
+    host: mini
+    cmd: >-
+      echo "enabled=$(systemctl is-enabled tv-torrent-cleanup.timer 2>/dev/null):next=$(systemctl list-timers tv-torrent-cleanup.timer --no-legend --plain | awk '{print ($1=="n/a")?"none":"scheduled"}')"
+    expect: '^enabled=enabled:next=scheduled$'
+    severity: warn
+    task_id: fix-39
+    runbook: wiki/docs/runbooks/host-hygiene.md
+    enabled: true
