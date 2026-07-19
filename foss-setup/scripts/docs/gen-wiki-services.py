@@ -68,7 +68,6 @@ URL_OVERRIDES = {
     "mealie": "https://recipes.tabaska.us",
     "paperless-ngx": "https://paperless.tabaska.us",
     "uptime-kuma": "https://uptime.tabaska.us",
-    "dependency-track": "https://deptrack.tabaska.us",
     "immich": "https://immich.tabaska.us (LAN: http://192.168.10.4:2283)",
     "calibre-web-automated": "http://192.168.10.4:8083 (deliberately LAN/VPN-only)",
     "libreseerr": "https://libreseerr.tabaska.us (LAN: http://192.168.10.2:8789)",
@@ -88,7 +87,7 @@ CATEGORIES = {
     "Networking & Access": ["caddy", "adguard", "adguard-nas", "unbound"],
     "Media & Acquisition": [
         "seerr", "musicseerr", "libreseerr", "media-automation", "tautulli",
-        "kometa", "maintainerr", "recyclarr", "tdarr", "pinchflat", "stash",
+        "kometa", "recyclarr", "pinchflat", "stash",
     ],
     "Photos & Reading": [
         "immich", "calibre-web-automated", "miniflux", "wallabag", "navidrome",
@@ -96,9 +95,9 @@ CATEGORIES = {
     "Documents & Life": ["paperless-ngx", "mealie"],
     "Monitoring & Ops": [
         "homepage", "uptime-kuma", "beszel", "ntfy", "diun", "healthchecks",
-        "dockge", "dependency-track", "vaultwarden",
+        "dockge", "vaultwarden",
     ],
-    "AI & Cameras": ["litellm", "frigate"],
+    "AI & Cameras": ["frigate"],
 }
 FALLBACK_CATEGORY = "Uncategorized"
 

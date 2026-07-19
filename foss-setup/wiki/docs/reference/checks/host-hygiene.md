@@ -1,6 +1,6 @@
 # Checks — host-hygiene
 
-`foss-setup/verification/checks.d/host-hygiene.yaml` — 6 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/host-hygiene.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `ptero-lemp-retired`
 
@@ -66,6 +66,17 @@ tv-torrent-cleanup.timer is enabled with a next fire scheduled
 
 ```bash
 echo "enabled=$(systemctl is-enabled tv-torrent-cleanup.timer 2>/dev/null):next=$(systemctl list-timers tv-torrent-cleanup.timer --no-legend --plain | awk '{print ($1=="n/a")?"none":"scheduled"}')"
+```
+
+## `stacks-orphan-dirs`
+
+/opt/stacks has no container-less dirs off-allowlist and no macOS junk
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-43` · **enabled:** True
+- **expects:** `^orphans=NONE junk=NONE$`
+
+```bash
+allow=" backups wiki frigate recyclarr "; bad=""; wds=$(docker ps -a --format '{{.Label "com.docker.compose.project.working_dir"}}'); for d in /opt/stacks/*/; do n=$(basename "$d"); case "$allow" in *" $n "*) continue;; esac; echo "$wds" | grep -qxF "/opt/stacks/$n" || bad="$bad $n"; done; junk=$(find /opt/stacks -maxdepth 1 \( -name '._*' -o -name '.DS_Store' \) -print 2>/dev/null | tr '\n' ' '); echo "orphans=${bad:-NONE} junk=${junk:-NONE}"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

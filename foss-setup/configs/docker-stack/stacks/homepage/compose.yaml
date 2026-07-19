@@ -3,8 +3,9 @@
 #
 # This is the single pane of glass: friendly app tiles for the family (Plex,
 # Immich, Calibre-Web, Seerr) AND the operator's observability view (Beszel,
-# Uptime Kuma, Dependency-Track + the *arr stack). It auto-discovers containers
-# via the Docker socket and pulls live status from each service's API.
+# Uptime Kuma + the *arr stack). Every tile is defined manually in
+# config/services.yaml (socket auto-discovery deliberately disabled, home-03)
+# and pulls live status from each service's API.
 #
 # Homepage listens on 3000 INSIDE the container. We publish host port 3010 to
 # avoid clashing with Forgejo (3000) and Uptime-Kuma (3001) on this box.

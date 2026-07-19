@@ -2178,12 +2178,16 @@ ls /mnt/share/torrents/tv | head -> 001-la-m-actamorphose-freedownloadvideo.net_
 
 ### L1. Nightly SBOM->Dependency-Track pipeline is dead: timer disabled since ~Jul 09 after a failed run; Dependency-Track stack itself is gone
 
+> **RESOLVED (fix-43, 2026-07-19):** sbom-nightly.service/.timer unit files removed from mini (D-T retired 2026-07-11; the weekly export-manifests git-SBOM refresh remains the only SBOM path). Coverage manifest was already clean of dtrack/sbom entries.
+
 **Host:** mini · **Component:** sbom-nightly.service/.timer + Dependency-Track · **Auditor:** host:mini
 
 
 sbom-nightly.timer and .service are both 'disabled' (timer inactive/dead, Trigger n/a), so nothing uploads SBOMs to Dependency-Track anymore. Last run Jul 09 03:43-03:50 failed twice over: syft version fetch failed via the tailnet DNS resolver ('lookup toolbox-data.anchore.io on [fd7a:115c:a1e0::53]:53: server misbehaving') and the upload curl couldn't connect ('curl failed uploading host:macmini'). /opt/stacks/dependency-track now contains only an orphan .env (compose removed Jul 11 16:39), i.e. the D-T server was retired but the unit files and orphan dir remain. If retirement was deliberate it violates only hygiene; per the 100%-coverage-manifest mandate this retire should be reflected in the coverage manifest. Weekly export-manifests (git SBOM refresh) still works, so SBOM data isn't entirely gone — only the D-T/nightly path.
 
 ### L2. Orphan stack dirs with no running container (litellm, tdarr, maintainerr, dependency-track .env-only; frigate never deployed) plus macOS junk file ._litellm
+
+> **RESOLVED (fix-43, 2026-07-19):** dead dirs litellm/tdarr/maintainerr removed from /opt/stacks (maintainerr data archived first to `/opt/stacks/backups/maintainerr-data-2026-07-19.tar.gz`); `._litellm` was actually *tracked* in docker-stacks — deleted + de-indexed; unused whisparr image removed. frigate/recyclarr/wiki/backups are the documented allowlist. Recurrence guarded by the new `stacks-orphan-dirs` check.
 
 **Host:** mini · **Component:** /opt/stacks hygiene · **Auditor:** host:mini
 
@@ -2212,6 +2216,8 @@ macOS metadata files are present inside NAS docker dirs: /volume1/docker/.DS_Sto
 Multiple ad-hoc .bak files linger next to their live counterparts: beets/config.yaml.bak-preweb, soularr/config.ini.bak-wrong-path, calibre-web-automated/docker-compose.yml.bak-netshare, readarr/scripts/readarr-copy-to-cwa-ingest.sh.bak-debug + .bak-prexargsfix, scripts/nas/immich-db-dump.sh.bak-audit-20260709, scripts/media/rclone-seedbox-mount.sh.bak-preretune. Harmless but they are dead paths that make it easy to edit/exec the wrong file and add noise to any config-diff.
 
 ### L6. Scheduled 04:22 ansible-pull run failed on stale playbook path; repointed unit succeeded at 09:55 — now healthy
+
+> **RESOLVED (fix-43, 2026-07-19):** confirmed healthy — 2026-07-19 10:02 run finished clean (`ok` deactivation, 23s CPU); every run since the repoint has converged. Unit files now guarded by the `unit-file-drift` check.
 
 **Host:** rig · **Component:** ansible-pull.service (glue-08) · **Auditor:** host:rig
 
@@ -2370,6 +2376,8 @@ Two more recurring widget failures: (1) Sunshine tile siteMonitor https://192.16
 The stash.tabaska.us block sets `header_up X-Forwarded-Port {server_port}`, but {server_port} is not a Caddyfile shorthand, so the upstream receives the literal string '{server_port}' — proven by caddy's own access log which records the outbound header verbatim. Harmless for Stash today but it is a silent misconfig; the intended placeholder is {port} (or drop the line, caddy sets sane forwarding headers itself).
 
 ### L27. Forgejo docker json-log is corrupted (NUL byte) — `docker logs --since` aborts mid-stream; also repo 'etc-macmini' is empty since 2026-07-03
+
+> **RESOLVED (fix-43, 2026-07-19):** forgejo container recreated 2026-07-19 → fresh json-log (NUL corruption gone, `docker logs --since` works) and the daemon.json rotation defaults (10m×3) now apply, so a corrupt segment can no longer persist. Empty `etc-macmini` repo deleted (operator decision — /etc is protected by etckeeper + restic/ansible DR from fix-42).
 
 **Host:** mini · **Component:** forgejo · **Auditor:** svc:infra-mini
 
@@ -2635,6 +2643,8 @@ The /volume1 root contains compressed core dumps: '@Plex Transcoder.synology_gem
 
 ### L61. wiki-drift check FAILING in today's daily run: committed generated wiki pages are stale vs fresh regeneration
 
+> **RESOLVED (fix-43, 2026-07-19):** generated pages regenerated and committed in the same commit as their source changes (this fix); the new `tracker-count-sanity` check adds an arithmetic guard on top of wiki-drift.
+
 **Host:** mini · **Component:** wiki-drift check / generated wiki pages · **Auditor:** flow:coverage-tripwire
 
 
@@ -2684,12 +2694,16 @@ Both classic REST log endpoints 404 with a valid admin token (the same token rea
 
 ### L68. Four compiled __pycache__ .pyc files are tracked in git despite __pycache__/ being ignored
 
+> **RESOLVED (fix-43, 2026-07-19):** 4 .pyc files de-indexed (`git rm --cached`) and the on-disk `__pycache__` removed; class guarded by the new `repo-tracked-ignored` check.
+
 **Host:** macbook (local repo) · **Component:** .gitignore / git index · **Auditor:** repo:junk-deadpaths
 
 
 git ls-files -i -c shows 4 .pyc files under foss-setup/scripts/docs/__pycache__/ (apply-workstream-sequencing, generate-task-overrides, migrate-to-tracks, sync-rollout-with-plan — all cpython-314) committed before __pycache__/ was added to .gitignore and never de-indexed. Compiled junk in history/index; needs git rm --cached (not done — read-only pass).
 
 ### L69. agent-fix-tasks.md is stale, superseded junk that still points at the retired index.html tracker
+
+> **RESOLVED (fix-43, 2026-07-19):** deleted from the repo root (git history retains it).
 
 **Host:** macbook (local repo) · **Component:** repo root / agent-fix-tasks.md · **Auditor:** repo:junk-deadpaths
 
@@ -2698,12 +2712,16 @@ git ls-files -i -c shows 4 .pyc files under foss-setup/scripts/docs/__pycache__/
 
 ### L70. keynote.html is an unrelated one-off ('Apple Hearth' marketing page) tracked at repo root
 
+> **RESOLVED (fix-43, 2026-07-19):** deleted from the repo root (git history retains it).
+
 **Host:** macbook (local repo) · **Component:** repo root / keynote.html · **Auditor:** repo:junk-deadpaths
 
 
 26 KB standalone HTML marketing/keynote mock ('Apple Hearth — Your digital life. Finally yours.'), last commit 2026-07-08, referenced by nothing in scripts/configs/wiki. Pure leftover creative one-off in an ops repo root.
 
 ### L71. Generated wiki roadmap index still claims it mirrors the retired docs/index.html
+
+> **RESOLVED (fix-43, 2026-07-19):** gen-roadmap-pages.py docstring + emitted page text now reference `docs/tasks.json` + `docs/progress.json`; roadmap regenerated.
 
 **Host:** macbook (local repo) · **Component:** scripts/docs/gen-roadmap-pages.py + generated wiki roadmap · **Auditor:** repo:junk-deadpaths
 
@@ -2712,12 +2730,16 @@ gen-roadmap-pages.py's docstring (line 4) and its emitted page text (line 67) st
 
 ### L72. Four dead stack dirs on mini: dependency-track, litellm, tdarr (empty) + maintainerr (orphaned data/sqlite)
 
+> **RESOLVED (fix-43, 2026-07-19):** all four dead dirs gone: dependency-track was removed by fix-32; litellm/tdarr/maintainerr removed 2026-07-19 (maintainerr data archived). Guarded by `stacks-orphan-dirs`.
+
 **Host:** mini · **Component:** /opt/stacks (dead stack dirs) · **Auditor:** repo:junk-deadpaths
 
 
 ls /opt/stacks shows 35 dirs vs 38 running containers covering ~31 stacks. Dead dirs with no container: dependency-track (empty — service retired 2026-07-11), litellm (empty — the never-deployed 'mini fallback' phantom, now stripped to an empty dir), tdarr (empty — removed from plan 2026-07-08), maintainerr (only data/ with maintainerr.sqlite + logs + overlays left; removed from plan 2026-07-08). frigate has compose staged but is documented NOT DEPLOYED (intentional); recyclarr is a weekly cron `docker compose run` (not dead); backups/wiki are non-container dirs. The 4 dead dirs are host junk. litellm-phantom is a known memory item; the empty dependency-track/tdarr dirs and orphaned maintainerr sqlite are newly logged.
 
 ### L73. Dependency-Track fully retired live, but vault creds + 3 repo code references remain
+
+> **RESOLVED (fix-43, 2026-07-19):** vault creds were removed by fix-32; the remaining repo refs purged 2026-07-19 — apply-compose-restart-policy.sh compose_up line, gen-wiki-services.py URL map + CATEGORIES (plus maintainerr/tdarr/litellm same-class entries), homepage compose comment + service-enrichment prose, audit.yml comment.
 
 **Host:** macbook (local repo) + fleet · **Component:** dependency-track remnants · **Auditor:** repo:junk-deadpaths
 
@@ -2726,12 +2748,16 @@ Live state: NO dtrack anywhere — mini /opt/stacks/dependency-track is empty, N
 
 ### L74. Homepage LiteLLM tile still describes the phantom 'mini fallback for resilience' `known-issue`
 
+> **RESOLVED (fix-43, 2026-07-19):** tile description corrected live + repo to `LLM gateway (rig runs 24/7)`; the phantom mini-fallback wording is gone.
+
 **Host:** macbook (local repo) · **Component:** homepage config (stacks/homepage/config/services.yaml) · **Auditor:** repo:junk-deadpaths
 
 
 The LiteLLM tile (services.yaml line ~177-181) says 'LLM gateway (mini fallback for resilience)' — the mini fallback was never deployed (catalog itself notes 'NEVER deployed — decision pending', and mini's litellm dir is now empty). The tile's href/siteMonitor correctly point at rig (llm.tabaska.us / 192.168.10.12:4000), so only the description text lies. Matches the known 'LiteLLM on mini is a phantom' memory item.
 
 ### L75. service-catalog.yaml has no llama-swap entry and stale ollama/maintainerr notes after the 2026-07-15 ai-01 ship
+
+> **RESOLVED (fix-43, 2026-07-19):** llama-swap catalog entry added (rig :9292, ai-01); ollama notes now record the 2026-07-15 demotion to HA/Obsidian compat shim; maintainerr/tdarr `Compose kept for reference` claims corrected (no compose retained; git history has it).
 
 **Host:** macbook (local repo) · **Component:** service-catalog.yaml (docs drift post ai-01) · **Auditor:** repo:junk-deadpaths
 
@@ -2747,12 +2773,16 @@ scripts/uptime-kuma/seed-monitors.sh:13 ('Status-code choices were probed live 2
 
 ### L77. Published wiki roadmap shows a negative open count (ops track: -2) and todo.md summary arithmetic is off (165+43+18+10=236≠234)
 
+> **RESOLVED (fix-43, 2026-07-19):** generators fixed — retired now wins over done, so dual-status tasks count once: todo.md reads 184+54+18+13=269 and the ops row is 20/0/2/4 (no negative cell). Guarded by the new `tracker-count-sanity` check.
+
 **Host:** macbook (local repo) · **Component:** tracker/wiki: generated roadmap + todo.md · **Auditor:** repo:tracker-wiki
 
 
 Root cause: sbom-01 and sbom-04 are members of BOTH progress.json done and retired (intentional per _meta.note: 'left in done as completed setup work, feature retired'). gen-roadmap-pages.py computes open = len - done - retired - deferred per track, double-subtracting the 2 dual-status tasks, so wiki/docs/roadmap/index.md line 23 renders '| ops | 24 | 20 | -2 | 2 | 4 |' — a user-visible negative Open cell on wiki.tabaska.us. gen-todo.py similarly double-counts them in the summary line (165 done + 43 open + 18 deferred + 10 retired = 236 for 234 tasks). Generators should treat status as mutually exclusive (e.g. retired-and-done counts once).
 
 ### L78. media-03/media-04 are 'REMOVED FROM PLAN — won't-do' but sit in done instead of retired; seed-12 was 'declined' in the meta note yet remains open
+
+> **RESOLVED (fix-43, 2026-07-19):** media-03/media-04 reclassified done→retired; seed-12 retired (operator confirmed 2026-07-19 the Bitmagnet decline stands).
 
 **Host:** macbook (local repo) · **Component:** tracker: status classification · **Auditor:** repo:tracker-wiki
 
@@ -2761,12 +2791,16 @@ media-03 (Maintainerr) and media-04 (Tdarr) steps open with 'REMOVED FROM PLAN 2
 
 ### L79. Generated roadmap index still says it mirrors 'docs/index.html' — retired 2026-07-14
 
+> **RESOLVED (fix-43, 2026-07-19):** same fix as L71 — generator text corrected, page regenerated.
+
 **Host:** macbook (local repo) · **Component:** wiki: gen-roadmap-pages.py output · **Auditor:** repo:tracker-wiki
 
 
 wiki/docs/roadmap/index.md line 3 (baked into gen-roadmap-pages.py's idx template) reads 'mirrored from `docs/index.html` + `docs/progress.json`'. index.html was retired 2026-07-14 (per memory + README); the script's own docstring was updated but the emitted page text was not, so the live wiki points readers at a nonexistent tracker. One-line fix in the generator + regen.
 
 ### L80. tracker-meta.json has no programmatic consumer and is already drifting (trackMeta missing the 'ai' track)
+
+> **RESOLVED (fix-43, 2026-07-19):** tracker-meta.json moved to `docs/archive/` and the wiki tracker page now marks it ARCHIVAL (unmaintained, predates the `ai` track; no code consumers).
 
 **Host:** macbook (local repo) · **Component:** tracker: docs/tracker-meta.json · **Auditor:** repo:tracker-wiki
 
@@ -2775,6 +2809,8 @@ tracker-meta.json (tierMeta/trackMeta/runMeta/aiHandoffMap, extracted from the r
 
 ### L81. foss-analogue-progress-2026-07-05.json is a byte-identical duplicate of progress-backup-2026-07-05.json; two older superseded backups also retained
 
+> **RESOLVED (fix-43, 2026-07-19):** all four superseded progress-backup/export JSONs deleted (git history retains them).
+
 **Host:** macbook (local repo) · **Component:** tracker: docs/ junk files · **Auditor:** repo:tracker-wiki
 
 
@@ -2782,12 +2818,16 @@ cmp confirms the two 07-05 files are identical (4055 bytes each, exported one mi
 
 ### L82. Leftover detached-HEAD worktree .claude/worktrees/libreseerr-diagnosis-34241d still registered, holding a pre-retirement repo snapshot (incl. docs/index.html)
 
+> **RESOLVED (fix-43, 2026-07-19):** worktree removed (`git worktree remove --force`); `git worktree list` shows only the main checkout.
+
 **Host:** macbook (local repo) · **Component:** git: stale worktree · **Auditor:** repo:tracker-wiki
 
 
 git worktree list shows a second worktree at .claude/worktrees/libreseerr-diagnosis-34241d pinned to c1f98d3 (detached), a leftover from a past Libreseerr diagnosis session. It contains the retired docs/index.html and old handoff-rollout-state.md, which pollutes repo-wide greps (it matched several searches in this audit). Excluded from git status via .git/info/exclude, so it is invisible junk. 'git worktree remove' when convenient (not done — read-only pass).
 
 ### L83. Two iCloud conflict-copy dupes live in wiki/docs and will be rsynced to the published wiki as orphan pages
+
+> **RESOLVED (fix-43, 2026-07-19):** both `* 2.md` iCloud dupes were already gone from disk before this session — nothing left to rsync; the durable exclude-from-iCloud fix remains with the operator.
 
 **Host:** macbook (local repo) · **Component:** wiki: docs tree hygiene · **Auditor:** repo:tracker-wiki
 
@@ -2803,12 +2843,16 @@ btabaska crontab line '0 0 * * * /home/btabaska/bin' points at a directory (drwx
 
 ### L85. Four orphan stack dirs with leftover .env but no compose (litellm, dependency-track, tdarr, maintainerr) + unused whisparr image + an elapsed one-shot timer still enabled
 
+> **RESOLVED (fix-43, 2026-07-19):** dirs/image/units covered above (L2/L72); media-window-maint.timer was already removed by earlier work; apply-static-ip units are repo-owned (`configs/host/mini/static-ip/`) and deliberate — kept, not junk.
+
 **Host:** mini · **Component:** /opt/stacks dead paths + misc junk · **Auditor:** repo:live-drift
 
 
 Dead live paths from retired/never-deployed services, all with .env files dated Jun 27: /opt/stacks/litellm (the documented 'LiteLLM on mini' phantom — never deployed, real LiteLLM is rig-only), /opt/stacks/dependency-track (dtrack retired 2026-07-11 per group_vars comment; the secrets vault still advertises dtrack url https://deptrack.tabaska.us with no live backend on mini — no caddy route found), /opt/stacks/tdarr (its Caddyfile route is commented out), /opt/stacks/maintainerr (.env + data/, no compose, no container). None of these have repo counterparts, and none have containers — pure junk that also feeds noise risk into the recursive manifest grep. Additional junk: ghcr.io/hotio/whisparr:latest image is pulled on mini but whisparr runs on the NAS — unused image; media-window-maint.timer (OnCalendar=2026-07-11 one-shot, Persistent=false) already fired and can never fire again but is still 'enabled'. Repo-side dead configs: none found — every repo stack dir has a live counterpart (adguard-nas maps to NAS, identical; configs/docker-stack/alternatives/{dockhand,pihole} are an explicitly-shelved alternatives dir).
 
 ### L86. Installed ansible-pull.timer on both mini and rig is an older comment revision than the repo copy (schedule itself identical)
+
+> **RESOLVED (fix-43, 2026-07-19):** mini's ansible-pull.timer synced from the repo 2026-07-19 (rig already matched); all four deployed unit files now byte-match `configs/ansible/`, and the new `unit-file-drift` check guards both hosts.
 
 **Host:** mini+rig · **Component:** ansible-pull.timer unit files · **Auditor:** repo:live-drift
 

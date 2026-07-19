@@ -7,7 +7,9 @@ The tracker is now **plain data + generated views** (the self-contained
   track, run, mode, steps, deps, verify). Extracted from the old `taskData`.
 - **`foss-setup/docs/progress.json`** — **status** maps (`done` / `deferred` /
   `retired`) + `_meta` counts.
-- **`foss-setup/docs/tracker-meta.json`** — run/track/tier groupings + ai-handoff map.
+- **`foss-setup/docs/archive/tracker-meta.json`** — ARCHIVAL (fix-43, 2026-07-19): run/track/tier
+  groupings + ai-handoff map extracted from the retired `index.html`. No script reads it and it
+  is not maintained (it predates the `ai` track); kept only as history.
 
 Two generated views from that data: **`todo.md`** (repo root — remaining work)
 and the **[wiki Roadmap](../roadmap/index.md)** (full browsable tracker). To

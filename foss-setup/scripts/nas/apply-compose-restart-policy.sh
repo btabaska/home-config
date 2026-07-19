@@ -40,7 +40,6 @@ main() {
   compose_up /volume1/docker/media-automation
   compose_up /volume1/docker/stash
   compose_up /volume1/docker/calibre-web-automated
-  compose_up /volume1/docker/dependency-track
   compose_up /volume1/docker/immich
 
   log "Ensuring restart=always on all running containers..."

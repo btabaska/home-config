@@ -1,6 +1,6 @@
 # Checks — git-hygiene
 
-`foss-setup/verification/checks.d/git-hygiene.yaml` — 6 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/git-hygiene.yaml` — 9 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `git-stacks-clean`
 
@@ -66,6 +66,39 @@ compose-images.txt image names == live top-level compose image names
 
 ```bash
 D=/var/lib/verification/wiki-drift-repo; { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } && git -C "$D" fetch -q origin main && git -C "$D" reset --hard -q FETCH_HEAD && sudo bash "$D/foss-setup/scripts/verification/stack-mirror-check.sh" manifest
+```
+
+## `repo-tracked-ignored`
+
+no tracked-but-ignored files in the homelab repo (L68 class)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-43` · **enabled:** True
+- **expects:** `^0$`
+
+```bash
+D=/var/lib/verification/wiki-drift-repo; { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } && git -C "$D" fetch -q origin main && git -C "$D" reset --hard -q FETCH_HEAD && git -C "$D" ls-files -i -c --exclude-standard | wc -l
+```
+
+## `tracker-count-sanity`
+
+tracker views arithmetically consistent with tasks/progress JSONs
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-43` · **enabled:** True
+- **expects:** `TRACKER-COUNTS-OK`
+
+```bash
+D=/var/lib/verification/wiki-drift-repo; { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } && git -C "$D" fetch -q origin main && git -C "$D" reset --hard -q FETCH_HEAD && python3 "$D/foss-setup/scripts/verification/tracker-count-check.py" "$D"
+```
+
+## `unit-file-drift`
+
+deployed ansible-pull units byte-match the repo on mini + rig (L86 class)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-43` · **enabled:** True
+- **expects:** `UNIT-DRIFT-OK`
+
+```bash
+D=/var/lib/verification/wiki-drift-repo; { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } && git -C "$D" fetch -q origin main && git -C "$D" reset --hard -q FETCH_HEAD && bash "$D/foss-setup/scripts/verification/unit-drift-check.sh" "$D"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

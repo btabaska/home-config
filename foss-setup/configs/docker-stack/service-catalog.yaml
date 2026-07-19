@@ -125,7 +125,7 @@ services:
     url: null
     on_demand: false
     status: removed
-    notes: REMOVED FROM PLAN 2026-07-08 — no auto-deletion wanted. Compose kept for reference. (Caddy vhost lingered until 2026-07-09; now removed.)
+    notes: REMOVED FROM PLAN 2026-07-08 — no auto-deletion wanted. (Caddy vhost lingered until 2026-07-09; now removed.) No compose retained (git history has it); stack dir removed from mini 2026-07-19, data archived to /opt/stacks/backups/maintainerr-data-2026-07-19.tar.gz (fix-43).
   - name: recyclarr
     category: Media Automation
     host: mini
@@ -276,13 +276,20 @@ services:
     url: https://marinara.tabaska.us
     on_demand: false
     notes: Creative/RP chat + game engine (pasta-devs/marinara-engine 1.5.0 image, ALPHA/AGPL). Rides LiteLLM via an in-app connection (same 3-model virtual key). Auth-gated at the mini Caddy (basic_auth, user `marinara`) because its own IP-based auth is void behind docker userland-proxy. Added 2026-07-18. Rig runs 24/7.
+  - name: llama-swap
+    category: AI & Gaming
+    host: rig
+    port: 9292
+    url: https://llamaswap.tabaska.us
+    on_demand: false
+    notes: llama.cpp model-swapping server (ai-01, 2026-07-15) — the rig's primary local-model backend (swaps GGUF models on demand); LiteLLM routes local traffic here. Rig runs 24/7.
   - name: ollama
     category: AI & Gaming
     host: rig
     port: 11434
     url: https://ollama.tabaska.us
     on_demand: false
-    notes: Native Ollama API (verified up 2026-07-07). Rig runs 24/7.
+    notes: Native Ollama API — demoted 2026-07-15 (ai-01) to a compat shim for Home Assistant + Obsidian; primary local-model serving moved to llama-swap (:9292). Rig runs 24/7.
   - name: mcpo
     category: AI & Gaming
     host: rig
@@ -445,10 +452,11 @@ services:
 
 # Dead / not running (vhosts commented out in the Caddyfile):
 #   tdarr   — REMOVED FROM PLAN 2026-07-08: re-encoding conflicts with TRaSH quality
-#             automation and storage isn't scarce. Compose kept for reference.
+#             automation and storage isn't scarce. No compose retained (git
+#             history has it); stack dir removed from mini 2026-07-19 (fix-43).
 #   frigate — NOT DEPLOYED (stack dir staged, no container has ever run)
 #   maintainerr — REMOVED FROM PLAN 2026-07-08 (vhost retired 2026-07-09;
-#             stack dir deleted 2026-07-11)
+#             stack dir removed from mini 2026-07-19, fix-43)
 #   dependency-track — RETIRED 2026-07-11 (SBOM feature abandoned; the 3 NAS
 #             containers, Kuma monitor, caddy vhost, homepage tile, coverage
 #             manifest entries + stack dirs all removed)

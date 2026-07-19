@@ -100,3 +100,29 @@ checks:
     task_id: fix-39
     runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
+
+  # ── fix-43 regression+class · no orphan dirs or macOS junk in /opt/stacks ─
+  # Every top-level /opt/stacks dir must map to a compose project some container
+  # (running or stopped) was created from, except the documented allowlist:
+  # backups (non-container), wiki (caddy-served build artifact), frigate
+  # (staged, deliberately NOT deployed), recyclarr (one-shot `compose run`
+  # config dir). Catches the L2/L72/L85 rot: retired services leaving .env-only
+  # dirs behind (litellm/tdarr/maintainerr/dependency-track) and Mac-side
+  # AppleDouble junk (._litellm).
+  - id: stacks-orphan-dirs
+    name: "/opt/stacks has no container-less dirs off-allowlist and no macOS junk"
+    host: mini
+    cmd: >-
+      allow=" backups wiki frigate recyclarr "; bad="";
+      wds=$(docker ps -a --format '{{.Label "com.docker.compose.project.working_dir"}}');
+      for d in /opt/stacks/*/; do n=$(basename "$d");
+      case "$allow" in *" $n "*) continue;; esac;
+      echo "$wds" | grep -qxF "/opt/stacks/$n" || bad="$bad $n";
+      done;
+      junk=$(find /opt/stacks -maxdepth 1 \( -name '._*' -o -name '.DS_Store' \) -print 2>/dev/null | tr '\n' ' ');
+      echo "orphans=${bad:-NONE} junk=${junk:-NONE}"
+    expect: '^orphans=NONE junk=NONE$'
+    severity: warn
+    task_id: fix-43
+    runbook: wiki/docs/runbooks/host-hygiene.md
+    enabled: true

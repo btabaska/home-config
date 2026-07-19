@@ -98,3 +98,9 @@ rclone re-copy.
 The healthchecks dead-man (`tv-torrent-cleanup (mini)`) alerts independently if
 the weekly ping stops — the local checks catch a disarmed timer *before* the
 grace window does.
+
+## fix-43 · /opt/stacks orphan dirs & macOS junk
+
+| check | what failing means | fix |
+|---|---|---|
+| `stacks-orphan-dirs` | A top-level `/opt/stacks` dir maps to no container in any state and isn't on the allowlist (`backups`, `wiki`, `frigate`, `recyclarr`), or `._*`/`.DS_Store` junk landed from a Mac-side copy | Retiring a service must remove its stack dir in the same session — archive data first (precedent: `maintainerr` → `/opt/stacks/backups/maintainerr-data-2026-07-19.tar.gz`). Only extend the allowlist for deliberate non-container dirs, with a comment saying why |

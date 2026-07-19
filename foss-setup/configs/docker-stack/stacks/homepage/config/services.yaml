@@ -172,7 +172,7 @@
     - LiteLLM:
         icon: si-litellm
         href: https://llm.tabaska.us
-        description: LLM gateway (mini fallback for resilience)
+        description: LLM gateway (rig runs 24/7)
         siteMonitor: http://192.168.10.12:4000
     - Lumiverse:
         icon: mdi-drama-masks

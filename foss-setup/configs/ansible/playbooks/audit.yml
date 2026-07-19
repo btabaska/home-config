@@ -8,8 +8,8 @@
 #   ansible-playbook -i inventory.ini playbooks/audit.yml
 #   # then: diff audit/macmini.txt ../../hosts/macmini/pkglist.apt-manual.txt
 #
-# Pairs with the continuous SBOM/CVE view in Dependency-Track (sbom-01/02);
-# this is the quick "what differs from what I committed" spot check.
+# The continuous SBOM/CVE view (Dependency-Track, sbom-01/02) was retired
+# 2026-07-11; this is the quick "what differs from what I committed" spot check.
 
 - name: Audit Debian/Ubuntu hosts
   hosts: debian

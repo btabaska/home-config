@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**188/269 done** · **55 open** · **18 deferred** · 10 retired.
+**185/269 done** · **53 open** · **18 deferred** · 13 retired.
 
 ---
 
@@ -37,7 +37,6 @@
 - [ ] **`media-07`** MusicSeerr can still create unmonitored-artist requests (upstream monitor_artist=0 default) — tripwire-covered, close the generator _(est 30-45 min)_
 - [ ] **`media-08`** CWA duplicate ingest on Readarr re-import — connect script has no dedupe, add a books-dup tripwire _(est 30-60 min)_
 - [ ] **`media-09`** fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs _(est 1-2 hrs)_
-- [ ] **`seed-12`** Deploy Bitmagnet self-hosted DHT crawler on NAS (rate-limit-proof indexer hedge) _(est ~1 hr + runbook)_
 
 ### network
 - [ ] **`net-15`** Edge/verification doc-truth trivia: stale seedbox-SSH claim in verification README; Plex ManualPortMappingMode mismatch _(est 20 min)_
@@ -84,7 +83,6 @@
 - [ ] **`ha-32`** HA ops glue: SSH add-on, git-backed /config, nightly backups verify, checks.d/ha.yaml, Homepage _(est 1 h)_
 
 ### wiki
-- [ ] **`fix-43`** Repo junk & dead-path cleanup (tracked pycache, stale root files, worktree, retired-service remnants) _(est 1-3 hrs)_
 - [ ] **`fix-44`** Tracker + wiki drift cleanup (stale generated pages, orphan ids, arithmetic, recurring wiki-drift red) _(est 1-3 hrs)_
 
 ---

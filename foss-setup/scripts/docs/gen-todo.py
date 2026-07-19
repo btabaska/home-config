@@ -24,7 +24,8 @@ by_track = {}
 for t in tasks:
     by_track.setdefault(t.get("track", "uncategorized"), []).append(t)
 
-n_done = sum(1 for t in tasks if t["id"] in done)
+# retired wins over done: dual-status tasks (e.g. sbom-01/04) count once, as retired
+n_done = sum(1 for t in tasks if t["id"] in done and t["id"] not in retired)
 n_ret = sum(1 for t in tasks if t["id"] in retired)
 open_tasks, def_tasks = [], []
 for t in tasks:

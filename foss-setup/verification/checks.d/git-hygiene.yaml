@@ -102,3 +102,61 @@ checks:
     task_id: fix-41
     runbook: wiki/docs/runbooks/git-hygiene.md
     enabled: true
+
+  # fix-43 (class of L68): tracked-but-ignored files hide from `git status` yet
+  # ship in every clone — 4 compiled __pycache__ .pyc files sat in the index for
+  # weeks because they were committed before the ignore rule landed. Property of
+  # index + .gitignore, so the fetched cache clone is authoritative.
+  - id: repo-tracked-ignored
+    name: "no tracked-but-ignored files in the homelab repo (L68 class)"
+    host: mini
+    cmd: >-
+      D=/var/lib/verification/wiki-drift-repo;
+      { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } &&
+      git -C "$D" fetch -q origin main &&
+      git -C "$D" reset --hard -q FETCH_HEAD &&
+      git -C "$D" ls-files -i -c --exclude-standard | wc -l
+    expect: '^0$'
+    severity: warn
+    task_id: fix-43
+    runbook: wiki/docs/runbooks/git-hygiene.md
+    enabled: true
+
+  # fix-43 (regression for L77/L78): the generated tracker views must stay
+  # arithmetically consistent with tasks.json + progress.json — dual-status
+  # tasks (done AND retired, e.g. sbom-01/04) count exactly once (retired wins),
+  # todo.md's summary line adds up and matches a fresh recount, and the wiki
+  # roadmap index has no negative Open cell (the exact L77 symptom).
+  - id: tracker-count-sanity
+    name: "tracker views arithmetically consistent with tasks/progress JSONs"
+    host: mini
+    cmd: >-
+      D=/var/lib/verification/wiki-drift-repo;
+      { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } &&
+      git -C "$D" fetch -q origin main &&
+      git -C "$D" reset --hard -q FETCH_HEAD &&
+      python3 "$D/foss-setup/scripts/verification/tracker-count-check.py" "$D"
+    expect: TRACKER-COUNTS-OK
+    severity: warn
+    task_id: fix-43
+    runbook: wiki/docs/runbooks/git-hygiene.md
+    enabled: true
+
+  # fix-43 (class of L86): hand-copied systemd unit files (ansible-pull
+  # service+timer on mini AND rig) must stay byte-identical to the repo copy —
+  # nothing in site.yml converges them, so drift is silent until a run misses
+  # (the 2026-07-15 stale-playbook-path failure, L6). Unreachable rig = fail.
+  - id: unit-file-drift
+    name: "deployed ansible-pull units byte-match the repo on mini + rig (L86 class)"
+    host: mini
+    cmd: >-
+      D=/var/lib/verification/wiki-drift-repo;
+      { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } &&
+      git -C "$D" fetch -q origin main &&
+      git -C "$D" reset --hard -q FETCH_HEAD &&
+      bash "$D/foss-setup/scripts/verification/unit-drift-check.sh" "$D"
+    expect: UNIT-DRIFT-OK
+    severity: warn
+    task_id: fix-43
+    runbook: wiki/docs/runbooks/git-hygiene.md
+    enabled: true

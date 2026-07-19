@@ -25,10 +25,10 @@
 | `glue-06` | Push ALL configs to Git + run the rebuild drill (capstone) | ⏸️ deferred | 1-2 hr |
 | `glue-07` | Fleet maintenance with Ansible (run one command across every box) | ✅ done | 1-1.5 hr |
 | `glue-08` | Self-converging fleet with ansible-pull + roles (the set-and-forget layer) | ✅ done | 2-3 hr |
-| `sbom-01` | Deploy OWASP Dependency-Track v5 (the SBOM / vulnerability dashboard) | ✅ done | 45-60 min |
+| `sbom-01` | Deploy OWASP Dependency-Track v5 (the SBOM / vulnerability dashboard) | 🗑️ retired | 45-60 min |
 | `sbom-02` | Nightly SBOMs with Syft + Grype, uploaded to Dependency-Track | 🗑️ retired | 45-60 min/host |
 | `sbom-03` | Track /etc in Git with etckeeper (auto-commit on every package op) | ✅ done | 30-45 min/host |
-| `sbom-04` | Export package manifests, cron jobs & timers to the control repo | ✅ done | 30 min/host |
+| `sbom-04` | Export package manifests, cron jobs & timers to the control repo | 🗑️ retired | 30 min/host |
 | `sbom-05` | Write per-host restore runbooks and run a whole-host rebuild drill | ⏸️ deferred | 2-3 hr |
 
 [← Roadmap overview](index.md)
