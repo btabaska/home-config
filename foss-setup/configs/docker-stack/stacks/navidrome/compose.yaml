@@ -15,6 +15,11 @@ services:
     environment:
       ND_BACKUP_SCHEDULE: "${ND_BACKUP_SCHEDULE:-}"
       ND_BACKUP_COUNT: "${ND_BACKUP_COUNT:-0}"
+      # fix-37 (M15): schedule+count alone silently no-op — Navidrome logs
+      # "Periodic backup is DISABLED" unless a backup path is ALSO set. Fixed to
+      # the ./backup mount below; the navidrome-backup-fresh check probes the
+      # consumer end (a recent backup file actually on disk).
+      ND_BACKUP_PATH: /backup
       ND_ENABLEINSIGHTSCOLLECTOR: "${ND_ENABLEINSIGHTSCOLLECTOR:-true}"
       ND_SCANNER_SCHEDULE: "@every 1h"   # 0.62 new-scanner key; ND_SCANSCHEDULE was ignored -> periodic scan disabled
       ND_SCANNER_WATCHERWAIT: "0"           # fs watcher unreliable/EBADF over CIFS; rely on periodic full scan
@@ -33,6 +38,7 @@ services:
       TZ: ${TZ:-America/New_York}
     volumes:
       - ./data:/data
+      - ./backup:/backup   # fix-37 (M15): nightly sqlite backups land here (restic picks up /opt/stacks)
       - ${MUSIC_FOLDER:?set MUSIC_FOLDER to your music library path}:/music:ro
     # fix-28 follow-through: image shipped no HEALTHCHECK, so Docker only knew
     # "running" not "healthy". /ping is Navidrome's readiness endpoint (200 ".").

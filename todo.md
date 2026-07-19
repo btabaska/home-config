@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**182/269 done** · **61 open** · **18 deferred** · 10 retired.
+**183/269 done** · **60 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -42,9 +42,6 @@
 - [ ] **`media-08`** CWA duplicate ingest on Readarr re-import — connect script has no dedupe, add a books-dup tripwire _(est 30-60 min)_
 - [ ] **`media-09`** fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs _(est 1-2 hrs)_
 - [ ] **`seed-12`** Deploy Bitmagnet self-hosted DHT crawler on NAS (rate-limit-proof indexer hedge) _(est ~1 hr + runbook)_
-
-### media-polish
-- [ ] **`fix-37`** Media-aux service config fixes (navidrome backup, kometa, pinchflat/bgutil, RomM empty) _(est 1-3 hrs)_
 
 ### nas-foundation
 - [ ] **`fix-40`** NAS host hygiene: timezone drift, soularr parked import, core dumps, junk files, single-disk note _(est 1-3 hrs)_

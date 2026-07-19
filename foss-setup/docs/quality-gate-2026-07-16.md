@@ -1058,6 +1058,8 @@ curl http://172.25.0.26:4416/ping -> {"server_uptime":503915.09,"version":"1.3.1
 
 </details>
 
+> **RESOLVED (fix-37, 2026-07-18):** bgutil plugin zip (pinned 1.3.1 = server version) baked into `stacks/pinchflat/Dockerfile` + `youtubepot-bgutilhttp:base_url=http://bgutil-pot:4416` added to `yt-dlp.conf`; rebuilt live. Verified end-to-end: pinchflat's yt-dlp lists `bgutil:http-1.3.1 (external)` and the server generated its first POT since 07-08 on a live fetch. The 7 stranded items are **accepted as cookie-gated** — with a valid player POT attached (pot_trace), YouTube still returns LOGIN_REQUIRED for them; only sign-in cookies would recover them (deliberate non-goal, account-flag risk). Guards: `pinchflat-pot-provider` (plugin+conf+server e2e) and `pinchflat-stuck-media` (any NEW bot-check-stranded item, the 7 excluded) in `checks.d/media-aux.yaml`. Runbook `wiki/docs/runbooks/media-aux.md`.
+
 ### M15. Nightly DB backup silently disabled: ND_BACKUP_SCHEDULE set but no backup path configured
 
 **Host:** mini · **Component:** navidrome · **Auditor:** svc:media-aux
@@ -1075,6 +1077,8 @@ docker logs navidrome -> time=2026-07-13T19:17:19Z level=info msg="Periodic back
 ```
 
 </details>
+
+> **RESOLVED (fix-37, 2026-07-18):** `ND_BACKUP_PATH: /backup` + `./backup:/backup` mount added to `stacks/navidrome/compose.yaml` (live + repo, no drift). Startup log now `Scheduling periodic backup` (was `Periodic backup is DISABLED`); first backup forced via `navidrome backup create` → 16MB `navidrome_backup_2026.07.19_01.59.26.db` on disk; restic covers it via `/opt/stacks`. Guards: `navidrome-backup-fresh` (crit — a <26h >1MB backup file must exist; the consumer end) and `navidrome-backup-armed` (class — zero "backup is DISABLED" log lines, catches the silent-disarm pattern at any future recreate). Runbook `wiki/docs/runbooks/media-aux.md`.
 
 ### M16. Kometa daily run completes but MDBList list fetches fail 401 every run — 2 playlist builders broken
 
@@ -1095,6 +1099,8 @@ docker inspect kometa -> KOMETA_TIME=05:00 KOMETA_RUN=False
 ```
 
 </details>
+
+> **RESOLVED (fix-37, 2026-07-18):** MDBList key minted by operator (vault `mdblist.api_key`, validated 200 against `/user`) and wired into `config.yml`; the whole config was also de-templated — ~12 empty integration blocks deleted (each a Config Error every run), dead `Anime` (no such Plex library) + `Music` (missing Music.yml) library blocks removed, `config/assets` created. Verified with a one-shot run: 48s, ZERO errors, the MDBList-backed timeline playlists (MCU/Star Wars/Star Trek/DC/X-Men/Pokémon/Arrowverse) actually built. Guard: `kometa-run-clean` (`checks.d/media-aux.yaml`) parses the last run and fails on any buried config/builder error — kometa exits 0 regardless, so exit-code monitoring is worthless. Gotcha for operators: one-shot runs need `docker exec -e KOMETA_RUN=True kometa python3 kometa.py` — Kometa gives env precedence over CLI, so `compose run … --run` silently waits for the schedule. Repo mirror: `stacks/kometa/config/config.yml.example`. Runbook `wiki/docs/runbooks/media-aux.md`.
 
 ### M17. Homepage Maintainerr tile points at a nonexistent container and a nonexistent vhost (202 widget errors in 96h)
 
@@ -1134,6 +1140,8 @@ $ docker logs romm: '[scan][2026-07-14 21:19:23] No roms found, verify that the 
 ```
 
 </details>
+
+> **ACCEPTED + GUARDED (fix-37, 2026-07-18):** owner decision — RomM stays as a prepared-but-empty shelf (0 files on the share, 0 DB rows is the CONSISTENT state; ROMs will be added manually later). The green-but-broken class is now guarded by `romm-content-ingest` (`checks.d/media-aux.yaml`): fails when share files exist but the DB stays at 0 (scan broken/never run), when the DB claims ROMs the share lost (vanished-library), or when the CIFS mount is down (no vacuous pass). Documented in the service page (enrichment) + runbook `wiki/docs/runbooks/media-aux.md`.
 
 ### M19. Verification LLM auto-triage broken since ai-01 Ollama demotion: /etc/verification/env pins retired endpoint+model, every triage 404s
 

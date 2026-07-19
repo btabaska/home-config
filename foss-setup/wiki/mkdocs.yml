@@ -135,6 +135,7 @@ nav:
       - Game backups & tunnels (AMP freeze / playit UDP): runbooks/game-backups.md
       - Photos (Immich empty-library / backup freshness): runbooks/photos.md
       - HA health (updates / availability / Apple pairing): runbooks/ha-health.md
+      - Media-aux (navidrome backup / kometa / POT / romm): runbooks/media-aux.md
   - Operations:
       - Overview: operations/index.md
       - Ansible & convergence: operations/ansible.md

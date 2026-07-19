@@ -1,0 +1,133 @@
+# fix-37 — media-aux services: the "configured but silently dead" cluster.
+# Quality-gate 2026-07-16 findings M14/M15/M16/M18: every one was a service that
+# looked green (container Up, daily run "completed") while its actual FUNCTION
+# was dead — a backup env that silently no-ops, a POT provider no client talks
+# to, playlist builders 401ing inside a run that exits 0, a library with zero
+# content behind a working UI. Every check here probes the consumer end.
+# Daily via verify-cycle (domain media-aux). Runbook has per-check recovery.
+checks:
+  # ── M15 · navidrome backup ───────────────────────────────────────────────
+  # THE consumer end: a real, recent, plausibly-sized backup file on disk.
+  # Catches schedule broken, path unwritable, env regression, container dead —
+  # anything that stops backups landing. 26h window covers the nightly 02:00
+  # run from any check time; +1M floor rejects created-but-empty files
+  # (DB was 16MB on 2026-07-18).
+  - id: navidrome-backup-fresh
+    name: "navidrome: a backup file <26h old and >1MB exists in ./backup (M15)"
+    host: mini
+    cmd: >-
+      echo "fresh_backups=$(find /opt/stacks/navidrome/backup -name
+      'navidrome_backup_*.db' -mmin -1560 -size +1M 2>/dev/null | wc -l)"
+    expect: '^fresh_backups=[1-9][0-9]*$'
+    severity: crit
+    task_id: fix-37
+    runbook: wiki/docs/runbooks/media-aux.md
+    enabled: true
+
+  # Class guard for the ROOT CAUSE pattern: Navidrome accepts a backup schedule
+  # without a path and logs one INFO line ("Periodic backup is DISABLED") — a
+  # protection that silently disarms itself. Zero such lines since container
+  # start = the schedule is actually armed. Catches any future env/compose
+  # regression at the next recreate, before the freshness check goes stale.
+  - id: navidrome-backup-armed
+    name: "navidrome: no 'Periodic backup is DISABLED' since container start (M15 class)"
+    host: mini
+    cmd: >-
+      echo "disabled_msgs=$(docker logs navidrome 2>&1 | grep -ci 'backup is DISABLED')"
+    expect: '^disabled_msgs=0$'
+    severity: warn
+    task_id: fix-37
+    runbook: wiki/docs/runbooks/media-aux.md
+    enabled: true
+
+  # ── M16 · kometa run integrity ───────────────────────────────────────────
+  # Kometa's daily run exits 0 and logs "Finished" even when builders inside it
+  # failed (MDBList 401 x2 every run for weeks, plus blank-key Config Errors).
+  # Scope to the LAST run in meta.log (rotated per run; file can hold several)
+  # and count error lines. Class-level: catches ANY builder/config/list-fetch
+  # error a future run buries, not just mdblist. Two deliberate exclusions:
+  # [DEBUG] lines (kometa echoes the whole config file at DEBUG, so a config
+  # COMMENT mentioning the word Error would count), and "Convert Warning"
+  # (logged at [ERROR] level but it's an upstream metadata gap — e.g. TMDb
+  # 72895 has no TVDb id — present in perfectly healthy runs and ignored by
+  # kometa's own Error Summary).
+  - id: kometa-run-clean
+    name: "kometa: latest run logged 0 config/builder errors (M16 class)"
+    host: mini
+    cmd: >-
+      awk '/Starting .* Run/{n=NR} {l[NR]=$0} END{c=0; if(!n)n=1;
+      for(i=n;i<=NR;i++) if(l[i] ~ /Config Error|Error: |\[ERROR\]|\[CRITICAL\]/
+      && l[i] !~ /\[DEBUG\]/ && l[i] !~ /Convert Warning/) c++;
+      print "kometa_run_errors=" c}' /opt/stacks/kometa/config/logs/meta.log
+    expect: '^kometa_run_errors=0$'
+    severity: warn
+    task_id: fix-37
+    runbook: wiki/docs/runbooks/media-aux.md
+    enabled: true
+
+  # ── M14 · pinchflat PO-token pipeline ────────────────────────────────────
+  # End-to-end: pinchflat's own yt-dlp (baked plugin + /etc/yt-dlp.conf base_url)
+  # must list the bgutil HTTP provider as AVAILABLE — the plugin pings the
+  # bgutil-pot server, so this fails if the plugin is missing from a rebuilt
+  # image, the conf line is lost, or the server is down/unresponsive. The grep
+  # only matches "(external)" with no ", unavailable" suffix. Probe video is
+  # yt-dlp's stable test video; the provider line prints before any player
+  # request, so a YouTube-side failure cannot flap this.
+  - id: pinchflat-pot-provider
+    name: "pinchflat: yt-dlp lists bgutil:http POT provider as available (M14)"
+    host: mini
+    cmd: >-
+      docker exec pinchflat sh -c 'yt-dlp -v --simulate --print id
+      "https://www.youtube.com/watch?v=jNQXAC9IVRw" 2>&1
+      | grep -oE "bgutil:http-[0-9.]+ \(external\)" | head -1'
+    expect: '^bgutil:http-'
+    severity: warn
+    task_id: fix-37
+    runbook: wiki/docs/runbooks/media-aux.md
+    enabled: true
+
+  # Class guard on the CONSUMER outcome: no NEW media item stranded by a
+  # YouTube bot-check. The 7 ids listed are the 2026-07-14 casualties, accepted
+  # as cookie-gated (POT was fetched and attached on 2026-07-18 and YouTube
+  # still returned LOGIN_REQUIRED for them — only sign-in cookies would recover
+  # them; documented in the runbook). Any OTHER id matching this error = the
+  # countermeasure pipeline has regressed or YouTube escalated -> investigate.
+  - id: pinchflat-stuck-media
+    name: "pinchflat: no new bot-check-stranded media beyond the 7 accepted (M14 class)"
+    host: mini
+    cmd: >-
+      python3 -c "import sqlite3; c=sqlite3.connect('/opt/stacks/pinchflat/config/db/pinchflat.db');
+      print('new_botcheck_stuck=%d' % c.execute(\"select count(*) from media_items
+      where last_error like '%Sign in to confirm%' and media_filepath is null
+      and id not in (409,702,895,915,939,1008,1333)\").fetchone()[0])"
+    expect: '^new_botcheck_stuck=0$'
+    severity: warn
+    task_id: fix-37
+    runbook: wiki/docs/runbooks/media-aux.md
+    enabled: true
+
+  # ── M18 · romm library/DB reconciliation ─────────────────────────────────
+  # RomM is ACCEPTED-EMPTY (2026-07-18): shelf ready, no content yet, owner
+  # adds ROMs manually. The green-but-broken failure this guards: files appear
+  # on the NAS share but never reach the DB (scan broken/never run), or the DB
+  # claims ROMs while the share is empty (the Immich-class vanished-library
+  # bug). Empty+empty is CONSISTENT and passes. Fails loudly if the CIFS mount
+  # is down — a vacuous pass would hide exactly what we care about. DB auth
+  # rides romm-db's own MARIADB_ROOT_PASSWORD env; no secret leaves the host.
+  - id: romm-content-ingest
+    name: "romm: NAS share content and DB rom count are consistent (M18 class)"
+    host: mini
+    cmd: >-
+      mountpoint -q /mnt/share/Games || { echo GAMES_MOUNT_DOWN; exit 0; };
+      f=$(find /mnt/share/Games/romm -type f -not -path '*/#recycle/*' 2>/dev/null | wc -l);
+      r=$(docker exec romm-db sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" romm -N
+      -e "select count(*) from roms"' 2>/dev/null) || r=DB_ERR;
+      if [ "$r" = "DB_ERR" ]; then echo "ROMM_DB_UNREACHABLE";
+      elif [ "$f" -gt 0 ] && [ "$r" -eq 0 ]; then echo "ROMM_CONTENT_NOT_INGESTED files=$f roms=0";
+      elif [ "$f" -eq 0 ] && [ "$r" -gt 0 ]; then echo "ROMM_LIBRARY_VANISHED files=0 roms=$r";
+      else echo "ROMM_CONSISTENT files=$f roms=$r"; fi
+    expect: '^ROMM_CONSISTENT'
+    severity: warn
+    task_id: fix-37
+    runbook: wiki/docs/runbooks/media-aux.md
+    enabled: true

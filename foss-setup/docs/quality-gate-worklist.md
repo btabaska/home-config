@@ -178,6 +178,8 @@ Navidrome nightly DB backup silently disabled (no path); Kometa MDBList 401 ever
 
 **Resolves 4 findings:** `M14` YouTube bot-check failures on 2026-07-14 while pinchflat is , `M15` Nightly DB backup silently disabled: ND_BACKUP_SCHEDULE set , `M16` Kometa daily run completes but MDBList list fetches fail 401, `M18` RomM library is completely empty — 0 ROMs in DB, NAS games s
 
+> **RESOLVED 2026-07-18** — all four closed, 6/6 new checks green (`checks.d/media-aux.yaml`, runbook `wiki/docs/runbooks/media-aux.md`). **M15**: `ND_BACKUP_PATH=/backup` + mount added (schedule alone silently disarms); first 16MB backup on disk; `navidrome-backup-fresh` (crit) + `navidrome-backup-armed`. **M14**: bgutil plugin (pinned 1.3.1 = server) baked into the pinchflat image + `youtubepot-bgutilhttp:base_url` conf; provider generated its first POT since 07-08 on a live probe; the 7 stranded Shorts are **accepted cookie-gated** (POT attached, YouTube still LOGIN_REQUIRED); `pinchflat-pot-provider` + `pinchflat-stuck-media`. **M16**: operator minted MDBList key (vault `mdblist.api_key`) + config de-templated (~12 empty blocks, dead Anime/Music libraries removed); one-shot verify run: 0 errors, timeline playlists built; `kometa-run-clean`. Gotcha: one-shot needs `docker exec -e KOMETA_RUN=True` (env beats CLI). **M18**: **accepted-empty** by operator (prepared shelf, ROMs added manually later); `romm-content-ingest` reconciles share↔DB and pages on ingest-broken/vanished-library/mount-down.
+
 ### `fix-38` 🟡 Reading/CWA: reconcile Kobo store-passthrough state + note fork-image supply-chain risk
 *host:* nas · *track:* reading · *severity:* medium
 
