@@ -43,4 +43,6 @@ scripts/verification/deploy.sh            # deploy
 ## See also
 
 - [`stack-mirror-check.sh`](stack-mirror-check-sh.md)
+- [`tracker-count-check.py`](tracker-count-check-py.md)
+- [`unit-drift-check.sh`](unit-drift-check-sh.md)
 - [verification scripts](index.md) · [All scripts](../index.md)

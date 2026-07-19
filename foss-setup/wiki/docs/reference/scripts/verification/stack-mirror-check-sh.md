@@ -47,4 +47,6 @@ stack-mirror-check.sh mirrors|manifest
 ## See also
 
 - [`deploy.sh`](deploy-sh.md)
+- [`tracker-count-check.py`](tracker-count-check-py.md)
+- [`unit-drift-check.sh`](unit-drift-check-sh.md)
 - [verification scripts](index.md) · [All scripts](../index.md)

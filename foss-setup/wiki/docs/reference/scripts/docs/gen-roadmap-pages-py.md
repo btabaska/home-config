@@ -15,8 +15,8 @@ python3 foss-setup/scripts/docs/gen-roadmap-pages.py
 ```text
 gen-roadmap-pages.py — mirror the task tracker into the wiki (todo list).
 
-Reads the SOURCE OF TRUTH — docs/index.html `taskData` + docs/progress.json — and
-emits small, linked per-track roadmap pages into wiki/docs/roadmap/, plus an index
+Reads the SOURCE OF TRUTH — docs/tasks.json (definitions) + docs/progress.json
+(status) — and emits small, linked per-track roadmap pages into wiki/docs/roadmap/, plus an index
 with live counts, plus the mkdocs nav block. So the wiki carries the todo list
 (browsable by humans + local LLMs) without becoming a second source of truth: this
 is GENERATED from progress.json, re-run after any tracker change.
