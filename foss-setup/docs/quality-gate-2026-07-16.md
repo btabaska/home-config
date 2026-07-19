@@ -1510,6 +1510,13 @@ curl /api/v1/wanted/missing -> total 1: 5030 Eminem - The Marshall Mathers LP al
 
 ### M35. Kobo store passthrough is live-ENABLED (config_kobo_proxy=1), contradicting the documented intentional disable of 2026-07-09
 
+> **RESOLVED (fix-38, 2026-07-18):** decision — **ENABLED is the intent** (accepted; the
+> passthrough carries the Kobo OAuth flow and the kobo2 sync stall behind the 07-09 disable
+> never recurred). The vault note `cwa.store_passthrough` now documents ENABLED, and the
+> drift class is guarded: `cwa-kobo-proxy-intent` (checks.d/reading.yaml) alerts on any
+> future flip in either direction, and `cwa-kobo-sync-consumer` probes both devices' real
+> sync endpoints end-to-end daily. Runbook: wiki/docs/runbooks/reading-cwa.md.
+
 **Host:** nas · **Component:** calibre-web-automated (Kobo store passthrough) · **Auditor:** flow:books
 
 
@@ -2460,6 +2467,18 @@ The Navidrome DB retains missing=1 ghost rows from pre-upgrade imports: duplicat
 
 ### L47. Library junk: split author identities, one duplicate title, and 6 foreign-language editions from bulk grabs; no 'name (1).epub' dupes
 
+> **RESOLVED (fix-38, 2026-07-18):** full cleanup via calibredb in-container (metadata.db
+> backed up first): author identities merged ('Colfer, Eoin'→'Eoin Colfer', 'George R.R.
+> Martin'→'George R. R. Martin'), the duplicate *A Game of Thrones* removed (kept the 8 MB
+> book 42, retitled; removed the 739 MB illustrated edition — it and the 6 foreign-language
+> editions were exported to `/volume1/docker/calibre-web-automated/fix38-removed-books/`
+> before deletion, ~1.5 GB reclaimed from the library), and the Hunter's Run cover set from
+> its epub. Class guards `cwa-library-author-split` / `cwa-library-dup-titles` /
+> `cwa-library-covers` (checks.d/reading.yaml) are live — the dup-titles check caught **4
+> fresh duplicates on its first run** (Kushiel's Dart/Avatar/Scion + Naamah's Curse,
+> re-imported 07-17/18 by fix-26's re-driven requests), which were deduped the same way.
+> Runbook: wiki/docs/runbooks/reading-cwa.md.
+
 **Host:** nas · **Component:** CWA library (/volume1/books) · **Auditor:** flow:books
 
 
@@ -3284,6 +3303,16 @@ The conflicting 'music-mirror' rsync --delete-after unit no longer exists on the
 request_history: 13 imported + 1 downloading (the 3OH!3 phantom). queue.db pending_jobs=0, dead_letters=0 (no stuck retry jobs). config.json lidarr_settings.last_sync=1784143043 (2026-07-15T19:17:23Z) with last_sync_success=True; Lidarr URL http://192.168.10.4:8686, root /music, Plex integration enabled against section 3. The v1.4.2 encrypted-API-key bug is worked around via LIDARR_API_KEY env as documented in the compose file. Note: the authenticated API/UI could not be exercised (no musicseerr creds in the vault, Plex login_enabled=False, auth tokens hashed in library.db) — request state was audited from the container's own sqlite store, which is what the UI renders.
 
 ### I68. CWA runs a third-party fork image ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7 from a 7-month-old GitHub account with a typosquat-style name — story verifies, but trust anchor is thin
+
+> **RESOLVED (fix-38, 2026-07-18):** the fork stays (upstream still stalled at v4.0.6,
+> re-verified live), but trust is now anchored: the compose image (live + repo mirror) is
+> pinned by sha256 digest (`@sha256:89899edd…`, verified equal to the running container's
+> image ID), so the pseudonymous account can no longer silently re-point the tag at the
+> fleet. Guards in checks.d/reading.yaml: `cwa-image-digest-pinned` (pin present + runtime
+> matches), `cwa-ghcr-tag-digest-drift` (alerts if ghcr's v4.0.7 tag stops resolving to the
+> vetted digest — the tamper attempt itself becomes visible), and `cwa-upstream-cve-catchup`
+> (alerts when upstream ships ≥4.0.7 — the migrate-back-off-the-fork signal). Runbook:
+> wiki/docs/runbooks/reading-cwa.md.
 
 **Host:** nas · **Component:** calibre-web-automated (container image supply chain) · **Auditor:** flow:books
 

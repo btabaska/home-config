@@ -1,0 +1,168 @@
+# Reading/CWA flow — added by fix-38 (quality-gate M35/L47/I68, 2026-07-18).
+# The 2026-07-16 audit found this cluster green-but-drifted: store passthrough
+# silently flipped vs its documentation (M35), the CWA image came from a young
+# pseudonymous fork account on a MUTABLE tag (I68), and bulk grabs had quietly
+# split author identities / imported foreign editions (L47). These checks probe
+# the CONSUMER end (a Kobo device's sync call, the supply-chain pin, the library
+# the Kobo actually renders) — not container liveness (nas-cwa already does that).
+#
+# Secrets: CWA_KOBO_SYNC_URL_ADMIN / CWA_KOBO_SYNC_URL_KOBO2 in /etc/verification/env
+# (vault cwa.kobo_api_endpoint_admin / cwa.kobo2_api_endpoint — URLs embed sync tokens,
+# never commit them). NAS_SUDO_PASSWORD (vault sudo.nas_password) as in docker-fleet.yaml.
+checks:
+  # ── M35 consumer end: a real Kobo sync request must succeed for BOTH devices ──
+  # This is the exact regression the 07-09 passthrough disable was protecting
+  # against (kobo2's sync stalling). Runs the proxied books.tabaska.us path a
+  # real device uses, and requires parseable JSON, not just a 200.
+  - id: cwa-kobo-sync-consumer
+    name: "CWA Kobo sync answers valid JSON for both device users (M35 consumer end)"
+    host: mini
+    cmd: >-
+      ok=1;
+      for u in "$CWA_KOBO_SYNC_URL_ADMIN" "$CWA_KOBO_SYNC_URL_KOBO2"; do
+      code=$(curl -s -o /tmp/cwa-kobo-probe.json -m 30 -w '%{http_code}' "$u");
+      if [ "$code" != "200" ] || ! python3 -c 'import json;json.load(open("/tmp/cwa-kobo-probe.json"))' 2>/dev/null;
+      then ok=0; echo "KOBO_SYNC_FAIL code=$code"; fi; done;
+      rm -f /tmp/cwa-kobo-probe.json; [ "$ok" = 1 ] && echo KOBO_SYNC_OK
+    expect: '^KOBO_SYNC_OK$'
+    severity: warn
+    task_id: fix-38
+    runbook: wiki/docs/runbooks/reading-cwa.md
+    enabled: true
+
+  # ── M35 drift regression: config_kobo_proxy must match documented intent ──
+  # Intent as of 2026-07-18 (fix-38): ENABLED (=1). The bug was not the value,
+  # it was the SILENT flip vs documentation — this alerts on any future flip in
+  # either direction; change the expect only together with the vault note.
+  - id: cwa-kobo-proxy-intent
+    name: "CWA store passthrough matches documented intent (ENABLED, fix-38/M35)"
+    host: nas
+    cmd: >-
+      sqlite3 "file:/volume1/docker/calibre-web-automated/config/app.db?mode=ro"
+      "select 'proxy='||config_kobo_proxy||' sync='||config_kobo_sync from settings;"
+    expect: '^proxy=1 sync=1$'
+    severity: warn
+    task_id: fix-38
+    runbook: wiki/docs/runbooks/reading-cwa.md
+    enabled: true
+
+  # ── I68 regression: fork image must stay digest-pinned, and the running ──
+  # container must run exactly what the compose file pins.
+  - id: cwa-image-digest-pinned
+    name: "CWA runs the digest-pinned fork image, compose pin present (I68)"
+    host: mini
+    cmd: >-
+      img=$(printf '%s\n' "$NAS_SUDO_PASSWORD"
+      | ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "sudo -S -p '' /usr/local/bin/docker inspect calibre-web-automated --format '{{.Config.Image}}'" 2>/dev/null);
+      pin=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "grep -oE 'image: *[^ ]+' /volume1/docker/calibre-web-automated/docker-compose.yml" 2>/dev/null | awk '{print $2}');
+      if [ -n "$img" ] && [ "$img" = "$pin" ] && printf '%s' "$img" | grep -qE '@sha256:[0-9a-f]{64}$';
+      then echo PIN_OK; else echo "PIN_BAD running=$img compose=$pin"; fi
+    expect: '^PIN_OK$'
+    severity: warn
+    task_id: fix-38
+    runbook: wiki/docs/runbooks/reading-cwa.md
+    enabled: true
+
+  # ── I68 class: supply-chain tamper tripwire — the ghcr tag must still point ──
+  # at the vetted digest. A young pseudonymous account re-pointing v4.0.7 is the
+  # exact attack the digest pin defends against; this notices the attempt itself.
+  - id: cwa-ghcr-tag-digest-drift
+    name: "ghcr v4.0.7 tag still points at the vetted digest (I68 tamper tripwire)"
+    host: mini
+    cmd: >-
+      pin=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "grep -oE 'image: *[^ ]+' /volume1/docker/calibre-web-automated/docker-compose.yml" 2>/dev/null
+      | grep -oE 'sha256:[0-9a-f]{64}');
+      tok=$(curl -s -m 20 "https://ghcr.io/token?scope=repository:new-usemame/calibre-web-nextgen:pull"
+      | python3 -c 'import sys,json;print(json.load(sys.stdin).get("token",""))');
+      remote=$(curl -sI -m 20 -H "Authorization: Bearer $tok"
+      -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json"
+      "https://ghcr.io/v2/new-usemame/calibre-web-nextgen/manifests/v4.0.7"
+      | tr -d '\r' | awk 'tolower($1)=="docker-content-digest:"{print $2}');
+      if [ -z "$pin" ] || [ -z "$remote" ]; then echo "TAG_CHECK_ERROR pin=$pin remote=$remote";
+      elif [ "$pin" = "$remote" ]; then echo TAG_UNCHANGED;
+      else echo "TAG_REPOINTED pin=$pin remote=$remote"; fi
+    expect: '^TAG_UNCHANGED$'
+    severity: warn
+    task_id: fix-38
+    runbook: wiki/docs/runbooks/reading-cwa.md
+    enabled: true
+
+  # ── I68 exit signal: alert when upstream ships the CVE fix (>= 4.0.7) — ──
+  # that is the moment to migrate OFF the fork back to the trusted upstream.
+  # A failure here is good news, not an outage; see the runbook.
+  - id: cwa-upstream-cve-catchup
+    name: "upstream crocodilestick CWA still stalled pre-CVE-fix (fail = migrate back)"
+    host: mini
+    cmd: |-
+      curl -s -m 20 https://api.github.com/repos/crocodilestick/calibre-web-automated/releases/latest | python3 -c '
+      import sys, json
+      tag = (json.load(sys.stdin).get("tag_name") or "").lstrip("vV")
+      try:
+          newer = tuple(int(x) for x in tag.split(".")[:3]) > (4, 0, 6)
+      except ValueError:
+          print("UPSTREAM_CHECK_ERROR tag=%r" % tag); sys.exit(0)
+      print("UPSTREAM_CAUGHT_UP %s - migrate off the fork" % tag if newer else "UPSTREAM_STALLED %s" % tag)'
+    expect: '^UPSTREAM_STALLED'
+    severity: warn
+    task_id: fix-38
+    runbook: wiki/docs/runbooks/reading-cwa.md
+    enabled: true
+
+  # ── L47 class: split author identities (the thing that fractures Kobo ──
+  # author/series views). Anagram-normalization catches both observed shapes:
+  # 'Colfer, Eoin' vs 'Eoin Colfer' and 'George R.R. Martin' vs 'George R. R. Martin'.
+  - id: cwa-library-author-split
+    name: "CWA library has no split author identities (L47 class)"
+    host: nas
+    cmd: |-
+      python3 -c '
+      import sqlite3, collections
+      db = sqlite3.connect("file:/volume1/books/metadata.db?mode=ro", uri=True)
+      norm = collections.defaultdict(list)
+      for (n,) in db.execute("select name from authors"):
+          norm["".join(sorted(c for c in n.lower() if c.isalnum()))].append(n)
+      splits = [" / ".join(v) for v in norm.values() if len(v) > 1]
+      print("AUTHOR_SPLITS=" + ("; ".join(splits) if splits else "NONE"))'
+    expect: '^AUTHOR_SPLITS=NONE$'
+    severity: warn
+    task_id: fix-38
+    runbook: wiki/docs/runbooks/reading-cwa.md
+    enabled: true
+
+  # ── L47 class: duplicate titles under one author (bulk grabs importing the ──
+  # same work as two editions, e.g. the 8MB + 739MB Game of Thrones pair).
+  - id: cwa-library-dup-titles
+    name: "CWA library has no duplicate title per author (L47 class)"
+    host: nas
+    cmd: |-
+      python3 -c '
+      import sqlite3, collections, re
+      db = sqlite3.connect("file:/volume1/books/metadata.db?mode=ro", uri=True)
+      q = "select a.name, b.title from books b join books_authors_link l on l.book=b.id join authors a on a.id=l.author"
+      norm = collections.defaultdict(list)
+      for author, title in db.execute(q):
+          key = (author, re.sub(r"[^a-z0-9]", "", title.lower().split(":")[0]))
+          norm[key].append(title)
+      dups = ["%s: %s" % (a, " / ".join(t)) for (a, _), t in norm.items() if len(t) > 1]
+      print("DUP_TITLES=" + ("; ".join(dups) if dups else "NONE"))'
+    expect: '^DUP_TITLES=NONE$'
+    severity: warn
+    task_id: fix-38
+    runbook: wiki/docs/runbooks/reading-cwa.md
+    enabled: true
+
+  # ── L47 regression: every book renders a cover (has_cover=0 was Hunter's Run) ──
+  - id: cwa-library-covers
+    name: "every CWA library book has a cover (L47)"
+    host: nas
+    cmd: >-
+      sqlite3 "file:/volume1/books/metadata.db?mode=ro"
+      "select 'nocover='||count(*) from books where has_cover=0;"
+    expect: '^nocover=0$'
+    severity: warn
+    task_id: fix-38
+    runbook: wiki/docs/runbooks/reading-cwa.md
+    enabled: true

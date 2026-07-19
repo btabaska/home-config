@@ -16,7 +16,7 @@ name: calibre-web-automated
 
 services:
   calibre-web-automated:
-    image: ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7   # CVE-2026-7713 fixed; not on Docker Hub crocodilestick repo
+    image: ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7@sha256:89899edd457562e54767ced2499bce563533b2b47b14467822b127ee83072557   # CVE-2026-7713 fix; digest-pinned (fix-38/I68) — young pseudonymous fork account, tag must not float
     container_name: calibre-web-automated
     environment:
       # PUID/PGID must match the Synology user that owns the volume paths below.
@@ -25,7 +25,7 @@ services:
       - PGID=100
       - TZ=America/New_York
       # Synology shared folders are typically SMB/NFS-backed; polling avoids missed inotify events.
-      - NETWORK_SHARE_MODE=true
+      - NETWORK_SHARE_MODE=false
     volumes:
       # Persistent app config + the CWA SQLite app DB (Tier 1: small, back this up).
       - /volume1/docker/calibre-web-automated/config:/config
