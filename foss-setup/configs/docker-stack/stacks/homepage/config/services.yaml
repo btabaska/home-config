@@ -208,7 +208,9 @@
         icon: sunshine.png
         href: https://sunshine.tabaska.us
         description: Game streaming host (rig runs 24/7)
-        siteMonitor: https://192.168.10.12:47990
+        # L25: direct :47990 fails on Apollo's self-signed cert. The Caddy
+        # vhost already does tls_insecure_skip_verify — probe through it.
+        siteMonitor: https://apollo.tabaska.us
     - RomM (retro library):
         icon: mdi-controller-classic
         href: https://romm.tabaska.us
@@ -230,7 +232,10 @@
         icon: healthchecks.png
         href: https://health.tabaska.us
         description: Backup dead-man's-switch
-        siteMonitor: http://healthchecks:8000
+        # L25: port 8000 is uwsgi's http router; Node's http parser rejects
+        # its responses ("Parse Error: Expected HTTP/") even though wget/curl
+        # accept them. Probe through the Caddy front door instead.
+        siteMonitor: https://health.tabaska.us
     - AdGuard Home:
         icon: adguard-home.png
         href: https://dns.tabaska.us

@@ -1,3 +1,3 @@
 #!/bin/bash
-/sbin/start-stop-daemon -S --pidfile $HOME/.config/deluge/.deluged.pid -u $USER -d $HOME -a $HOME/venvs/deluge/bin/deluged -- --pidfile $HOME/.config/deluge/.deluged.pid
+/sbin/start-stop-daemon -S --pidfile $HOME/.config/deluge/.deluged.pid -u $USER -d $HOME -a $HOME/venvs/deluge/bin/deluged -- --pidfile $HOME/.config/deluge/.deluged.pid -l $HOME/.config/deluge/deluged.log -L warning
 /sbin/start-stop-daemon -S --pidfile $HOME/.config/deluge/.deluge-web.pid --background -u $USER -d $HOME -a $HOME/venvs/deluge/bin/deluge-web -- --pidfile $HOME/.config/deluge/.deluge-web.pid

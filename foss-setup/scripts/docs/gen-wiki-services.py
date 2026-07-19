@@ -52,7 +52,8 @@ except ImportError:
 
 # ---------------------------------------------------------------- metadata
 
-# Known URL overrides (handoff key-URLs); everything else falls back to the
+# Known URL overrides (canonical service URLs, kept here since the handoff
+# docs were retired); everything else falls back to the
 # https://<stack>.tabaska.us convention. None = no web UI / not proxied.
 URL_OVERRIDES = {
     "adguard": "https://dns.tabaska.us",

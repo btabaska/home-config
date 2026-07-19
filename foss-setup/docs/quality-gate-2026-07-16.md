@@ -928,6 +928,8 @@ cat health.env -> NTFY_TOKEN=tk_ahl18uonl83eaj3pbqi57h01mfg87
 
 ### M8. 131G of extracted/renamed media leftovers accumulating in ~/media/extracted (102 files, never reaped)
 
+> **RESOLVED (fix-45, 2026-07-19):** seedbox `~/media/extracted` emptied (139G/104 files → 0; imports verified as copies). Daily 05:30 reaper cron (`-mtime +7`) + `seedbox-extracted-reaped` check guard regrowth.
+
 **Host:** seedbox · **Component:** ~/media/extracted (leftover imported media) · **Auditor:** host:seedbox
 
 
@@ -2225,6 +2227,8 @@ Directories under /opt/stacks with no matching container in docker ps: dependenc
 
 ### L3. Verification units exit 1 on any warn/crit check, then the next run's systemd-failed-mini check fails BECAUSE of that failed unit — self-referential noise; 16 failed runs incl. a 13-hour block Jul 10 `known-issue`
 
+> **RESOLVED (fix-45, 2026-07-19):** resolved by intervening unit work: quick+fast units now set `SuccessExitStatus=1` (a failing check no longer latches the unit failed) — verified deployed live; `systemctl --failed` clean on mini.
+
 **Host:** mini · **Component:** verification-quick.service / verification framework · **Auditor:** host:mini
 
 
@@ -2232,12 +2236,16 @@ verification-quick.service exits 1 whenever any check fails (e.g. Jul 13 18:41 '
 
 ### L4. macOS junk (.DS_Store, ._AppleDouble files) and a test artifact synced into /volume1/docker service dirs
 
+> **RESOLVED (fix-45, 2026-07-19):** 10 junk files deleted from /volume1/docker (incl. an extra `unpackerr/._unpackerr.conf`); class guarded by `nas-docker-macos-junk`.
+
 **Host:** nas · **Component:** filesystem junk · **Auditor:** host:nas
 
 
 macOS metadata files are present inside NAS docker dirs: /volume1/docker/.DS_Store (10244 bytes), and AppleDouble ._ files e.g. immich/._.env.example, immich/._docker-compose.yml, calibre-web-automated/._docker-compose.yml, and media-automation/._.env.example ._README.md ._docker-compose.yml ._migration-from-ubuntu.md. media-automation also has a leftover empty 'test-write' file (Jul 2). Cosmetic dead weight from SMB writes off a Mac; harmless but pollutes compose dirs and can confuse tooling that globs the directory.
 
 ### L5. .bak backup copies accumulating alongside live scripts and configs
+
+> **RESOLVED (fix-45, 2026-07-19):** 6 .bak files deleted (live counterparts verified first; `soularr/config.ini.bak-wrong-path` already gone). 3 further .baks outside the audit list (CWA app.db x2, a readarr log) left and logged.
 
 **Host:** nas · **Component:** config hygiene / .bak sprawl · **Auditor:** host:nas
 
@@ -2255,12 +2263,16 @@ The 2026-07-15 04:22 timer-fired run failed with exit 5/NOTINSTALLED: it pulled 
 
 ### L7. Persistent journal history truncated to 2 boots (~46.5M, oldest entry Jul 14 17:43) — pre-Jul-14 forensics gone on a box with crash history
 
+> **RESOLVED (fix-45, 2026-07-19):** journald retention pinned on rig (`50-retention.conf`: SystemMaxUse=1G, MaxRetentionSec=3month; repo `configs/host/rig/journald/`). Pre-existing history unrecoverable — truncation traced to fix-31's cap, the fix-20 rebuild, and fix-42's leak-scrub vacuum.
+
 **Host:** rig · **Component:** systemd-journald · **Auditor:** host:rig
 
 
 journalctl --list-boots shows only boots -1 and 0 (first retained entry 2026-07-14 17:43:45); total journal usage is just 46.5M with /var/log/journal persistent and no explicit SystemMaxUse/MaxRetentionSec overrides found in journald.conf(.d). Something removed older journals around the Jul 14 -Syu/reboot (vacuum, or the upgrade). Consequence: the requested 7-day error review only actually covers ~19h, and any future NVMe/PCIe crash investigation (known issue 3 class) loses history older than a day or two. Within the retained window the error log is very quiet: 37 total -p err entries (2 on Jul 14, 35 on Jul 15 — all shutdown/boot noise: dbus activation failures, powerdevil i2c EACCES, ACPI _DSM AE_ALREADY_EXISTS BIOS bug, snd_hda 'no codecs', gkr-pam keyring).
 
 ### L8. ~1.7G of dead *arr self-update/backup dirs and orphaned dotnet sockets in ~/tmp from Jun 27
+
+> **RESOLVED (fix-45, 2026-07-19):** ~/tmp arr leftovers deleted (1.7G → 4K; no arr/dotnet processes). Class guarded by `seedbox-tmp-arr-junk`.
 
 **Host:** seedbox · **Component:** ~/tmp (stale *arr self-update artifacts) · **Auditor:** host:seedbox
 
@@ -2278,12 +2290,16 @@ A qBittorrent-nox daemon has run since Jun 27 but its BT_backup dir is empty and
 
 ### L10. deluged.log is 0 bytes — daemon error logging effectively disabled
 
+> **RESOLVED (fix-45, 2026-07-19):** deluged now logs (`-l deluged.log -L warning` in `~/.startup/deluge`, graceful restart, zero torrents lost — 378 baseline reconciled + post-restart adds). Log immediately captured real libtorrent warnings.
+
 **Host:** seedbox · **Component:** ~/.config/deluge/deluged.log · **Auditor:** host:seedbox
 
 
 The task-requested deluged.log check yielded nothing because ~/.config/deluge/deluged.log is 0 bytes and unmodified since Jun 27 02:37; the running deluged (started Jun 28, --pidfile only, no --logfile) writes no daemon log there. Only filebot.log (671K, actively written) carries any operational history. There is currently no captured error trail for the Deluge daemon should it misbehave.
 
 ### L11. 8 of 73 Hue lights unavailable (integration itself healthy)
+
+> **RESOLVED (fix-45, 2026-07-19):** re-verified 2026-07-19: same 8/73 unavailable (wall-switch-cut bulbs). Accepted-and-documented in the fleet-hygiene runbook register.
 
 **Host:** ha (192.168.10.50) · **Component:** hue · **Auditor:** host:ha
 
@@ -2292,12 +2308,16 @@ Hue Bridge config entry loaded; 65/73 lights report real states. 8 individual bu
 
 ### L12. Error log is quiet: only 15 entries since ~06-27, all transient/one-off (elgato blip, 07-03 DNS outage, stale roomba creds for a removed integration, one-off hassio /mounts schema error)
 
+> **RESOLVED (fix-45, 2026-07-19):** post-update re-check: only 2 log entries (mini bad-token curls + benign HomeKit pair-verify). Healthy; closed as evidence.
+
 **Host:** ha (192.168.10.50) · **Component:** system_log · **Auditor:** host:ha
 
 
 No recurring setup failures or retry loops. Notable one-offs: (a) elgato fetch errors x13 on 07-10 for 192.168.10.182 — both Elgato lights currently available, recovered; (b) 2026-07-03 cluster of met.no/homeassistant_alerts DNS failures + one matter 'Connection failed' — a transient DNS/network outage that day; (c) roomba 'Bad username or password' x4 on 06-27 — but NO roomba config entry exists today and no vacuum entities, so the integration was removed; errors are dead residue; (d) hassio /mounts call error x1 on 07-13 ('not a valid value ... data[version] Got 3.0') during the backup CIFS mount work — mount works (nas_backups agent succeeding daily), so one-off. REST /api/error_log returns 404 on this core version; WS system_log/list used instead.
 
 ### L13. Stale UI clutter: 1 week-old failed-login notification (mini token now works) + 2 pending Apple TV discovery flows awaiting PIN
+
+> **RESOLVED (fix-45, 2026-07-19):** notification dismissed + all 9 stale/pending discovery flows deleted (lists verified 0). Recurrence root cause: ad-hoc curls from mini without the env token — logged as a watch item (deployed `ha-api-auth` authenticates 200).
 
 **Host:** ha (192.168.10.50) · **Component:** persistent notifications / pending flows · **Auditor:** host:ha
 
@@ -2306,12 +2326,16 @@ No recurring setup failures or retry loops. Notable one-offs: (a) elgato fetch e
 
 ### L14. Libreseerr request status only refreshes on UI-driven POST /api/requests/refresh; 'Rosemary and Rue' imported 07-13 still shows 'processing', and refresh swallows all exceptions
 
+> **RESOLVED (fix-45, 2026-07-19):** already implemented by the intervening M36 work (verified end-to-end): a 15-min background reconciler thread (fcntl-locked) maintains request statuses and the bare `except: pass` now logs. Statuses actively maintained; the audit's stale book request no longer exists (deleted); remaining 'processing' entries verified genuinely in-flight.
+
 **Host:** mini · **Component:** libreseerr request status sync · **Auditor:** svc:request-layer
 
 
 app.py's GET /api/requests returns cached requests_history; status transitions happen only in POST /api/requests/refresh (called by the UI). Book 305 (Rosemary and Rue) was grabbed AND imported 2026-07-13T20:17 (474KB epub on disk in Readarr) yet its request still reads 'processing' 2 days later because nobody has opened the UI since (last UI log activity 2026-07-13 16:17). The refresh loop also has 'except Exception: pass' — Readarr connectivity errors during refresh are silently ignored, keeping stale statuses with no log trace. Cosmetic for available books, but it makes the request list untrustworthy as a status surface.
 
 ### L15. Navidrome indexes the Synology #recycle bin of the music share — deleted tracks reappear in the library
+
+> **RESOLVED (fix-45, 2026-07-19):** `.ndignore` now at the share ROOT `/volume1/music/.ndignore` (survives bin-emptying, unlike the fix-28 in-bin marker, which was also recreated); recycle scripts re-create both. `navidrome-recycle-rows` guard stays green (0 rows).
 
 **Host:** mini · **Component:** navidrome · **Auditor:** svc:media-aux
 
@@ -2320,12 +2344,16 @@ The scanner processes folder '#recycle/YouTube' (audioCount=2) every scan and 2 
 
 ### L16. 70 tracks flagged missing in Navidrome DB (whole Chappell Roan album chunk + mgk 'lost americana' mp3s)
 
+> **RESOLVED (fix-45, 2026-07-19):** 70 missing media_file + 4 missing album rows purged (DB backed up, vacuumed; 3418 live tracks; navidrome healthy).
+
 **Host:** mini · **Component:** navidrome · **Auditor:** svc:media-aux
 
 
 70 media_file rows have missing=1 — files that were deleted/renamed on the NAS but remain in the DB as 'missing' entries (14 under 'Chappell Roan/The Rise and Fall of a Midwest Princess', ~20 under 'mgk/lost americana' .mp3, etc.). Likely re-tagged/re-formatted replacements; harmless but shows as missing-file cruft in the UI until purged.
 
 ### L17. Kometa config dead paths: nonexistent 'Anime' Plex library, missing /config/Music.yml, blank radarr/sonarr/tautulli creds flagged every run
+
+> **RESOLVED (fix-45, 2026-07-19):** config side self-resolved by fix-37 (Anime/Music.yml/blank-cred blocks REMOVED — deliberate: no consuming feature, and creds in config.yml would leak into the mirror; assets dir exists). This session bumped v2.3.1→v2.4.4 (compose live+repo) and validated a one-shot run: zero Config/Plex/File errors in meta.log (vs 3+3+3+2 pre-fix).
 
 **Host:** mini · **Component:** kometa · **Auditor:** svc:media-aux
 
@@ -2334,12 +2362,16 @@ Every run logs: Plex Error: Library 'Anime' not found (Plex has Movies, TV Shows
 
 ### L18. 3 Oban retry jobs at attempt 18/20 grinding on permanently-impossible videos (members-only/unavailable); 31 of 38 pending items are permanent content failures
 
+> **RESOLVED (fix-45, 2026-07-19):** NOT self-resolved (jobs advanced to 19/20, rescheduled 07-24). Fixed via `bin/pinchflat rpc`: 31 permanent-failure media items marked `prevent_download`, jobs 31/34/35 cancelled. 7 transient pending items left to retry normally.
+
 **Host:** mini · **Component:** pinchflat · **Auditor:** svc:media-aux
 
 
 Jobs 31/34/35 (MediaDownloadWorker) are at attempt 18 of 20, next scheduled 2026-07-18, retrying content that can never succeed — e.g. media item #10 (Vj1lIsrFbds) fails with 'Join this channel to get access to members-only content'. Of 38 pending (undownloaded) items, 31 have members-only/'Video unavailable' errors. Harmless retry churn that burns yt-dlp calls until attempts exhaust; overall pipeline is otherwise healthy (1364 items downloaded, files landing on /mnt/nas-youtube/pinchflat, last success 2026-07-13 21:12).
 
 ### L19. Leftover empty /opt/stacks/pinchflat/downloads directory (real target is /mnt/nas-youtube/pinchflat)
+
+> **RESOLVED (fix-45, 2026-07-19):** removed (held only a zero-byte .keep). Note: compose defaults `${PINCHFLAT_DOWNLOADS:-./downloads}` — the dir returns only if `.env` is ever lost.
 
 **Host:** mini · **Component:** pinchflat · **Auditor:** svc:media-aux
 
@@ -2348,6 +2380,8 @@ Jobs 31/34/35 (MediaDownloadWorker) are at attempt 18 of 20, next scheduled 2026
 
 ### L20. ~14h docker-DNS outage window on mini 2026-07-08 21:18 -> 2026-07-09 11:18 UTC (all lookups 'server misbehaving')
 
+> **RESOLVED (fix-45, 2026-07-19):** historical window; class now observable: `mini-container-dns-egress` probes external resolution from INSIDE an always-on container every daily run.
+
 **Host:** mini · **Component:** docker embedded DNS (127.0.0.11) · **Auditor:** svc:docs-life
 
 
@@ -2355,12 +2389,16 @@ Every external DNS lookup from at least the miniflux container failed with 'look
 
 ### L21. Wallabag past incident (resolved): ~2 days of per-request CRITICAL 'jms_serializer_default is not writable'; prod.log silent since 2026-07-07
 
+> **RESOLVED (fix-45, 2026-07-19):** self-healed: prod.log written through 2026-07-17 22:25 (5.9MB), `/api/info` 200. File logging is alive; no action.
+
 **Host:** mini · **Component:** wallabag · **Auditor:** svc:docs-life
 
 
 var/logs/prod.log (5.9MB) shows request.CRITICAL 'The directory /var/www/wallabag/var/cache/prod/jms_serializer_default is not writable' plus cache pool fopen failures on every request (including the per-minute /api/info healthcheck) up to 2026-07-07 20:20; the container restart at 20:21 and the recreate on 07-09 20:31 fixed it — cache dirs now exist owned nobody:nobody, /api/info returns 200 locally, via host port 8085 and via https://wallabag.tabaska.us, and there are zero 5xx in the last 48h of nginx access logs. Residual oddity: nothing has been written to prod.log since 2026-07-07 20:20 despite continuous traffic, so either monolog verbosity changed or file logging is dead — future wallabag errors may be invisible. Task brief noted wallabag is 'known finicky' but this specific incident/logging gap is not in the known-issue list.
 
 ### L22. Mealie docker log file corrupted with NUL bytes — full-history 'docker logs' aborts mid-stream
+
+> **RESOLVED (fix-45, 2026-07-19):** corruption aged out: full `docker logs mealie` reads clean end-to-end (3612 lines, exit 0) under the fix-43 daemon.json rotation, which also prevents a corrupt segment persisting.
 
 **Host:** mini · **Component:** mealie / docker json-log · **Auditor:** svc:docs-life
 
@@ -2389,6 +2427,8 @@ Reading mealie's full container log history aborts with 'error from daemon in st
 The secrets vault carries dtrack admin creds and url https://deptrack.tabaska.us, and the LAN wildcard *.tabaska.us -> 192.168.10.2 makes the name resolve, but the Caddyfile has no deptrack/dtrack vhost (Dependency-Track only appears in a comment as a 'candidate'), no dtrack container exists (running or stopped), and /opt/stacks/dependency-track is an empty directory. Clients connecting get a TLS 'internal error' alert. Public DNS (1.1.1.1) does not resolve the name. Vault entry + empty stack dir are stale drift; nothing depends on it.
 
 ### L25. Homepage siteMonitors false-negative on Sunshine/Apollo (self-signed TLS) and Healthchecks (HTTP parse error) while both services are up
+
+> **RESOLVED (fix-45, 2026-07-19):** both tiles repointed: Sunshine → `https://apollo.tabaska.us` (caddy does the TLS-skip), Healthchecks → `https://health.tabaska.us` (:8000 is uwsgi's http router — curl tolerates it, homepage's Node parser doesn't). 6m19s post-restart quiet window: zero recurrence of either error (was every ~2 min). Note: the apollo tile now correctly shows DOWN — the rig UFW LAN-block found the same evening (separate pre-existing issue, see fleet-hygiene watch list).
 
 **Host:** mini · **Component:** homepage · **Auditor:** svc:infra-mini
 
@@ -2424,12 +2464,16 @@ user_settings has emails:[brandon.tabaska@protonmail.com] alongside the working 
 
 ### L29. Uptime-kuma 16h uptime explained: clean operator restart 2026-07-15 00:54 UTC for the NAS-monitor bootstrap; history shows an embedded-MariaDB crash class (InnoDB crash recovery, fatal 'Connection lost' traces, NUL-corrupted log region)
 
+> **RESOLVED (fix-45, 2026-07-19):** explained-and-accepted: restart was the operator NAS-monitor bootstrap; the embedded-MariaDB crash class stems from the pre-fix mini hard-stop era. Currently healthy (all monitors up); no design change.
+
 **Host:** mini · **Component:** uptime-kuma · **Auditor:** svc:monitoring-stack
 
 
 The recent restart is benign: exit=0, FinishedAt 00:54:07Z / StartedAt 00:54:08Z, coinciding with bootstrap-nas-monitors.sh (mtime Jul 15 00:54) which seeded the Whisparr monitor at 00:54:45 (matches git commit b6f1f48 'uptime-kuma NAS bootstrap'). However the container has had 5 process starts since creation Jul 2 (Jul 2 19:51, Jul 3 19:02, Jul 5 16:11, Jul 7 16:21, Jul 14 20:54 EDT); Jul 3 and Jul 5 starts logged 'InnoDB: Starting crash recovery', logs contain repeated fatal 'Trace: Error: Connection lost: The server closed the connection' via process.unexpectedErrorHandler plus KnexTimeoutError pool exhaustion on Jul 6, and the log stream around Jul 3-7 is corrupted with NUL bytes ('invalid character \x00' when reading that range) — consistent with the pre-fix mini DHCP/outage era hard stops. Kuma runs the embedded-mariadb backend, which is the fragile piece. Currently healthy: all 53 active monitors up, heartbeats fresh at 16:28 UTC.
 
 ### L30. NAS system timezone is US/Pacific (PDT) while the fleet standard is America/New_York — DSM-scheduled tasks and log timestamps are 3h off fleet convention
+
+> **RESOLVED (fix-45, 2026-07-19):** resolved by fix-40 (M5) before this session: NAS timezone now US/Eastern (verified live `date` = EDT); guarded by `nas-timezone-eastern`.
 
 **Host:** nas · **Component:** system clock / timezone · **Auditor:** svc:monitoring-stack
 
@@ -2438,12 +2482,16 @@ date on the NAS returns PDT (clock itself is accurate, only the zone differs). C
 
 ### L31. Radarr health warning: update available (only non-empty health across the stack)
 
+> **RESOLVED (fix-45, 2026-07-19):** Radarr pinned-tag bump 6.2.1 → 6.3.0 (compose live+repo), health `[]`. All other arrs health-clean, no updates pending.
+
 **Host:** nas (192.168.10.4) · **Component:** radarr · **Auditor:** svc:arr-stack
 
 
 Verbatim health warning: type=warning, source=UpdateCheck, message="New update is available: v6.3.0.10514" (running 6.2.1.10461). Sonarr, lidarr, readarr, prowlarr and whisparr all return [] from /health. Versions: Sonarr 4.0.19.2979, Radarr 6.2.1.10461, Lidarr 3.1.0.4875, Readarr 0.4.18.2805, Prowlarr 2.4.0.5397, Whisparr 2.2.0.108.
 
 ### L32. Single wanted/missing album stalled 5 days: The Marshall Mathers LP missing 1 track
+
+> **RESOLVED (fix-45, 2026-07-19):** accepted: the gap is a skit absent from available releases; album stays monitored (wanted/missing reads 0 records today; `lidarr-incomplete-albums` green).
 
 **Host:** nas (192.168.10.4) · **Component:** lidarr · **Auditor:** svc:arr-stack
 
@@ -2452,12 +2500,16 @@ Lidarr's only monitored missing item is Eminem — The Marshall Mathers LP at 17
 
 ### L33. 45 unmapped folders in /movies root — untracked junk: '- Copy' duplicates, multi-movie packs, scene-named leftovers, 'Moviesnew'
 
+> **RESOLVED (fix-45, 2026-07-19):** 6 junk folders deleted (~5.3G: 2 ' - Copy' empties, empty Moviesnew, HDRip/DVDScr relics, stray Ed Edd n Eddy). 39 survivors = accepted packs/relics baseline, guarded by `arr-unmapped-folders-growth`. Follow-up logged: 3 fileless mapped Radarr entries (11/116/117).
+
 **Host:** nas (192.168.10.4) · **Component:** radarr root folder /movies · **Auditor:** svc:arr-stack
 
 
 Radarr reports 45 unmappedFolders in its /movies root. These are invisible to Radarr (no upgrades, no monitoring, not counted). Categories: literal duplicates ('Guardians...Atmos-FGT - Copy', 'Hannah Gadsby Nanette (2018) - Copy'), unmappable multi-movie packs (Star Wars saga, Indiana Jones 1-4, Matrix Trilogy, Pirates pack, Star Trek 13-movie pack, Back to the Future trilogy, Hobbit trilogy, Fast&Furious 1-6, Bad Boys/Grown Ups duologies, Men in Black trilogy, 'Muppets 9 Pack'), low-quality relics (DVDScr, HDRip.XviD), a stray TV item (Ed.Edd.n.Eddy.S05) and a mystery 'Moviesnew' folder. Dead data occupying the 11.5TB volume (8.9TB free, not urgent).
 
 ### L34. 25 unmapped folders in /tv root, incl. loose per-episode release folders (Euphoria S03E02-06, I Love LA S01E01-05) and whole untracked series
+
+> **RESOLVED (fix-45, 2026-07-19):** Euphoria (US) + I Love LA added to Sonarr (WEB-1080p, no auto-search); 21 episodes ManualImported (~50G) from 12 loose dirs; 5 inferior dupes deleted; roots clean. 13 survivors = accepted legacy-series baseline.
 
 **Host:** nas (192.168.10.4) · **Component:** sonarr root folder /tv · **Auditor:** svc:arr-stack
 
@@ -2466,12 +2518,16 @@ Sonarr reports 25 unmappedFolders in /tv. Notable: 5 loose Euphoria S03 single-e
 
 ### L35. Whisparr effectively inert (1 series, zero lifetime history) and its API key is absent from the secrets vault
 
+> **RESOLVED (fix-45, 2026-07-19):** kept + fully wired: vault key verified MATCH vs live config.xml, health `[]`, `[[whisparr]]` unpackerr block confirmed (url+key+paths), `tv-whisparr` category documented.
+
 **Host:** nas (192.168.10.4) · **Component:** whisparr · **Auditor:** svc:arr-stack
 
 
 Whisparr 2.2.0.108 is healthy (health [], queue 0) with 4 prowlarr-synced indexers and root /data accessible, but has exactly 1 monitored series and history totalRecords=0 — it has never grabbed or imported anything. Its API key is not in foss-setup/.handoff-secrets.yaml arr_api_keys (only sonarr/radarr/lidarr/readarr/prowlarr); had to extract it from /volume1/docker/whisparr/config/config.xml on the NAS. Also note its Deluge category is 'tv-whisparr' (inconsistent with the other apps' '<app>' naming) with no post-import category.
 
 ### L36. Plex credits detection failing on ~31% of items with 'incomplete marker attributes'
+
+> **RESOLVED (fix-45, 2026-07-19):** accepted: upstream Plex scanner behavior (queue advances; markers just absent on affected items). Register entry in the fleet-hygiene runbook.
 
 **Host:** nas · **Component:** plex · **Auditor:** svc:nas-apps
 
@@ -2480,12 +2536,16 @@ Within the current 1h40m log window, 82 of 262 credits-detection jobs completed 
 
 ### L37. Stale core dumps at /volume1 root incl. Plex Transcoder (Jul 7) and qbittorrent-nox (app no longer in stack)
 
+> **RESOLVED (fix-45, 2026-07-19):** all 5 core dumps recorded then deleted; `/volume1` root verified clean. New-crash tripwire: `nas-core-dumps`.
+
 **Host:** nas · **Component:** dsm / crash artifacts · **Auditor:** svc:nas-apps
 
 
 Five core.gz crash dumps sit at /volume1/ root: '@Plex Transcoder' (Jul 7 2026, 1.4MB — a transcoder crash days before the analysis storm), @python (Jul 3 2026, 45MB), two @qbittorrent-nox cores (Dec 2025 and Apr 2026 — qbittorrent is not part of the current NAS stack, leftover from the old-server layout), and @snmpd (Sep 2025). Junk worth clearing; the Plex Transcoder core is the only recent one and Plex has been stable since (crash reports dir shows uploads for 1.41.5 and current 1.43.3).
 
 ### L38. Dead crontab entry on mini executes a directory nightly: '0 0 * * * /home/btabaska/bin'
+
+> **RESOLVED (fix-45, 2026-07-19):** resolved by fix-39 (M62) before this session — entry removed from crontab (verified live: only the recyclarr cron remains); `cron-target-sanity` guards the class.
 
 **Host:** mini · **Component:** crontab · **Auditor:** svc:nas-apps
 
@@ -2494,6 +2554,8 @@ Found while tracing the MeTube/beets flow: mini's user crontab's first entry run
 
 ### L39. Residue from this morning's RAG recovery: 239 dangling knowledge_file rows + ~245 orphaned file records and stale 768-dim vector data left behind
 
+> **RESOLVED (fix-45, 2026-07-19):** full purge with the container stopped (webui.db backed up): 481 dead knowledge_file + 487 orphan file rows deleted; chroma cleaned via its own client (778→286 collections) + orphan segments/uploads swept; vector_db 450M→218M. RAG verified byte-identical distances pre/post. Root cause found: `wiki-rag-sync.py` never DELETEs replaced file records — follow-up logged.
+
 **Host:** rig · **Component:** open-webui (webui.db + vector_db) · **Auditor:** svc:ai-stack
 
 
@@ -2501,12 +2563,16 @@ The recovery from the dimension mismatch created a fresh collection but never cl
 
 ### L40. ~17.9GB of unreferenced GGUFs sitting in /opt/llm/models outside the archive/ dir
 
+> **RESOLVED (fix-45, 2026-07-19):** both GGUFs verified unreferenced and moved to `archive/` (~17.7G); llama-swap healthy, 12 models listed.
+
 **Host:** rig · **Component:** llama-swap model store (/opt/llm/models) · **Auditor:** svc:ai-stack
 
 
 Two model files in /opt/llm/models are referenced by no llama-swap config entry: Qwen3.6-27B-UD-Q4_K_XL.gguf (17.6GB — the non-MTP variant superseded 2026-07-15 by Qwen3.6-27B-MTP-UD-Q4_K_XL.gguf) and nomic-embed-text.gguf (274MB — replaced by Qwen3-Embedding-0.6B the same day). An archive/ directory exists for exactly this purpose but these were left in the active dir. Dead weight on NVMe; harmless otherwise (dir is mounted ro into the container). llama3.2-3b.gguf, qwen2.5-coder-7b.gguf etc. are all still referenced and fine.
 
 ### L41. Apollo healthy and auth works, but journal shows constant Avahi service re-registration churn (~every 20s)
+
+> **RESOLVED (fix-45, 2026-07-19):** no longer reproducing (zero avahi lines in today's 9h journal; ceased after the 2026-07-16 Apollo restart; `_nvstream._tcp` still advertised). Documented in the fleet-hygiene register; pre-truncation journal is gone (L7) so the original loop is unexaminable.
 
 **Host:** rig · **Component:** Apollo (apollo.service, systemd user unit) · **Auditor:** svc:gaming
 
@@ -2528,12 +2594,16 @@ Labels: sonarr 257, sonarr-imported 84, radarr 4, radarr-imported 13, lidarr 5, 
 
 ### L43. Junk/unmanaged content in library roots: ~45 unmapped folders in /movies (incl. ' - Copy' dupes, 'Moviesnew') and loose episode release folders in /tv for shows not in Sonarr
 
+> **RESOLVED (fix-45, 2026-07-19):** see L33/L34 — junk deleted, loose episodes adopted, packs/legacy series documented as the accepted baseline with a growth tripwire.
+
 **Host:** nas · **Component:** radarr/sonarr library roots · **Auditor:** flow:movies-tv
 
 
 Radarr reports ~45 unmappedFolders in /movies (e.g. 'Guardians...FGT - Copy', 'Hannah Gadsby Nanette (2018) - Copy', 'Moviesnew', multi-movie pack folders) — content invisible to Radarr management; several surface in Plex as the unmatched junk items above. /tv root holds loose single-episode release folders for Euphoria S03E02-E06 and I Love LA S01E01-E05; neither show exists in Sonarr (Plex serves them: Euphoria (US) 13 leaves, I Love LA 8 leaves) — unmanaged/dead paths that Sonarr can never upgrade or track.
 
 ### L44. Navidrome indexes the Synology recycle bin: 2 deleted YouTube-rip MP3s live in the music library via #recycle
+
+> **RESOLVED (fix-45, 2026-07-19):** see L15 — share-root `.ndignore` + guard; the 2 recycle-surfaced MP3s were restored to `/volume1/music/YouTube/` (L49) and the bin emptied.
 
 **Host:** mini + nas · **Component:** navidrome / NAS music share · **Auditor:** flow:music
 
@@ -2542,12 +2612,16 @@ The read-only CIFS mount //192.168.10.4/music on mini exposes the Synology #recy
 
 ### L45. Junk empty duplicate album folder '/volume1/music/Eminem/The Death Of Slim Shady (Coup De Grace)' (0 bytes) beside the managed folder
 
+> **RESOLVED (fix-45, 2026-07-19):** already absent on re-check (removed by a prior session); managed folder intact with 19 tracks.
+
 **Host:** nas · **Component:** NAS music share · **Auditor:** flow:music
 
 
 The Eminem artist dir contains both the Lidarr-managed 'The Death of Slim Shady (Coup de Grâce) (2024)' (19 tracks, verified in Navidrome+Plex) and a completely empty leftover 'The Death Of Slim Shady (Coup De Grace)' (different casing/diacritics, no year suffix, created 2026-07-10 13:16, 0 bytes). Dead path from an earlier naming scheme or aborted import; safe deletion candidate (not deleted, log-only).
 
 ### L46. Ghost duplicate albums in Navidrome DB: 4 missing albums / 70 missing media_files, incl. shadow 'Hotel Diablo' and 'lost americana' rows
+
+> **RESOLVED (fix-45, 2026-07-19):** see L16 — ghost rows purged.
 
 **Host:** mini · **Component:** navidrome DB · **Auditor:** flow:music
 
@@ -2575,12 +2649,16 @@ Full file listing of /volume1/books (excluding @eaDir) shows: (a) duplicate auth
 
 ### L48. Pinchflat burning retries on 3 permanently-impossible members-only videos (attempt 18/20, rescheduled to Jul 18)
 
+> **RESOLVED (fix-45, 2026-07-19):** see L18 — prevented + cancelled.
+
 **Host:** mini · **Component:** pinchflat (oban job queue) · **Auditor:** flow:youtube-photos
 
 
 All 38 undownloaded media_items across both sources are members-only or 'Video unavailable' items (yt-dlp: 'Join this channel to get access to members-only content' / 'available to this channel's members on level ...') — these can never succeed without channel-membership cookies. 3 oban MediaDownloadWorker jobs (media_items 6, 9, 10 — Yellow Cherry Jam members-only sessions) are in state 'retryable' at attempt 18/20 with error {:error, :download_failed}, rescheduled for 2026-07-18. Harmless but wasted yt-dlp calls; they will hit max_attempts and discard. No real download failures exist.
 
 ### L49. MeTube manual downloads work, but every audio file it ever produced was silently deleted from /volume1/music/YouTube (now only in #recycle); landing zone empty
+
+> **RESOLVED (fix-45, 2026-07-19):** both MP3s restored from `#recycle` to `/volume1/music/YouTube/` (644, btabaska:users); deleter confirmed gone (rig has only the pull-direction `nas-music-mirror`); music recycle bin then emptied.
 
 **Host:** mini + nas · **Component:** metube -> NAS music share (audio download path) · **Auditor:** flow:youtube-photos
 
@@ -2589,12 +2667,16 @@ MeTube (mini, Up 6 days) logs show its last manual download completed successful
 
 ### L50. //nas/youtube #recycle holds 1357 deleted video files consuming 81GB
 
+> **RESOLVED (fix-45, 2026-07-19):** youtube `#recycle` emptied — actually 81G/6,122 files; music bin too. ~80.3 GiB freed (df verified). Monthly DSM task 14 (1st, 05:00) now enforces 30d retention and re-creates the Navidrome guards.
+
 **Host:** nas · **Component:** youtube share recycle bin · **Auditor:** flow:youtube-photos
 
 
 The youtube share's recycle bin contains 1357 video files totalling 81GB — residue of the 2026-07-13 ACL-fix / re-ingest churn (nearly mirrors the 1364 live pinchflat files). Plex does not see it (section count matches live files exactly), so it is purely wasted space. Volume has headroom (1.3T/14T used), so no urgency; emptying the share's recycle bin (or letting a DSM recycle-retention schedule do it) reclaims 81GB.
 
 ### L51. Five process core dumps sitting at /volume1 root, including a 45MB python core (Jul 3) and a Plex Transcoder core (Jul 7)
+
+> **RESOLVED (fix-45, 2026-07-19):** see L37.
 
 **Host:** nas · **Component:** DSM system (crash artifacts) · **Auditor:** flow:youtube-photos
 
@@ -2621,6 +2703,8 @@ Every other service name is correctly NXDOMAIN in public DNS, but www.tabaska.us
 
 ### L54. Secondary AdGuard (NAS) forwards to Quad9 DoH instead of an Unbound recursor — diverges from documented design
 
+> **RESOLVED (fix-45, 2026-07-19):** accepted-and-documented per the live-is-source-of-truth mandate: Quad9-DoH upstream is deliberate resilience (an Unbound-on-mini upstream would make both resolvers die with the mini). Compose header rewritten live+repo; register entry added.
+
 **Host:** nas · **Component:** adguardhome-nas upstream DNS · **Auditor:** flow:dns-proxy
 
 
@@ -2636,6 +2720,8 @@ adguard-mini upstreams to udp://unbound:5335 (local recursive DNSSEC resolver, p
 The stash.tabaska.us block uses `header_up X-Forwarded-Port {server_port}` but {server_port} is not a valid Caddyfile shorthand placeholder, so the literal string '{server_port}' is sent upstream to Stash on every request (visible in caddy's own access-log capture of proxied headers). Cosmetic unless Stash ever uses that header for URL generation.
 
 ### L56. Rig restic fresh and nightly-consistent (0.19.1, dailies 07-10..07-15) but /opt gap persists: AMP 'Main' ADS controller instance and /opt/stacks/playit config are NOT in the backup set `known-issue`
+
+> **RESOLVED (fix-45, 2026-07-19):** `/opt/stacks/amp/.../instances` was already covered (fix-20 widened it); `/opt/stacks/playit` added to live env + repo example. Manual run verified: snapshot `a1787e10` contains both paths.
 
 **Host:** rig · **Component:** restic include set (/opt gap) · **Auditor:** flow:backups
 
@@ -2658,12 +2744,16 @@ A third bucket exists in the account: bucket-rustic (id 26aef2674aa534fe9efe0a1e
 
 ### L59. NAS timezone is US/Pacific while the fleet/operator timezone is America/New_York — all DSM schedules fire 3h later than Eastern wall-clock
 
+> **RESOLVED (fix-45, 2026-07-19):** see L30 — fixed by fix-40, verified live.
+
 **Host:** nas · **Component:** system timezone · **Auditor:** flow:backups
 
 
 ssh nas 'date' returns PDT and /etc/localtime -> /usr/share/zoneinfo/US/Pacific, but the secrets vault _meta.timezone says America/New_York and every other host runs Eastern (rig timer shows EDT). Practical effects: Hyper Backup 'daily 19:10' actually runs 22:10 Eastern, Immich dump '02:30' runs 05:30 Eastern, HA backup tars named 04.45 (Eastern-derived HA time) carry 01:45 NAS mtimes, and log/mtime correlation across hosts is skewed by 3h. Could be deliberate but nothing documents it; likely a set-up-time leftover.
 
 ### L60. Crash core dumps littering /volume1 root: qbittorrent-nox (x2), Plex Transcoder, python, snmpd — evidence of past process crashes, never cleaned
+
+> **RESOLVED (fix-45, 2026-07-19):** see L37.
 
 **Host:** nas · **Component:** DSM system / crash artifacts · **Auditor:** flow:backups
 
@@ -2681,12 +2771,16 @@ Second of the two failures in the 14:16Z daily run: '[FAIL] wiki-drift (warn) �
 
 ### L62. macOS AppleDouble junk files shipped to /opt/verification (bin/._llm-triage.sh, skills/._docker-triage.md)
 
+> **RESOLVED (fix-45, 2026-07-19):** junk gone live (verified none under /opt/verification); `deploy.sh` strips `._*` at staging; new `verification-tree-macos-junk` check catches any future path back in.
+
 **Host:** mini · **Component:** /opt/verification deploy hygiene · **Auditor:** flow:coverage-tripwire
 
 
 The rsync deploy from the operator's Mac carried AppleDouble resource-fork files into the live verification tree: /opt/verification/bin/._llm-triage.sh and /opt/verification/skills/._docker-triage.md. Harmless today but they are junk, get chmod 755'd by the deploy step's 'chmod 755 bin/*.sh', and will multiply on future Mac-side rsyncs unless --exclude='._*' (or COPYFILE_DISABLE=1) is added to the README deploy command.
 
 ### L63. Fast-tier dead-man ping URL is not recorded in the secrets vault — exists only in mini:/etc/verification/env
+
+> **RESOLVED (fix-45, 2026-07-19):** verified resolved: vault `healthchecks.verification_fast_mini_ping_url` exists and hash-matches the live `/etc/verification/env` value.
 
 **Host:** mini · **Component:** secrets vault (.handoff-secrets.yaml) healthchecks inventory · **Auditor:** flow:coverage-tripwire
 
@@ -2695,12 +2789,16 @@ The vault's healthchecks section records verification_mini_ping_url and verifica
 
 ### L64. Dead path: Roomba (192.168.10.231) onboarding failed with bad credentials on 2026-06-27 and was never completed — no config entry exists
 
+> **RESOLVED (fix-45, 2026-07-19):** documented DROPPED: no roomba config entry (verified); pairing needs fresh BLID/password + physical access. Its discovery flow will keep reappearing — ignorable.
+
 **Host:** ha (192.168.10.50) · **Component:** roomba integration (abandoned) · **Auditor:** flow:ha-deep
 
 
 8 log entries (4 ERROR 'Bad username or password', 4 WARN 'Not authorised') from roombapy during a config-flow attempt on 2026-06-27; the config-entry list contains no roomba entry, so the attempt was abandoned. There is a Roomba on the LAN at 192.168.10.231 that HA cannot talk to. Either finish pairing with fresh BLID/password or drop the intent; also generated 'blocking call inside event loop' warnings from the roomba config flow (upstream, cosmetic).
 
 ### L65. Matter server + integration loaded with ZERO devices/entities (idle dead weight); one 'Connection failed' on 2026-07-03; matter server add-on has a pending update
+
+> **RESOLVED (fix-45, 2026-07-19):** kept for future use: entry loaded, Matter Server updated to 9.1.0, 0 devices as expected.
 
 **Host:** ha (192.168.10.50) · **Component:** matter integration · **Auditor:** flow:ha-deep
 
@@ -2709,12 +2807,16 @@ The matter config entry is state=loaded and the Matter Server add-on runs, but t
 
 ### L66. Pending updates: HA Core, HA OS and Matter Server all have updates available (running core 2026.6.4)
 
+> **RESOLVED (fix-45, 2026-07-19):** already applied before this session (auto/concurrent): core 2026.6.4→2026.7.2, OS 18.1, Matter Server 9.1.0; all update entities `off`; 140 states, system healthy.
+
 **Host:** ha (192.168.10.50) · **Component:** core/OS updates · **Auditor:** flow:ha-deep
 
 
 update.home_assistant_core_update=on, update.home_assistant_operating_system_update=on, update.matter_server_update=on; only the Supervisor is current (off). Maintenance-window work; noting for drift tracking.
 
 ### L67. /api/error_log (and /api/error/all) return 404 on core 2026.6.4 — any monitoring/scripts that scrape the REST error log will silently fail
+
+> **RESOLVED (fix-45, 2026-07-19):** still 404 on core 2026.7.2 (re-tested with valid token). WS `system_log/list` is the supported path — encoded in the new `ha-triage.md` skill so triage never misreads the 404.
 
 **Host:** ha (192.168.10.50) · **Component:** REST API surface · **Auditor:** flow:ha-deep
 
@@ -2795,6 +2897,8 @@ Caddy serves llamaswap.tabaska.us -> rig:9292 (added ai-01 2026-07-15) and verif
 
 ### L76. Two scripts still cite the retired handoff docs as their rationale reference
 
+> **RESOLVED (fix-45, 2026-07-19):** both comments rewritten to point at the wiki (handoff docs retired).
+
 **Host:** macbook (local repo) · **Component:** scripts (retired-handoff comments) · **Auditor:** repo:junk-deadpaths
 
 
@@ -2865,6 +2969,8 @@ wiki/docs/reference/scripts/backup/'restore-test-sh 2.md' and setup/'install-hao
 
 ### L84. Two junk cron entries execute nothing useful: btabaska runs a DIRECTORY nightly; root runs the retired pterodactyl scheduler every minute
 
+> **RESOLVED (fix-45, 2026-07-19):** resolved by fix-39 (M1/M62) before this session — pterodactyl purged incl. the root cron, btabaska dir-cron removed (verified live: crontabs clean); guarded by `cron-target-sanity` + `ptero-lemp-retired`.
+
 **Host:** mini · **Component:** crontabs (btabaska + root) · **Auditor:** repo:live-drift
 
 
@@ -2890,12 +2996,16 @@ The repo's configs/ansible/ansible-pull.timer header was rewritten (rig-is-24/7 
 
 ### L87. Stale vault entry (deluge.port 58846 vs live 3254) and hosts/ manifests exist only for macmini (rig has no export-manifests.timer)
 
+> **RESOLVED (fix-45, 2026-07-19):** vault `deluge` section corrected+annotated (port 5945 = web/JSON-RPC consumers use; `daemon_port: 3254` added). Rig now exports manifests: script+units deployed, timer enabled, first run clean (`hosts/cachyos/` in git: pkg/AUR/compose-image/cron/timer lists), healthchecks `export-manifests-rig` dead-man wired (URL in vault).
+
 **Host:** repo · **Component:** foss-setup/.handoff-secrets.yaml + hosts/ manifests coverage · **Auditor:** repo:live-drift
 
 
 (1) The secrets vault says deluge port 58846 but the live daemon listens on 3254 (core.conf daemon_port=3254, deluged bound to 0.0.0.0:3254); the wiki already documents 3254 and calls 58846 a stale-docs gotcha — the vault never got the fix. (2) export-manifests.sh is 'designed for every host' but hosts/ contains only macmini; the rig has no export-manifests.timer at all, so rig package lists/timers/crontabs are not captured in git (reproducibility gap that overlaps known issue 7 but is a distinct mechanism). The macmini manifests themselves are CURRENT: systemd-timers.txt lists the same 28 units as live, crontabs.txt and cron.d-listing.txt match live byte-for-byte.
 
 ### L88. Fast-tier ntfy pages are titled 'Verification [None tier]' — tier label uses args.host even for --tier runs
+
+> **RESOLVED (fix-45, 2026-07-19):** resolved by intervening runner work (verified deployed: title prefers the tier label; the '[None tier]' render is gone).
 
 **Host:** mini · **Component:** bin/checks_runner.py (ntfy titles) · **Auditor:** repo:verification-suite
 
@@ -2904,12 +3014,16 @@ checks_runner.py builds the notification tag as `tier = f" [{args.host} tier]" i
 
 ### L89. Scheduled quick tier runs with --host (operator-override semantics) so it would resurrect enabled:false checks; 5 media checks also run twice per cycle
 
+> **RESOLVED (fix-45, 2026-07-19):** both halves closed: scheduled quick tier runs `--respect-enabled` (deployed; disabled checks stay disabled), and the 3 double-matching media checks retargeted `host: url`→`mini` — verified live: url run 25 checks, media run 18, zero overlap.
+
 **Host:** mini · **Component:** verification-quick.service semantics · **Auditor:** repo:verification-suite
 
 
 checks_runner treats --host as an operator action and deliberately includes disabled checks; --tier respects `enabled`. But verification-quick.service is a SCHEDULED unit using `--host url`, `--host docker-fleet`, `--host media` — so any future `enabled: false` check in those domains/hosts would keep running and paging hourly, contradicting the documented --tier design intent. No live impact today (the only disabled check, sys-seedbox-ssh, is host:local/domain:system). Separately, the 5 host:url checks in media.yaml (sonarr/radarr queue-stuck, pipeline-health, indexer-redundancy) match BOTH `--host url` and `--host media`, so they execute twice per hourly cycle with independent transition state (results-url.json total=19 includes them; results-media.json total=14 includes them again) — duplicate probes and potential double transition pages.
 
 ### L90. skills/ is live (consumed by llm_triage.py) but carries stale environment facts, and 5 of 12 domains have no mapped skill (generic fallback)
+
+> **RESOLVED (fix-45, 2026-07-19):** 4 stale facts corrected (rig SSH works, NAS resolver live, HA off-tailnet, NAS crontab readable); DOMAIN_SKILL now maps all 12 domains incl. new `ha-triage.md` + `media-triage.md` skills.
 
 **Host:** mini · **Component:** skills/ (LLM triage prompts) + DOMAIN_SKILL map · **Auditor:** repo:verification-suite
 
@@ -2918,6 +3032,8 @@ All 5 skill files are wired (DOMAIN_SKILL + system-triage.md default) — none o
 
 ### L91. README materially stale (LLM endpoint, 'Known state 2026-07-07', no quick/fast tiers, no ack flow, no dead-man drop-in) and an AppleDouble junk file sits in /opt/verification/bin
 
+> **RESOLVED (fix-45, 2026-07-19):** README rewritten (three tiers + dead-men table, ack flow, runner flags, llama-swap :9292 default, Known state 2026-07-19); env.example was already current; AppleDouble junk gone + `verification-tree-macos-junk` guard.
+
 **Host:** mini · **Component:** verification/README.md + env.example + junk file · **Auditor:** repo:verification-suite
 
 
@@ -2925,12 +3041,16 @@ README documents only the daily 07:15 timer and says the LLM default is ollama :
 
 ### L92. Confirmed: no [[whisparr]] block in unpackerr.conf although whisparr is download-touching — currently zero-impact (whisparr has never downloaded anything)
 
+> **RESOLVED (fix-45, 2026-07-19):** verified already resolved by fix-29: `[[whisparr]]` block live with url+key+paths.
+
 **Host:** nas · **Component:** unpackerr · **Auditor:** gap:NAS unpackerr — live wedge state and archive-extraction backlog never quantified (only 1 case evidenced)
 
 
 unpackerr.conf covers sonarr/radarr/lidarr/readarr only; no [[whisparr]] and no [[folder]] blocks. The compose file explicitly lists whisparr among the download-touching services that mount /seedbox and share the same Deluge client + remote path mapping, so any rar'd adult release whisparr grabs will never be extracted and will strand in its queue. However the gap is latent today: whisparr 2.2.0.108 has history totalRecords=0, queue totalRecords=0, and its library dir /volume1/stash/root/whisparr is empty (0 rar files, no content). Fix is a one-block config addition whenever whisparr goes live, using its API key from /volume1/docker/whisparr/config/config.xml.
 
 ### L93. Seedbox residue: ~20 extraction leftovers delete_delay never cleaned + 8 orphaned Animaniacs (2020) rar releases for a series that is not in Sonarr
+
+> **RESOLVED (fix-45, 2026-07-19):** 11 extracted-duplicate mkvs deleted (~10.4 GiB, rars kept seeding; sweep clean). All 10 Animaniacs-2020 dirs + the Andor special were live torrents — removed by exact hash with data (389→378), disk verified clean, no other torrent touched.
 
 **Host:** seedbox · **Component:** seedbox files/tv (deluge + unpackerr cleanup) · **Auditor:** gap:NAS unpackerr — live wedge state and archive-extraction backlog never quantified (only 1 case evidenced)
 
@@ -2947,6 +3067,8 @@ The [webserver] metrics endpoint added after the 2026-07-10 two-day wedge listen
 > **RESOLVED (fix-29, 2026-07-17):** the metrics port `5656` is now published (NAS compose + repo mirror `configs/nas/media-automation/docker-compose.yml`, container recreated), an Uptime-Kuma "NAS Unpackerr" monitor (id 57, ntfy-linked via the M21 auto-heal) added, and — beyond liveness — the `unpackerr-poll-advancing` check confirms unpackerr is reaching all 5 Starr apps AND that its poll counter advances (freezes >5 min ⇒ WEDGED, the 2026-07-10 "up but idle two days" class). Green (`apps=5`, counter climbing); negative-tested (frozen + unreachable both flag). Runbook `wiki/docs/runbooks/monitoring-coverage.md`.
 
 ### L95. 2 monitored Sonarr series sit on the unmanaged 'Any' quality profile, bypassing all recyclarr/TRaSH custom-format scoring
+
+> **RESOLVED (fix-45, 2026-07-19):** both series moved to WEB-1080p (profile 7), verified via API; class guarded by `sonarr-unmanaged-profile` (green, n=0).
 
 **Host:** nas · **Component:** sonarr · **Auditor:** gap:recyclarr (custom-format / quality-profile sync to radarr+sonarr) — deployed and monitored but never audited for sync correctness
 

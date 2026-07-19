@@ -1,8 +1,3 @@
-# Explicit pacman packages for the rig (cachyos). Consumed by the ansible base
-# role (roles/base: pacman --needed on this list). Captured 2026-07-16 from
-# `pacman -Qqe` after the bare-metal rebuild, so the desktop/base software
-# (LibreOffice, Obsidian, Calibre, Discord, VS Code, browsers, game launchers)
-# is reproducible and survives the next wipe. Regenerate with `pacman -Qqe`.
 accountsservice
 alacritty
 alsa-firmware

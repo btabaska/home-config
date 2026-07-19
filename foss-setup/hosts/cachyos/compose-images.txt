@@ -1,0 +1,4 @@
+ghcr.io/imagegenius/amp:latest
+ghcr.io/playit-cloud/playit-agent:latest
+ghcr.io/thijsvanloef/palworld-server-docker:latest
+henrygd/beszel-agent:0.18.7

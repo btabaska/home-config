@@ -1,0 +1,18 @@
+# Dead-man ping drop-in for ansible-pull.service — install PER HOST as
+#   /etc/systemd/system/ansible-pull.service.d/healthchecks.conf
+# with the host's URL from the vault (healthchecks.ansible_pull_{mini,rig}_ping_url),
+# then `systemctl daemon-reload`.
+#
+# ExecStartPost only runs after ExecStart succeeds, so a failed OR silently
+# never-firing timer stops pinging and pages via the healthchecks->ntfy route.
+# Use the LOCAL endpoint (http://192.168.10.2:8001/ping/<uuid>) so an edge/Caddy
+# outage cannot mask the signal — same pattern as restic-backup + export-manifests.
+#
+# HISTORY (why this example exists): the drop-in was hand-installed and never in
+# git; the 2026-07-15 rig NVMe rebuild (fix-20) silently dropped the rig's copy
+# and ansible-pull-rig sat "down" for 4 days while the service ran clean —
+# found+restored during the fix-45 close-out. If you rebuild a host, reinstall
+# this file (rebuild-a-host runbook).
+
+[Service]
+ExecStartPost=/usr/bin/curl -fsS -m 10 --retry 3 -o /dev/null http://192.168.10.2:8001/ping/<uuid-from-vault>

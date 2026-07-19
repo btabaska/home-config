@@ -39,7 +39,7 @@
 # PINNED IMAGE TAGS (verified current as of June 2026 — never :latest/:develop)
 # ------------------------------------------------------------------------------
 #   sonarr          lscr.io/linuxserver/sonarr:4.0.19          (Sonarr 4.0.19.2979)
-#   radarr          lscr.io/linuxserver/radarr:6.2.1           (Radarr 6.2.1.10461)
+#   radarr          lscr.io/linuxserver/radarr:6.3.0           (Radarr 6.3.0.10514)
 #   prowlarr        lscr.io/linuxserver/prowlarr:2.4.0         (Prowlarr 2.4.0.5391)
 #   lidarr          lscr.io/linuxserver/lidarr:3.1.0           (stable; bare 3.1.2 tag does not exist)
 #   readarr         docker.io/linuxserver/readarr:develop-0.4.18.2805-ls157  (EOL; pinned tag only on Docker Hub — removed from lscr.io/ghcr)
@@ -135,7 +135,7 @@ services:
   # Root folder: /movies (Volume 2). Download client: remote Deluge (label `radarr`).
   # ----------------------------------------------------------------------------
   radarr:
-    image: lscr.io/linuxserver/radarr:6.2.1   # Radarr 6.2.1.10461 (stable, Jun 2026)
+    image: lscr.io/linuxserver/radarr:6.3.0   # Radarr 6.3.0.10514 (stable, Jul 2026 — fix-44/L31 update-warning remediation)
     container_name: radarr
     environment: *common-env
     volumes:

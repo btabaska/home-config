@@ -1,0 +1,37 @@
+# export-manifests.service (RIG variant) — snapshot package/cron/timer/image
+# manifests into the rig's ansible-pull checkout (fix-45 / quality-gate L87:
+# hosts/ manifests existed only for macmini; the rig had no export timer, so
+# its package lists/timers/crontabs were not captured in git).
+#
+# Deploy (hand-copied, same flow as the mini variant + ansible-pull.timer):
+#   sudo cp export-manifests.service /etc/systemd/system/
+#   sudo cp foss-setup/scripts/inventory/export-manifests.timer /etc/systemd/system/
+#   sudo cp foss-setup/scripts/inventory/export-manifests.sh /opt/scripts/inventory/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now export-manifests.timer
+#
+# The manifests land in /opt/foss-setup/foss-setup/hosts/cachyos/ — an AI
+# session syncs them into the canonical repo (same review-then-commit flow as mini).
+
+[Unit]
+Description=Export host package/cron/timer/image manifests into the control repo
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# Dedicated inventory clone (same design as mini's /opt/foss-setup) — NOT the
+# ansible-pull checkout: exports modify tracked hosts/ files, which would dirty
+# the pull working copy and could wedge the daily convergence run.
+Environment=REPO_ROOT=/opt/foss-setup/foss-setup
+Environment=STACKS_DIR=/opt/stacks
+# ntfy topic pinged by the script on FAILURE.
+Environment=NTFY_URL=https://ntfy.tabaska.us/verification
+ExecStart=/opt/scripts/inventory/export-manifests.sh
+# Dead-man ping (healthchecks "export-manifests-rig", weekly + 24h grace; URL
+# in vault healthchecks.export_manifests_rig_ping_url). Local endpoint (same
+# style as the mini variant) so an edge/Caddy outage cannot mask the signal.
+ExecStartPost=/usr/bin/curl -fsS -m 10 --retry 3 -o /dev/null http://192.168.10.2:8001/ping/89c683e8-11ac-458b-9205-88825329d87a
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

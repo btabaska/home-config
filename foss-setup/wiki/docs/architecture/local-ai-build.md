@@ -110,11 +110,11 @@ model, with non-scoped models rejected 403) was validated live at deploy.
 `local-ai-tooling/docker` compose. Three stacks, all verified generating
 end-to-end (models in `/opt/comfyui/models`, outside /home like /opt/llm):
 
-| stack | model | ComfyUI recipe | ~time / peak VRAM |
+| stack | model | ComfyUI recipe (default, post 2026-07-19 quality pass) | ~time / peak VRAM |
 |---|---|---|---|
-| realistic | Z-Image Turbo (`Comfy-Org/z_image_turbo`) | UNET + **`lumina2`** CLIP (qwen_3_4b) + ModelSamplingAuraFlow, 8 steps cfg 1 | ~12 s / 21.4 GiB |
-| anime | NoobAI-XL 1.1 (`Laxhar/noobai-XL-1.1`, Illustrious) | standard SDXL, 28 steps cfg 5 | ~8 s / 8.3 GiB |
-| realistic alt | Flux.2 Klein 9B (`unsloth/FLUX.2-klein-9B-GGUF`, `flux2` CLIP qwen_3_8b) | GGUF UNET + SamplerCustomAdvanced, 20 steps cfg 5 | ~64 s / 21.2 GiB |
+| realistic | Z-Image Turbo (`Comfy-Org/z_image_turbo`) | UNET + **`lumina2`** CLIP (qwen_3_4b) + ModelSamplingAuraFlow sh3, **`dpmpp_sde`/`beta`**, 8 steps cfg 1, **native 1328²** | ~26 s / 21.8 GiB |
+| anime | NoobAI-XL 1.1 (`Laxhar/noobai-XL-1.1`, Illustrious **EPS**) | standard SDXL, `euler_a`/`normal`, **30 steps cfg 5.5, 832×1216**, canonical Danbooru quality tags + official negative | ~10 s / 19 GiB |
+| realistic alt | Flux.2 Klein **distilled** 9B (`unsloth/FLUX.2-klein-9B-GGUF`, `flux2` CLIP qwen_3_8b) | GGUF UNET + SamplerCustomAdvanced, **6 steps cfg 1** (distilled model at its intended config — was mis-run at 20/cfg4) | ~15 s / 19 GiB |
 
 A single image model peaks **~21 GiB** and the 73k-ctx 24B LLMs sit at
 **~22.8 GiB**, so they can't co-reside. The **gpu-arbiter** (`:8189`,
@@ -123,6 +123,29 @@ A single image model peaks **~21 GiB** and the 73k-ctx 24B LLMs sit at
 182 ms gpu-yield endpoint); when ComfyUI's queue drains it POSTs `/free` so the
 LLM reloads on the next chat turn. Frontends point their ComfyUI URL at
 **`:8189`, not `:8188`**. Verified API workflows: `local-ai-tooling/comfyui-workflows/`.
+
+**Quality pass (2026-07-19, deep-research-backed, all re-validated + re-seeded
+into both frontends).** The three defaults above were tuned for best per-pass
+quality while staying fast enough for interactive RP. The **biggest fix was
+Flux**: `unsloth/FLUX.2-klein-9B-GGUF` is the *distilled* (4-step) model, but it
+was mis-run at the *base* model's 20 steps / cfg 4 → "overcooked" output + ~10×
+wasted compute; the default now runs it at its intended **6 steps / cfg 1**. For
+max fidelity the **base** 9B GGUF (`unsloth/FLUX.2-klein-base-9B-GGUF`, 24 steps
+cfg 4, ~146 s) ships as an HQ variant. **HQ variants** live in
+`comfyui-workflows/hq/` — hires-fix (4x-UltraSharp 2nd pass) + Impact-Pack
+`FaceDetailer` (yolo `face_yolov8m`) for the two portrait models (z-image-hq peaks
+23.6 GiB — edge fit) and the base-Flux variant. `comfyui-workflows/gen-workflows.py`
+regenerates all raw + Marinara-`%placeholder%` variants. FaceDetailer needs the
+ComfyUI-Impact-Pack + Impact-Subpack nodes with `opencv`+`ultralytics` installed
+in the venv **as uid 1000** (same pattern as gguf).
+
+**Prompt crafting (Open WebUI).** Image models need two different prompt
+grammars — NoobAI is Danbooru **tags**, Z-Image/Flux are **natural language** —
+and OWUI's built-in image-prompt task is single-global, so two Workspace model
+presets do the job (base `chat`): **🏷️ Illustrious Tagger** (temp 0.4, emits
+ordered tags + a NEGATIVE line) and **🎨 Scene Describer** (temp 0.6, emits a
+cinematic prose paragraph). Draft in RP chat → `@`-mention the matching preset →
+paste its output into the image connection.
 
 Notes: HF base checkpoints are uncensored-capable; the premium Civitai NSFW
 retrains (Moody / CyberRealistic ZIT) need a Civitai API token (not yet in the

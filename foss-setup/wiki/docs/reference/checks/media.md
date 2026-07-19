@@ -17,7 +17,7 @@ python3 /opt/verification/bin/music-dupes.py /mnt/nas/music
 
 sonarr: import queue not clogged (<=5 items stuck in warning state)
 
-- **host:** `url` · **severity:** `warn` · **guards task:** `verify-06` · **enabled:** True
+- **host:** `mini` · **severity:** `warn` · **guards task:** `verify-06` · **enabled:** True
 - **expects:** `^stuck=[0-5]$`
 
 ```bash
@@ -28,7 +28,7 @@ curl -sm 20 -H "X-Api-Key: $SONARR_API_KEY" "http://192.168.10.4:8989/api/v3/que
 
 sonarr has >=3 search-enabled indexers (no IPT-only single point of failure)
 
-- **host:** `url` · **severity:** `warn` · **guards task:** `seed-11` · **enabled:** True
+- **host:** `mini` · **severity:** `warn` · **guards task:** `seed-11` · **enabled:** True
 - **expects:** `^searchable=(?:[3-9]|[1-9][0-9]+)$`
 
 ```bash
@@ -39,7 +39,7 @@ curl -sm 20 -H "X-Api-Key: $SONARR_API_KEY" "http://192.168.10.4:8989/api/v3/ind
 
 radarr: import queue not clogged (<=5 items stuck in warning state)
 
-- **host:** `url` · **severity:** `warn` · **guards task:** `verify-06` · **enabled:** True
+- **host:** `mini` · **severity:** `warn` · **guards task:** `verify-06` · **enabled:** True
 - **expects:** `^stuck=[0-5]$`
 
 ```bash

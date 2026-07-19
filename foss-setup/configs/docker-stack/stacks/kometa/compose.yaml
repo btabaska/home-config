@@ -15,7 +15,7 @@
 
 services:
   kometa:
-    image: kometateam/kometa:v2.3.1
+    image: kometateam/kometa:v2.4.4
     container_name: kometa
     restart: unless-stopped
     environment:

@@ -10,7 +10,8 @@
 #   vhost checks + DNS + ping monitors.
 # - v2 loads monitors at startup only -> restarts the container at the end.
 #
-# Status-code choices were probed live 2026-07-09 (see handoff):
+# Status-code choices were probed live 2026-07-09 (documented in the wiki
+# monitoring-coverage runbook; the old handoff docs are retired):
 #   *arr/login-redirect apps 3xx, mcpo 404 on /, apollo https 307 self-signed.
 set -euo pipefail
 

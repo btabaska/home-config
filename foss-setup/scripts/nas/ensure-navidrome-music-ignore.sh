@@ -15,6 +15,20 @@ set -euo pipefail
 MUSIC="${MUSIC_ROOT:-/volume1/music}"
 RECYCLE="$MUSIC/#recycle"
 MARKER="$RECYCLE/.ndignore"
+ROOT_MARKER="$MUSIC/.ndignore"
+
+# 2026-07-19 (quality-gate L15/L50): the in-recycle marker is deleted by any
+# recycle-bin emptying pass (including the monthly empty-recycle-30d.sh task),
+# so also keep a share-root .ndignore with a '#recycle' pattern — it lives
+# outside the bin and survives emptying.
+if [ -f "$ROOT_MARKER" ]; then
+  echo "ok: $ROOT_MARKER already present"
+else
+  printf '#recycle\n' > "$ROOT_MARKER"
+  chown 1026:100 "$ROOT_MARKER" 2>/dev/null || true
+  chmod 644 "$ROOT_MARKER"
+  echo "created: $ROOT_MARKER"
+fi
 
 if [ ! -d "$RECYCLE" ]; then
   echo "note: $RECYCLE does not exist yet (Synology creates it on first delete). Nothing to do."

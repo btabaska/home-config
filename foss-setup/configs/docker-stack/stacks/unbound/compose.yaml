@@ -15,7 +15,10 @@
 #
 # REDUNDANCY: run a SECOND resolver (an AdGuard Home instance on the NAS) and hand
 #   it out as the secondary DNS in DHCP, so DNS keeps working if the Mac mini is
-#   down. Point that second AdGuard at its own Unbound (or this one over Tailscale).
+#   down. The second AdGuard (NAS) deliberately upstreams to Quad9 DoH, NOT an
+#   Unbound: pointing it at this Unbound (or any mini-hosted one) would make both
+#   resolvers die with the mini, defeating the redundancy. Accepted trade-off:
+#   secondary queries leave the LAN to Quad9 (documented; quality-gate L54).
 #
 # Config is bind-mounted from ./unbound. The 127.0.0.1:5335 host port is OPTIONAL —
 # it only exists for host-side testing (`drill -p 5335 example.com @127.0.0.1`) and

@@ -8,7 +8,8 @@ Environment facts:
   pulling the infra repo); its last exit code is read via
   `systemctl show ansible-pull.service -p ExecMainStatus` (0 = last run OK).
 - Root FS is an LVM volume ~400G; alert threshold 85% used.
-- Tailscale connects mini, nas, rig, seedbox, HA; check counts Online peers.
+- Tailscale connects mini, nas, rig, seedbox; check counts Online peers.
+  Home Assistant is LAN-only, NOT on the tailnet (reachable only at its LAN IP).
 - Home Assistant is a separate appliance at http://192.168.10.50:8123.
 - Docker restart-loop check flags containers with RestartCount > 3.
 

@@ -5,8 +5,8 @@ other checks or prior conversations. Diagnose from the given output only.
 Environment facts:
 - Primary resolver: AdGuard Home in docker container `adguardhome` on mini
   (Ubuntu, 192.168.10.2:53), upstream unbound container at 127.0.0.1:5335 on mini.
-- Secondary resolver: expected on the NAS (Synology, 192.168.10.4:53, NO sudo there).
-  Known-broken; guarded by task dns-02.
+- Secondary resolver: AdGuard Home on the NAS (Synology, 192.168.10.4:53, NO
+  passwordless sudo there). Deployed and live — it failing is a real regression.
 - Internal zone: home.tabaska.us should resolve to 192.168.10.x addresses.
 - Checks run from mini as user btabaska (passwordless sudo on mini only).
 
@@ -28,6 +28,6 @@ Example input:
  "output":";; communications error to 192.168.10.4#53: connection refused"}
 Example output:
 {"diagnosis":"The secondary resolver on the NAS is not answering on port 53.",
- "likely_cause":"The DNS container/service on the NAS is stopped or was never redeployed (task dns-02).",
+ "likely_cause":"The AdGuard container on the NAS is stopped or the NAS is down.",
  "suggested_fix_commands":["ssh nas 'docker ps -a | grep -iE \"adguard|dns|bind|unbound\"'","ssh nas 'docker start <dns-container>'"],
  "confidence":0.8,"escalate":true}

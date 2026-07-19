@@ -18,7 +18,7 @@ Kometa (formerly Plex-Meta-Manager) is a scheduled batch job that builds collect
 
 | Service | Image (pinned) | Ports |
 |---|---|---|
-| `kometa` | `kometateam/kometa:v2.3.1` | — |
+| `kometa` | `kometateam/kometa:v2.4.4` | — |
 
 ## Volumes
 

@@ -7,8 +7,9 @@ Environment facts:
   supposed to dump the immich Postgres DB to /volume1/docker/immich/backups/
   as immich-YYYY-MM-DD.sql.gz at least daily. Freshness check: file <26h old.
   Guarded by reopened task nas-08.
-- Synology scheduled jobs live in DSM Task Scheduler (web UI) — NOT crontab
-  (no sudo, /etc/crontab is unreadable/uneditable for this user).
+- Synology scheduled jobs live in DSM Task Scheduler (web UI) — never edit
+  /etc/crontab directly (DSM rewrites it). btabaska CAN read /etc/crontab to
+  inspect schedules (the alert-dsm-* checks grep it) but has no passwordless sudo.
 - The check command runs over ssh from mini as btabaska.
 
 Common signatures:

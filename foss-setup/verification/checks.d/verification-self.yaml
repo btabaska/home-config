@@ -57,3 +57,17 @@ checks:
     task_id: fix-30
     runbook: wiki/docs/runbooks/verification-self.md
     enabled: true
+
+  # ── fix-45 (L62/L91 class) · deploy hygiene: no AppleDouble junk in the live
+  # verification tree. A Mac-side scp/rsync once shipped executable ._* files
+  # into bin/ (one crashed the runner from checks.d on 2026-07-10); deploy.sh
+  # strips them now — this catches any future path that reintroduces them.
+  - id: verification-tree-macos-junk
+    name: "/opt/verification carries no ._*/.DS_Store artifacts"
+    host: mini
+    cmd: find /opt/verification \( -name '._*' -o -name '.DS_Store' \) 2>/dev/null | wc -l
+    expect: '^0$'
+    severity: warn
+    task_id: fix-45
+    runbook: wiki/docs/runbooks/fleet-hygiene.md
+    enabled: true

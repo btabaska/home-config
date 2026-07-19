@@ -40,6 +40,30 @@ Verification: `verification/checks.d/seedbox.yaml` (public-port sweep, loopback-
 assert, sonarr→Deluge e2e test, slskd LoggedIn e2e, service manifest). Runbook:
 `wiki/docs/runbooks/seedbox-exposure.md`.
 
+## Disk hygiene (2026-07-19, quality-gate M8/L8/L93/L10)
+
+- **deluged now logs** (L10): `~/.startup/deluge` launches deluged with
+  `-l ~/.config/deluge/deluged.log -L warning` (previously no `--logfile` → 0-byte log,
+  daemon errors went nowhere). Mirrored in `startup/deluge`. Restart verified lossless:
+  378 torrents before and after.
+- **`~/media/extracted` is transient** (M8): filebot/post-extract copies land there; the
+  arrs import by *copy*, so once imported the NAS owns the file and the seedbox copy is
+  junk (139G of it on 2026-07-19). A daily cron reaps files >7 days old and prunes empty
+  subdirs (top dir kept) — see crontab below.
+- **L93 cleanup**: removed extracted `.mkv` files sitting next to their still-seeding rars
+  in 11 `~/files/tv` release dirs (~10.4G; rars untouched), and removed 11 dead torrents
+  WITH data via deluge-console (10× Animaniacs.2020 — series not in Sonarr, never imports —
+  plus the Andor S01E00 "A Disney Day Special Look" special). Deluge 389 → 378 torrents.
+- **L8**: deleted the retired on-seedbox arr install leftovers in `~/tmp`
+  (`{sonarr,radarr,prowlarr}_{update,backup}`, clr-debug-pipe/dotnet-diagnostic sockets, ~1.7G).
+
+## Crontab (live `crontab -l`, this is the manifest)
+
+```cron
+0 5 * * * ~/venvs/deluge/bin/python ~/scripts/deluge-reaper.py --live >/dev/null 2>>~/logs/deluge-reaper.err
+30 5 * * * find /home/hd34/btabaska/media/extracted -type f -mtime +7 -delete; find /home/hd34/btabaska/media/extracted -mindepth 1 -type d -empty -delete
+```
+
 ## Files here
 
 - `systemd-user/*.service` → live `~/.config/systemd/user/` (enable with

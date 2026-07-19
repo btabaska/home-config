@@ -102,3 +102,33 @@ checks:
     task_id: fix-25
     runbook: wiki/docs/reference/seedbox/deluge-queue-hygiene.md
     enabled: true
+
+  # ── fix-45 (M8 regression) · extracted-leftover reaper actually reaping ──────
+  # 139G of already-imported post-extract copies accumulated in ~/media/extracted
+  # because the deluge-reaper only covers torrents in ~/files. A daily 05:30 cron
+  # now deletes extracted files >7d old; this check fails if anything older
+  # survives — catching both reaper rot and any new unreaped leftover class.
+  - id: seedbox-extracted-reaped
+    name: "seedbox: no extracted leftovers older than 7d in ~/media/extracted"
+    host: seedbox
+    cmd: find media/extracted -type f -mtime +7 2>/dev/null | wc -l
+    expect: '^0$'
+    severity: warn
+    task_id: fix-45
+    runbook: wiki/docs/runbooks/fleet-hygiene.md
+    enabled: true
+
+  # ── fix-45 (L8 class) · no orphaned *arr self-update/backup dirs in ~/tmp ────
+  # 1.7G of sonarr/radarr/prowlarr _update+_backup dirs sat orphaned for weeks
+  # after the on-seedbox arr install was retired. Nothing on the seedbox should
+  # recreate them; their reappearance means something arr-shaped is running here
+  # again (or junk is accumulating) — either way, look.
+  - id: seedbox-tmp-arr-junk
+    name: "seedbox: no *arr _update/_backup leftovers in ~/tmp"
+    host: seedbox
+    cmd: find tmp -maxdepth 1 \( -name '*_update' -o -name '*_backup' \) 2>/dev/null | wc -l
+    expect: '^0$'
+    severity: warn
+    task_id: fix-45
+    runbook: wiki/docs/runbooks/fleet-hygiene.md
+    enabled: true

@@ -71,3 +71,44 @@ checks:
     task_id: fix-28
     runbook: wiki/docs/runbooks/media-library-correctness.md
     enabled: true
+
+  # ── fix-45 (L33/L34/L43 class) · library roots not regrowing unmanaged junk ──
+  # 45 movies + 25 tv unmapped folders accumulated invisibly (dupes, loose
+  # episode dirs, untracked series). After the fix-45 cleanup/adoption the
+  # ACCEPTED baseline is radarr=39, sonarr=13 (multi-movie packs + legacy series
+  # + #recycle, kept deliberately — documented in the fleet-hygiene runbook).
+  # Growth past the baseline = new junk landing in the roots unmanaged.
+  - id: arr-unmapped-folders-growth
+    name: "radarr/sonarr: unmapped root folders at accepted baseline (39/13)"
+    host: mini
+    cmd: >-
+      python3 -c "import json,os,urllib.request;
+      g=lambda url,key: json.load(urllib.request.urlopen(urllib.request.Request(url,headers={'X-Api-Key':key}),timeout=20));
+      u=lambda d: sum(len(r.get('unmappedFolders') or []) for r in d);
+      r=u(g('http://192.168.10.4:7878/api/v3/rootfolder',os.environ['RADARR_API_KEY']));
+      s=u(g('http://192.168.10.4:8989/api/v3/rootfolder',os.environ['SONARR_API_KEY']));
+      print(('UNMAPPED_OK' if r<=39 and s<=13 else 'UNMAPPED_GREW')+' radarr=%d sonarr=%d'%(r,s))"
+    expect: '^UNMAPPED_OK'
+    severity: warn
+    task_id: fix-45
+    runbook: wiki/docs/runbooks/fleet-hygiene.md
+    enabled: true
+
+  # ── fix-45 (L95 regression) · every monitored series on a recyclarr-managed
+  # profile. Two series sat on 'Any' (profile id 1), silently bypassing all
+  # TRaSH custom-format junk-blocking. Profile drift happens at series-add time,
+  # so this guards the whole class, not just the two fixed series.
+  - id: sonarr-unmanaged-profile
+    name: "sonarr: no monitored series on the unmanaged 'Any' profile"
+    host: mini
+    cmd: >-
+      python3 -c "import json,os,urllib.request;
+      req=urllib.request.Request('http://192.168.10.4:8989/api/v3/series',headers={'X-Api-Key':os.environ['SONARR_API_KEY']});
+      d=json.load(urllib.request.urlopen(req,timeout=20));
+      bad=[s['title'] for s in d if s.get('monitored') and s.get('qualityProfileId')==1];
+      print('PROFILE_OK n=0' if not bad else 'PROFILE_BAD '+','.join(bad[:5]))"
+    expect: '^PROFILE_OK'
+    severity: warn
+    task_id: fix-45
+    runbook: wiki/docs/runbooks/fleet-hygiene.md
+    enabled: true

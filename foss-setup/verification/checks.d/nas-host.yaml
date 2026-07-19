@@ -109,3 +109,33 @@ checks:
     task_id: fix-40
     runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
+
+  # ── fix-45 (L37/L51/L60 class) · no crash core dumps rotting at /volume1 root ─
+  # Five core.gz dumps (Plex Transcoder, python, qbittorrent-nox x2, snmpd) sat
+  # at the volume root for up to 10 months — both junk AND an unread crash
+  # signal. Zero is the steady state; any hit means a process crashed since the
+  # last sweep: read the dump's name/date before deleting it.
+  - id: nas-core-dumps
+    name: "NAS: no core.gz crash dumps at /volume1 root"
+    host: nas
+    cmd: ls /volume1/ 2>/dev/null | grep -c 'core\.gz' || true
+    expect: '^0$'
+    severity: warn
+    task_id: fix-45
+    runbook: wiki/docs/runbooks/fleet-hygiene.md
+    enabled: true
+
+  # ── fix-45 (L4 class) · SMB-borne macOS junk kept out of the compose dirs ────
+  # .DS_Store / AppleDouble ._* files synced from a Mac pollute /volume1/docker
+  # and can confuse directory-globbing tooling (an executable ._*.sh once crashed
+  # the verification runner — same artifact class). Unprivileged find: root-only
+  # subdirs are skipped, which is fine — SMB writes land in shared paths.
+  - id: nas-docker-macos-junk
+    name: "NAS: no .DS_Store/AppleDouble junk in /volume1/docker"
+    host: nas
+    cmd: find /volume1/docker -maxdepth 3 \( -name '._*' -o -name '.DS_Store' \) -type f 2>/dev/null | wc -l
+    expect: '^0$'
+    severity: warn
+    task_id: fix-45
+    runbook: wiki/docs/runbooks/fleet-hygiene.md
+    enabled: true

@@ -63,3 +63,24 @@ checks:
     task_id: dns-02
     runbook: wiki/runbooks/dns.md
     enabled: true
+
+  # ── fix-45 (L20 class) · docker embedded DNS actually resolving for containers ─
+  # 2026-07-08/09: every container lookup on mini failed for ~14h ('127.0.0.11:53
+  # server misbehaving') and nothing noticed — miniflux fetches died silently.
+  # Host-level DNS checks can't see this layer; probe from INSIDE an always-on
+  # container (healthchecks, a python app). Two attempts to ride out a blip.
+  - id: mini-container-dns-egress
+    name: "mini: containers can resolve external names via docker DNS"
+    host: mini
+    cmd: >-
+      docker exec healthchecks python3 -c
+      "import socket;print(socket.gethostbyname('api.github.com') and 'RESOLVES')"
+      2>/dev/null
+      || { sleep 5; docker exec healthchecks python3 -c
+      "import socket;print(socket.gethostbyname('api.github.com') and 'RESOLVES')"
+      2>&1 || echo DNS_DEAD; }
+    expect: '^RESOLVES$'
+    severity: warn
+    task_id: fix-45
+    runbook: wiki/docs/runbooks/fleet-hygiene.md
+    enabled: true

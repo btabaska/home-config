@@ -13,7 +13,7 @@ Man-pages for every operational script in `foss-setup/scripts/`, generated from 
 | **Home Assistant** | 1 | [open](ha/index.md) |
 | **Inventory & manifests** | 3 | [open](inventory/index.md) |
 | **Media pipeline** | 12 | [open](media/index.md) |
-| **NAS tasks** | 9 | [open](nas/index.md) |
+| **NAS tasks** | 11 | [open](nas/index.md) |
 | **Network** | 6 | [open](network/index.md) |
 | **Reading stack** | 1 | [open](reading/index.md) |
 | **secrets** | 1 | [open](secrets/index.md) |
@@ -22,4 +22,4 @@ Man-pages for every operational script in `foss-setup/scripts/`, generated from 
 | **verification** | 5 | [open](verification/index.md) |
 | **wiki** | 1 | [open](wiki/index.md) |
 
-_Total: 74 scripts across 17 categories._
+_Total: 76 scripts across 17 categories._

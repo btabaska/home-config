@@ -19,7 +19,7 @@ The full home `*arr` acquisition stack, running as the `media-automation` Compos
 | `prowlarr` | `lscr.io/linuxserver/prowlarr:2.4.0` | `9696:9696` |
 | `flaresolverr` | `ghcr.io/flaresolverr/flaresolverr:v3.5.0` | `8191:8191` |
 | `sonarr` | `lscr.io/linuxserver/sonarr:4.0.19` | `8989:8989` |
-| `radarr` | `lscr.io/linuxserver/radarr:6.2.1` | `7878:7878` |
+| `radarr` | `lscr.io/linuxserver/radarr:6.3.0` | `7878:7878` |
 | `lidarr` | `lscr.io/linuxserver/lidarr:3.1.0` | `8686:8686` |
 | `soularr` | `ghcr.io/mrusse/soularr:1.2.2` | — |
 | `beets` | `lscr.io/linuxserver/beets:2.1.0` | `8337:8337` |

@@ -1,6 +1,6 @@
 # Checks — seedbox
 
-`foss-setup/verification/checks.d/seedbox.yaml` — 6 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/seedbox.yaml` — 8 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `seedbox-public-lockdown`
 
@@ -66,6 +66,28 @@ seedbox: no torrent 100% done >48h still in a pre-import label
 
 ```bash
 ~/venvs/deluge/bin/python ~/scripts/deluge-preimport-stuck.py
+```
+
+## `seedbox-extracted-reaped`
+
+seedbox: no extracted leftovers older than 7d in ~/media/extracted
+
+- **host:** `seedbox` · **severity:** `warn` · **guards task:** `fix-45` · **enabled:** True
+- **expects:** `^0$`
+
+```bash
+find media/extracted -type f -mtime +7 2>/dev/null | wc -l
+```
+
+## `seedbox-tmp-arr-junk`
+
+seedbox: no *arr _update/_backup leftovers in ~/tmp
+
+- **host:** `seedbox` · **severity:** `warn` · **guards task:** `fix-45` · **enabled:** True
+- **expects:** `^0$`
+
+```bash
+find tmp -maxdepth 1 \( -name '*_update' -o -name '*_backup' \) 2>/dev/null | wc -l
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

@@ -1,0 +1,19 @@
+NEXT                                LEFT LAST                              PASSED UNIT                             ACTIVATES
+Sun 2026-07-19 18:46:48 EDT     1min 39s Sun 2026-07-19 18:26:48 EDT    18min ago pcie-aer-monitor.timer           pcie-aer-monitor.service
+Sun 2026-07-19 18:50:24 EDT         5min Sun 2026-07-19 18:40:17 EDT 4min 52s ago ai-stack-watchdog.timer          ai-stack-watchdog.service
+Sun 2026-07-19 18:54:10 EDT         9min Sun 2026-07-19 18:44:20 EDT      48s ago playit-udp-guard.timer           playit-udp-guard.service
+Sun 2026-07-19 19:00:35 EDT        15min Sun 2026-07-19 18:00:35 EDT    44min ago snapper-cleanup.timer            snapper-cleanup.service
+Mon 2026-07-20 00:00:00 EDT     5h 14min Sun 2026-07-19 00:00:01 EDT      18h ago shadow.timer                     shadow.service
+Mon 2026-07-20 00:09:20 EDT     5h 24min Thu 2026-07-16 11:59:45 EDT            - fstrim.timer                     fstrim.service
+Mon 2026-07-20 00:14:10 EDT     5h 29min Sun 2026-07-19 00:27:20 EDT      18h ago logrotate.timer                  logrotate.service
+Mon 2026-07-20 00:54:51 EDT           6h Sun 2026-07-19 00:07:50 EDT      18h ago plocate-updatedb.timer           plocate-updatedb.service
+Mon 2026-07-20 01:40:37 EDT           6h Sun 2026-07-19 01:44:36 EDT      17h ago restic-backup.timer              restic-backup.service
+Mon 2026-07-20 04:15:04 EDT           9h -                                      - export-manifests.timer           export-manifests.service
+Mon 2026-07-20 04:46:08 EDT          10h Sun 2026-07-19 04:44:35 EDT      14h ago ansible-pull.timer               ansible-pull.service
+Mon 2026-07-20 05:00:00 EDT          10h Sun 2026-07-19 05:04:14 EDT      13h ago nas-music-mirror.timer           nas-music-mirror.service
+Mon 2026-07-20 07:11:26 EDT          12h Sun 2026-07-19 09:54:01 EDT       8h ago man-db.timer                     man-db.service
+Mon 2026-07-20 15:01:08 EDT          20h Sun 2026-07-19 15:01:08 EDT 3h 44min ago systemd-tmpfiles-clean.timer     systemd-tmpfiles-clean.service
+Thu 2026-07-23 13:31:22 EDT       3 days Thu 2026-07-16 11:59:45 EDT            - archlinux-keyring-wkd-sync.timer archlinux-keyring-wkd-sync.service
+Mon 2026-07-27 20:08:36 EDT 1 week 1 day Thu 2026-07-16 11:59:49 EDT            - cachyos-rate-mirrors.timer       cachyos-rate-mirrors.service
+
+16 timers listed.

@@ -1,6 +1,6 @@
 # Checks — verification-self
 
-`foss-setup/verification/checks.d/verification-self.yaml` — 4 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/verification-self.yaml` — 5 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `llm-triage-completion-e2e`
 
@@ -44,6 +44,17 @@ verification: every check-referenced bin script is deployed
 
 ```bash
 /opt/verification/bin/bin-refs-present.sh
+```
+
+## `verification-tree-macos-junk`
+
+/opt/verification carries no ._*/.DS_Store artifacts
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-45` · **enabled:** True
+- **expects:** `^0$`
+
+```bash
+find /opt/verification \( -name '._*' -o -name '.DS_Store' \) 2>/dev/null | wc -l
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

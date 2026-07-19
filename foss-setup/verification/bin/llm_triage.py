@@ -34,9 +34,14 @@ DOMAIN_SKILL = {
     "mini-services": "docker-triage.md",
     "nas-services": "docker-triage.md",
     "rig": "docker-triage.md",
+    "docker-fleet": "docker-triage.md",
+    "alerting": "docker-triage.md",
     "backups": "backup-triage.md",
     "git-hygiene": "git-hygiene-triage.md",
     "system": "system-triage.md",
+    "network": "system-triage.md",
+    "ha": "ha-triage.md",
+    "media": "media-triage.md",
 }
 REQUIRED_KEYS = {"diagnosis", "likely_cause", "suggested_fix_commands",
                  "confidence", "escalate"}

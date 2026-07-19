@@ -1,6 +1,6 @@
 # Checks — dns
 
-`foss-setup/verification/checks.d/dns.yaml` — 5 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/dns.yaml` — 6 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `dns-mini-internal`
 
@@ -55,6 +55,17 @@ Secondary resolver (NAS 192.168.10.4) resolves example.com
 
 ```bash
 for i in 1 2 3; do dig +short +time=3 +tries=1 @192.168.10.4 example.com && break; sleep 2; done
+```
+
+## `mini-container-dns-egress`
+
+mini: containers can resolve external names via docker DNS
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-45` · **enabled:** True
+- **expects:** `^RESOLVES$`
+
+```bash
+docker exec healthchecks python3 -c "import socket;print(socket.gethostbyname('api.github.com') and 'RESOLVES')" 2>/dev/null || { sleep 5; docker exec healthchecks python3 -c "import socket;print(socket.gethostbyname('api.github.com') and 'RESOLVES')" 2>&1 || echo DNS_DEAD; }
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

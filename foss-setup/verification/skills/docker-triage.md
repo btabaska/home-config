@@ -8,8 +8,8 @@ Environment facts:
 - nas: Synology, NO sudo. Containers managed via Container Manager or
   /volume1/docker compose files. HTTP checks probe http://nas:<port> from mini.
 - rig: CachyOS, runs 24/7 — the rig being down/unreachable is an incident,
-  not expected. Recovery action: wakeonlan -i 192.168.10.255 50:eb:f6:b5:82:c6
-  (mini cannot SSH to it: tailnet ACL).
+  not expected. Recovery action: wakeonlan -i 192.168.10.255 50:eb:f6:b5:82:c6.
+  mini CAN SSH to the rig (ssh rig works; several host:rig checks depend on it).
 - Checks compare curl HTTP codes: expected codes include 302/303/307 login
   redirects and 401 (plex unauthenticated) — those are the healthy values.
 

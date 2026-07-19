@@ -1,10 +1,22 @@
 # Continuous Verification (verify-01..05)
 
-Daily automated checks of the homelab, with local-LLM triage of failures and
-reopen suggestions for the task tracker. Runs on **mini** (always-on), deployed
-to `/opt/verification`, state in `/var/lib/verification`.
+Automated checks of the homelab in **three scheduled tiers**, with local-LLM
+triage of failures and reopen suggestions for the task tracker. Runs on **mini**
+(always-on), deployed to `/opt/verification`, state in `/var/lib/verification`.
 
-## How it works
+| tier | unit / timer | cadence | scope |
+|---|---|---|---|
+| fast | `verification-fast.service` | every 10 min | crit-outage sentinels (`--tier fast --notify`) |
+| quick | `verification-quick.service` | hourly | url + docker-fleet + media domains (`--host X --notify --respect-enabled`) |
+| daily | `verification.service` | 07:15 | full sweep + LLM triage + reopen suggestions |
+
+Each tier has its own Healthchecks dead-man (`VERIFY_{FAST,QUICK,DAILY}_PING_URL`
+from `/etc/verification/env`) and pages ntfy topic `verification` on state
+*transitions* only. Both scheduled non-daily units set `SuccessExitStatus=1` so a
+failing check doesn't leave the unit "failed" (which the `systemd-failed-mini`
+check would then flag — a self-referential alert; quality-gate L3).
+
+## How it works (daily tier)
 
 ```
 verification.timer (daily 07:15)
@@ -41,13 +53,23 @@ sudo systemctl start verification.service      # full cycle
 /opt/verification/bin/run-checks.sh --host rig # rig-only run (rig checks are
                                                # enabled in the daily cycle — rig is 24/7)
 /opt/verification/bin/llm-triage.sh            # triage last results.json
+/opt/verification/bin/ack-check.sh <id> <hrs> [reason]  # suppress paging for a
+                                               # known/accepted failure (still
+                                               # runs + records; --list/--clear)
 ```
 
 `--host X` matches a check's `host` field **or its domain (file stem)**, and
 also includes that host/domain's `enabled: false` checks (e.g. the seedbox
-check). Filtered runs are ad-hoc/operator-driven: they write
-`results-<host>.json` and never touch the daily state
-(`results.json`, `reopen-suggestions.json`, `last-summary.md`) or send ntfy.
+check) — that resurrect-disabled behavior is **operator semantics**, which is
+why the scheduled quick tier adds `--respect-enabled` to keep honoring
+`enabled: false`. `--tier X` selects checks with `tier: X` and always respects
+`enabled`. `--notify` opts a filtered run into transition ntfy pages (scheduled
+tiers use it; ad-hoc runs stay silent). Filtered runs write
+`results-<host|tier>.json` and never touch the daily state
+(`results.json`, `reopen-suggestions.json`, `last-summary.md`).
+Note: a check whose `host` AND domain both match different scheduled `--host`
+runs would execute twice per cycle — keep `host:`/file placement so each check
+matches exactly one scheduled invocation (quality-gate L89).
 
 ## Adding a check
 
@@ -72,19 +94,14 @@ rsync this dir to `mini:/opt/verification` (see Deploy below).
 
 ## LLM endpoint + model
 
-- Default: **ollama on the rig**, `http://cachyos.tailb31641.ts.net:11434/v1`
-  (OpenAI-compatible, no auth). litellm on `:4000` also answers but requires an
-  API key (`401` without) — set `LLM_BASE_URL` + `LLM_API_KEY` in
-  `/etc/verification/env` to use it instead.
-- Model: `qwen3-coder:30b` (already pulled, ~18 GB).
-
-### Model sizing on the 3090 Ti (24 GB VRAM)
-
-| model | VRAM | notes |
-|---|---|---|
-| qwen2.5-coder:32b-q4 | ~19 GB | tight — little headroom for KV cache/long outputs |
-| qwen3-coder:30b / 14b-class | ~14–18 GB | comfortable, best quality/speed balance for triage |
-| llama3.1:8b / llama3.2:3b | ~2–5 GB | fast; fine for these small structured prompts |
+- Default: **llama-swap on the rig**, `http://cachyos.tailb31641.ts.net:9292/v1`
+  (OpenAI-compatible; authoritative default lives in `bin/llm-triage.sh` +
+  `bin/llm_triage.py`). Model: `qwen3.6-35b-a3b`. Since ai-01 (2026-07-15) the
+  big models moved off ollama `:11434` — a stale `:11434` override in
+  `/etc/verification/env` silently 404s every triage while `/v1/models` still
+  answers 200, so **leave `LLM_BASE_URL`/`LLM_MODEL` unset** unless
+  deliberately repointing (e.g. LiteLLM `:4000`, which also needs
+  `LLM_API_KEY`).
 
 ### Fresh-context-per-check design
 
@@ -147,16 +164,18 @@ service — this was quality-gate finding M38/M53. `deploy.sh`:
 #   docker exec ntfy ntfy token add --label verification admin
 ```
 
-## Known state (2026-07-07)
+## Known state (2026-07-19)
 
-- `dns-nas-*` FAIL (secondary resolver down) — guards reopened **dns-02**. Desired.
-- `backup-immich-dump-fresh` FAIL (last dump 2026-07-02) — guards reopened **nas-08**. Desired.
-- `git-*` may FAIL on drift (etckeeper dirty, 1 file in /opt/stacks) — real drift to review.
-- seedbox: SSH blocked by ACL → its check is `enabled: false`.
-- rig: runs 24/7 (decision 2026-07-08) — rig checks are **enabled** in the daily
-  cycle; the rig being down / 502 is now an **incident**, with WoL retained as
-  the recovery tool (llm-triage.sh self-heal). HTTP-only probes for now
-  (mini→rig SSH historically denied by tailnet ACL; being re-verified).
+- All three tiers green in steady state; failures are real regressions to
+  triage, not known-broken residue (the 2026-07-07 dns-02/nas-08 known-fails
+  are long fixed).
+- seedbox: mini→seedbox SSH is allowed and several seedbox checks use it; the
+  legacy `sys-seedbox-ssh` local check remains `enabled: false`.
+- rig: 24/7; mini→rig SSH **works** and host:rig checks depend on it. The rig
+  being down / 502 is an incident; WoL is the recovery tool (llm-triage.sh
+  self-heal).
+- `git-*` may FAIL on drift (etckeeper dirty, /opt/stacks uncommitted) — real
+  drift to review, same-commit rule applies.
 
 ## Human approval gate (policy — added 2026-07-08 at the operator's request)
 

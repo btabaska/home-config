@@ -1,6 +1,6 @@
 # Checks — nas-host
 
-`foss-setup/verification/checks.d/nas-host.yaml` — 5 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/nas-host.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `nas-timezone-eastern`
 
@@ -55,6 +55,28 @@ NAS md topology exactly healthy: 3x[U] data + [UUU_] system (M4)
 
 ```bash
 for m in md0 md1 md2 md3 md4; do printf "%s=%s:" "$m" "$(grep -A1 "^$m :" /proc/mdstat | grep -o '\[[U_]*\]' | tail -1)"; done; echo "faulty=$(grep -c '(F)' /proc/mdstat)"
+```
+
+## `nas-core-dumps`
+
+NAS: no core.gz crash dumps at /volume1 root
+
+- **host:** `nas` · **severity:** `warn` · **guards task:** `fix-45` · **enabled:** True
+- **expects:** `^0$`
+
+```bash
+ls /volume1/ 2>/dev/null | grep -c 'core\.gz' || true
+```
+
+## `nas-docker-macos-junk`
+
+NAS: no .DS_Store/AppleDouble junk in /volume1/docker
+
+- **host:** `nas` · **severity:** `warn` · **guards task:** `fix-45` · **enabled:** True
+- **expects:** `^0$`
+
+```bash
+find /volume1/docker -maxdepth 3 \( -name '._*' -o -name '.DS_Store' \) -type f 2>/dev/null | wc -l
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
