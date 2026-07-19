@@ -10,8 +10,10 @@
 # Wake-on-LAN is now RECOVERY tooling (power outage / accidental shutdown),
 # not workflow. Rig down = incident.
 
-# Roles read this to pick the timer shape. false = standard OnCalendar
-# schedule, same as always_on hosts.
+# Historical knob: no role reads this since fix-42 (2026-07-19) — the backup
+# timer now ships verbatim from scripts/backup/restic-backup.timer, whose
+# Persistent=true already provides the wake-friendly catch-up. Kept only so a
+# future wake-gated host has a documented place to flip it.
 wake_gated: false
 
 # ansible-pull still converges shortly after boot — harmless on a 24/7 box and

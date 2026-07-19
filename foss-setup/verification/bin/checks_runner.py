@@ -80,18 +80,22 @@ def run_check(check):
     else:
         return {"status": "fail", "exit_code": -1,
                 "output": f"unknown host '{host}'", "duration_s": 0.0}
+    # fix-42: a check may declare its own `timeout:` (seconds) — the
+    # ansible-site-converged-mini full-playbook --check needs ~2-4 min, far
+    # over the 60s default that fits every liveness probe.
+    timeout_s = int(check.get("timeout", CHECK_TIMEOUT))
     start = time.monotonic()
     try:
         # errors="replace": one non-UTF-8 byte in any check's output (e.g. a
         # docker log line) must not crash the whole sweep (bit us 2026-07-10
         # via soularr's logs).
         proc = subprocess.run(argv, capture_output=True, text=True,
-                              errors="replace", timeout=CHECK_TIMEOUT)
+                              errors="replace", timeout=timeout_s)
         out = (proc.stdout or "") + (proc.stderr or "")
         exit_code = proc.returncode
         stdout = proc.stdout or ""
     except subprocess.TimeoutExpired:
-        out, stdout, exit_code = f"TIMEOUT after {CHECK_TIMEOUT}s", "", 124
+        out, stdout, exit_code = f"TIMEOUT after {timeout_s}s", "", 124
     duration = round(time.monotonic() - start, 2)
 
     if "expect" in check:

@@ -6,7 +6,16 @@
 - name: Install Tailscale (Debian/Ubuntu)
   when: ansible_os_family == 'Debian'
   block:
+    # fix-42: stat-guarded for --check cleanliness (see the docker-role GPG
+    # note) — get_url without a checksum always predicts "changed" in check
+    # mode; real-run behavior is identical.
+    - name: Check for the Tailscale apt key
+      ansible.builtin.stat:
+        path: /usr/share/keyrings/tailscale-archive-keyring.gpg
+      register: tailscale_apt_key
+
     - name: Add the Tailscale apt key
+      when: not tailscale_apt_key.stat.exists
       ansible.builtin.get_url:
         url: https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg
         dest: /usr/share/keyrings/tailscale-archive-keyring.gpg

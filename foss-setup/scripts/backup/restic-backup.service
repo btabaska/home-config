@@ -1,4 +1,7 @@
 # restic backup → Backblaze B2 — Phase 1. Paired with restic-backup.timer.
+# DEPLOYED BY ANSIBLE since fix-42 (roles/backup installs scripts/backup/*
+# verbatim, incl. the restic-backup.service.d/healthchecks.conf drop-in);
+# the manual steps below remain for a bootstrap without ansible.
 # Install (per host):
 #   sudo install -m 755 scripts/backup/restic-backup.sh /opt/scripts/restic-backup.sh
 #   sudo install -m 755 scripts/backup/ntfy-notify.sh   /opt/scripts/ntfy-notify.sh

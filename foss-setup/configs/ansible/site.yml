@@ -30,7 +30,7 @@
     - role: docker      # engine, daemon.json log caps (sec-02), shared 'edge' network
       when: "'docker_hosts' in group_names"
     - role: tailscale   # tailscale up --ssh with net-13 tags
-    - role: backup      # restic timer (standard OnCalendar fleet-wide; wake_gated is false since 2026-07-08)
+    - role: backup      # restic→B2: installs the live-mirrored scripts/backup/* design verbatim (fix-42; /etc/restic/env is the only hand-seeded piece)
     # sbom role RETIRED 2026-07-09 + role dir DELETED 2026-07-11 (user decision):
     #   Syft nightly OOM'd the 8GB mini; SBOM/Dependency-Track judged overkill for a
     #   home net. Dependency-Track fully retired 2026-07-11. Recover from git history

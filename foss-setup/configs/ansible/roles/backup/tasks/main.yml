@@ -1,87 +1,164 @@
 ---
-# roles/backup — Restic on a timer (sec-06), driven by the control repo (glue-08).
-# The repo URL + password are secrets (SOPS, glue-06). All hosts — including the
-# rig, 24/7 since 2026-07-08 — get a standard OnCalendar timer; the wake_gated
-# branch below is retained but dormant (wake_gated is false in group_vars/on_demand.yml).
+# roles/backup — deploy the LIVE restic→B2 design (sec-06), rewritten fix-42/M52.
+#
+# HISTORY: until 2026-07-19 this role was a silent no-op — it gated on a SOPS
+# file (secrets/restic.sops.env) that was never seeded, and its templated
+# design contradicted the hand-deployed live setup in 6 ways (apt restic 0.12,
+# /usr/bin/restic hardcoded, /etc/restic/backup.env, no OnFailure/dead-man/
+# cache dir, wrong timer). The 2026-07-15 rig NVMe rebuild (fix-20) proved the
+# cost: restic came back by hand, but ntfy-notify@ and the healthchecks
+# dead-man drop-in were silently lost — restic-backup-rig sat "down" unnoticed.
+#
+# NOW: scripts/backup/* in this repo IS the live design (byte-verified against
+# both hosts 2026-07-19), and this role installs those files verbatim — one
+# source of truth, no templates. The ONLY hand-seeded piece is the secret
+# /etc/restic/env (B2 creds, RESTIC_PASSWORD, BACKUP_PATHS, RESTIC_HC_URL,
+# rig NTFY_*): see wiki/docs/runbooks/backup-restore.md. Guarded end-to-end by
+# checks.d/backups.yaml (restic-role-matches-source-{mini,rig},
+# ansible-site-converged-mini, ansible-pull-ok-rig).
 
-# Gate: the SOPS-encrypted restic env is seeded by glue-06 and may not exist in
-# the control repo yet. The sops lookup hard-fails on a missing file, which used
-# to abort the whole play — so locate it first (lookup runs on the controller;
-# under ansible-pull that IS this host) and skip the role cleanly if absent.
-- name: Locate the restic SOPS secret (may be absent until glue-06 seeds it)
-  ansible.builtin.set_fact:
-    restic_sops_env_file: >-
-      {{ lookup('ansible.builtin.first_found',
-                dict(files=[playbook_dir ~ '/secrets/restic.sops.env'], skip=true)) }}
+# --- restic binary ---------------------------------------------------------------
+- name: Install restic (Arch/CachyOS — pacman is current)
+  when: ansible_os_family == 'Archlinux'
+  community.general.pacman:
+    name: restic
+    state: present
 
-- name: Skip backup role — restic secret not seeded yet
+- name: Read the installed pinned restic version (Debian/Ubuntu)
+  when: ansible_os_family == 'Debian'
+  ansible.builtin.command: /usr/local/bin/restic version
+  register: restic_ver
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Install pinned restic {{ restic_version }} to /usr/local/bin (Debian/Ubuntu)
+  when:
+    - ansible_os_family == 'Debian'
+    - restic_version not in (restic_ver.stdout | default(''))
+  block:
+    - name: Ensure bunzip2 is available
+      ansible.builtin.apt:
+        name: bzip2
+        state: present
+
+    - name: Fetch the official restic release (sha256-pinned)
+      ansible.builtin.get_url:
+        url: "https://github.com/restic/restic/releases/download/v{{ restic_version }}/restic_{{ restic_version }}_linux_amd64.bz2"
+        dest: "/var/tmp/restic_{{ restic_version }}_linux_amd64.bz2"
+        checksum: "sha256:{{ restic_bz2_sha256 }}"
+        mode: "0644"
+
+    - name: Decompress and install atomically
+      ansible.builtin.shell: |
+        set -euo pipefail
+        bunzip2 -kf /var/tmp/restic_{{ restic_version }}_linux_amd64.bz2
+        install -m 0755 /var/tmp/restic_{{ restic_version }}_linux_amd64 /usr/local/bin/restic
+        rm -f /var/tmp/restic_{{ restic_version }}_linux_amd64 /var/tmp/restic_{{ restic_version }}_linux_amd64.bz2
+      args:
+        executable: /bin/bash
+
+# The apt package (0.12 on jammy) is the version that hard-deleted B2 object
+# locks. It sat at /usr/bin/restic merely PATH-shadowed by the pinned binary —
+# remove the footgun outright. Ordered AFTER the pinned install so a fresh host
+# is never left with no restic at all.
+- name: Remove distro restic (Debian/Ubuntu — apt ships the dangerous 0.12)
+  when: ansible_os_family == 'Debian'
+  ansible.builtin.apt:
+    name: restic
+    state: absent
+
+# --- directories -----------------------------------------------------------------
+- name: Ensure target directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: /opt/scripts, mode: "0755" }
+    - { path: /etc/restic, mode: "0700" }
+    - { path: /etc/systemd/system/restic-backup.service.d, mode: "0755" }
+
+# --- scripts ---------------------------------------------------------------------
+- name: Install the backup + alert scripts
+  ansible.builtin.copy:
+    src: "{{ restic_src }}/{{ item }}"
+    dest: "/opt/scripts/{{ item }}"
+    owner: root
+    mode: "0755"
+  loop:
+    - restic-backup.sh
+    - ntfy-notify.sh
+
+- name: Install the mini pre-backup DB-dump hook
+  when: inventory_hostname == 'macmini'
+  ansible.builtin.copy:
+    src: "{{ restic_src }}/pre-backup-db-dumps.sh"
+    dest: /opt/scripts/pre-backup-db-dumps.sh
+    owner: root
+    mode: "0755"
+
+# --- verification wrappers (restic-snapshot-fresh-* / -hygiene-* checks) ---------
+- name: Install the verification wrappers
+  ansible.builtin.copy:
+    src: "{{ restic_src }}/{{ item.src }}"
+    dest: "/usr/local/bin/{{ item.dest }}"
+    owner: root
+    mode: "0755"
+  loop:
+    - { src: restic-latest-age.sh, dest: restic-latest-age }
+    - { src: restic-snapshot-hygiene.sh, dest: restic-snapshot-hygiene }
+
+- name: Allow the verification user to run the wrappers (NOPASSWD, exact cmds)
+  ansible.builtin.copy:
+    src: "{{ restic_src }}/verification-restic.sudoers"
+    dest: /etc/sudoers.d/verification-restic
+    owner: root
+    mode: "0440"
+    validate: /usr/sbin/visudo -cf %s
+
+# --- per-host excludes -----------------------------------------------------------
+- name: Install per-host restic excludes
+  ansible.builtin.copy:
+    src: "{{ restic_src }}/{{ restic_excludes_src[inventory_hostname] }}"
+    dest: /etc/restic/excludes.txt
+    owner: root
+    mode: "0644"
+
+# --- systemd units ---------------------------------------------------------------
+- name: Install the systemd units (service, timer, ntfy alert, dead-man drop-in)
+  ansible.builtin.copy:
+    src: "{{ restic_src }}/{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    mode: "0644"
+  loop:
+    - { src: restic-backup.service, dest: /etc/systemd/system/restic-backup.service }
+    - { src: restic-backup.timer, dest: /etc/systemd/system/restic-backup.timer }
+    - { src: "ntfy-notify@.service", dest: "/etc/systemd/system/ntfy-notify@.service" }
+    - { src: restic-backup-healthchecks.conf, dest: /etc/systemd/system/restic-backup.service.d/healthchecks.conf }
+  notify: daemon-reload
+
+# --- arm the timer (only once the secret env is seeded) --------------------------
+- name: Check for the hand-seeded secret env
+  ansible.builtin.stat:
+    path: /etc/restic/env
+  register: restic_env
+
+- name: Backup DISARMED — /etc/restic/env not seeded
+  when: not restic_env.stat.exists
   ansible.builtin.debug:
     msg: >-
-      secrets/restic.sops.env not found in the control repo — skipping the backup
-      role. Seed it per glue-06 (SOPS-encrypted RESTIC_REPOSITORY + RESTIC_PASSWORD)
-      to enable restic backups on this host.
-  when: restic_sops_env_file | length == 0
+      /etc/restic/env is missing — all files are installed but the timer stays
+      disabled. Seed the env per wiki/docs/runbooks/backup-restore.md (vault:
+      backblaze_b2.restic_append_only_key*, backblaze_b2.restic_password_<host>,
+      healthchecks.restic_<host>_ping_url, ntfy creds for the rig), then re-run.
 
-- name: Configure restic backups (sec-06)
-  when: restic_sops_env_file | length > 0
-  block:
-    - name: Install restic (Debian/Ubuntu)
-      when: ansible_os_family == 'Debian'
-      ansible.builtin.apt:
-        name: restic
-        state: present
-        update_cache: true
-
-    - name: Install restic (Arch/CachyOS)
-      when: ansible_os_family == 'Archlinux'
-      community.general.pacman:
-        name: restic
-        state: present
-
-    - name: Drop the restic environment (repo + password from SOPS)
-      ansible.builtin.copy:
-        dest: /etc/restic/backup.env
-        mode: "0600"
-        content: "{{ lookup('community.sops.sops', restic_sops_env_file, age_keyfile=sops_age_keyfile) }}"
-
-    - name: Install the restic-backup service
-      ansible.builtin.copy:
-        dest: /etc/systemd/system/restic-backup.service
-        mode: "0644"
-        content: |
-          [Unit]
-          Description=Restic backup (sec-06)
-          [Service]
-          Type=oneshot
-          EnvironmentFile=/etc/restic/backup.env
-          # M-an4: extra_backup_paths defaults (group_vars/all.yml) to
-          # "/opt/stacks /var/lib/docker/volumes" so this set matches the restore runbook.
-          ExecStart=/usr/bin/restic backup --verbose --exclude-caches /home {{ extra_backup_paths | default('') }}
-
-    - name: Install the restic-backup timer
-      ansible.builtin.copy:
-        dest: /etc/systemd/system/restic-backup.timer
-        mode: "0644"
-        content: |
-          [Unit]
-          Description=Schedule restic backup (sec-06)
-          [Timer]
-          {% if wake_gated | default(false) %}
-          # Dormant branch (wake_gated is false fleet-wide since 2026-07-08, when
-          # the rig went 24/7): run shortly after boot instead of on a clock.
-          OnBootSec=5min
-          Persistent=true
-          {% else %}
-          OnCalendar=*-*-* {{ restic_timer_oncalendar }}:00
-          RandomizedDelaySec=20m
-          Persistent=true
-          {% endif %}
-          [Install]
-          WantedBy=timers.target
-
-    - name: Enable the restic-backup timer
-      ansible.builtin.systemd_service:
-        name: restic-backup.timer
-        enabled: true
-        state: started
-        daemon_reload: true
+- name: Enable the nightly restic-backup timer
+  when: restic_env.stat.exists
+  ansible.builtin.systemd_service:
+    name: restic-backup.timer
+    enabled: true
+    state: started
+    daemon_reload: true

@@ -1,0 +1,21 @@
+---
+# roles/backup defaults (fix-42/M52)
+
+# Pinned restic for Debian/Ubuntu ONLY: jammy's apt restic is 0.12 — the exact
+# version that hard-deleted B2 object locks (sec-03 incident) — so the role
+# installs the official release binary to /usr/local/bin instead and REMOVES
+# the apt package. Arch/CachyOS rides pacman (already 0.19.x, rolling).
+# Bump deliberately: update BOTH values from the release's SHA256SUMS.
+restic_version: "0.19.1"
+restic_bz2_sha256: "f415415624dcc452f2a02b8c33641791a8c6d6d3b65bbb3543fcf9a25151585c"
+
+# The live design is mirrored byte-exact in scripts/backup/ — the role installs
+# those files VERBATIM (one source of truth, no templates). playbook_dir is
+# <checkout>/foss-setup/configs/ansible, so hop two levels up.
+restic_src: "{{ playbook_dir }}/../../scripts/backup"
+
+# Per-host exclude file, installed to /etc/restic/excludes.txt. A host missing
+# from this map fails the play LOUDLY — add its excludes file first.
+restic_excludes_src:
+  macmini: excludes-mini.txt
+  cachyos: excludes-rig.txt

@@ -33,10 +33,24 @@
     cmd: etckeeper init
     creates: /etc/.git
 
+# fix-42: `home/dotfiles` does not exist in Forgejo yet (glue-04 still open) —
+# the old task claimed "needs the control-plane SSH key" but the key works fine
+# (ansible-pull clones with it nightly); the REPO is what's missing. It masked
+# that with failed_when:false and reported a phantom "changed" on every pull
+# and in --check (poisoning ansible-site-converged-mini). Probe the repo and
+# skip cleanly until it exists; once it does, a real init failure goes RED.
+- name: Check the dotfiles repo exists in Forgejo (glue-04 not seeded yet)
+  become: false
+  ansible.builtin.command:
+    cmd: "git ls-remote {{ chezmoi_repo }} HEAD"
+  register: dotfiles_repo
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
 - name: Apply dotfiles with chezmoi (glue-04)
   become: false
+  when: dotfiles_repo.rc == 0
   ansible.builtin.command:
     cmd: "chezmoi init --apply {{ chezmoi_repo }}"
     creates: "{{ ansible_env.HOME }}/.local/share/chezmoi/.git"
-  # Needs the control-plane SSH key present; safe to skip until then.
-  failed_when: false

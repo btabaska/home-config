@@ -31,11 +31,11 @@ docker_log_max_file: "3"
 docker_edge_network: edge
 
 # --- backup role ---
-restic_timer_oncalendar: "02:30"        # local time; rig is wake-gated (see on_demand.yml)
-# M-an4: keep the restic backup SET in sync with what the restore runbook restores
-# (configs/inventory/restore-runbook-template.md restores /opt/stacks and the docker
-# volumes). The backup role appends these to /home, so backup and restore match.
-extra_backup_paths: "/opt/stacks /var/lib/docker/volumes"
+# (fix-42/M52) No knobs here any more: the role installs the live-mirrored
+# scripts/backup/* files VERBATIM, so the schedule lives in restic-backup.timer
+# and the backup SET in each host's /etc/restic/env (BACKUP_PATHS — documented
+# per host in scripts/backup/restic-backup.env.example). Version pin + per-host
+# excludes map: roles/backup/defaults/main.yml.
 
 # --- sbom role vars removed 2026-07-11: the sbom role + Dependency-Track were
 #     fully retired (SBOM feature abandoned). Recover from git history if revived. ---

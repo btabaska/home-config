@@ -139,3 +139,99 @@ checks:
     task_id: fix-22
     runbook: wiki/runbooks/backup-restore.md
     enabled: true
+
+  # ---- fix-42 (M52): the ansible backup role is the deployer of record ---------
+  # Regression checks: every non-secret file roles/backup owns must be
+  # BYTE-IDENTICAL to its source in the host's nightly ansible-pull checkout,
+  # the timer enabled, and restic >= the pinned version. This probes the M52
+  # failure shape at the consumer end: a role that silently no-ops (the
+  # never-seeded SOPS gate) leaves a REBUILT host without these files — the
+  # fix-20 rig rebuild lost ntfy-notify@ + the healthchecks drop-in exactly
+  # this way and restic-backup-rig sat "down" unnoticed — and any hand-edit
+  # that bypasses the repo shows up as drift within one pull cycle.
+  # (/etc/restic/env and excludes.txt are root-only: the env is secret by
+  # design; excludes converge nightly via ansible-pull and freshness is
+  # asserted by restic-snapshot-fresh-*. The sudoers file is 0440 root but
+  # proven live by every `sudo -n` wrapper check above.)
+  - id: restic-role-matches-source-mini
+    name: "mini restic deployment byte-matches roles/backup source (no drift, no no-op)"
+    host: mini
+    cmd: >-
+      S=$HOME/.ansible-pull/foss-setup/scripts/backup; T=OK;
+      cmp -s "$S/restic-backup.sh" /opt/scripts/restic-backup.sh || T=DRIFT-restic-backup.sh;
+      cmp -s "$S/ntfy-notify.sh" /opt/scripts/ntfy-notify.sh || T=DRIFT-ntfy-notify.sh;
+      cmp -s "$S/pre-backup-db-dumps.sh" /opt/scripts/pre-backup-db-dumps.sh || T=DRIFT-pre-backup;
+      cmp -s "$S/restic-backup.service" /etc/systemd/system/restic-backup.service || T=DRIFT-service;
+      cmp -s "$S/restic-backup.timer" /etc/systemd/system/restic-backup.timer || T=DRIFT-timer;
+      cmp -s "$S/ntfy-notify@.service" /etc/systemd/system/ntfy-notify@.service || T=DRIFT-ntfy-unit;
+      cmp -s "$S/restic-backup-healthchecks.conf" /etc/systemd/system/restic-backup.service.d/healthchecks.conf || T=DRIFT-dropin;
+      cmp -s "$S/restic-latest-age.sh" /usr/local/bin/restic-latest-age || T=DRIFT-latest-age;
+      cmp -s "$S/restic-snapshot-hygiene.sh" /usr/local/bin/restic-snapshot-hygiene || T=DRIFT-hygiene;
+      systemctl is-enabled --quiet restic-backup.timer || T=TIMER-DISABLED;
+      ! dpkg -s restic >/dev/null 2>&1 || T=APT-RESTIC-PRESENT;
+      v=$(restic version 2>/dev/null | awk '{print $2}');
+      [ "$(printf '0.19.1\n%s\n' "$v" | sort -V | head -1)" = "0.19.1" ] || T=RESTIC-OLD-$v;
+      echo "RESTIC-ROLE-$T"
+    expect: '^RESTIC-ROLE-OK$'
+    severity: warn
+    task_id: fix-42
+    runbook: wiki/runbooks/backup-restore.md
+    enabled: true
+
+  - id: restic-role-matches-source-rig
+    name: "rig restic deployment byte-matches roles/backup source (no drift, no no-op)"
+    host: rig
+    cmd: >-
+      S=$HOME/.ansible-pull/foss-setup/scripts/backup; T=OK;
+      cmp -s "$S/restic-backup.sh" /opt/scripts/restic-backup.sh || T=DRIFT-restic-backup.sh;
+      cmp -s "$S/ntfy-notify.sh" /opt/scripts/ntfy-notify.sh || T=DRIFT-ntfy-notify.sh;
+      cmp -s "$S/restic-backup.service" /etc/systemd/system/restic-backup.service || T=DRIFT-service;
+      cmp -s "$S/restic-backup.timer" /etc/systemd/system/restic-backup.timer || T=DRIFT-timer;
+      cmp -s "$S/ntfy-notify@.service" /etc/systemd/system/ntfy-notify@.service || T=DRIFT-ntfy-unit;
+      cmp -s "$S/restic-backup-healthchecks.conf" /etc/systemd/system/restic-backup.service.d/healthchecks.conf || T=DRIFT-dropin;
+      cmp -s "$S/restic-latest-age.sh" /usr/local/bin/restic-latest-age || T=DRIFT-latest-age;
+      cmp -s "$S/restic-snapshot-hygiene.sh" /usr/local/bin/restic-snapshot-hygiene || T=DRIFT-hygiene;
+      systemctl is-enabled --quiet restic-backup.timer || T=TIMER-DISABLED;
+      v=$(restic version 2>/dev/null | awk '{print $2}');
+      [ "$(printf '0.19.1\n%s\n' "$v" | sort -V | head -1)" = "0.19.1" ] || T=RESTIC-OLD-$v;
+      echo "RESTIC-ROLE-$T"
+    expect: '^RESTIC-ROLE-OK$'
+    severity: warn
+    task_id: fix-42
+    runbook: wiki/runbooks/backup-restore.md
+    enabled: true
+
+  # fix-42 class check: whole-site convergence is REAL, not vacuous — a --check
+  # run of the exact playbook ansible-pull applies nightly must report zero
+  # pending changes and zero failures. Catches every sibling of the M52 class
+  # (any role whose live state drifts from its ansible source, or whose gate
+  # silently skips what a rebuild would need), not just backup. Mini-only: the
+  # runner user has passwordless sudo here; the rig's convergence signal is
+  # ansible-pull-ok-rig below + restic-role-matches-source-rig above.
+  # `timeout:` is the per-check override added to checks_runner.py for this.
+  - id: ansible-site-converged-mini
+    name: "site.yml --check on mini: changed=0 failed=0 (live == ansible source)"
+    host: mini
+    timeout: 300
+    cmd: >-
+      cd $HOME/.ansible-pull/foss-setup/configs/ansible &&
+      ansible-playbook -i inventory.ini --connection local --limit macmini --check site.yml 2>&1
+      | grep -E '^macmini' | tail -1
+    expect: 'changed=0\s+unreachable=0\s+failed=0'
+    severity: warn
+    task_id: fix-42
+    runbook: wiki/runbooks/backup-restore.md
+    enabled: true
+
+  # fix-42: the rig's nightly ansible-pull is the mechanism that keeps its DR
+  # state converged (mini already has sys-ansible-pull) — if it breaks, drift
+  # accumulates silently until the next rebuild hurts.
+  - id: ansible-pull-ok-rig
+    name: "ansible-pull last run on rig succeeded (DR convergence loop alive)"
+    host: rig
+    cmd: systemctl show ansible-pull.service -p ExecMainStatus
+    expect: '^ExecMainStatus=0$'
+    severity: crit
+    task_id: fix-42
+    runbook: wiki/runbooks/backup-restore.md
+    enabled: true

@@ -26,7 +26,17 @@
         state: directory
         mode: "0755"
 
+    # fix-42: stat-guarded because get_url without a checksum always PREDICTS
+    # "changed" in --check (it can't compare without downloading), which kept
+    # ansible-site-converged-mini permanently red. Real-run semantics are
+    # unchanged — get_url never re-downloads an existing dest without force.
+    - name: Check for the Docker GPG key
+      ansible.builtin.stat:
+        path: /etc/apt/keyrings/docker.asc
+      register: docker_gpg_key
+
     - name: Fetch the Docker GPG key
+      when: not docker_gpg_key.stat.exists
       ansible.builtin.get_url:
         url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
         dest: /etc/apt/keyrings/docker.asc

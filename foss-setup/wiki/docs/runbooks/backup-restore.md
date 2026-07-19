@@ -99,6 +99,49 @@ Scripted monthly proof: `scripts/backup/restore-test.sh restic`
 (`ENV_FILE=/etc/restic/env`) — restores the latest snapshot to a temp dir
 and verifies files exist; read-only for the live system and the repo.
 
+## Rebuild the restic deployment from ansible (fix-42, 2026-07-19)
+
+`configs/ansible/roles/backup` is the **deployer of record** for restic on
+mini + rig: it installs the live-mirrored `scripts/backup/*` files *verbatim*
+(pinned restic 0.19.1 to `/usr/local/bin` on Ubuntu — apt's 0.12 is removed;
+pacman on Arch), the backup/alert scripts, the service + timer +
+`ntfy-notify@` units, the healthchecks dead-man drop-in, the per-host
+excludes, and the verification wrappers + sudoers. The nightly `ansible-pull`
+(mini 04:35, rig 04:44) re-converges all of it — a hand-edit on a host is
+overwritten within a day.
+
+Until 2026-07-19 the role was a **silent no-op** (gated on a never-seeded SOPS
+file, M52), and the fix-20 rig rebuild showed the cost: restic was restored by
+hand but `ntfy-notify@` and the dead-man drop-in were lost — `restic-backup-rig`
+in healthchecks sat "down" with nobody pinging it.
+
+**The only hand-seeded piece** is `/etc/restic/env` (root 0600) on each host —
+the role installs everything else and only arms the timer once this file
+exists. Seed it from `scripts/backup/restic-backup.env.example` with, per host:
+
+- `RESTIC_REPOSITORY` (`b2:bucket-restic:<host>`), `RESTIC_PASSWORD`
+  (vault `backblaze_b2.restic_password_mini` / `_rig`)
+- `B2_ACCOUNT_ID`/`B2_ACCOUNT_KEY` = the **append-only** key
+  (`backblaze_b2.restic_append_only_key_id` / `_key`)
+- `BACKUP_PATHS` (per-host sets documented in the env example),
+  `RESTIC_EXCLUDE_FILE=/etc/restic/excludes.txt`,
+  mini only: `PRE_BACKUP_SCRIPT=/opt/scripts/pre-backup-db-dumps.sh`
+- `RESTIC_HC_URL` (vault `healthchecks.restic_mini_ping_url` / `restic_rig_ping_url`)
+  — the dead-man drop-in *sources* the env with `sh`, so either `KEY=VALUE` or
+  `export KEY=VALUE` works. **Never point a systemd `EnvironmentFile=` at this
+  file**: systemd logs rejected lines verbatim to the journal (leaked the restic
+  password + B2 keys on 2026-07-19 before the drop-in was redesigned)
+- rig only: `NTFY_URL` + `NTFY_TOKEN` for `ntfy-notify.sh` failure alerts
+  (mini reads them from `/etc/verification/env`)
+
+Guards (daily, `verification/checks.d/backups.yaml`, task `fix-42`):
+`restic-role-matches-source-{mini,rig}` (every role-owned file byte-matches the
+host's ansible-pull checkout, timer enabled, restic ≥ pin, mini: apt restic
+absent), `ansible-site-converged-mini` (full `site.yml --check` reports
+`changed=0 failed=0` — the class check for *any* role drifting from live),
+`ansible-pull-ok-rig` (the convergence loop itself is alive; mini equivalent is
+`sys-ansible-pull`).
+
 ## Immutability: B2 Object Lock (fix-22, 2026-07-17)
 
 The quality-gate audit (H20) found the documented "GOVERNANCE 30d" immutability
