@@ -162,6 +162,8 @@ Immich has ZERO assets — the mobile app was never paired, so no backup has eve
 
 **Resolves 4 findings:** `H17` Immich contains ZERO assets — no phone backup has ever flowe, `H28` Root cause of zero assets: Immich mobile app was never paire, `I109` Immich pinned at v2.7.5 while the server's own update check , `M58` Second user (kaelyn92@icloud.com) was created with full admi
 
+> **RESOLVED 2026-07-18** — upgraded v2.7.5 → **v3.0.3** live+repo while the DB was empty (I109; migrations clean, VectorChord digest unchanged, Valkey re-pinned; pre-upgrade dump taken; repo's hardened `${IMMICH_VERSION:?}` compose finally deployed live). Root cause H17/H28 re-confirmed (0 assets, 0 mobile sessions) — **pairing is deliberately deferred** (operator decision: prep now, pair later), guarded by two consumer-end checks in `nas-services.yaml`: `nas-immich-backup-freshness` (statistics API + on-disk original <7d, via new least-privilege `verification-monitor` key scoped `server.statistics`, vault `immich.verify_api_key`) and `nas-immich-mobile-paired` (≥1 iOS/Android session). Both warn **by design** until a phone pairs — the ntfy alert is the reminder. M58 **accepted**: kaelyn92 keeps admin intentionally; `shouldChangePassword` resolves itself at her first login. Runbook `wiki/docs/runbooks/photos.md` (pairing steps + rotation).
+
 ### `fix-36` 🟡 Home Assistant health: unavailable entities, dead integrations, pending updates
 *host:* ha · *track:* smart-home · *severity:* medium
 

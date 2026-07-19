@@ -477,6 +477,8 @@ curl http://192.168.10.2:8789/api/requests -> 5x status 'processing', progress 0
 
 ### H17. Immich contains ZERO assets — no phone backup has ever flowed since the Jul 2 deployment; server and backup jobs are green around an empty library
 
+> **RESOLVED (fix-35, 2026-07-18): infrastructure ready + content-guarded; pairing deliberately pending.** Re-confirmed live (asset count 0, only the Safari/macOS web session). Operator decision: prep now, pair phones later — so the fix is the guard, not the pairing. Two consumer-end checks are live in the daily sweep: `nas-immich-backup-freshness` (admin statistics API **and** newest on-disk original within 7 days, via a new least-privilege `verification-monitor` API key at vault `immich.verify_api_key`) and `nas-immich-mobile-paired` (≥1 iOS/Android session row). Both currently fire `warn` **by design** — that ntfy alert IS the pairing reminder and flips green the day a phone uploads. The liveness-only `nas-immich` ping that missed this stays as-is. Runbook [`photos.md`](../wiki/docs/runbooks/photos.md) has the pairing steps.
+
 **Host:** nas · **Component:** Immich (photos flow / mobile backup) · **Auditor:** flow:youtube-photos
 
 
@@ -694,6 +696,8 @@ restic-backup-rig | down | last_ping: 2026-07-15T05:40:59+00:00
 </details>
 
 ### H28. Root cause of zero assets: Immich mobile app was never paired — only session ever created is a Safari/macOS web session; no upload has ever occurred
+
+> **RESOLVED (fix-35, 2026-07-18): root cause confirmed and guarded.** Live DB re-probe agrees with the dump analysis: still exactly one session (Safari/macOS), zero mobile sessions, zero assets. Pairing is a human step the operator scheduled for later; the `nas-immich-mobile-paired` class check now alerts until an iOS/Android session actually exists (and would catch a future all-devices-revoked regression). See H17 annotation + runbook [`photos.md`](../wiki/docs/runbooks/photos.md).
 
 **Host:** nas · **Component:** immich · **Auditor:** gap:NAS Immich — root-cause the ZERO-assets finding via the readable Postgres dump (not just filesystem emptiness)
 
@@ -1945,6 +1949,8 @@ docker logs litellm (tail) -> continuous 'GET /health/liveliness 200' + 'GET /v1
 > **RESOLVED (fix-29, 2026-07-17):** the incident itself is over (fix-20; the AI stack has since moved to llama-swap + LiteLLM per-client virtual keys under ai-01). The monitoring GAP is closed: a dedicated **least-privilege** virtual key (`verify-probe`, `utility` model only — vault `ai_stack.litellm_verify_key`, on rig `~/.config/fleet-mcp/env`) now drives a real completion through the **DB-backed key-auth path** via `rig-litellm-consumer-e2e` — exactly the consumer hop that 503'd while `/health/liveliness` + master-key `/v1/models` stayed 200. Green (`LITELLM_CONSUMER_OK 'PONG'`); the key is verified blocked (403) from every other model. This is the consumer-end pair for the liveness-only `rig-litellm` ("401 = up"). Runbook `wiki/docs/runbooks/monitoring-coverage.md`.
 
 ### M58. Second user (kaelyn92@icloud.com) was created with full admin rights and has never logged in; both accounts still flagged shouldChangePassword
+
+> **ACCEPTED (fix-35, 2026-07-18): intentional, documented.** Operator decision: kaelyn92 keeps full admin (family co-admin of the instance). The `shouldChangePassword` flags are the *intended* path — Immich forces each account to set its own password at next login, which for kaelyn is first login/pairing. Documented in the service page + runbook [`photos.md`](../wiki/docs/runbooks/photos.md); the new monitoring API key added for fix-35 was deliberately scoped to `server.statistics` only rather than the pre-existing `{all}` key pattern.
 
 **Host:** nas · **Component:** immich · **Auditor:** gap:NAS Immich — root-cause the ZERO-assets finding via the readable Postgres dump (not just filesystem emptiness)
 
@@ -3512,6 +3518,8 @@ mcpo is running, GET /docs returns 200, recent logs show only routine 404s on / 
 /volume1/docker/immich/immich-pg-dump.sh (root, DSM Task Scheduler ~02:30, 14-day retention) has produced dumps 2026-07-07 through 2026-07-16 plus the initial 07-02; Jul 3-6 are missing (scheduler evidently enabled ~Jul 7; 07-07 20:00 and 07-09 13:23 look like manual runs). The healthchecks check 'immich-dump-nas' on mini is status=up, last_ping 2026-07-16T09:30Z, n_pings=10 — the ping is wired outside the script (script body contains no curl), presumably in the DSM task command; that wrapper could not be verified (no sudo on nas). Retention find -mtime +14 is working. Dumps are readable and restore-grade (full pg_dumpall --clean).
 
 ### I109. Immich pinned at v2.7.5 while the server's own update check reports v3.0.3 available
+
+> **RESOLVED (fix-35, 2026-07-18): upgraded v2.7.5 → v3.0.3 live + repo, exactly when the audit suggested (empty DB).** Pre-upgrade pg_dumpall taken; v3 breaking changes reviewed (API-surface only; VectorChord postgres digest UNCHANGED from the v2.7.5 release compose — only the Valkey digest moved, re-pinned to match). Migrations ran clean in 40s, `/api/server/version` now `3.0.3` on LAN and via https://immich.tabaska.us, both user rows intact. Repo mirror `configs/nas/immich/` updated in the same commit (the hardened `${IMMICH_VERSION:?}` compose from the mirror was also finally deployed live, closing that drift).
 
 **Host:** nas · **Component:** immich · **Auditor:** gap:NAS Immich — root-cause the ZERO-assets finding via the readable Postgres dump (not just filesystem emptiness)
 

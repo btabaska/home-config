@@ -177,3 +177,57 @@ checks:
     task_id: seed-13
     runbook: wiki/runbooks/nas.md
     enabled: true
+
+  # ---------------------------------------------------------------------------
+  # IMMICH content checks (fix-35, 2026-07-18). The 2026-07-16 audit found the
+  # flagship monitoring-vs-reality gap: every Immich probe (ping/version/dump
+  # dead-man) was green for 14 days around a library with ZERO assets — the
+  # mobile app was never paired, so the service's entire purpose (phone photo
+  # backup) never happened (H17/H28). These two checks probe the CONTENT, not
+  # the process. Both are expected to FAIL until a phone pairs — that alert is
+  # the operator's standing reminder (decision 2026-07-18: prep now, pair later).
+  # Auth: 'verification-monitor' API key (vault immich.verify_api_key), scoped
+  # to server.statistics only, deployed as IMMICH_API_KEY in /etc/verification/env.
+  # ---------------------------------------------------------------------------
+
+  # REGRESSION (H17): photos actually exist AND landed recently, agreed by BOTH
+  # the API (DB truth via admin statistics) and the filesystem (originals on
+  # disk under /volume1/photo, world-readable). Catches never-flowed (now) and
+  # stopped-flowing (later) with one invariant: fresh content within 7 days.
+  - id: nas-immich-backup-freshness
+    name: "immich library has assets and a file landed in the last 7 days (phone backup flowing)"
+    host: mini
+    cmd: >-
+      t=$(curl -sm 10 -H "x-api-key: $IMMICH_API_KEY" "$IMMICH_URL/api/server/statistics"
+      | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d["photos"]+d["videos"])'
+      2>/dev/null || echo api_err);
+      f=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "find /volume1/photo/upload /volume1/photo/library -type f -not -name .immich -mtime -7 2>/dev/null | head -1" 2>/dev/null);
+      [ "$t" != api_err ] && [ "$t" -gt 0 ] && [ -n "$f" ]
+      && echo backup=fresh || echo "backup=STALE assets=$t fresh_file=${f:-none}"
+    expect: '^backup=fresh$'
+    severity: warn
+    task_id: fix-35
+    runbook: wiki/runbooks/photos.md
+    enabled: true
+
+  # CLASS (H28 root cause): a mobile client is actually paired — at least one
+  # iOS/Android session row exists. Guards the whole "server green but no
+  # consumer ever connected" class: never-paired (the audit state), all-devices
+  # revoked after a reset, or a family member's account (kaelyn92) that never
+  # completed setup. DB truth via the established nas-sudo psql idiom.
+  - id: nas-immich-mobile-paired
+    name: "immich has at least one mobile (iOS/Android) session paired"
+    host: mini
+    cmd: >-
+      n=$(printf '%s\n' "$NAS_SUDO_PASSWORD"
+      | ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "sudo -S -p '' /usr/local/bin/docker exec immich_postgres psql -U postgres -d immich
+      -tAc \"SELECT count(*) FROM session WHERE \\\"deviceOS\\\" ILIKE '%ios%' OR \\\"deviceOS\\\" ILIKE '%android%'\""
+      2>/dev/null); [ -n "$n" ] && [ "$n" -gt 0 ]
+      && echo paired=yes || echo "paired=NO mobile_sessions=${n:-query_failed}"
+    expect: '^paired=yes$'
+    severity: warn
+    task_id: fix-35
+    runbook: wiki/runbooks/photos.md
+    enabled: true

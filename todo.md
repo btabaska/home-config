@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**180/269 done** · **63 open** · **18 deferred** · 10 retired.
+**181/269 done** · **62 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -56,7 +56,6 @@
 - [ ] **`fix-41`** Repo-vs-live drift codification (forgejo stack, manifests, .env keys, ansible units) _(est 1-3 hrs)_
 
 ### photos
-- [ ] **`fix-35`** Immich: start real phone backups (empty library) + lock down the unused second admin _(est 1-3 hrs)_
 - [ ] **`nas-08b`** Import mirrorless-camera SD card into Immich via immich-go (+ pbak option) _(est 30 min)_
 
 ### reading
