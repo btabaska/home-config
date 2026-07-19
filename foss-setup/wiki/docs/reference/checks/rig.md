@@ -1,6 +1,6 @@
 # Checks — rig
 
-`foss-setup/verification/checks.d/rig.yaml` — 21 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/rig.yaml` — 31 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `rig-ollama`
 
@@ -66,6 +66,116 @@ llama-swap serves the coder lineup (bake-off winner + embedder)
 
 ```bash
 curl -s -m 8 http://cachyos.tailb31641.ts.net:9292/v1/models
+```
+
+## `rig-llama-swap-creative`
+
+llama-swap serves the creative/RP lineup (cydonia + dolphin-venice + goetia)
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `(?s)(?=.*cydonia-24b)(?=.*dolphin-venice-24b)(?=.*goetia-24b)`
+
+```bash
+curl -s -m 8 http://cachyos.tailb31641.ts.net:9292/v1/models
+```
+
+## `rig-lumiverse`
+
+lumiverse creative/RP frontend answers on rig:3001
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `^200$`
+
+```bash
+curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:3001/
+```
+
+## `rig-marinara`
+
+marinara-engine creative/RP frontend answers on rig:3002
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `^200$`
+
+```bash
+curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:3002/
+```
+
+## `rig-marinara-auth-gate`
+
+marinara.tabaska.us is auth-gated at Caddy (401 without credentials)
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `^401$`
+
+```bash
+curl -s -o /dev/null -m 8 -w '%{http_code}' --resolve marinara.tabaska.us:443:127.0.0.1 https://marinara.tabaska.us/
+```
+
+## `rig-marinara-connections`
+
+marinara in-app connections present (LiteLLM Creative + 3 ComfyUI image conns)
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `(?s)(?=.*LiteLLM Creative)(?=.*https://llm\.tabaska\.us/v1)(?=.*Anime Image)(?=.*Z-Image Turbo)(?=.*Flux\.2 Klein)(?=.*https://comfyui\.tabaska\.us)`
+
+```bash
+curl -s -m 8 http://cachyos.tailb31641.ts.net:3002/api/connections
+```
+
+## `rig-lumiverse-connections`
+
+lumiverse in-app connections present (LLM row w/ key + 3 ComfyUI image conns)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `(?s)(?=.*LiteLLM Creative\|https://llm\.tabaska\.us/v1\|key1)(?=.*NoobAI-XL\)\|https://comfyui\.tabaska\.us)(?=.*Z-Image Turbo)(?=.*Flux\.2 Klein)`
+
+```bash
+docker exec lumiverse bun -e "const {Database}=require('bun:sqlite'); const db=new Database('/app/data/lumiverse.db',{readonly:true}); const l=db.query('select name,api_url,has_api_key from connection_profiles').all(); const i=db.query('select name,api_url from image_gen_connections').all(); console.log('llm='+l.map(r=>r.name+'|'+r.api_url+'|key'+r.has_api_key).join(';')); console.log('img='+i.map(r=>r.name+'|'+r.api_url).join(';'))"
+```
+
+## `rig-llm-scoped-keys-public`
+
+frontend scoped keys valid via llm.tabaska.us + scoped to exactly the RP trio
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `(?s)KEYSCOPE=cydonia,dolphin-venice,goetia.*KEYSCOPE=cydonia,dolphin-venice,goetia`
+
+```bash
+for k in "$MARINARA_LITELLM_KEY" "$LUMIVERSE_LITELLM_KEY"; do curl -s -m 10 -H "Authorization: Bearer $k" https://llm.tabaska.us/v1/models | python3 -c 'import json,sys; print("KEYSCOPE="+",".join(sorted(m["id"] for m in json.load(sys.stdin)["data"])))'; done
+```
+
+## `rig-comfyui`
+
+ComfyUI up + serves the 3 image models (z-image / noobai / flux2-klein)
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `(?s)(?=.*z_image_turbo_bf16)(?=.*NoobAI-XL)(?=.*flux-2-klein-9b)`
+
+```bash
+curl -s -m 10 http://cachyos.tailb31641.ts.net:8188/object_info
+```
+
+## `rig-comfyui-arbiter`
+
+gpu-arbiter proxies ComfyUI on rig:8189 (take-turns path frontends use)
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `^200$`
+
+```bash
+curl -s -o /dev/null -m 8 -w '%{http_code}' http://cachyos.tailb31641.ts.net:8189/system_stats
+```
+
+## `rig-gpu-arbiter-unload-hook`
+
+gpu-arbiter unload hook covers /api/prompt (take-turns fix guard)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `^[1-9]$`
+
+```bash
+docker exec gpu-arbiter grep -c /api/prompt /app/gpu-arbiter.py
 ```
 
 ## `rig-ai-gpu-yield`

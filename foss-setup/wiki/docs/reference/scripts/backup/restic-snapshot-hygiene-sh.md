@@ -10,7 +10,10 @@
  restic-snapshot-hygiene — assert every snapshot in this host's restic repo
  belongs to a real fleet hostname and carries no test/junk tags (fix-22 L57:
  8-byte 'ao-verify' smoke-test snapshots with synthetic hostnames fell into
- their own forget group and would have been retained forever).
+ their own forget group and would have been retained forever), and that the
+ latest snapshot ships no dedup-hostile bloat (fix-34 M29: 12G of AMP's own
+ compressed backup zips rode along in BACKUP_PATHS and inflated B2 by ~12G —
+ the class is "an app's internal backup artifacts inside the restic set").
 
  Deployed to /usr/local/bin/restic-snapshot-hygiene (root 0755) on mini + rig;
  invoked via /etc/sudoers.d/verification-restic by the daily verification

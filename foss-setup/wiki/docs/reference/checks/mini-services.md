@@ -1,6 +1,6 @@
 # Checks — mini-services
 
-`foss-setup/verification/checks.d/mini-services.yaml` — 26 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/mini-services.yaml` — 27 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `mini-caddy-running`
 
@@ -11,6 +11,17 @@ caddy reverse proxy container running
 
 ```bash
 docker inspect -f '{{.State.Status}}' caddy
+```
+
+## `mini-caddy-live-config-current`
+
+caddy running config matches on-disk Caddyfile (no edited-but-never-reloaded vhosts)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-32` · **enabled:** True
+- **expects:** `^caddy_config=current$`
+
+```bash
+{ docker exec caddy caddy adapt --config /etc/caddy/Caddyfile 2>/dev/null; echo __SPLIT__; docker exec caddy wget -qO- http://localhost:2019/config/; } | python3 -c "import sys,json; raw=sys.stdin.read().split(\"__SPLIT__\"); hosts=lambda c: {h for s in c.get(\"apps\",{}).get(\"http\",{}).get(\"servers\",{}).values() for r in s.get(\"routes\",[]) for m in r.get(\"match\",[]) for h in m.get(\"host\",[])}; disk=hosts(json.loads(raw[0])); live=hosts(json.loads(raw[1])); print(\"caddy_config=current\" if disk==live else \"caddy_config=DRIFT missing_live:%s extra_live:%s\" % (sorted(disk-live), sorted(live-disk)))"
 ```
 
 ## `mini-adguard-running`

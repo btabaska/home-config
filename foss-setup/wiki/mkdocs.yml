@@ -138,6 +138,7 @@ nav:
       - Media-aux (navidrome backup / kometa / POT / romm): runbooks/media-aux.md
       - Reading / CWA (Kobo sync, fork image, library hygiene): runbooks/reading-cwa.md
       - Host hygiene (dead services / silent crons / spent timers): runbooks/host-hygiene.md
+      - NAS host hygiene (timezone / DNS attribution / single-disk): runbooks/nas-host-hygiene.md
   - Operations:
       - Overview: operations/index.md
       - Ansible & convergence: operations/ansible.md
@@ -231,16 +232,21 @@ nav:
       - dns: reference/checks/dns.md
       - docker-fleet: reference/checks/docker-fleet.md
       - edge: reference/checks/edge.md
+      - gaming: reference/checks/gaming.md
       - git-hygiene: reference/checks/git-hygiene.md
       - ha: reference/checks/ha.md
+      - host-hygiene: reference/checks/host-hygiene.md
       - media: reference/checks/media.md
+      - media-aux: reference/checks/media-aux.md
       - media-library-correctness: reference/checks/media-library-correctness.md
       - media-watchable: reference/checks/media-watchable.md
       - mini-services: reference/checks/mini-services.md
       - monitoring-coverage: reference/checks/monitoring-coverage.md
+      - nas-host: reference/checks/nas-host.md
       - nas-services: reference/checks/nas-services.md
       - network: reference/checks/network.md
       - power-journal: reference/checks/power-journal.md
+      - reading: reference/checks/reading.md
       - rig: reference/checks/rig.md
       - secrets: reference/checks/secrets.md
       - seedbox: reference/checks/seedbox.md

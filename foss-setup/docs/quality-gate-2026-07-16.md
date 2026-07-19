@@ -829,6 +829,12 @@ systemctl list-timers --all -> 'n/a  n/a  Sat 2026-07-11 08:30:00 UTC ... media-
 
 ### M4. All three data volumes are single-disk with no RAID redundancy (only off-site Hyper Backup protects them)
 
+> **ACCEPTED (fix-40, 2026-07-19):** deliberate 3x-Basic layout on the 4-bay
+> DS920+ (capacity over parity) — reaffirmed, not scheduled for change. Tripwire
+> added: `nas-md-arrays-healthy` (crit) pins the exact healthy md topology; the
+> system arrays span all 3 disks, so any disk failure degrades them and pages
+> immediately. Runbook: wiki/docs/runbooks/nas-host-hygiene.md.
+
 **Host:** nas · **Component:** storage / mdraid · **Auditor:** host:nas
 
 
@@ -849,6 +855,14 @@ DSM Storage API: POOL reuse_3 normal shr_without_disk_protect disks=['sata3'] / 
 
 ### M5. NAS host timezone is US/Pacific while the entire fleet + all containers use America/New_York
 
+> **RESOLVED (fix-40, 2026-07-19):** NAS switched to Eastern in all three DSM
+> sources (synoinfo.conf `timezone="Eastern"`, /etc/localtime → US/Eastern,
+> /etc/TZ `EST5EDT`), crond restarted — DSM tasks now fire at face-value times
+> in EDT. The sweep also found the **mini running UTC** (the audit's "entire
+> fleet is Eastern" premise was wrong) — fixed via `timedatectl`, and codified
+> fleet-wide in ansible (`roles/base` + `fleet_timezone`). Guards:
+> `nas-timezone-eastern` + `fleet-timezone-consistent` (checks.d/nas-host.yaml).
+
 **Host:** nas · **Component:** system / timezone · **Auditor:** host:nas
 
 
@@ -867,6 +881,12 @@ grep timezone /etc/synoinfo.conf -> timezone="Pacific"
 </details>
 
 ### M6. soularr parked on the same failed import for 5 days, re-running every 5 min with nothing to do
+
+> **RESOLVED (fix-40, 2026-07-19):** the album (Lidarr 5030) had since been
+> imported to 100% by another path, making the failed_imports.json entry pure
+> stale state — cleared to `{}`; next cycle verified clean. Recurrence guard:
+> `nas-soularr-failed-imports-fresh` (no entry may park >3 days, and the 5-min
+> cycle must be provably alive). Runbook: wiki/docs/runbooks/nas-host-hygiene.md.
 
 **Host:** nas · **Component:** soularr · **Auditor:** host:nas
 
@@ -1247,6 +1267,12 @@ whisparr: 1 Deluge Deluge | enable: True | host: 185.162.184.38 : 5945 | cat: tv
 
 ### M24. Soularr failed import parked since 2026-07-10, re-skipped every 5 minutes indefinitely
 
+> **RESOLVED (fix-40, 2026-07-19):** same root state as M6 — entry cleared (the
+> album was already 100% imported). The two OTHER orphan folders found on the
+> seedbox (`mgk - Hotel Diablo` 241M, `Owl City - Cinematic` 325M, both albums
+> also 100% in Lidarr) are deliberately kept per operator decision — reap with
+> the fix-45 seedbox batch. Guard: `nas-soularr-failed-imports-fresh`.
+
 **Host:** nas · **Component:** soularr · **Auditor:** svc:nas-apps
 
 
@@ -1326,6 +1352,14 @@ curl 'http://192.168.10.4:6969/api/v3/queue?apikey=...' -> totalRecords: 0 (noth
 > **Resolution (2026-07-17, task `fix-27`):** `[[whisparr]]` block added to `unpackerr.conf` (repo mirror + live NAS), unpackerr restarted; logs confirm `Whisparr Config: http://whisparr:6969 … paths:["/seedbox"]` and active polling. Guarded by the `unpackerr-whisparr-block` check.
 
 ### M28. AdGuard-NAS healthy and genuinely used (52k queries/24h) but all client attribution lost to docker bridge NAT
+
+> **RESOLVED (fix-40, 2026-07-19):** container recreated with
+> `network_mode: host` (compose live + repo mirror) — querylog immediately
+> attributed fresh queries to real LAN IPs (192.168.10.2) while pre-switch
+> entries still showed 172.23.0.1. The compose-header upstream drift noted here
+> is also fixed (now documents live Quad9 DoH). Guard:
+> `nas-adguard-client-attribution` — digs a canary from the mini and asserts
+> the querylog names the real client. Runbook: wiki/docs/runbooks/nas-host-hygiene.md.
 
 **Host:** nas · **Component:** adguard-nas · **Auditor:** svc:nas-apps
 

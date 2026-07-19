@@ -12,6 +12,15 @@
 
 admin_user: btabaska
 
+# --- fleet timezone (fix-40 / M5) ---
+# One wall-clock across the fleet: host clocks, container TZ env, DSM task
+# times and the 4-7AM EST maintenance window all mean the same moment. Before
+# 2026-07-19 the mini ran UTC and the NAS ran US/Pacific — cross-host log
+# correlation was off by hours. The NAS (DSM appliance, outside this play) is
+# set to the DSM equivalent 'Eastern' by hand and guarded by verification
+# check nas-timezone-eastern — see wiki/docs/runbooks/nas-host-hygiene.md.
+fleet_timezone: America/New_York
+
 # Where SOPS finds the age private key on the controller / each pull host.
 # This is the SAME key chezmoi/SOPS already need on the box (glue-06).
 sops_age_keyfile: "{{ ansible_env.HOME }}/.config/sops/age/keys.txt"

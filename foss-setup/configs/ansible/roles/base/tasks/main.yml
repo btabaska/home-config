@@ -53,6 +53,13 @@
           Unattended-Upgrade::Automatic-Reboot "false";
       check_mode: false
 
+# --- fleet timezone (fix-40 / M5): every managed host speaks the same
+#     wall-clock. Guarded fleet-wide (incl. the out-of-scope NAS appliance) by
+#     verification checks fleet-timezone-consistent / nas-timezone-eastern.
+- name: Set the fleet timezone (fix-40 / M5)
+  community.general.timezone:
+    name: "{{ fleet_timezone }}"
+
 # --- conntrack tuning (only matters if you ever fall back to home torrenting,
 #     Section 2 of the plan; harmless otherwise)
 - name: Raise nf_conntrack_max

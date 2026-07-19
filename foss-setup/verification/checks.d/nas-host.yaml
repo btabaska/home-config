@@ -1,0 +1,111 @@
+# fix-40 — NAS host hygiene: the host-level drift that made NAS observability
+# lie or rot silently.
+#   M5:      host timezone was US/Pacific while the fleet + every container is
+#            America/New_York — DSM task times ran 3h off the operator's intent
+#            and host/container log stamps disagreed. Fixed 2026-07-19
+#            (synoinfo.conf timezone=Eastern, /etc/localtime -> US/Eastern,
+#            /etc/TZ EST5EDT, crond restarted).
+#   M6/M24:  soularr re-ran a parked failed import every 5 min for 5 days with
+#            zero alerting — failed_imports.json entries age forever unless a
+#            human notices the log churn.
+#   M28:     AdGuard-NAS attributed ALL 52k queries/24h to the docker bridge
+#            gateway (172.23.0.1) — per-client stats/rules/forensics were
+#            impossible. Fixed 2026-07-19: network_mode: host.
+#   M4:      accepted-and-documented: md2/md3/md4 (vol1-3) are each single-disk
+#            'raid1' with NO redundancy — only off-site Hyper Backup protects
+#            them. The tripwire below pins the exact healthy topology so any
+#            disk drop/fault pages immediately (there is no parity to limp on).
+# NAS checks run unprivileged (no passwordless sudo on DSM) — everything here
+# reads world-readable state or authenticated service APIs.
+checks:
+  # ── M5 regression · NAS host clock speaks Eastern like the rest of the fleet ─
+  # All three places DSM derives local time from must agree: the zoneinfo
+  # symlink, the busybox-style POSIX string, and the DSM config key (a DSM
+  # upgrade regenerating synoinfo.conf is the realistic drift path).
+  - id: nas-timezone-eastern
+    name: "NAS host timezone is Eastern in all three sources (M5)"
+    host: nas
+    cmd: >-
+      echo "tz=$(date +%Z):link=$(readlink -f /etc/localtime):posix=$(cat /etc/TZ):conf=$(grep -o 'timezone="[A-Za-z]*"' /etc/synoinfo.conf)"
+    expect: '^tz=E[SD]T:link=/usr/share/zoneinfo/US/Eastern:posix=EST5EDT,M3\.2\.0,M11\.1\.0:conf=timezone="Eastern"$'
+    severity: warn
+    task_id: fix-40
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
+    enabled: true
+
+  # ── M5 class · every fleet host we own reports the same UTC offset ─────────
+  # The class bug is "one host quietly disagrees about what time it is" — it
+  # skews cross-host log correlation and scheduled-window semantics. Seedbox is
+  # a shared provider box (TZ not ours) and HA has no SSH; mini/nas/rig are the
+  # hosts we control.
+  - id: fleet-timezone-consistent
+    name: "mini, nas and rig all report the same UTC offset (M5 class)"
+    host: mini
+    cmd: >-
+      m=$(date +%z); n=$(ssh -o ConnectTimeout=5 nas date +%z </dev/null);
+      r=$(ssh -o ConnectTimeout=5 rig date +%z </dev/null);
+      if [ -n "$m" ] && [ "$m" = "$n" ] && [ "$m" = "$r" ];
+      then echo "TZ_CONSISTENT=yes offset=$m";
+      else echo "TZ_CONSISTENT=no mini=$m nas=$n rig=$r"; fi
+    expect: '^TZ_CONSISTENT=yes'
+    severity: warn
+    task_id: fix-40
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
+    enabled: true
+
+  # ── M28 regression · AdGuard-NAS sees real client IPs, not bridge NAT ──────
+  # Consumer end of DNS *observability*: dig a canary from the mini, then ask
+  # the querylog API who it thinks asked. dns.yaml already guards resolution
+  # itself; this guards the attribution that bridge NAT silently destroyed.
+  - id: nas-adguard-client-attribution
+    name: "AdGuard-NAS querylog attributes queries to real LAN IPs (M28)"
+    host: mini
+    cmd: /opt/verification/bin/adguard-nas-attribution.py
+    expect: '^ATTRIB_OK client=192\.168\.10\.\d+$'
+    severity: warn
+    task_id: fix-40
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
+    enabled: true
+
+  # ── M6/M24 regression+class · no soularr failed import parks silently ──────
+  # A failed_imports.json entry is a work item that soularr will NEVER retry or
+  # clean up on its own; anything older than 3 days means nobody was told.
+  # cycling=yes (log written <20 min ago) proves the 5-min loop is actually
+  # alive — the silent opposite failure (soularr dead, json forever empty)
+  # would otherwise read as green.
+  - id: nas-soularr-failed-imports-fresh
+    name: "soularr: no failed import parked >3 days, 5-min cycle alive (M6/M24)"
+    host: nas
+    cmd: >-
+      python3 -c "import json,os,time;
+      p='/volume1/docker/soularr/';
+      d=json.load(open(p+'failed_imports.json'));
+      now=time.time();
+      stale=[v['title'] for v in d.values()
+      if now-time.mktime(time.strptime(v['failed_at'][:19],'%Y-%m-%dT%H:%M:%S'))>3*86400];
+      age=(now-os.path.getmtime(p+'soularr.log'))/60;
+      print('stale=%d:cycling=%s' % (len(stale),'yes' if age<20 else 'no'), *stale)"
+    expect: '^stale=0:cycling=yes$'
+    severity: warn
+    task_id: fix-40
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
+    enabled: true
+
+  # ── M4 tripwire · md topology pinned: single-disk volumes have no slack ────
+  # vol1-3 are deliberately 3x-Basic (accepted risk, see runbook) — so ANY
+  # deviation from the exact healthy topology (a faulty (F) member, a dropped
+  # mirror leg on the system arrays that span all 3 disks, a vanished array)
+  # is a disk event that must page NOW; there is no parity to buy time.
+  # md0/md1 [4/3][UUU_] is normal on this 3-disk DS920+ (4th slot empty).
+  - id: nas-md-arrays-healthy
+    name: "NAS md topology exactly healthy: 3x[U] data + [UUU_] system (M4)"
+    host: nas
+    cmd: >-
+      for m in md0 md1 md2 md3 md4; do
+      printf "%s=%s:" "$m" "$(grep -A1 "^$m :" /proc/mdstat | grep -o '\[[U_]*\]' | tail -1)";
+      done; echo "faulty=$(grep -c '(F)' /proc/mdstat)"
+    expect: '^md0=\[UUU_\]:md1=\[UUU_\]:md2=\[U\]:md3=\[U\]:md4=\[U\]:faulty=0$'
+    severity: crit
+    task_id: fix-40
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
+    enabled: true

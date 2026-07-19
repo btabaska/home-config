@@ -1,6 +1,6 @@
 # Checks — ha
 
-`foss-setup/verification/checks.d/ha.yaml` — 6 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/ha.yaml` — 10 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `ha-http`
 
@@ -11,6 +11,17 @@ Home Assistant UI answers on :8123
 
 ```bash
 curl -s -o /dev/null -m 8 -w '%{http_code}' http://192.168.10.50:8123/
+```
+
+## `ha-proxy-e2e`
+
+ha.tabaska.us serves the HA frontend THROUGH caddy (proxy accepted, not 400)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-32` · **enabled:** True
+- **expects:** `^<title>Home Assistant</title>$`
+
+```bash
+curl -sk -m 10 --resolve ha.tabaska.us:443:127.0.0.1 https://ha.tabaska.us/ | grep -o "<title>Home Assistant</title>" || echo HA_PROXY_BROKEN
 ```
 
 ## `ha-api-auth`
@@ -44,6 +55,39 @@ HA lights available (not a whole room dark; >12 unavailable = alert)
 
 ```bash
 curl -s -m 12 -H "Authorization: Bearer $HA_TOKEN" http://192.168.10.50:8123/api/states | python3 -c "import sys,json; d=json.load(sys.stdin); n=sum(1 for e in d if e['entity_id'].startswith('light.') and e['state'] in ('unavailable','unknown')); print('lights_avail=ok' if n<=12 else 'lights_avail=DARK:%d'%n)"
+```
+
+## `ha-updates-pending`
+
+HA updates not left pending >=21 days (core/OS/add-ons)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-36` · **enabled:** True
+- **expects:** `^updates=ok$`
+
+```bash
+curl -s -m 12 -H "Authorization: Bearer $HA_TOKEN" http://192.168.10.50:8123/api/states | python3 -c "import sys,json,datetime; d=json.load(sys.stdin); now=datetime.datetime.now(datetime.timezone.utc); old=[e['entity_id'] for e in d if e['entity_id'].startswith('update.') and e['state']=='on' and (now-datetime.datetime.fromisoformat(e['last_changed'])).days>=21]; print('updates=ok' if not old else 'updates=STALE:'+','.join(old))"
+```
+
+## `ha-availability-drift`
+
+HA entity availability matches accepted baseline (no silent integration death)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-36` · **enabled:** True
+- **expects:** `^avail=ok$`
+
+```bash
+curl -s -m 12 -H "Authorization: Bearer $HA_TOKEN" http://192.168.10.50:8123/api/states | python3 -c "import sys,json,datetime; d=json.load(sys.stdin); now=datetime.datetime.now(datetime.timezone.utc); unav=[e for e in d if e['state']=='unavailable']; bt=[e for e in unav if e['entity_id'].startswith('sensor.btiphone_')]; lights=[e for e in unav if e['entity_id'].startswith('light.')]; other=[e['entity_id'] for e in unav if not e['entity_id'].startswith(('sensor.btiphone_','light.'))]; dark=[e['entity_id'] for e in lights if (now-datetime.datetime.fromisoformat(e['last_changed'])).days>=30]; msg=([('DRIFT:'+','.join(other))] if other else [])+([('BTIPHONE:%d'%len(bt))] if len(bt)>11 else [])+([('DARK30:'+','.join(dark))] if dark else []); print('avail=ok' if not msg else 'avail='+';'.join(msg))"
+```
+
+## `ha-iphone-presence`
+
+iPhone companion presence pipeline alive (tracker + battery report real values)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-36` · **enabled:** True
+- **expects:** `^presence=ok$`
+
+```bash
+curl -s -m 12 -H "Authorization: Bearer $HA_TOKEN" http://192.168.10.50:8123/api/states | python3 -c "import sys,json; d={e['entity_id']:e['state'] for e in json.load(sys.stdin)}; dt=d.get('device_tracker.brandon_iphone','missing'); bl=d.get('sensor.btiphone_battery_level','missing'); ok=dt not in ('missing','unavailable','unknown') and bl.replace('.','',1).isdigit(); print('presence=ok' if ok else 'presence=DEAD:dt=%s,batt=%s'%(dt,bl))"
 ```
 
 ## `ha-backup-offsite-fresh`

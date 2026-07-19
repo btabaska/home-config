@@ -1,6 +1,6 @@
 # Checks — nas-services
 
-`foss-setup/verification/checks.d/nas-services.yaml` — 15 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/nas-services.yaml` — 17 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `nas-ssh`
 
@@ -165,6 +165,28 @@ whisparr answers its /ping (adult automation :6969, seed-13)
 
 ```bash
 curl -s -m 8 http://nas:6969/ping
+```
+
+## `nas-immich-backup-freshness`
+
+immich library has assets and a file landed in the last 7 days (phone backup flowing)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-35` · **enabled:** True
+- **expects:** `^backup=fresh$`
+
+```bash
+t=$(curl -sm 10 -H "x-api-key: $IMMICH_API_KEY" "$IMMICH_URL/api/server/statistics" | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d["photos"]+d["videos"])' 2>/dev/null || echo api_err); f=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas "find /volume1/photo/upload /volume1/photo/library -type f -not -name .immich -mtime -7 2>/dev/null | head -1" 2>/dev/null); [ "$t" != api_err ] && [ "$t" -gt 0 ] && [ -n "$f" ] && echo backup=fresh || echo "backup=STALE assets=$t fresh_file=${f:-none}"
+```
+
+## `nas-immich-mobile-paired`
+
+immich has at least one mobile (iOS/Android) session paired
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-35` · **enabled:** True
+- **expects:** `^paired=yes$`
+
+```bash
+n=$(printf '%s\n' "$NAS_SUDO_PASSWORD" | ssh -o BatchMode=yes -o ConnectTimeout=10 nas "sudo -S -p '' /usr/local/bin/docker exec immich_postgres psql -U postgres -d immich -tAc \"SELECT count(*) FROM session WHERE \\\"deviceOS\\\" ILIKE '%ios%' OR \\\"deviceOS\\\" ILIKE '%android%'\"" 2>/dev/null); [ -n "$n" ] && [ "$n" -gt 0 ] && echo paired=yes || echo "paired=NO mobile_sessions=${n:-query_failed}"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

@@ -37,7 +37,7 @@ sudo ./etckeeper-setup.sh
 
 ## Environment / variables referenced
 
-`COMMIT_SERVICE`, `CONF_SRC`, `EUID`, `PATH_UNIT`, `PATH_UNIT_SRC`, `SCRIPT_DIR`, `SYSTEMD_DIR`
+`COMMIT_SERVICE`, `CONF_SRC`, `DAILY_DROPIN_DIR`, `EUID`, `PATH_UNIT`, `PATH_UNIT_SRC`, `SCRIPT_DIR`, `SERIALIZE_WRAPPER`, `SYSTEMD_DIR`
 
 ## See also
 
