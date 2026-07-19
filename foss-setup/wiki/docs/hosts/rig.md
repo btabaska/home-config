@@ -59,7 +59,25 @@ nothing in monitoring, suspect this first.
 ## Firewall (UFW)
 
 UFW is active with default-deny incoming, rules scoped to LAN
-(`192.168.10.0/24`) + tailnet (`100.64.0.0/10`). **Gotcha (bit us
+(`192.168.10.0/24`) + tailnet (`100.64.0.0/10`). Tailscale traffic arrives via
+`tailscaled`'s own iptables chains and **bypasses UFW entirely** — a service
+can be tailnet-reachable while LAN-blocked (this hid the Apollo outage below).
+
+Live rule inventory (2026-07-19; rules are hand-applied — update this table
+when you touch them):
+
+| ports | proto | from | purpose |
+|---|---|---|---|
+| SSH, KDE Connect | tcp/udp | anywhere | remote admin / device pairing |
+| 8765 | tcp | LAN, 172.16/12, 10.201/16 | beszel agent |
+| 11434 | tcp | LAN, tailnet, 172.16/12 | ollama shim (see gotcha below) |
+| 47984,47989,47990,48010 | tcp | LAN | Apollo/Moonlight web+pairing+RTSP |
+| 47998:48002 | udp | LAN | Apollo/Moonlight video/control/audio/mic |
+
+**History:** the 2026-07-16 lockdown omitted the Apollo ports — LAN game
+streaming (and the caddy `apollo.tabaska.us` vhost) was dead for 3 days while
+tailnet checks stayed green; re-allowed 2026-07-19 (operator decision, fix-45
+close-out). **Gotcha (bit us
 2026-07-09)**: docker containers reaching services on the *host* (e.g.
 open-webui/litellm → native Ollama via `host.docker.internal:11434`) arrive
 from `172.x` and hit the INPUT chain — LAN/tailnet-scoped rules do NOT cover

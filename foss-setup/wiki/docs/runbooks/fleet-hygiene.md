@@ -73,15 +73,12 @@ Documented here so future audits don't re-flag them:
 
 ## Watch items (evidence logged, no action yet)
 
-- **Apollo LAN-blocked by rig UFW (found 2026-07-19, predates fix-45)** — UFW
-  on the rig (rules dated 2026-07-16 17:19, a security-wave session) allows
-  only SSH/KDE-Connect/8765/11434; nothing for Apollo 47990 or the Moonlight
-  stream ports. Apollo answers locally (307) but LAN clients time out and the
-  caddy vhost returns 502; tailnet paths bypass UFW (why :9292 AI checks stay
-  green). **If LAN game-streaming is still wanted: `ufw allow` 47984,47989,
-  47990,48010/tcp + 47998:48000,48002,48010/udp from 192.168.10.0/24. If the
-  lockdown was deliberate, retire the homepage tile + kuma monitor instead.**
-  Operator decision needed — not changed by fix-45.
+- **Apollo LAN-block — RESOLVED 2026-07-19 (operator decision: re-allow).**
+  The 2026-07-16 UFW lockdown had omitted the Apollo/Moonlight ports; LAN
+  streaming + the caddy vhost were dead 3 days while tailnet paths (which
+  bypass UFW) stayed green. Re-allowed LAN-scoped: 47984,47989,47990,48010/tcp
+  + 47998:48002/udp — verified direct 307 and apollo.tabaska.us 307 (was 502).
+  Rule inventory now lives in the [rig host page](../hosts/rig.md).
 
 - **mini→HA bad-token curls** — ad-hoc curls from mini (agent sessions not
   loading `/etc/verification/env`) trip HA's `http.ban` warning and regenerate
