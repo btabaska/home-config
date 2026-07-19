@@ -130,7 +130,9 @@ exists. Seed it from `scripts/backup/restic-backup.env.example` with, per host:
   — the dead-man drop-in *sources* the env with `sh`, so either `KEY=VALUE` or
   `export KEY=VALUE` works. **Never point a systemd `EnvironmentFile=` at this
   file**: systemd logs rejected lines verbatim to the journal (leaked the restic
-  password + B2 keys on 2026-07-19 before the drop-in was redesigned)
+  password + B2 keys on 2026-07-19 before the drop-in was redesigned; rig journal
+  rotated+vacuumed, exposure risk-accepted — operator decision 2026-07-19, no
+  credentials rotated)
 - rig only: `NTFY_URL` + `NTFY_TOKEN` for `ntfy-notify.sh` failure alerts
   (mini reads them from `/etc/verification/env`)
 
