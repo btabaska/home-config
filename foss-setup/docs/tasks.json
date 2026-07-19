@@ -1275,6 +1275,31 @@
     "mode": "human"
   },
   {
+    "id": "nas-00e",
+    "title": "NAS music mount at /mnt/nas/music (music share reachable from consumer hosts)",
+    "host": "NAS",
+    "type": "sync",
+    "depends_on": [
+      "nas-00d"
+    ],
+    "estimate": "20 min",
+    "steps": [
+      "RETROACTIVE DEFINITION (fix-44, 2026-07-19, audit finding M46): this task was closed as verified live-done in the 2026-07-13 roadmap prune, but its definition was never added to tasks.json, leaving an orphan done id. Recorded here so every progress.json status id resolves; the work itself was already complete and verified.",
+      "Mount the NAS `music` share on the consumer hosts so the library is reachable outside the NAS (Navidrome/Lidarr consume it in-container on the NAS; these mounts serve the rig ALAC mirror and ad-hoc access).",
+      "mini: `//192.168.10.4/music` via CIFS systemd automount at `/mnt/nas/music` (read-only) and `/mnt/nas-music-rw` (read-write, YouTube-audio ingest path).",
+      "rig: `//192.168.10.4/music` via CIFS systemd automount at `/mnt/nas-music-ro` (read-only source for the nightly FLAC\u2192ALAC transcode mirror, `configs/host/rig/music-mirror/`)."
+    ],
+    "commands": [
+      "ssh mini 'mount | grep nas/music && ls /mnt/nas/music | head'",
+      "ssh rig 'mount | grep nas-music'"
+    ],
+    "verify": "mini mounts /mnt/nas/music (ro) + /mnt/nas-music-rw (rw); rig mounts /mnt/nas-music-ro; ls on each shows the music library.",
+    "track": "nas-foundation",
+    "required": true,
+    "run": 0,
+    "mode": "human"
+  },
+  {
     "id": "nas-01",
     "title": "Enable Btrfs Snapshot Replication on NAS shares",
     "host": "NAS",

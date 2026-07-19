@@ -29,4 +29,5 @@ unit-drift-check.sh <repo-checkout-root>
 - [`deploy.sh`](deploy-sh.md)
 - [`stack-mirror-check.sh`](stack-mirror-check-sh.md)
 - [`tracker-count-check.py`](tracker-count-check-py.md)
+- [`tracker-integrity.py`](tracker-integrity-py.md)
 - [verification scripts](index.md) · [All scripts](../index.md)

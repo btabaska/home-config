@@ -25,5 +25,6 @@ Prints TRACKER-COUNTS-OK on success; prints the mismatch and exits 1 otherwise.
 
 - [`deploy.sh`](deploy-sh.md)
 - [`stack-mirror-check.sh`](stack-mirror-check-sh.md)
+- [`tracker-integrity.py`](tracker-integrity-py.md)
 - [`unit-drift-check.sh`](unit-drift-check-sh.md)
 - [verification scripts](index.md) · [All scripts](../index.md)

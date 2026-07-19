@@ -142,6 +142,27 @@ checks:
     runbook: wiki/docs/runbooks/git-hygiene.md
     enabled: true
 
+  # fix-44 (M46 class): tracker-count-sanity proves the generated VIEWS match
+  # the JSONs; this proves the JSON SOURCES themselves are coherent — every
+  # done/retired/deferred/reopened id resolves to a task definition (the
+  # nas-00e orphan-id regression), no duplicate task ids, no contradictory
+  # status combos, and the vestigial _meta task_count/completed_count fields
+  # (removed by fix-44: no code consumer, they only drifted) stay dead.
+  - id: tracker-integrity
+    name: "tracker JSON sources coherent (ids resolve, no dup/contradiction, _meta counts dead)"
+    host: mini
+    cmd: >-
+      D=/var/lib/verification/wiki-drift-repo;
+      { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } &&
+      git -C "$D" fetch -q origin main &&
+      git -C "$D" reset --hard -q FETCH_HEAD &&
+      python3 "$D/foss-setup/scripts/verification/tracker-integrity.py"
+    expect: 'tracker coherent'
+    severity: warn
+    task_id: fix-44
+    runbook: wiki/docs/runbooks/git-hygiene.md
+    enabled: true
+
   # fix-43 (class of L86): hand-copied systemd unit files (ansible-pull
   # service+timer on mini AND rig) must stay byte-identical to the repo copy —
   # nothing in site.yml converges them, so drift is silent until a run misses

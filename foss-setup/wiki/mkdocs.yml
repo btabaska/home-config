@@ -360,6 +360,7 @@ nav:
           - deploy.sh: reference/scripts/verification/deploy-sh.md
           - stack-mirror-check.sh: reference/scripts/verification/stack-mirror-check-sh.md
           - tracker-count-check.py: reference/scripts/verification/tracker-count-check-py.md
+          - tracker-integrity.py: reference/scripts/verification/tracker-integrity-py.md
           - unit-drift-check.sh: reference/scripts/verification/unit-drift-check-sh.md
       - wiki:
           - Index: reference/scripts/wiki/index.md

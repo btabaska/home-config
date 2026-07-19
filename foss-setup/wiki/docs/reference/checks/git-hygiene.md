@@ -1,6 +1,6 @@
 # Checks — git-hygiene
 
-`foss-setup/verification/checks.d/git-hygiene.yaml` — 9 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/git-hygiene.yaml` — 10 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `git-stacks-clean`
 
@@ -88,6 +88,17 @@ tracker views arithmetically consistent with tasks/progress JSONs
 
 ```bash
 D=/var/lib/verification/wiki-drift-repo; { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } && git -C "$D" fetch -q origin main && git -C "$D" reset --hard -q FETCH_HEAD && python3 "$D/foss-setup/scripts/verification/tracker-count-check.py" "$D"
+```
+
+## `tracker-integrity`
+
+tracker JSON sources coherent (ids resolve, no dup/contradiction, _meta counts dead)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-44` · **enabled:** True
+- **expects:** `tracker coherent`
+
+```bash
+D=/var/lib/verification/wiki-drift-repo; { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } && git -C "$D" fetch -q origin main && git -C "$D" reset --hard -q FETCH_HEAD && python3 "$D/foss-setup/scripts/verification/tracker-integrity.py"
 ```
 
 ## `unit-file-drift`

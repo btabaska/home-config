@@ -16,6 +16,7 @@ silently reverts it. The 2026-07-16 quality gate found four flavors of this
 | `wiki-drift` | a generated wiki page's source changed without regenerating the page in the same commit ("same-commit rule", wiki-05) |
 | `stack-mirror-drift` | a live mini stack's top-level compose has **no repo mirror**, differs from it byte-wise, or its live `.env` holds keys the repo `.env.example` lacks |
 | `manifest-image-purity` | `hosts/macmini/compose-images.txt` lists an image name no live top-level compose pins (phantom/pollution), or a live image name is missing from it |
+| `tracker-integrity` | the tracker JSON **sources** are incoherent: an orphan status id, a duplicate task id, a contradictory status combo, or the retired `_meta` count fields crept back (M46 class) |
 
 `stack-mirror-drift` and `manifest-image-purity` judge live state against a
 fetched clone of `origin/main` HEAD (cache: `/var/lib/verification/wiki-drift-repo`,
@@ -83,3 +84,14 @@ For `wiki-drift` see the same-commit rule note in
 | `repo-tracked-ignored` | A file matching `.gitignore` is committed in the index — hidden from `git status` but shipped in every clone (the L68 `__pycache__` class) | `git ls-files -i -c --exclude-standard` to list, then `git rm --cached <file>` and commit |
 | `tracker-count-sanity` | Generated tracker views disagree with `tasks.json`/`progress.json`: summary arithmetic broken, page stale, or a negative Open cell (L77) | Re-run `gen-todo.py` + `gen-roadmap-pages.py` and commit with the JSON change. Statuses are exclusive in the generators — retired wins over done for dual-status tasks (sbom-01/04) |
 | `unit-file-drift` | A deployed `ansible-pull` unit on mini or rig differs from `configs/ansible/` — nothing converges these automatically, so drift is silent until a run misses (L6/L86) | Copy the repo file onto the drifted host (`/etc/systemd/system/`) + `systemctl daemon-reload`; or, if the live edit was the intentional one, land it in the repo instead |
+
+## fix-44 · tracker source coherence
+
+| check | what failing means | fix |
+|---|---|---|
+| `tracker-integrity` | The tracker JSON **sources** are incoherent (as opposed to `tracker-count-sanity`, which checks the generated *views*): an id in `progress.json` `done`/`retired`/`deferred`/`reopened` has no definition in `tasks.json` (the M46 `nas-00e` orphan class), a task id is defined twice, an id is both deferred and done/retired, or `_meta.task_count`/`completed_count` reappeared | Every status id must resolve: either add the missing task definition to `tasks.json` (what fix-44 did for `nas-00e` — the work was real, the definition was never written) or remove the bogus status key. The `_meta` count fields stay **dead**: they had no code consumer since the HTML tracker retired (f1bb884) and drifted every session (234/172 vs a reality of 269/188 when caught) — the generated `todo.md` + wiki roadmap are the only published counts. After any tracker JSON edit: `gen-todo.py` + `gen-roadmap-pages.py`, same commit |
+
+Script: `scripts/verification/tracker-integrity.py`, run daily from the fetched
+`origin/main` cache clone like its siblings. Monitoring: fails page via the
+sweep's ntfy `verification` route; the sweep itself is dead-man-monitored
+(healthchecks `verification-mini`), so a silently-dead runner also pages.
