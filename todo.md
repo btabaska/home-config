@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**186/269 done** · **57 open** · **18 deferred** · 10 retired.
+**187/269 done** · **56 open** · **18 deferred** · 10 retired.
 
 ---
 
@@ -44,9 +44,6 @@
 
 ### network
 - [ ] **`net-15`** Edge/verification doc-truth trivia: stale seedbox-SSH claim in verification README; Plex ManualPortMappingMode mismatch _(est 20 min)_
-
-### ops
-- [ ] **`fix-41`** Repo-vs-live drift codification (forgejo stack, manifests, .env keys, ansible units) _(est 1-3 hrs)_
 
 ### photos
 - [ ] **`nas-08b`** Import mirrorless-camera SD card into Immich via immich-go (+ pbak option) _(est 30 min)_

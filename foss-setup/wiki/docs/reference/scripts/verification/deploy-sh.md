@@ -42,4 +42,5 @@ scripts/verification/deploy.sh            # deploy
 
 ## See also
 
+- [`stack-mirror-check.sh`](stack-mirror-check-sh.md)
 - [verification scripts](index.md) · [All scripts](../index.md)

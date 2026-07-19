@@ -6,13 +6,13 @@ Wallabag — self-hosted read-it-later (replaces Pocket)
 |---|---|
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://wallabag.tabaska.us |
-| **Source** | `foss-setup/configs/docker-stack/wallabag/docker-compose.yml` |
+| **Source** | `foss-setup/configs/docker-stack/stacks/wallabag/compose.yaml` |
 | **Notes** | Read-it-later. Container port 80. |
 | **Upstream docs** | <https://github.com/wallabag/docker> · <https://doc.wallabag.org/admin/installation/installation/> · <https://doc.wallabag.org/admin/parameters/> |
 
 ## About
 
-Wallabag is a self-hosted read-it-later / article archiver (a Pocket replacement) running on the Mac mini Docker stack at `/opt/stacks/wallabag`, reached via Caddy at https://wallabag.tabaska.us and directly on the LAN at `mini:8085`. The stack is three containers — `wallabag/wallabag:2.6.14` (app, port 80 internally), `mariadb:11.4` for storage, and `redis:7-alpine` for async import / 2FA throttling — wired to the shared external `edge` network for the Caddy reverse proxy plus a private `wallabag` bridge for DB/Redis. It sits alongside Miniflux and Navidrome in the reading/media stack and feeds the Kobo's KOReader Wallabag plugin (see `guides/koreader-cwa-wallabag.md` §F), which pulls saved articles over the API. Key config: DB migrations run on boot when `POPULATE_DATABASE=true`; the public URL is fixed by `SYMFONY__ENV__DOMAIN_NAME` (must match how it's actually reached, since it drives links/cookies) and secrets (`WALLABAG_SECRET`, DB passwords) come from `.env` sourced from the vault, never committed.
+Wallabag is a self-hosted read-it-later / article archiver (a Pocket replacement) running on the Mac mini Docker stack at `/opt/stacks/wallabag`, reached via Caddy at https://wallabag.tabaska.us and directly on the LAN at `mini:8085`. The stack is three containers — `wallabag/wallabag:2.6.14` (app, port 80 internally), `mariadb:11.4` for storage, and `redis:7-alpine` for async import / 2FA throttling — wired to the shared external `edge` network for the Caddy reverse proxy plus a private `wallabag` bridge for DB/Redis. It sits alongside Miniflux and Navidrome in the reading/media stack and feeds the Kobo's KOReader Wallabag plugin (see `guides/koreader-cwa-wallabag.md` §F), which pulls saved articles over the API. Key config: DB migrations run on boot when `POPULATE_DATABASE=true`; the public URL is fixed by `SYMFONY__ENV__DOMAIN_NAME` (must match how it's actually reached, since it drives links/cookies) and secrets (`WALLABAG_SECRET`, DB passwords) come from `.env` sourced from the vault, never committed. Two fix-41 (2026-07-19) notes: the repo mirror moved from `configs/docker-stack/wallabag/docker-compose.yml` to `configs/docker-stack/stacks/wallabag/compose.yaml` — now matching every other stack's location AND the live filename — and the compose interpolates `WALLABAG_FROM_EMAIL`/`WALLABAG_MAILER_DSN` that the live `.env` deliberately leaves unset: outbound mail (password-reset/2FA email) is OFF, with the keys documented in `.env.example` for whoever enables it.
 
 ## Containers
 
@@ -49,6 +49,7 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - **KOReader Wallabag plugin can't authenticate or sync articles from the Kobo.** — The plugin needs an API client, not just the login. Log into https://wallabag.tabaska.us, go to Settings -> API clients management, create a client, and put its client_id/secret plus the wallabag user credentials into the KOReader plugin config with server_url set to the full https domain. See guides/koreader-cwa-wallabag.md §F.
 - **Fresh install still has the default wallabag / wallabag login.** — Default credentials on a new install are wallabag / wallabag. Log in and change the password immediately under User management before exposing it via Caddy.
 - **Broken links, redirect loops, or session/cookie issues after changing how the site is reached.** — SYMFONY__ENV__DOMAIN_NAME (from WALLABAG_DOMAIN_NAME in .env) must exactly match the public URL (https://wallabag.tabaska.us). If it drifts from the Caddy domain, fix .env on mini and `cd /opt/stacks/wallabag && docker compose up -d` to recreate the container.
+- **Password reset or 2FA emails never arrive.** — Intentional — WALLABAG_FROM_EMAIL/WALLABAG_MAILER_DSN are unset live, so symfony's mailer has no transport. Reset passwords via the console instead: ssh mini 'cd /opt/stacks/wallabag && docker compose exec wallabag /var/www/wallabag/bin/console fos:user:change-password USER --env=prod'. To enable mail, set both keys in .env (see .env.example) and docker compose up -d.
 
 ## Operations
 

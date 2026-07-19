@@ -8,7 +8,7 @@ checks:
     expect: '^0$'
     severity: warn
     task_id: docker-12
-    runbook: wiki/runbooks/git-hygiene.md
+    runbook: wiki/docs/runbooks/git-hygiene.md
     enabled: true
 
   - id: git-foss-setup-clean
@@ -18,7 +18,7 @@ checks:
     expect: '^0$'
     severity: warn
     task_id: glue-08
-    runbook: wiki/runbooks/git-hygiene.md
+    runbook: wiki/docs/runbooks/git-hygiene.md
     enabled: true
 
   # `etckeeper unclean` exits 0 when /etc is DIRTY, 1 when clean — so we expect exit 1.
@@ -29,7 +29,7 @@ checks:
     expect_exit: 1
     severity: warn
     task_id: glue-01
-    runbook: wiki/runbooks/git-hygiene.md
+    runbook: wiki/docs/runbooks/git-hygiene.md
     enabled: true
 
   # wiki-05 "same-commit rule": any change to a source that feeds a generated wiki
@@ -53,5 +53,52 @@ checks:
     expect_exit: 0
     severity: warn
     task_id: wiki-05
-    runbook: wiki/runbooks/git-hygiene.md
+    runbook: wiki/docs/runbooks/git-hygiene.md
+    enabled: true
+
+  # fix-41 (classes M48/M51): every live mini stack with a top-level compose must
+  # have a byte-identical mirror at configs/docker-stack/stacks/<name>/ keeping
+  # the SAME filename, and every live .env key must appear in the repo
+  # .env.example (one-way: live-only keys are what a rebuild silently drops —
+  # this is how caddy ACME_EMAIL, musicseerr LIDARR_API_KEY, navidrome
+  # ND_BACKUP_*, ntfy NTFY_UPSTREAM_BASE_URL went missing, and how the forgejo
+  # mirror hid unfound in configs/git/ for weeks). Judged against a fetched
+  # origin/main clone (shared cache dir with wiki-drift; the runner is
+  # sequential and both reset --hard to FETCH_HEAD first). Clone/fetch runs
+  # unprivileged (root has no forgejo ssh alias); the script runs under sudo to
+  # read every stack's .env.
+  - id: stack-mirror-drift
+    name: "every live mini stack byte-mirrored in repo (+ .env keys in example)"
+    host: mini
+    cmd: >-
+      D=/var/lib/verification/wiki-drift-repo;
+      { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } &&
+      git -C "$D" fetch -q origin main &&
+      git -C "$D" reset --hard -q FETCH_HEAD &&
+      sudo bash "$D/foss-setup/scripts/verification/stack-mirror-check.sh" mirrors
+    expect: STACK-MIRRORS-OK
+    severity: warn
+    task_id: fix-41
+    runbook: wiki/docs/runbooks/git-hygiene.md
+    enabled: true
+
+  # fix-41 (class M49): hosts/macmini/compose-images.txt must contain exactly the
+  # image NAMES present in live top-level compose files — no phantoms from
+  # recursive-grep sweep-ins (.bak copies, recyclarr's embedded trash-guides
+  # clone, the built wiki site) and nothing live left unlisted. Names, not pins:
+  # weekly-snapshot pin lag is expected; a name mismatch is pollution or a
+  # missed add/retire (100%-coverage tripwire).
+  - id: manifest-image-purity
+    name: "compose-images.txt image names == live top-level compose image names"
+    host: mini
+    cmd: >-
+      D=/var/lib/verification/wiki-drift-repo;
+      { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } &&
+      git -C "$D" fetch -q origin main &&
+      git -C "$D" reset --hard -q FETCH_HEAD &&
+      sudo bash "$D/foss-setup/scripts/verification/stack-mirror-check.sh" manifest
+    expect: MANIFEST-PURITY-OK
+    severity: warn
+    task_id: fix-41
+    runbook: wiki/docs/runbooks/git-hygiene.md
     enabled: true

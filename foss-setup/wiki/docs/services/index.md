@@ -1,6 +1,6 @@
 # Services
 
-37 compose stacks, generated from the repo (`configs/docker-stack/`, `configs/nas/`, `configs/gaming/`, `configs/git/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+37 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 

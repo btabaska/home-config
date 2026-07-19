@@ -17,9 +17,12 @@ gen-wiki-services.py — generate wiki service pages from compose files (wiki-02
 
 Walks every compose stack in the repo:
 
-  configs/docker-stack/stacks/*/compose.yaml      -> host: mini (adguard-nas -> nas)
-  configs/docker-stack/*/docker-compose.yml       -> host: mini (wallabag)
-  configs/nas/*/docker-compose.yml                -> host: nas
+  configs/docker-stack/stacks/*/<compose file>    -> host: mini (adguard-nas -> nas)
+  configs/nas/*/<compose file>                    -> host: nas
+
+(<compose file> = compose.yaml | compose.yml | docker-compose.yml, first match —
+mirrors keep each stack's live filename, e.g. forgejo + wallabag use
+docker-compose.yml/compose.yaml respectively.)
 
 and emits one Markdown man-page per stack into wiki/docs/services/, plus a
 generated services/index.md grouped by category, plus the nav block in

@@ -5,7 +5,7 @@
 > **Do not edit by hand** — your changes will be overwritten. Adjust the generator
 > or the source manifests under `hosts/macmini/` instead.
 >
-> Generated: 2026-07-15T15:05:43+00:00
+> Generated: 2026-07-19T01:12:56-04:00
 
 ## Host
 
@@ -18,12 +18,12 @@
 
 | what | where | version | status |
 |------|-------|---------|--------|
-| apt manual packages | `hosts/macmini/` | 78 pkgs | tracked |
+| apt manual packages | `hosts/macmini/` | 63 pkgs | tracked |
 | AUR/foreign packages | `hosts/macmini/pkglist.aur.txt` | 0 pkgs | tracked |
 | Flatpak apps | `hosts/macmini/flatpak.txt` | 0 apps | tracked |
-| Compose images (pinned) | `/opt/stacks` | 40 images | pinned |
+| Compose images (pinned) | `/opt/stacks` | 35 images | pinned |
 | Running containers | docker | 38 up | active |
-| systemd timers | `hosts/macmini/systemd-timers.txt` | 25 active | scheduled |
+| systemd timers | `hosts/macmini/systemd-timers.txt` | 23 active | scheduled |
 
 ## Pinned container images
 
@@ -39,17 +39,12 @@
 | `ghcr.io/blakeblackshear/frigate:0.17.1` | /opt/stacks |
 | `ghcr.io/gethomepage/homepage:v1.13.2` | /opt/stacks |
 | `ghcr.io/habirabbu/musicseerr:v1.4.2` | /opt/stacks |
-| `ghcr.io/hotio/bazarr:latest` | /opt/stacks |
-| `ghcr.io/hotio/radarr:latest` | /opt/stacks |
-| `ghcr.io/hotio/sabnzbd:latest` | /opt/stacks |
-| `ghcr.io/hotio/sonarr:latest` | /opt/stacks |
 | `ghcr.io/mealie-recipes/mealie:v3.4.0` | /opt/stacks |
 | `ghcr.io/paperless-ngx/paperless-ngx:2.20.11` | /opt/stacks |
 | `ghcr.io/recyclarr/recyclarr:8.4.0` | /opt/stacks |
 | `ghcr.io/seerr-team/seerr:v3.2.0` | /opt/stacks |
 | `ghcr.io/tautulli/tautulli:v2.17.2` | /opt/stacks |
 | `ghcr.io/zamnzim/libreseerr@sha256:820134e44279c964ddf54090ab45b444a28e7f562256baaadf20fffaf36911f3` | /opt/stacks |
-| `ghcr.io/zamnzim/libreseerr@sha256:c2dbf74a5ab6b72b4f7083c646ac2fa0d8db5a7291b0fb0e0e9f481bccad179b` | /opt/stacks |
 | `gotenberg/gotenberg:8.21` | /opt/stacks |
 | `healthchecks/healthchecks:v3.10` | /opt/stacks |
 | `henrygd/beszel:0.18.7` | /opt/stacks |

@@ -22,7 +22,6 @@
 # For more information see the manual pages of crontab(5) and cron(8)
 # 
 # m h  dom mon dow   command
-* * * * * php /var/www/pterodactyl/artisan schedule:run >> /dev/null 2>&1
 
 ### user: btabaska
 # Edit this file to introduce tasks to be run by cron.
@@ -48,6 +47,5 @@
 # For more information see the manual pages of crontab(5) and cron(8)
 # 
 # m h  dom mon dow   command
-0 0 * * * /home/btabaska/bin
 0 3 * * 0 cd /opt/stacks/recyclarr && /usr/bin/docker compose run --rm recyclarr sync >> /opt/stacks/recyclarr/config/logs/cron-sync.log 2>&1 && curl -fsS -m 10 --retry 3 -o /dev/null https://health.tabaska.us/ping/fb109ef5-e8aa-447f-84ae-324ca05e4324
 

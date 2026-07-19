@@ -139,6 +139,7 @@ nav:
       - Reading / CWA (Kobo sync, fork image, library hygiene): runbooks/reading-cwa.md
       - Host hygiene (dead services / silent crons / spent timers): runbooks/host-hygiene.md
       - NAS host hygiene (timezone / DNS attribution / single-disk): runbooks/nas-host-hygiene.md
+      - Git hygiene & repo↔live drift (mirrors / manifests): runbooks/git-hygiene.md
   - Operations:
       - Overview: operations/index.md
       - Ansible & convergence: operations/ansible.md
@@ -357,6 +358,7 @@ nav:
       - verification:
           - Index: reference/scripts/verification/index.md
           - deploy.sh: reference/scripts/verification/deploy-sh.md
+          - stack-mirror-check.sh: reference/scripts/verification/stack-mirror-check-sh.md
       - wiki:
           - Index: reference/scripts/wiki/index.md
           - wiki-drift-check.sh: reference/scripts/wiki/wiki-drift-check-sh.md

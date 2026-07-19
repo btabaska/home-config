@@ -45,7 +45,6 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `PAPERLESS_OCR_LANGUAGE`
 - `PAPERLESS_URL`
 - `PAPERLESS_ADMIN_USER`
-- `PAPERLESS_ADMIN_PASSWORD`
 
 ## Troubleshooting
 

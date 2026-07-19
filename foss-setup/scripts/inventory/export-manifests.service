@@ -9,18 +9,27 @@
 
 [Unit]
 Description=Export host package/cron/timer/image manifests into the control repo
-Documentation=https://gethomepage.dev/
+Documentation=https://wiki.tabaska.us/operations/inventory/
 Wants=network-online.target
 After=network-online.target
 
 [Service]
 Type=oneshot
 # Point at wherever the foss-setup repo is checked out on this host.
-Environment=REPO_ROOT=/opt/foss-setup
+# (mini: the home/homelab clone lives at /opt/foss-setup, so the foss-setup
+# subdir — the script's REPO_ROOT — is one level down.)
+Environment=REPO_ROOT=/opt/foss-setup/foss-setup
 Environment=STACKS_DIR=/opt/stacks
-# Optional: ntfy topic pinged on failure.
-# Environment=NTFY_URL=https://ntfy.tabaska.us/inventory
+# ntfy topic pinged by the script on FAILURE (fix-41 — was commented out, so a
+# broken weekly export could rot silently).
+Environment=NTFY_URL=https://ntfy.tabaska.us/verification
 ExecStart=/opt/scripts/inventory/export-manifests.sh
+# Dead-man ping (healthchecks "export-manifests-mini", weekly + 24h grace):
+# ExecStartPost only runs after ExecStart succeeds, so a failed OR silently
+# never-firing timer stops pinging and pages via the healthchecks→ntfy route.
+# Local endpoint (same style as restic-backup.service) so an edge/Caddy outage
+# cannot mask the signal.
+ExecStartPost=/usr/bin/curl -fsS -m 10 --retry 3 -o /dev/null http://192.168.10.2:8001/ping/90b6e373-77c0-4b4b-9c37-be9958a1a64a
 Nice=10
 
 [Install]

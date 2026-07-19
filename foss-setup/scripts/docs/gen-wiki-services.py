@@ -3,9 +3,12 @@
 
 Walks every compose stack in the repo:
 
-  configs/docker-stack/stacks/*/compose.yaml      -> host: mini (adguard-nas -> nas)
-  configs/docker-stack/*/docker-compose.yml       -> host: mini (wallabag)
-  configs/nas/*/docker-compose.yml                -> host: nas
+  configs/docker-stack/stacks/*/<compose file>    -> host: mini (adguard-nas -> nas)
+  configs/nas/*/<compose file>                    -> host: nas
+
+(<compose file> = compose.yaml | compose.yml | docker-compose.yml, first match —
+mirrors keep each stack's live filename, e.g. forgejo + wallabag use
+docker-compose.yml/compose.yaml respectively.)
 
 and emits one Markdown man-page per stack into wiki/docs/services/, plus a
 generated services/index.md grouped by category, plus the nav block in
@@ -251,27 +254,33 @@ def load_catalog():
 
 def discover():
     stacks = []
+    # Mirrors keep each stack's LIVE compose filename (compose.yaml vs
+    # docker-compose.yml differs per stack — forgejo/wallabag use the latter),
+    # so try the standard names in order rather than fixing one per tree.
+    # fix-41 folded the former special-case locations (configs/git/forgejo,
+    # configs/docker-stack/wallabag) into configs/docker-stack/stacks/.
+    compose_names = ("compose.yaml", "compose.yml", "docker-compose.yml")
     patterns = [
-        (REPO / "configs" / "docker-stack" / "stacks", "compose.yaml", "mini"),
-        (REPO / "configs" / "docker-stack", "docker-compose.yml", "mini"),
-        (REPO / "configs" / "nas", "docker-compose.yml", "nas"),
-        (REPO / "configs" / "gaming", "compose.yaml", "rig"),
+        (REPO / "configs" / "docker-stack" / "stacks", "mini"),
+        (REPO / "configs" / "nas", "nas"),
+        (REPO / "configs" / "gaming", "rig"),
     ]
-    for base, fname, host in patterns:
+    seen = set()
+    for base, host in patterns:
         if not base.is_dir():
             continue
         for d in sorted(base.iterdir()):
-            if not d.is_dir() or d.name in ("stacks", "alternatives"):
+            if not d.is_dir() or d.name == "alternatives":
                 continue
-            f = d / fname
-            if f.exists():
+            # One page per stack NAME; first tree wins (stacks/ before nas/), so
+            # the NAS's own diun mirror doesn't stomp the mini diun page.
+            if d.name in seen:
+                continue
+            f = next((d / n for n in compose_names if (d / n).exists()), None)
+            if f is not None:
                 h = "nas" if d.name.endswith("-nas") else host
+                seen.add(d.name)
                 stacks.append({"name": d.name, "path": f, "host": h})
-    # Forgejo lives outside the stack trees (configs/git/) but is a normal
-    # compose stack on the mini (/opt/stacks/forgejo).
-    f = REPO / "configs" / "git" / "docker-compose.yml"
-    if f.exists():
-        stacks.append({"name": "forgejo", "path": f, "host": "mini"})
     return stacks
 
 
@@ -411,8 +420,7 @@ def render_index(stacks, catalog, by_cat):
         "# Services",
         "",
         f"{len(stacks)} compose stacks, generated from the repo "
-        "(`configs/docker-stack/`, `configs/nas/`, `configs/gaming/`, "
-        "`configs/git/`) by "
+        "(`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by "
         "`scripts/docs/gen-wiki-services.py`. If a page here disagrees with a "
         "compose file, regenerate — the compose file wins.",
         "",

@@ -36,6 +36,7 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `PUID`
 - `PGID`
 - `TZ`
+- `NTFY_UPSTREAM_BASE_URL`
 
 ## Troubleshooting
 

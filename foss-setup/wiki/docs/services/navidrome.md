@@ -37,6 +37,9 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `MUSIC_FOLDER`
 - `TZ`
 - `ND_BASEURL`
+- `ND_BACKUP_SCHEDULE`
+- `ND_BACKUP_COUNT`
+- `ND_ENABLEINSIGHTSCOLLECTOR`
 
 ## Troubleshooting
 

@@ -1836,6 +1836,8 @@ python3 gen-script-pages.py; git status --porcelain -> 'M .../scripts/docs/index
 
 ### M48. forgejo stack (the ansible-pull control-repo server itself) runs live with NO repo mirror
 
+> **RESOLVED (fix-41, 2026-07-19):** plot twist — the mirror EXISTED, byte-identical, at `configs/git/` (a path only the wiki generator knew; the audit and the drift diff loop only searched `configs/docker-stack`). Normalized: `git mv configs/git → configs/docker-stack/stacks/forgejo/` (+ live `repo-structure.md` mirrored in), the generator's special case removed, and the rebuild gap actually closed — the full live `.env` (incl. `FORGEJO_DB_PASSWORD`) captured at vault `forgejo.env`. NB the vault edit clobbered the fix-23 admin credential mid-session; re-minted via the same container-CLI reset, API-verified `is_admin`, re-vaulted, `vault-lint` OK. Class guard `stack-mirror-drift` (git-hygiene.yaml) byte-compares EVERY live mini stack against the fetched origin/main clone daily. Runbook `wiki/docs/runbooks/git-hygiene.md`.
+
 **Host:** mini · **Component:** forgejo stack vs foss-setup/configs/docker-stack · **Auditor:** repo:live-drift
 
 
@@ -1856,6 +1858,8 @@ $ find configs/docker-stack -iname '*forgejo*' -> (nothing)
 </details>
 
 ### M49. compose-images manifest polluted: junk libreseerr 'digest' comes from a stray .bak compose (it is a local image ID, not a pullable digest), plus 4 phantom hotio images from the trash-guides clone
+
+> **RESOLVED (fix-41, 2026-07-19):** root cause fixed in `export-manifests.sh` — the `image:` grep now reads ONLY each stack's own top-level compose file (`find -mindepth 2 -maxdepth 2`) instead of recursing across all of `/opt/stacks`; the polluting `compose.yaml.bak-preselectionfix` deleted (verified nothing unique: its pin was the known-wrong image-ID and it lacked the app.py/readarr.py patch mounts). Re-ran the export live: compose-images.txt 40 → 35 entries, 0 hotio, single real libreseerr digest (820134e4…), inventory.md clean. Hardened beyond the grep: the weekly job now has a healthchecks dead-man (`export-manifests-mini`, 7d+24h grace, pinged by `ExecStartPost` — first ping received 05:12:56Z) and `NTFY_URL` failure ping enabled (was commented out); repo unit's stale `REPO_ROOT` synced to live. Class guard `manifest-image-purity` diffs manifest image NAMES against live top-level composes daily.
 
 **Host:** mini · **Component:** hosts/macmini/compose-images.txt + configs/inventory/inventory.md · **Auditor:** repo:live-drift
 
@@ -1882,6 +1886,8 @@ $ ssh mini docker images | grep frigate -> (none)
 
 ### M50. NAS compose drift: calibre-web-automated repo copy stale (NETWORK_SHARE_MODE) and immich repo copy diverged from live (version-pin guard never deployed)
 
+> **RESOLVED before this session (verified fix-41, 2026-07-19):** both diffs re-run — calibre-web-automated and immich NAS composes are now byte-identical to the repo copies (CWA repo gained `NETWORK_SHARE_MODE=false` in the fix-35 reading work; the immich `${IMMICH_VERSION:?}` pin guard was deployed to the NAS during the immich v3 upgrade — live now reports v3.0.3). Nothing to change; the new `stack-mirror-drift` class guard covers the mini side of this class, NAS composes remain covered by the per-service checks.
+
 **Host:** nas · **Component:** configs/nas vs /volume1/docker live compose · **Auditor:** repo:live-drift
 
 
@@ -1905,6 +1911,8 @@ media-automation/stash/diun/adguard-nas/beszel-agent: IDENTICAL
 </details>
 
 ### M51. .env key drift on 6 mini stacks: live-added keys missing from repo examples (rebuild-from-repo would silently drop them)
+
+> **RESOLVED (fix-41, 2026-07-19):** all four live-only key sets added to the repo examples with real defaults/comments — caddy `ACME_EMAIL` (root cause: the example's assignment line had been pasted from a web page whose Cloudflare email-obfuscation script replaced it with the literal string `[email protected]`), musicseerr `LIDARR_API_KEY`, navidrome `ND_BACKUP_COUNT/ND_BACKUP_SCHEDULE/ND_ENABLEINSIGHTSCOLLECTOR`, ntfy `NTFY_UPSTREAM_BASE_URL`. (caddy `RIG_IP` had already been fixed by an earlier session.) Repo-only stale keys resolved per the audit's read: `PAPERLESS_ADMIN_PASSWORD` dropped from the paperless example (first-run-only, live never kept it); wallabag's mailer keys KEPT — the live compose does reference them now (mail intentionally off, keys documented). Bonus normalize: wallabag's mirror moved `configs/docker-stack/wallabag/docker-compose.yml → stacks/wallabag/compose.yaml` (matching live filename). Class guard: `stack-mirror-drift` also does one-way live-`.env`-keys ⊆ example-keys for every stack, daily.
 
 **Host:** mini · **Component:** stack .env files vs repo .env.example templates · **Auditor:** repo:live-drift
 

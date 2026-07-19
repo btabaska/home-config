@@ -75,7 +75,15 @@ fi
 if [[ -d "${STACKS_DIR}" ]]; then
   log "Collecting pinned compose image tags from ${STACKS_DIR}."
   # Grep the literal pinned tags so drift from the repo is visible at a glance.
-  grep -rhoE '^[[:space:]]*image:[[:space:]]*\S+' "${STACKS_DIR}" 2>/dev/null \
+  # ONLY each stack's own top-level compose file: a recursive grep sweeps in
+  # backup copies (compose.yaml.bak-*), embedded upstream clones (recyclarr's
+  # trash-guides ships a docker-compose.yml), and the built wiki site — which
+  # put 4 phantom hotio images and an unpullable image-ID "digest" in this
+  # manifest (M49, quality gate 2026-07-16).
+  find "${STACKS_DIR}" -mindepth 2 -maxdepth 2 \
+       \( -name 'compose.yaml' -o -name 'compose.yml' \
+          -o -name 'docker-compose.yml' -o -name 'docker-compose.yaml' \) -print0 2>/dev/null \
+    | xargs -0 -r grep -hoE '^[[:space:]]*image:[[:space:]]*\S+' 2>/dev/null \
     | sed -E 's/^[[:space:]]*image:[[:space:]]*//' \
     | sort -u > "${OUT_DIR}/compose-images.txt" || true
 else

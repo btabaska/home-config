@@ -34,6 +34,7 @@ Caddy is the single reverse proxy for the whole homelab, running on the Mac mini
 Variable names from `.env.example` — real values live in `.env` on the host, sourced from the vault (never committed):
 
 - `DOMAIN`
+- `ACME_EMAIL`
 - `CLOUDFLARE_API_TOKEN`
 - `NAS_IP`
 - `SEEDBOX_IP`
