@@ -147,9 +147,17 @@ ordered tags + a NEGATIVE line) and **🎨 Scene Describer** (temp 0.6, emits a
 cinematic prose paragraph). Draft in RP chat → `@`-mention the matching preset →
 paste its output into the image connection.
 
-Notes: HF base checkpoints are uncensored-capable; the premium Civitai NSFW
-retrains (Moody / CyberRealistic ZIT) need a Civitai API token (not yet in the
-vault). GGUF loading needs the ComfyUI-GGUF node + its `gguf` pip dep installed
+**NSFW realistic stack (2026-07-19).** Anime NSFW needs no extra model (NoobAI-XL
+is Danbooru/e621-native — drop `nsfw` from the negative). For **realistic** NSFW,
+Z-Image retrains were pulled from Civitai (token now at vault `civitai.api_key`,
+downloaded with `?token=` query-param + a browser UA — Bearer-on-CDN-redirect 400s)
+plus the **uncensored `Qwen3-4b-Z-Image-Engineer-V4` Q8** text encoder (the biggest
+NSFW-scene-understanding lever; loaded via `CLIPLoaderGGUF` type `lumina2`):
+**CyberRealistic Catalyst v2.0 NSFW** (Z-Image *Turbo*, 8/cfg1, ~32 s) is wired into
+both frontends as "Realistic NSFW (CyberRealistic)"; **Moody Wild V4** (Z-Image
+*BASE* — needs 40 steps/cfg 4 + a real negative, ~76 s) is an `hq/` raw workflow.
+(Moody Real was downloaded but is architecturally incompatible — `cap_embedder`
+2560 vs 1280 — and dropped.) Seeders: `scripts/seed-{marinara,lumiverse}-connections.sh`. GGUF loading needs the ComfyUI-GGUF node + its `gguf` pip dep installed
 into the venv **as uid 1000** (the `WANTED_UID` owner; the container's default
 shell user 1025 can't write the venv).
 
