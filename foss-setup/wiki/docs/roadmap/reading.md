@@ -1,6 +1,6 @@
 # Roadmap — reading
 
-18 task(s). Status mirrors `docs/progress.json` (the source of truth).
+19 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -22,5 +22,6 @@
 | `read-12` | Install + configure gPodder for podcasts on CachyOS (funnel into Rhythmbox) | ⬜ open | 20 min |
 | `read-13` | Enable official Obsidian Sync (E2E encrypted) on CachyOS | ✅ done | 20 min |
 | `read-14` | Deploy Pinchflat — archive YouTube channels into Plex (and as podcast RSS) | ✅ done | 30 min |
+| `read-15` | CWA: KOReader sync checksum table missing (book_format_checksums) | ⬜ open | 15-30 min |
 
 [← Roadmap overview](index.md)

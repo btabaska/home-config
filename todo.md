@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**197/280 done** · **52 open** · **18 deferred** · 13 retired.
+**197/281 done** · **53 open** · **18 deferred** · 13 retired.
 
 ---
 
@@ -51,6 +51,7 @@
 - [ ] **`read-08`** Wire the KOReader Wallabag plugin on the Kobo _(est 20 min)_
 - [ ] **`read-09`** Add RSS/news to KOReader (Miniflux tie-in) _(est 20 min)_
 - [ ] **`read-12`** Install + configure gPodder for podcasts on CachyOS (funnel into Rhythmbox) _(est 20 min)_
+- [ ] **`read-15`** CWA: KOReader sync checksum table missing (book_format_checksums) _(est 15-30 min)_
 
 ### security
 - [ ] **`foss-01`** Bitwarden → Vaultwarden data cutover (point clients at vault.tabaska.us) _(est 1-2 hrs)_
