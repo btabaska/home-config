@@ -441,6 +441,13 @@ sqlite3 library.db "select ... from request_history where status not in ('comple
 > libreseerr shows it completed. Book 262 re-driven as a real Naamah's Kiss request (monitored +
 > BookSearch; no release found yet). Tripwire: `libreseerr-request-rot` fails on any 'completed'
 > request whose readarr book has no file.
+>
+> **Class follow-through (2026-07-20, task `media-08`):** the side-effect duplicate this incident
+> created in CWA ("Naamah's Curse (62)" beside (58)) was a whole class — CWA's
+> `auto_ingest_automerge` was `new_record`, so ANY Readarr re-import/upgrade duplicated an
+> existing book (recurred on the 2026-07-18 Connect re-fire). Closed by setting automerge to
+> `overwrite` (verified: re-ingest merges into the existing record), guarded by
+> `cwa-ingest-automerge-guard`; see the reading-cwa runbook.
 
 rreading-glasses metadata contains a junk duplicate record 'Namaah's Kiss' (readarr book id 262, misspelled) alongside the real 'Naamah's Curse' (id 293). The 2026-07-13 'Naamah's Curse' grab was matched to book 262: readarr deleted book 262's prior file and imported the Curse epub as 'Jacqueline Carey - Namaah's Kiss.epub'. Net live state: book 293 (Naamah's Curse) has 0 files so the libreseerr request is stuck 'processing 0%' forever even though CWA actually HAS Naamah's Curse (58) (the connect script copied the file and CWA identified it correctly from embedded metadata); meanwhile the earlier 'Naamah's Kiss' request shows completed 100% because book 262 has a file — but that file is Curse content and NO Naamah's Kiss exists anywhere in the CWA library (Jacqueline Carey dir: Dart, Avatar, Chosen, Blessing, Curse, Miranda only). User-facing: a book reported complete is not actually available. Same junk-edition root-cause family as the libreseerr app.py patch (known issue 10) but this is a new, readarr-side manifestation.
 

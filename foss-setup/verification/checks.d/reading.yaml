@@ -329,6 +329,31 @@ checks:
     runbook: wiki/docs/runbooks/books-imports.md
     enabled: true
 
+  # ────────────────────────────────────────────────────────────────────────
+  # media-08 (fix-26/H15 follow-through, 2026-07-20): CWA duplicate ingest on
+  # Readarr re-import. The readarr→CWA Connect script copies unconditionally
+  # (it CANNOT dedupe — the readarr container can't see the CWA library), and
+  # CWA's auto_ingest_automerge was 'new_record', so every re-import/upgrade
+  # of a book CWA already had minted a user-facing duplicate ("Naamah's Curse
+  # (62)" beside (58); the 07-18 Connect re-fire did it again → hand-deleted
+  # ids 63/65/67/68). Fix = automerge 'overwrite': same title+author merges
+  # into the existing record (Readarr quality upgrades now propagate, book
+  # ids stay stable for Kobo sync/shelves). The setting lives in cwa.db — a
+  # runtime DB no compose file owns — so this guard IS the anti-drift codify.
+  # Detection siblings: cwa-library-dup-titles + cwa-library-author-split
+  # (punctuation-variant titles/authors dodge exact-match automerge).
+  - id: cwa-ingest-automerge-guard
+    name: "CWA ingest automerge=overwrite + duplicate detection on (media-08 guard)"
+    host: nas
+    cmd: >-
+      sqlite3 -cmd ".timeout 30000" "file:/volume1/docker/calibre-web-automated/config/cwa.db?mode=ro"
+      "select 'automerge='||auto_ingest_automerge||' dupdetect='||duplicate_detection_enabled||' scan='||duplicate_scan_enabled||' freq='||duplicate_scan_frequency from cwa_settings;"
+    expect: '^automerge=overwrite dupdetect=1 scan=1 freq=after_import$'
+    severity: warn
+    task_id: media-08
+    runbook: wiki/docs/runbooks/reading-cwa.md
+    enabled: true
+
   # ── L47 regression: every book renders a cover (has_cover=0 was Hunter's Run) ──
   - id: cwa-library-covers
     name: "every CWA library book has a cover (L47)"

@@ -27,6 +27,17 @@ The 2026-07-16 audit found the reading cluster **green but drifted**:
   new dup-titles check caught **4 fresh duplicates** created 2026-07-17/18 by re-driven
   Readarr requests re-importing already-present titles — the class recurs, keep the check.
 
+- **media-08** (fix-26/H15 follow-through, closed 2026-07-20) — every Readarr
+  re-import/upgrade of a book CWA already had minted a **duplicate library entry**
+  ("Naamah's Curse (62)" beside (58); the 2026-07-18 Connect re-fire repeated it, ids
+  63/65/67/68 hand-deleted). Root cause: the readarr→CWA Connect script copies
+  unconditionally (it *cannot* dedupe — the readarr container can't see the CWA
+  library), and CWA's `auto_ingest_automerge` was `new_record`. Fix: `overwrite` —
+  calibredb merges same-title+author imports into the existing record, so Readarr
+  quality upgrades propagate and book ids stay stable for Kobo sync/shelves.
+  Verified 2026-07-20: re-ingesting an existing epub left book count and max id
+  unchanged and bumped the record's `last_modified` instead of creating a new row.
+
 ## Check-by-check response
 
 ### `cwa-kobo-sync-consumer` — a device's sync call failed
@@ -75,6 +86,21 @@ export-then-`remove --permanent` duplicate/unwanted editions, and set missing co
 `ebook-meta --get-cover` + `set_metadata --field cover:`. Root-cause prevention for
 foreign/duplicate editions is Readarr edition pinning (`anyEditionOk=false`).
 
+### `cwa-ingest-automerge-guard` — the dedupe setting drifted
+Not an outage: `auto_ingest_automerge` in
+`/volume1/docker/calibre-web-automated/config/cwa.db` (table `cwa_settings`) is no
+longer `overwrite`, or duplicate detection / the after-import scan was switched off.
+This setting lives in a **runtime DB no compose file owns**, so this check is the
+anti-drift codification — a CWA image bump or a click in Admin → CWA Settings can
+revert it silently, and with `new_record` every Readarr re-import/upgrade mints a
+user-facing duplicate again (the media-08 class). Restore via the CWA admin UI or
+`sqlite3 …/cwa.db "UPDATE cwa_settings SET auto_ingest_automerge='overwrite'"` (takes
+effect next ingest, no restart needed — the ingest processor re-reads settings per
+run). If the *intent* ever changes, change this check's `expect` in the same commit.
+Caveat automerge can't cover: punctuation-variant titles/authors (curly vs straight
+apostrophe) dodge calibredb's exact match — that residue is what
+`cwa-library-dup-titles` / `cwa-library-author-split` still catch.
+
 ## Standing state (2026-07-18)
 
 | thing | value |
@@ -82,6 +108,7 @@ foreign/duplicate editions is Readarr edition pinning (`anyEditionOk=false`).
 | image | `ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7@sha256:89899edd…` (digest-pinned) |
 | `config_kobo_proxy` | `1` — ENABLED is documented intent (vault `cwa.store_passthrough`) |
 | `NETWORK_SHARE_MODE` | `false` in live compose **and** repo mirror (reconciled fix-38) |
-| library | 58 books, single author identities, all covers present |
+| `auto_ingest_automerge` | `overwrite` in `cwa.db` since 2026-07-20 (media-08; guarded by `cwa-ingest-automerge-guard`) |
+| library | 65 books (2026-07-20), single author identities, all covers present |
 | removed-book stash | NAS `/volume1/docker/calibre-web-automated/fix38-removed-books/` (~1.5 GB, purgeable) |
 | pre-cleanup DB backups | same dir, `metadata.db.pre-fix38` + `app.db.pre-fix38` in `fix38-backups/` |
