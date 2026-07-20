@@ -1,0 +1,252 @@
+{
+ "task": "bmig-03",
+ "date": "2026-07-20",
+ "source": "old readarr :8787 (goodreads mode), snapshot taken pre-migration",
+ "readarr_bookfiles": 21,
+ "migrated_count": 19,
+ "excluded_c5_wrong_books": [
+  {
+   "readarr_book_id": 691,
+   "title": "Feed",
+   "actual_author": "M.T. Anderson",
+   "size": 198342,
+   "path": "/readarr-library/Seanan McGuire (4)/Feed/M.T. Anderson - Feed.epub",
+   "disposition": "bmig-05 delete"
+  },
+  {
+   "readarr_book_id": 693,
+   "title": "Prada and Prejudice",
+   "actual_author": "Katie Oliver",
+   "size": 1610466,
+   "path": "/readarr-library/Jane Austen (3)/Prada and Prejudice/Katie Oliver - Prada and Prejudice.epub",
+   "disposition": "bmig-05 delete (not in original C5 record list \u2014 addendum)"
+  }
+ ],
+ "readarr_wanted_monitored_no_file": [
+  {
+   "readarr_book_id": 702,
+   "title": "Wuthering Heights"
+  },
+  {
+   "readarr_book_id": 692,
+   "title": "Pride, Prejudice, and Peril"
+  },
+  {
+   "readarr_book_id": 689,
+   "title": "Deadline"
+  },
+  {
+   "readarr_book_id": 687,
+   "title": "Blackout"
+  },
+  {
+   "readarr_book_id": 685,
+   "title": "Rolling in the Deep"
+  },
+  {
+   "readarr_book_id": 684,
+   "title": "Countdown"
+  },
+  {
+   "readarr_book_id": 683,
+   "title": "The Lord of the Rings"
+  },
+  {
+   "readarr_book_id": 630,
+   "title": "The Return of the King"
+  },
+  {
+   "readarr_book_id": 600,
+   "title": "The Fellowship of the Ring"
+  },
+  {
+   "readarr_book_id": 564,
+   "title": "Captain Wentworth's Persuasion"
+  },
+  {
+   "readarr_book_id": 555,
+   "title": "The Hobbit, or There and Back Again"
+  },
+  {
+   "readarr_book_id": 554,
+   "title": "Kushiel's Legacy: Kushiel's Dart / Kushiel's Chosen / Kushiel's Avatar"
+  },
+  {
+   "readarr_book_id": 280,
+   "title": "The Rotten Romans"
+  }
+ ],
+ "migrated": [
+  {
+   "path": "/readarr-library/Eoin Colfer/Airman/Eoin Colfer - Airman.epub",
+   "size": 609825,
+   "bookshelf_book_id": 38,
+   "hardcover_work_id": "448141",
+   "title": "Airman",
+   "author": "Eoin Colfer",
+   "hardcover_author_id": "125883"
+  },
+  {
+   "path": "/readarr-library/Eoin Colfer/Highfire/Eoin Colfer - Highfire.epub",
+   "size": 985555,
+   "bookshelf_book_id": 37,
+   "hardcover_work_id": "450922",
+   "title": "Highfire",
+   "author": "Eoin Colfer",
+   "hardcover_author_id": "125883"
+  },
+  {
+   "path": "/readarr-library/Eoin Colfer/Plugged/Eoin Colfer - Plugged.epub",
+   "size": 577560,
+   "bookshelf_book_id": 39,
+   "hardcover_work_id": "214017",
+   "title": "Plugged",
+   "author": "Eoin Colfer",
+   "hardcover_author_id": "149453"
+  },
+  {
+   "path": "/readarr-library/Eoin Colfer/The Atlantis Complex/Eoin Colfer - The Atlantis Complex.epub",
+   "size": 497406,
+   "bookshelf_book_id": 32,
+   "hardcover_work_id": "328705",
+   "title": "The Atlantis Complex",
+   "author": "Eoin Colfer",
+   "hardcover_author_id": "125883"
+  },
+  {
+   "path": "/readarr-library/George R.R. Martin/The World of Ice & Fire - The Untold History of Westeros and the Game of Thrones/George R.R. Martin - The World of Ice & Fire - The Untold History of Westeros and the Game of Thrones.epub",
+   "size": 198108995,
+   "bookshelf_book_id": 53,
+   "hardcover_work_id": "663970",
+   "title": "The World of Ice & Fire: The Untold History of Westeros and the Game of Thrones",
+   "author": "George R.R. Martin",
+   "hardcover_author_id": "78661"
+  },
+  {
+   "path": "/readarr-library/George R.R. Martin/Tuf Voyaging/George R.R. Martin - Tuf Voyaging.epub",
+   "size": 331085,
+   "bookshelf_book_id": 50,
+   "hardcover_work_id": "474270",
+   "title": "Tuf Voyaging: A Novel",
+   "author": "George R.R. Martin",
+   "hardcover_author_id": "78661"
+  },
+  {
+   "path": "/readarr-library/J.R.R. Tolkien/The Two Towers/J.R.R. Tolkien - The Two Towers.epub",
+   "size": 9739072,
+   "bookshelf_book_id": 66,
+   "hardcover_work_id": "379631",
+   "title": "The Two Towers: Book 2",
+   "author": "J.R.R. Tolkien",
+   "hardcover_author_id": "132049"
+  },
+  {
+   "path": "/readarr-library/Jacqueline Carey/Kushiel's Avatar/Jacqueline Carey - Kushiel's Avatar.epub",
+   "size": 1004930,
+   "bookshelf_book_id": 79,
+   "hardcover_work_id": "439093",
+   "title": "Kushiel's Avatar",
+   "author": "Jacqueline Carey",
+   "hardcover_author_id": "154705"
+  },
+  {
+   "path": "/readarr-library/Jacqueline Carey/Kushiel's Chosen/Jacqueline Carey - Kushiel's Chosen.epub",
+   "size": 641512,
+   "bookshelf_book_id": 78,
+   "hardcover_work_id": "439003",
+   "title": "Kushiel's Chosen",
+   "author": "Jacqueline Carey",
+   "hardcover_author_id": "154705"
+  },
+  {
+   "path": "/readarr-library/Jacqueline Carey/Kushiel's Dart/Jacqueline Carey - Kushiel's Dart.epub",
+   "size": 816471,
+   "bookshelf_book_id": 77,
+   "hardcover_work_id": "427397",
+   "title": "Kushiel's Dart: Kushiel's Legacy, Book 1",
+   "author": "Jacqueline Carey",
+   "hardcover_author_id": "154705"
+  },
+  {
+   "path": "/readarr-library/Jacqueline Carey/Kushiel's Justice/Jacqueline Carey - Kushiel's Justice.epub",
+   "size": 767093,
+   "bookshelf_book_id": 75,
+   "hardcover_work_id": "380013",
+   "title": "Kushiel's Justice",
+   "author": "Jacqueline Carey",
+   "hardcover_author_id": "154705"
+  },
+  {
+   "path": "/readarr-library/Jacqueline Carey/Kushiel's Mercy/Jacqueline Carey - Kushiel's Mercy.epub",
+   "size": 751414,
+   "bookshelf_book_id": 73,
+   "hardcover_work_id": "338270",
+   "title": "Kushiel's Mercy",
+   "author": "Jacqueline Carey",
+   "hardcover_author_id": "154705"
+  },
+  {
+   "path": "/readarr-library/Jacqueline Carey/Kushiel's Scion/Jacqueline Carey - Kushiel's Scion.epub",
+   "size": 823417,
+   "bookshelf_book_id": 74,
+   "hardcover_work_id": "363223",
+   "title": "Kushiel's Scion",
+   "author": "Jacqueline Carey",
+   "hardcover_author_id": "154705"
+  },
+  {
+   "path": "/readarr-library/Jacqueline Carey/Miranda and Caliban/Jacqueline Carey - Miranda and Caliban.epub",
+   "size": 486208,
+   "bookshelf_book_id": 82,
+   "hardcover_work_id": "454654",
+   "title": "Miranda and Caliban",
+   "author": "Jacqueline Carey",
+   "hardcover_author_id": "154705"
+  },
+  {
+   "path": "/readarr-library/Jacqueline Carey/Naamah's Blessing/Jacqueline Carey - Naamah's Blessing.epub",
+   "size": 1361582,
+   "bookshelf_book_id": 81,
+   "hardcover_work_id": "261819",
+   "title": "Naamah's Blessing",
+   "author": "Jacqueline Carey",
+   "hardcover_author_id": "154705"
+  },
+  {
+   "path": "/readarr-library/Jacqueline Carey/Naamah's Curse/Jacqueline Carey - Naamah's Curse.epub",
+   "size": 651115,
+   "bookshelf_book_id": 72,
+   "hardcover_work_id": "93422",
+   "title": "Naamah's Curse",
+   "author": "Jacqueline Carey",
+   "hardcover_author_id": "154705"
+  },
+  {
+   "path": "/readarr-library/Jacqueline Carey/Naamah's Kiss/Jacqueline Carey - Naamah's Kiss.epub",
+   "size": 603854,
+   "bookshelf_book_id": 76,
+   "hardcover_work_id": "386472",
+   "title": "Naamah's Kiss",
+   "author": "Jacqueline Carey",
+   "hardcover_author_id": "154705"
+  },
+  {
+   "path": "/readarr-library/Seanan McGuire (2)/Parasite/Mira Grant - Parasite.epub",
+   "size": 933003,
+   "bookshelf_book_id": 102,
+   "hardcover_work_id": "439111",
+   "title": "Parasite",
+   "author": "Mira Grant",
+   "hardcover_author_id": "106983"
+  },
+  {
+   "path": "/readarr-library/Seanan McGuire/Rosemary and Rue/Seanan McGuire - Rosemary and Rue.epub",
+   "size": 474601,
+   "bookshelf_book_id": 83,
+   "hardcover_work_id": "27719",
+   "title": "Rosemary and Rue",
+   "author": "Seanan McGuire",
+   "hardcover_author_id": "185792"
+  }
+ ]
+}

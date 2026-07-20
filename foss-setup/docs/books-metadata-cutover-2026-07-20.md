@@ -155,6 +155,32 @@ count == old readarr count, spot-check 5 titles map to the right files by size, 
 cross-wired records (books-pipeline-lost-imports logic run against Bookshelf), CWA book
 count unchanged (no duplicate ingest — automerge guard from media-08 is the backstop).
 
+> **done 2026-07-20** — library migrated: 19/19 files adopted IN PLACE (paths + sizes +
+> mtimes byte-identical to the pre-migration snapshot; manifest committed at
+> `docs/books-cutover-bmig03-manifest.json`). Live readarr count was 21 bookfiles (the
+> plan's ~65 was an over-estimate); 2 deliberately NOT migrated = C5 wrong-books *Feed*
+> (M.T. Anderson, readarr 691) and *Prada and Prejudice* (Katie Oliver, readarr 693 —
+> **addendum to the C5 record list for bmig-05**). 6 authors added unmonitored
+> (monitor=none, no search — readarr race impossible): Colfer 125883 **and dup identity
+> 149453** (Plugged lives there; Bookshelf accepted a second author on the same on-disk
+> path), Martin 78661, Tolkien 132049, Carey 154705, McGuire 185792, Mira Grant 106983.
+> All 19 work ids verified against Hardcover GraphQL — zero cross-wired records; the
+> per-author scan DID cross-wire 2 files mid-quota-storm (Avatar→Dart, Blessing→Kiss),
+> fixed via ManualImport `replaceExistingFiles=true`. Wanted list (13 = C5 stuck set +
+> *Deadline*) snapshotted in the manifest for bmig-05. CWA before==after: 65 books, max
+> id 80, automerge + dup-titles guards green. **Learned, matters for bmig-04/05/06:**
+> (1) **Bookshelf ManualImport DOES fire the CWA Connect script** (unlike readarr) — the
+> 9 hand-imported files re-ingested and automerge=overwrite absorbed all of them in
+> place; (2) rg-hc records can carry junk *edition* titles from Hardcover data (Airman
+> arrived as "Foreclosure Self-Defense for Dummies", Kiss as "Namaah's Kiss" typo) — fix
+> = pin the right edition via book PUT + re-align the file with ManualImport; POST /book
+> 500s ("Sequence contains no matching element") unless `editions[]` carries a
+> foreignEditionId that exists in rg's list — the lookup's own `foreignEditionId` always
+> works; (3) the ported books-pipeline-lost-imports (bmig-06) must tolerate edition-title
+> variants ("Artemis Fowl and the..." vs CWA "Artemis Fowl: The...") — normalized
+> containment alone false-flags. Also fixed in-session: bookshelf `config.xml` was
+> world-readable (fix-23 class, nas-secret-file-perms went crit) → chmod 600, check green.
+
 ### bmig-04 — libreseerr: Bookshelf backend + author-gate + ISBN-first + fail-loudly
 Patch `/opt/stacks/libreseerr/` (bind-mounted app.py + the client; mirror to
 `foss-setup/configs/docker-stack/stacks/libreseerr/`): (a) **author-verification gate** in
