@@ -271,6 +271,49 @@ services:
       rreading-glasses-db:
         condition: service_healthy
 
+  # ----------------------------------------------------------------------------
+  # rreading-glasses-hc — HARDCOVER-mode metadata provider (books cutover
+  # bmig-01, docs/books-metadata-cutover-2026-07-20.md). Runs in PARALLEL with
+  # the goodreads instance above until bmig-05 decommissions the old path;
+  # Bookshelf (bmig-02) is its consumer at http://rreading-glasses-hc:8788.
+  # Hardcover mode requires a FRESH install (different id namespace), hence its
+  # own DATABASE `rreading_glasses_hc` inside the SAME postgres container
+  # (DS920+ has no RAM for a second postgres). Token per upstream
+  # docker-compose-hardcover.yml: HARDCOVER_AUTH env, value INCLUDES the
+  # "Bearer " prefix (vault: books.hardcover_api_token). Token expires every
+  # Jan 1 — bmig-06 wires the hardcover-token-valid tripwire check.
+  # IMAGE — TEMPORARY LOCAL BUILD (2026-07-20). The published :hardcover tag
+  # (index digest sha256:3489e722…b52f) is BROKEN since ~2026-07-18: Hardcover
+  # now rejects GraphQL requests with >5 top-level queries (403
+  # top_level_limit_exceeded) and the image batches 25 → every cold-cache
+  # search returns []. Upstream issue #574; fix PR #575 unmerged. This image
+  # was built on the mini from the MAINTAINER's repo at main
+  # a2939b625d91389d3f0a3e58cbc3bfa7ebb8390a + a single local patch
+  # (cmd/rghc/main.go:71 batch size 25→5), image id sha256:c89ce377e0a6…
+  # (task books-hc-upstream-swap): when #574 is fixed upstream, swap back to
+  #   docker buildx imagetools inspect blampe/rreading-glasses:hardcover
+  # and digest-pin as usual.
+  rreading-glasses-hc:
+    image: local/rreading-glasses:hardcover-batch5-a2939b6   # local build, see IMAGE note above
+    container_name: rreading-glasses-hc
+    hostname: rreading-glasses-hc
+    entrypoint: ["/main", "serve"]
+    environment:
+      HARDCOVER_AUTH: ${HARDCOVER_API_TOKEN:?set HARDCOVER_API_TOKEN in .env (vault books.hardcover_api_token, includes the "Bearer " prefix)}
+    command:
+      - --verbose
+      - --postgres-host=rreading-glasses-db
+      - --postgres-user=${RG_DB_USER:-rreading-glasses}
+      - --postgres-password=${RG_DB_PASSWORD:?set RG_DB_PASSWORD in .env (no special symbols)}
+      - --postgres-database=rreading_glasses_hc
+    mem_limit: 128m   # same cap rationale as the goodreads sibling
+    ports:
+      - "8789:8788"
+    restart: always
+    depends_on:
+      rreading-glasses-db:
+        condition: service_healthy
+
   rreading-glasses-db:
     image: postgres:17.6   # any version works; pin a specific 17.x minor (verify latest)
     container_name: rreading-glasses-db

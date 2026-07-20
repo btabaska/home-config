@@ -90,6 +90,20 @@ carries a clean "Emily Brontë" author; "Feed" resolves the Mira Grant work with
 Seanan McGuire alias visible. Codify compose + `.env.example`; wiki service enrichment;
 liveness check only (full check migration is bmig-06).
 
+> **done 2026-07-20** — token at vault `books.hardcover_api_token`; `rreading-glasses-hc`
+> live on :8789 (DB `rreading_glasses_hc` in the shared postgres). **Deviation:** the
+> published `:hardcover` image is broken since ~07-18 (Hardcover caps GraphQL at 5
+> top-level queries, image batches 25 → 403 `top_level_limit_exceeded`; upstream #574).
+> Owner-approved temporary local build `local/rreading-glasses:hardcover-batch5-a2939b6`
+> (upstream main `a2939b6` + one-line batch patch, built on the mini) — swap back per
+> task `books-hc-upstream-swap`. Poison corpus passed: canonical Austen work rank 2;
+> clean "Emily Brontë"; Feed → Mira Grant with the Seanan McGuire alias in the author
+> description. Old readarr path verified untouched. Liveness check
+> `nas-rreading-glasses-hc` deployed + green; coverage manifest updated. NOTE for
+> bmig-02/03: Hardcover's ~60 req/min quota makes cold-cache operations slow — background
+> author refreshes saturate it for minutes after each new author is touched; pace bulk
+> migration accordingly.
+
 ### bmig-02 — Bookshelf deployed in parallel, wired to hardcover metadata
 Add `bookshelf` to the media-automation compose (image: the Bookshelf project's official
 registry — resolve current image/tag in-session and DIGEST-PIN; young-fork supply-chain

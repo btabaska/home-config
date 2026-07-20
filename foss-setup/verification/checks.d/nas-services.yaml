@@ -40,6 +40,21 @@ checks:
     runbook: wiki/runbooks/nas.md
     enabled: true
 
+  # books cutover bmig-01 (2026-07-20): hardcover-mode sibling on :8789 — the
+  # metadata source for Bookshelf (bmig-02). Liveness only for now; the full
+  # books-check migration (hardcover-token-valid Jan-1 expiry tripwire, search
+  # canaries) lands in bmig-06. Image is a temporary local build (upstream
+  # issue #574) — see the compose IMAGE note in configs/nas/media-automation.
+  - id: nas-rreading-glasses-hc
+    name: "rreading-glasses-hc hardcover metadata provider serving on :8789 (bookshelf)"
+    host: nas
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8789/
+    expect: '^200$'
+    severity: warn
+    task_id: bmig-01
+    runbook: wiki/runbooks/nas.md
+    enabled: true
+
   - id: nas-immich
     tier: fast
     name: "immich API ping on nas:2283"

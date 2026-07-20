@@ -11831,5 +11831,29 @@
       "Coverage manifest + wiki + cross-links + program close-out"
     ],
     "verify": "Full check run green on the new stack with zero readarr references left in checks.d/bin; 3 new tripwires deployed (author-parity negative-tested); coverage manifest reflects the swap."
+  },
+  {
+    "track": "books-cutover",
+    "type": "async",
+    "required": false,
+    "run": 1,
+    "mode": "ai",
+    "gate": "",
+    "source": "books-metadata-cutover-2026-07-20.md",
+    "findings": [],
+    "id": "books-hc-upstream-swap",
+    "host": "nas",
+    "depends_on": [
+      "bmig-01"
+    ],
+    "estimate": "15-30 min",
+    "title": "Swap rreading-glasses-hc off the temporary local image once upstream fixes Hardcover batch limit (#574)",
+    "summary": "bmig-01 discovery: the published blampe/rreading-glasses:hardcover image is broken since ~2026-07-18 (Hardcover caps GraphQL at 5 top-level queries; image batches 25 -> 403 top_level_limit_exceeded, empty searches). NAS runs a temporary local build local/rreading-glasses:hardcover-batch5-a2939b6 (upstream main a2939b625d91389d3f0a3e58cbc3bfa7ebb8390a + one-line patch cmd/rghc/main.go:71 batch 25->5, built on mini, image id sha256:c89ce377e0a6). When upstream issue #574 / PR #575 is fixed and the :hardcover tag republished: inspect the new digest (docker buildx imagetools inspect blampe/rreading-glasses:hardcover), digest-pin it in configs/nas/media-automation/docker-compose.yml, recreate, rerun the bmig-01 poison corpus, remove the local image from mini+nas.",
+    "steps": [
+      "Watch blampe/rreading-glasses#574 / PR #575 for a merged fix + republished :hardcover tag",
+      "Digest-pin the new tag in the media-automation compose (repo + live), docker compose up -d rreading-glasses-hc",
+      "Rerun the bmig-01 poison corpus against :8789; clean up local/rreading-glasses images on mini and nas"
+    ],
+    "verify": "compose references blampe/rreading-glasses@sha256:... (not local/); poison corpus passes; no local/rreading-glasses images left."
   }
 ]
