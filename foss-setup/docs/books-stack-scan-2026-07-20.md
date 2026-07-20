@@ -25,6 +25,20 @@ current books (last check-in 2026-07-19 22:53 UTC).
 
 ## Cluster 1 — French / wrong-edition class (`fix-46`)
 
+> **RESOLVED 2026-07-20 (fix-46).** 8 unmonitored foreign records deleted (138/139/150/
+> 166/167/175/194/201 — 2 more than the scan found: 150 "La má del rei", 167 "Le Bûcher
+> d'un roi"); 261/263 repaired by pinning their English editions (*Kushiel's Justice* /
+> *Kushiel's Mercy*, `anyEditionOk=false`) — delete+re-add was rejected because
+> rreading-glasses would likely re-serve the French edition as canonical. Release
+> profile id=1 now blocks foreign markers at grab time (regex enforcement verified
+> live); libreseerr sends `anyEditionOk: False` on every add. Root-cause addendum:
+> rreading-glasses stamps foreign editions `language=eng`, so `allowedLanguages` can
+> never catch this class — kept at `eng, null` by operator decision. Checks
+> `readarr-foreign-records` / `readarr-foreign-grab-history` / `books-language-guard`
+> green. Runbook: `wiki/docs/runbooks/books-language.md`. Left for fix-47: file 69
+> (261's epub) + file 66 (263's misfiled *Kushiel's Avatar* content) still linked to
+> the unmonitored French editions — re-link via ManualImport during the B4 repair.
+
 ### B1 (high, nas) — French/foreign edition records enter the Readarr library as canonical books
 
 rreading-glasses (Goodreads-proxy metadata) supplies foreign editions/works as book records.

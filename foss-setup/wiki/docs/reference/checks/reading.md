@@ -1,6 +1,6 @@
 # Checks — reading
 
-`foss-setup/verification/checks.d/reading.yaml` — 8 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/reading.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `cwa-kobo-sync-consumer`
 
@@ -100,6 +100,59 @@ for author, title in db.execute(q):
     norm[key].append(title)
 dups = ["%s: %s" % (a, " / ".join(t)) for (a, _), t in norm.items() if len(t) > 1]
 print("DUP_TITLES=" + ("; ".join(dups) if dups else "NONE"))'
+```
+
+## `readarr-foreign-records`
+
+Readarr library has no foreign-language book records (fix-46 B1)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-46` · **enabled:** True
+- **expects:** `^FOREIGN_RECORDS=NONE$`
+
+```bash
+python3 -c '
+import json, os, re, urllib.request
+req = urllib.request.Request("http://192.168.10.4:8787/api/v1/book", headers={"X-Api-Key": os.environ["READARR_API_KEY"]})
+books = json.load(urllib.request.urlopen(req, timeout=30))
+pat = re.compile("^(L[\\x27\\u2019]|La |Le |Les |El |Los )|\\bTome ?\\d|, T\\d\\b|Urzeala|Fest\\u00edn", re.I)
+bad = ["%s:%s" % (b["id"], b["title"]) for b in books if pat.search(b["title"])]
+print("FOREIGN_RECORDS=" + ("; ".join(bad) if bad else "NONE"))'
+```
+
+## `readarr-foreign-grab-history`
+
+no foreign-language grabs in Readarr history since fix-46 guard (B2 class)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-46` · **enabled:** True
+- **expects:** `^FOREIGN_GRABS=NONE$`
+
+```bash
+python3 -c '
+import json, os, re, urllib.request
+url = "http://192.168.10.4:8787/api/v1/history?pageSize=200&sortKey=date&sortDirection=descending"
+req = urllib.request.Request(url, headers={"X-Api-Key": os.environ["READARR_API_KEY"]})
+recs = json.load(urllib.request.urlopen(req, timeout=30)).get("records", [])
+pat = re.compile("\\[(FRE|FRA|SPA|ESP|ROM|GER|ITA|POR)\\]|FRENCH|SPANISH|VOSTFR|\\bVF\\b|\\bTome ?\\d", re.I)
+bad = sorted({r.get("sourceTitle") or "" for r in recs if r.get("eventType") == "grabbed" and (r.get("date") or "") >= "2026-07-20" and pat.search(r.get("sourceTitle") or "")})
+print("FOREIGN_GRABS=" + ("; ".join(bad) if bad else "NONE"))'
+```
+
+## `books-language-guard`
+
+Readarr language blocklist + libreseerr edition pinning still in place (fix-46 B2/B3)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-46` · **enabled:** True
+- **expects:** `^LANG_GUARD_OK$`
+
+```bash
+rp=$(curl -sm 20 -H "X-Api-Key: $READARR_API_KEY" http://192.168.10.4:8787/api/v1/releaseprofile | python3 -c '
+import json, sys
+ps = json.load(sys.stdin)
+ok = any(p.get("enabled") and any("french" in t.lower() for t in p.get("ignored") or []) for p in ps)
+print("RP_OK" if ok else "RP_MISSING")');
+pin=$(grep -c '"anyEditionOk": False' /opt/stacks/libreseerr/readarr.py 2>/dev/null);
+if [ "$rp" = RP_OK ] && [ "$pin" = 1 ]; then echo LANG_GUARD_OK;
+else echo "LANG_GUARD_BAD rp=$rp pin=$pin"; fi
 ```
 
 ## `cwa-library-covers`

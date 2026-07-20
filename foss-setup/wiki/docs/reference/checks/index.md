@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **235 checks across 25 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **238 checks across 25 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -23,11 +23,11 @@ Every acceptance/regression check the fleet runs — **235 checks across 25 doma
 | [nas-services](nas-services.md) | 17 | 3 | 14 |
 | [network](network.md) | 1 | 0 | 1 |
 | [power-journal](power-journal.md) | 3 | 0 | 3 |
-| [reading](reading.md) | 8 | 0 | 8 |
+| [reading](reading.md) | 11 | 0 | 11 |
 | [rig](rig.md) | 31 | 2 | 29 |
 | [secrets](secrets.md) | 4 | 3 | 1 |
 | [seedbox](seedbox.md) | 8 | 4 | 4 |
 | [system](system.md) | 8 | 4 | 4 |
 | [verification-self](verification-self.md) | 5 | 0 | 5 |
 
-_Total: 235 checks._
+_Total: 238 checks._

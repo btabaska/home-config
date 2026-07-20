@@ -266,7 +266,10 @@ class ReadarrClient:
             "qualityProfileId": quality_profile_id,
             "rootFolderPath": root_folder,
             "monitored": True,
-            "anyEditionOk": True,
+            # False pins the requested edition (readarr-api-quirks): with True,
+            # Readarr may match/file any edition of the work — fix-46 B3, the
+            # enabler for the foreign-edition grabs and wrong-edition filing.
+            "anyEditionOk": False,
             "editions": [edition],
             "author": added_author,
             "addOptions": {

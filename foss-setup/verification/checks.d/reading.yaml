@@ -154,6 +154,80 @@ checks:
     runbook: wiki/docs/runbooks/reading-cwa.md
     enabled: true
 
+  # ────────────────────────────────────────────────────────────────────────
+  # fix-46 (books-stack scan B1/B2/B3, 2026-07-20): the French/wrong-edition
+  # class. rreading-glasses serves foreign editions as canonical records AND
+  # stamps them language=eng, so Readarr's allowedLanguages filter can never
+  # catch them — the only reliable detectors are title patterns (library) and
+  # release-name markers (grab history). Guards now in place: release profile
+  # id=1 (grab-time blocklist, regex terms verified enforced 2026-07-20) and
+  # libreseerr anyEditionOk=False (edition pinning).
+
+  # ── B1 regression: no foreign-language book records in the Readarr library ──
+  # Probes the consumer end: the record list auto-search acts on. Title-pattern
+  # match because rreading-glasses language metadata is untrustworthy (the
+  # French Kushiel editions carried language=eng).
+  - id: readarr-foreign-records
+    name: "Readarr library has no foreign-language book records (fix-46 B1)"
+    host: mini
+    cmd: |-
+      python3 -c '
+      import json, os, re, urllib.request
+      req = urllib.request.Request("http://192.168.10.4:8787/api/v1/book", headers={"X-Api-Key": os.environ["READARR_API_KEY"]})
+      books = json.load(urllib.request.urlopen(req, timeout=30))
+      pat = re.compile("^(L[\\x27\\u2019]|La |Le |Les |El |Los )|\\bTome ?\\d|, T\\d\\b|Urzeala|Fest\\u00edn", re.I)
+      bad = ["%s:%s" % (b["id"], b["title"]) for b in books if pat.search(b["title"])]
+      print("FOREIGN_RECORDS=" + ("; ".join(bad) if bad else "NONE"))'
+    expect: '^FOREIGN_RECORDS=NONE$'
+    severity: warn
+    task_id: fix-46
+    runbook: wiki/docs/runbooks/books-language.md
+    enabled: true
+
+  # ── B2 class, consumer end: no foreign-marker GRABS since the guard landed ──
+  # Catches any foreign release that slips past by any path (new indexer, new
+  # record shape, profile deleted) at the moment it is actually grabbed.
+  # Cutoff 2026-07-20 = guard deploy date; the 2026-06-28 foreign grabs before
+  # it are the incident this closes, not a live failure.
+  - id: readarr-foreign-grab-history
+    name: "no foreign-language grabs in Readarr history since fix-46 guard (B2 class)"
+    host: mini
+    cmd: |-
+      python3 -c '
+      import json, os, re, urllib.request
+      url = "http://192.168.10.4:8787/api/v1/history?pageSize=200&sortKey=date&sortDirection=descending"
+      req = urllib.request.Request(url, headers={"X-Api-Key": os.environ["READARR_API_KEY"]})
+      recs = json.load(urllib.request.urlopen(req, timeout=30)).get("records", [])
+      pat = re.compile("\\[(FRE|FRA|SPA|ESP|ROM|GER|ITA|POR)\\]|FRENCH|SPANISH|VOSTFR|\\bVF\\b|\\bTome ?\\d", re.I)
+      bad = sorted({r.get("sourceTitle") or "" for r in recs if r.get("eventType") == "grabbed" and (r.get("date") or "") >= "2026-07-20" and pat.search(r.get("sourceTitle") or "")})
+      print("FOREIGN_GRABS=" + ("; ".join(bad) if bad else "NONE"))'
+    expect: '^FOREIGN_GRABS=NONE$'
+    severity: warn
+    task_id: fix-46
+    runbook: wiki/docs/runbooks/books-language.md
+    enabled: true
+
+  # ── B2/B3 guard presence: blocklist profile enabled + edition pinning live ──
+  # The grab-time release profile and the libreseerr anyEditionOk=False patch
+  # are the two guards; alert if either is deleted, disabled, or drifts.
+  - id: books-language-guard
+    name: "Readarr language blocklist + libreseerr edition pinning still in place (fix-46 B2/B3)"
+    host: mini
+    cmd: |-
+      rp=$(curl -sm 20 -H "X-Api-Key: $READARR_API_KEY" http://192.168.10.4:8787/api/v1/releaseprofile | python3 -c '
+      import json, sys
+      ps = json.load(sys.stdin)
+      ok = any(p.get("enabled") and any("french" in t.lower() for t in p.get("ignored") or []) for p in ps)
+      print("RP_OK" if ok else "RP_MISSING")');
+      pin=$(grep -c '"anyEditionOk": False' /opt/stacks/libreseerr/readarr.py 2>/dev/null);
+      if [ "$rp" = RP_OK ] && [ "$pin" = 1 ]; then echo LANG_GUARD_OK;
+      else echo "LANG_GUARD_BAD rp=$rp pin=$pin"; fi
+    expect: '^LANG_GUARD_OK$'
+    severity: warn
+    task_id: fix-46
+    runbook: wiki/docs/runbooks/books-language.md
+    enabled: true
+
   # ── L47 regression: every book renders a cover (has_cover=0 was Hunter's Run) ──
   - id: cwa-library-covers
     name: "every CWA library book has a cover (L47)"
