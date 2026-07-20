@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**188/270 done** · **51 open** · **18 deferred** · 13 retired.
+**188/273 done** · **54 open** · **18 deferred** · 13 retired.
 
 ---
 
@@ -42,6 +42,9 @@
 - [ ] **`nas-08b`** Import mirrorless-camera SD card into Immich via immich-go (+ pbak option) _(est 30 min)_
 
 ### reading
+- [ ] **`fix-46`** Books: eliminate the French/wrong-edition class (rreading-glasses foreign records, no language guard, Libreseerr anyEditionOk) _(est 1-3 hrs)_ — ⛔ gate: Deletes/repairs live Readarr book records — show the operator the exact record list before removal.
+- [ ] **`fix-47`** Books: import completion + file-to-record correctness (cross-wired pack import, 2 lost books, 36 stranded files, silent match dead-ends) _(est 1-3 hrs)_ — ⛔ gate: Repairs/deletes wrong-file book records and re-imports — confirm the file-to-record mapping with the operator before changing records.
+- [ ] **`fix-48`** Libreseerr request-path robustness (OL-id 400s, 15s timeouts, reconciler dead-ends, unicode authors, no retry) _(est 1-3 hrs)_
 - [ ] **`read-02`** Set up Syncthing as a systemd user service on CachyOS _(est 20 min)_
 - [ ] **`read-05`** Connect KOReader to Calibre/CWA over WiFi (OPDS + wireless send) _(est 20 min)_
 - [ ] **`read-06`** Enable CWA built-in KOReader progress sync (KOSync) on the Kobo _(est 20 min)_

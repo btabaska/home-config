@@ -11605,5 +11605,82 @@
     "findings": [],
     "verify": "The 5 titles are hasFile=True+in Plex or confirmed no-release; redundant RARs reclaimed (df shows the space back); media-extraction-backlog stranded count unchanged or lower.",
     "source": "fix-27 follow-through 2026-07-17"
+  },
+  {
+    "id": "fix-46",
+    "title": "Books: eliminate the French/wrong-edition class (rreading-glasses foreign records, no language guard, Libreseerr anyEditionOk)",
+    "host": "mini + nas",
+    "type": "sync",
+    "depends_on": [],
+    "estimate": "1-3 hrs",
+    "required": true,
+    "track": "reading",
+    "run": 6,
+    "mode": "ai",
+    "gate": "Deletes/repairs live Readarr book records \u2014 show the operator the exact record list before removal.",
+    "summary": "rreading-glasses supplies French/foreign editions as canonical Readarr book records (6 in library, 2 still monitored: 'La Justice de Kushiel', 'La Grace de Kushiel'); metadataprofile allowedLanguages 'eng, null' admits untagged editions; zero release profiles block FRE/SPA/ROM at grab time (6 genuine foreign grabs on 06-28); Libreseerr hard-codes anyEditionOk=True so every request is edition-unpinned. Purge/repair foreign records, add grab-time language blocklist, pin editions (anyEditionOk=false local patch), tighten metadata language, and add a library-language regression check.",
+    "steps": [
+      "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings B1-B12 with evidence live in docs/books-stack-scan-2026-07-20.md (NOT the quality-gate doc)."
+    ],
+    "findings": [
+      "B1",
+      "B2",
+      "B3"
+    ],
+    "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki page written; progress.json updated. Source: docs/books-stack-scan-2026-07-20.md.",
+    "source": "books-stack deep scan 2026-07-19/20 (docs/books-stack-scan-2026-07-20.md)"
+  },
+  {
+    "id": "fix-47",
+    "title": "Books: import completion + file-to-record correctness (cross-wired pack import, 2 lost books, 36 stranded files, silent match dead-ends)",
+    "host": "nas",
+    "type": "sync",
+    "depends_on": [
+      "fix-46"
+    ],
+    "estimate": "1-3 hrs",
+    "required": true,
+    "track": "reading",
+    "run": 6,
+    "mode": "ai",
+    "gate": "Repairs/deletes wrong-file book records and re-imports \u2014 confirm the file-to-record mapping with the operator before changing records.",
+    "summary": "07-18 series-pack import filed English epubs under wrong/French records (Justice->'La Justice', Avatar->'La Grace', Curse->'Namaah's Kiss' x2, Scion->'Kushiel's Chosen'); Kushiel's Mercy + Naamah's Kiss never imported anywhere (content ready on the mount, absent from Calibre/Kobo). 36 leftover files in /seedbox/books with match/upgrade rejections incl. live wrong-matches; 6 titles from 06-28 died at the 80% match threshold then got unmonitored with no alert; multi-format releases imported PDF over EPUB twice. Recover the 2 lost books, repair records, drain leftovers, alert on import dead-ends, fix format preference; watch the recurring 'database is locked' task errors.",
+    "steps": [
+      "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings B1-B12 with evidence live in docs/books-stack-scan-2026-07-20.md (NOT the quality-gate doc)."
+    ],
+    "findings": [
+      "B4",
+      "B5",
+      "B6",
+      "B7"
+    ],
+    "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki page written; progress.json updated. Source: docs/books-stack-scan-2026-07-20.md.",
+    "source": "books-stack deep scan 2026-07-19/20 (docs/books-stack-scan-2026-07-20.md)"
+  },
+  {
+    "id": "fix-48",
+    "title": "Libreseerr request-path robustness (OL-id 400s, 15s timeouts, reconciler dead-ends, unicode authors, no retry)",
+    "host": "mini",
+    "type": "sync",
+    "depends_on": [],
+    "estimate": "1-3 hrs",
+    "required": true,
+    "track": "reading",
+    "run": 6,
+    "mode": "ai",
+    "gate": "",
+    "summary": "13 of 18 requests errored in the 07-18 test. Largest class (7): Open Library fallback POSTs OL...W ids as foreignBookId -> Readarr 400 'A book with this ID was not found' (+1 500 AddSkyhookData) \u2014 also the likely source of the 6-hourly 'Invalid request Validation failed' bursts in Readarr's log. 4 requests died on the hard-coded 15s read timeout (stored but never logged); reconciler has no terminal/retry path for monitored-no-file-not-queued (Rotten Romans stuck 6 days, Kushiel's Legacy omnibus); 'Emily Bronte' failed on combining-diacritic author matching; every failure is a one-shot with no retry. Fix the fallback id handling, raise+log timeouts, add reconciler terminal/retry + search re-trigger, normalize unicode, identify the 6-hourly caller.",
+    "steps": [
+      "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings B1-B12 with evidence live in docs/books-stack-scan-2026-07-20.md (NOT the quality-gate doc)."
+    ],
+    "findings": [
+      "B8",
+      "B9",
+      "B10",
+      "B11",
+      "B12"
+    ],
+    "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki page written; progress.json updated. Source: docs/books-stack-scan-2026-07-20.md.",
+    "source": "books-stack deep scan 2026-07-19/20 (docs/books-stack-scan-2026-07-20.md)"
   }
 ]

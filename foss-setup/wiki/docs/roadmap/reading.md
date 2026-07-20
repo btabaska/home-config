@@ -1,10 +1,13 @@
 # Roadmap — reading
 
-15 task(s). Status mirrors `docs/progress.json` (the source of truth).
+18 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
 | `fix-38` | Reading/CWA: reconcile Kobo store-passthrough state + note fork-image supply-chain risk | ✅ done | 1-3 hrs |
+| `fix-46` | Books: eliminate the French/wrong-edition class (rreading-glasses foreign records, no language guard, Libreseerr anyEditionOk) | ⬜ open | 1-3 hrs |
+| `fix-47` | Books: import completion + file-to-record correctness (cross-wired pack import, 2 lost books, 36 stranded files, silent match dead-ends) | ⬜ open | 1-3 hrs |
+| `fix-48` | Libreseerr request-path robustness (OL-id 400s, 15s timeouts, reconciler dead-ends, unicode authors, no retry) | ⬜ open | 1-3 hrs |
 | `nas-09` | Deploy Calibre-Web-Automated on Container Manager (pinned, hardened) | ✅ done | 30 min |
 | `read-01` | Install Calibre desktop (library master + conversion) on CachyOS | ✅ done | 20 min |
 | `read-02` | Set up Syncthing as a systemd user service on CachyOS | ⬜ open | 20 min |
