@@ -121,6 +121,26 @@ Acceptance: system status green, 3 indexers synced, an interactive search on a k
 title returns MAM candidates, Connect test fires (log line in the script's logfile).
 DO NOT enable any RSS/auto-add that would race the still-live readarr.
 
+> **done 2026-07-20** — bookshelf live on :8790 (`ghcr.io/pennydreadful/bookshelf:hardcover-v0.4.20.129`
+> @sha256:388eecc9…, == rolling `hardcover` that day; LinuxServer-style image, `METADATA_URL`
+> env → `http://rreading-glasses-hc:8788`). Full readarr parity wired via API clone: EPUB
+> Preferred QP, 5-term foreign blocklist, Deluge@betty, `/seedbox` mapping, CWA Connect script
+> (Test fired, fork keeps `readarr_*` env vars), root folder, Standard metadata profile; UI
+> login = readarr's own Users row copied (Forms auth). Prowlarr app registered (Readarr type —
+> no Bookshelf type exists), 3 indexers synced. API key → vault `arr_api_keys.bookshelf`.
+> Acceptance: health `[]`, poison lookup returns canonical Austen work (clean `austen, jane`,
+> C1/C2 fixed at the metadata layer), interactive search bookId=24 → 24 releases (20 MAM).
+> `nas-bookshelf` check + coverage entry deployed, green. **Deviations:** (1) owner-approved
+> DEDICATED Deluge category `bookshelf`/`bookshelf-imported` (not "identical to readarr's") —
+> shared category made bookshelf track readarr's stuck torrents and would double-import after
+> bmig-03; bmig-05's seedbox label-script step must cover `bookshelf`/`bookshelf-imported`.
+> (2) Root-folder POST auto-triggered a disk scan that adopted 3 authors/15 books uncontrolled
+> during a Hardcover quota storm (dup "Eoin Colfer" author) — records deleted (files untouched),
+> library reset to empty; **bmig-03 must expect this rescan behavior and pace one author at a
+> time**. Also learned: hc searches 403 (`top_level_search_limit_exceeded`) whenever they batch
+> with author-refresh queries — searches only work while refreshes are quiet. One unmonitored
+> Jane Austen author (0 files) left in bookshelf as a warm-cache acceptance artifact.
+
 ### bmig-03 — Library migration (authors + existing files, no re-downloads)
 Enumerate the old readarr inventory (`/api/v1/book`, files>0 — ~65 books/~20 authors; also
 capture monitored-no-file wanted list). For each author: add to Bookshelf via hardcover

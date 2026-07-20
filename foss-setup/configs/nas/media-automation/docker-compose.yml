@@ -43,6 +43,7 @@
 #   prowlarr        lscr.io/linuxserver/prowlarr:2.4.0         (Prowlarr 2.4.0.5391)
 #   lidarr          lscr.io/linuxserver/lidarr:3.1.0           (stable; bare 3.1.2 tag does not exist)
 #   readarr         docker.io/linuxserver/readarr:develop-0.4.18.2805-ls157  (EOL; pinned tag only on Docker Hub — removed from lscr.io/ghcr)
+#   bookshelf       ghcr.io/pennydreadful/bookshelf:hardcover-v0.4.20.129@sha256:388eecc9…  (maintained Readarr fork, hardcover variant)
 #   rreading-glasses blampe/rreading-glasses@sha256:<digest>   (rolling tag -> pin by digest)
 #   postgres        postgres:17.6
 #   unpackerr       golift/unpackerr:0.15.2
@@ -331,6 +332,52 @@ services:
       start_period: 30s
     restart: always
     # No host port published — only rreading-glasses needs it, on the compose net.
+
+  # ----------------------------------------------------------------------------
+  # Bookshelf — maintained Readarr fork, HARDCOVER variant (books cutover
+  # bmig-02, docs/books-metadata-cutover-2026-07-20.md). Replaces the EOL
+  # readarr above at the bmig-05 cutover; until then both run in PARALLEL
+  # (bookshelf has no monitored items pre-bmig-03, so nothing races readarr).
+  # DOWNLOAD-TOUCHING -> /seedbox (invariant #1). Binds mirror readarr's
+  # exactly: same /readarr-library inventory root, same CWA ingest copy target,
+  # same Connect script dir (script is container-agnostic — logs under its own
+  # /config/logs). LinuxServer-style image (s6, PUID/PGID honored).
+  # METADATA_URL env (image-native) points at the LOCAL hardcover-mode
+  # rreading-glasses-hc sibling — NOT the public hardcover.bookinfo.pro default.
+  # PINNING (fix-38/I68 young-fork posture): tag hardcover-v0.4.20.129 pinned
+  # by index digest, resolved 2026-07-20 from ghcr (== rolling `hardcover` tag
+  # that day; upstream Bookshelf 0.4.20 / LS base 24f2b995-ls28). Refresh
+  # deliberately: docker buildx imagetools inspect ghcr.io/pennydreadful/bookshelf:hardcover
+  # UI port 8790 external (8787 is readarr's; internal stays 8787).
+  # DELUGE CATEGORY (owner decision 2026-07-20, deviation from the program doc's
+  # "label identical"): bookshelf uses its OWN category `bookshelf` (post-import
+  # `bookshelf-imported`), NOT readarr's — sharing `readarr` made bookshelf's
+  # completed-download poller track readarr's torrents (metadata searches that
+  # saturate the Hardcover quota + double-import risk after bmig-03). bmig-05
+  # must add `bookshelf`/`bookshelf-imported` coverage to the seedbox label
+  # scripts (deluge-relabel-imported.py / deluge-reaper.py / preimport-stuck).
+  # AUTO-ADOPT HAZARD (bmig-02 lesson): POSTing a root folder triggers an
+  # immediate disk scan that auto-adds authors/books for matched files — under
+  # Hardcover quota pressure this created junk records (duplicate authors).
+  # bmig-03 must migrate with the quota paced, one author at a time.
+  # ----------------------------------------------------------------------------
+  bookshelf:
+    image: ghcr.io/pennydreadful/bookshelf:hardcover-v0.4.20.129@sha256:388eecc94362580eae31ee0a454be6af516f8a311f8432a521c202fb475f4359
+    container_name: bookshelf
+    environment:
+      <<: *common-env
+      METADATA_URL: http://rreading-glasses-hc:8788
+    volumes:
+      - ${DOCKER_ROOT:-/volume1/docker}/bookshelf/config:/config
+      - ${READARR_LIBRARY:-/volume1/docker/readarr/library}:/readarr-library
+      - ${CWA_INGEST:-/volume1/docker/calibre-web-automated/ingest}:/cwa-book-ingest
+      - ${DOCKER_ROOT:-/volume1/docker}/readarr/scripts:/scripts:ro
+      - *seedbox-mount
+    ports:
+      - "8790:8787"
+    restart: always
+    depends_on:
+      - rreading-glasses-hc
 
   # ----------------------------------------------------------------------------
   # Unpackerr — extracts multi-part archives so the *arrs can import (Phase C).

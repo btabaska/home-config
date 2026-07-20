@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**193/280 done** · **56 open** · **18 deferred** · 13 retired.
+**194/280 done** · **55 open** · **18 deferred** · 13 retired.
 
 ---
 
@@ -12,7 +12,6 @@
 - [ ] **`handoff-12`** Post-sprint cleanup — delete vault and rotate keys _(est 10 min)_
 
 ### books-cutover
-- [ ] **`bmig-02`** Books cutover 2/6: deploy Bookshelf (Readarr fork) in parallel, wired to hardcover metadata _(est 60-120 min)_
 - [ ] **`bmig-03`** Books cutover 3/6: migrate the library into Bookshelf (authors + existing files, no re-downloads) _(est 90-150 min)_
 - [ ] **`bmig-04`** Books cutover 4/6: libreseerr -> Bookshelf backend + author-gate + ISBN-first + fail-loudly (C1/C4 fix) _(est 60-120 min)_
 - [ ] **`bmig-05`** Books cutover 5/6: collateral cleanup (C5), re-drive stuck requests, decommission readarr + goodreads metadata _(est 90-150 min)_
