@@ -69,14 +69,16 @@
           type: lidarr
           url: http://192.168.10.4:8686
           key: "{{HOMEPAGE_VAR_LIDARR_KEY}}"
-    - Readarr:
+    - Bookshelf:
+        # Readarr fork (books cutover bmig-05); homepage ships no bookshelf icon
+        # and its readarr widget speaks Bookshelf's identical API.
         icon: readarr.png
-        href: https://readarr.tabaska.us
+        href: https://bookshelf.tabaska.us
         description: Books
         widget:
           type: readarr
-          url: http://192.168.10.4:8787
-          key: "{{HOMEPAGE_VAR_READARR_KEY}}"
+          url: http://192.168.10.4:8790
+          key: "{{HOMEPAGE_VAR_BOOKSHELF_KEY}}"
     - Prowlarr:
         icon: prowlarr.png
         href: https://prowlarr.tabaska.us

@@ -12,7 +12,8 @@ import os, time
 from deluge.ui.client import client
 from twisted.internet import reactor, defer
 
-PRE_IMPORT = {"sonarr", "tv-sonarr", "radarr", "lidarr", "readarr", "tv-whisparr"}
+# readarr -> bookshelf 2026-07-20 (bmig-05); no producer creates plain "readarr" labels anymore
+PRE_IMPORT = {"sonarr", "tv-sonarr", "radarr", "lidarr", "bookshelf", "tv-whisparr"}
 STUCK_AFTER = 48 * 3600
 EXIT = [0]
 

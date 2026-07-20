@@ -32,7 +32,8 @@ LABEL_MAP = {
     "tv-sonarr": ("http://192.168.10.4:8989", "v3", "sonarr"),
     "radarr": ("http://192.168.10.4:7878", "v3", "radarr"),
     "lidarr": ("http://192.168.10.4:8686", "v1", "lidarr"),
-    "readarr": ("http://192.168.10.4:8787", "v1", "readarr"),
+    # readarr decommissioned 2026-07-20 (bmig-05) — bookshelf is the books arr now
+    "bookshelf": ("http://192.168.10.4:8790", "v1", "bookshelf"),
     "tv-whisparr": ("http://192.168.10.4:6969", "v3", "whisparr"),
 }
 

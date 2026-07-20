@@ -1101,7 +1101,12 @@ def _attempt_add(client, req):
 
     Eligibility gates, applied to every candidate:
       * title: normalized exact or prefix match — right-author-wrong-title
-        ('Hex in the City' for 'Feed') is still a wrong book. This applies to
+        ('Hex in the City' for 'Feed') is still a wrong book. A prefix
+        EXTENSION whose extra tokens mark a derivative work (coloring book,
+        companion, guide, summary …) is rejected too: 'Persuasion, The
+        Coloring Book' is filed under the real Jane Austen in Hardcover, so
+        it passed the author gate and the bare prefix rule (bmig-05 finding,
+        2026-07-20). This applies to
         ISBN hits too: hardcover works carry junk edition titles (an OL isbn
         for 'Wuthering Heights' resolved to the correct work but pinned its
         Vietnamese edition "TH'inh gio hu", which then made the record
@@ -1197,6 +1202,15 @@ def _attempt_add(client, req):
         if hits:
             yield hits
 
+    # Derivative-work markers: a candidate title that EXTENDS the requested
+    # title with any of these is a spin-off product, not the book (bmig-05:
+    # 'Persuasion, The Coloring Book' passed author + bare-prefix gates).
+    _DERIVATIVE_TOKENS = {
+        "coloring", "colouring", "companion", "guide", "unofficial",
+        "workbook", "journal", "quiz", "trivia", "summary", "analysis",
+        "sparknotes", "cliffsnotes", "handbook", "cookbook", "devotional",
+    }
+
     rejected = []
     last_err = None
     saw_transient = False
@@ -1211,6 +1225,11 @@ def _attempt_add(client, req):
                     or _want.startswith(_cn + " ")):
                 rejected.append(f"'{_ct}': title mismatch")
                 continue
+            if _cn.startswith(_want + " "):
+                _ext_tokens = set(_cn[len(_want):].split())
+                if _ext_tokens & _DERIVATIVE_TOKENS:
+                    rejected.append(f"'{_ct}': derivative work (title extension)")
+                    continue
             cand_author = _candidate_author_name(_cand)
             if not cand_author:
                 rejected.append(f"'{_ct}': candidate has no author")

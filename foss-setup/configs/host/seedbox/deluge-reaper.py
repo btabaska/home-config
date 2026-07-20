@@ -11,7 +11,10 @@ from twisted.internet import reactor, defer
 
 DRY = "--live" not in sys.argv
 MAX_AGE = 14*86400
-ARR_LABELS = {"sonarr", "tv-sonarr", "radarr", "lidarr", "readarr", "tv-whisparr"}
+# "readarr" stays until the last readarr-imported torrent drains past the 14d
+# reap age (readarr itself decommissioned 2026-07-20, bmig-05; last such torrent
+# added 2026-07-20 -> removable after 2026-08-03). "bookshelf" replaced it.
+ARR_LABELS = {"sonarr", "tv-sonarr", "radarr", "lidarr", "readarr", "bookshelf", "tv-whisparr"}
 LABELS = ARR_LABELS | {l + "-imported" for l in ARR_LABELS if l != "tv-sonarr"}
 LOG = os.path.expanduser("~/logs/deluge-reaper.log")
 

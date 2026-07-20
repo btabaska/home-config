@@ -42,9 +42,8 @@
 #   radarr          lscr.io/linuxserver/radarr:6.3.0           (Radarr 6.3.0.10514)
 #   prowlarr        lscr.io/linuxserver/prowlarr:2.4.0         (Prowlarr 2.4.0.5391)
 #   lidarr          lscr.io/linuxserver/lidarr:3.1.0           (stable; bare 3.1.2 tag does not exist)
-#   readarr         docker.io/linuxserver/readarr:develop-0.4.18.2805-ls157  (EOL; pinned tag only on Docker Hub — removed from lscr.io/ghcr)
 #   bookshelf       ghcr.io/pennydreadful/bookshelf:hardcover-v0.4.20.129@sha256:388eecc9…  (maintained Readarr fork, hardcover variant)
-#   rreading-glasses blampe/rreading-glasses@sha256:<digest>   (rolling tag -> pin by digest)
+#   rreading-glasses-hc  local/rreading-glasses:hardcover-batch5-a2939b6  (see service note; readarr + goodreads rreading-glasses decommissioned 2026-07-20, bmig-05)
 #   postgres        postgres:17.6
 #   unpackerr       golift/unpackerr:0.15.2
 #   flaresolverr    ghcr.io/flaresolverr/flaresolverr:v3.5.0
@@ -56,7 +55,7 @@
 # Full checklist is in README.md and the living guide. You can bring services up
 # incrementally with `docker compose up -d <service>`:
 #   Phase A (core):     prowlarr flaresolverr sonarr radarr
-#   Phase B (extend):   lidarr  +  readarr + rreading-glasses + rreading-glasses-db
+#   Phase B (extend):   lidarr  +  bookshelf + rreading-glasses-hc + rreading-glasses-db
 #   Phase C (polish):   unpackerr
 #   Phase D (Soulseek): soularr  (requires slskd on Betty — seed-09)
 #   Phase E (optional): beets    (tag-only; schedule beet write via DSM cron)
@@ -205,72 +204,13 @@ services:
     restart: always
 
   # ----------------------------------------------------------------------------
-  # Readarr — Books (Phase B). DOWNLOAD-TOUCHING -> /seedbox:rslave.
-  # Download client: remote Deluge (label `readarr` -> seedbox files/books).
-  # IMPORT TARGET = permanent inventory at /readarr-library (host: READARR_LIBRARY).
-  # A Connect custom script copies each import to /cwa-book-ingest for CWA; Readarr
-  # keeps its file for inventory tracking (ebook-mgmt workstream — README §5).
-  # Set Readarr's ROOT FOLDER to /readarr-library, NOT /cwa-book-ingest.
-  #
-  # METADATA: point Readarr's metadata provider at the SELF-HOSTED
-  # rreading-glasses below (http://rreading-glasses:8788), NOT a public instance.
-  #
-  # EOL NOTE: the original Readarr project is retired (metadata service dead).
-  # We pin the FINAL immutable LinuxServer build (develop-0.4.18.2805-ls157) —
-  # this is a specific build number, NOT the floating `develop` tag. It works
-  # fine once its metadata provider points at rreading-glasses (Goodreads
-  # upstream is fully backward-compatible with existing Readarr DBs/images).
-  # Maintained community forks exist if you'd rather migrate later:
-  #   ghcr.io/pennydreadful/bookshelf  and  ghcr.io/faustvii/readarr
+  # readarr + rreading-glasses (goodreads) — DECOMMISSIONED 2026-07-20 (bmig-05,
+  # docs/books-metadata-cutover-2026-07-20.md). Replaced by `bookshelf` +
+  # `rreading-glasses-hc` below. Config archived at
+  # nas:/volume1/archive/books-cutover-bmig05/ (readarr-config.tar.gz +
+  # rreading-glasses-goodreads-db.pgdump). The old `rreading-glasses` postgres
+  # DATABASE is dropped only after bmig-06 checks are green (rollback plan).
   # ----------------------------------------------------------------------------
-  readarr:
-    image: docker.io/linuxserver/readarr:develop-0.4.18.2805-ls157   # EOL final LS build — pinned tag on Docker Hub only (lscr.io removed June 2025)
-    container_name: readarr
-    environment: *common-env
-    volumes:
-      - ${DOCKER_ROOT:-/volume1/docker}/readarr/config:/config
-      - ${READARR_LIBRARY:-/volume1/docker/readarr/library}:/readarr-library
-      - ${CWA_INGEST:-/volume1/docker/calibre-web-automated/ingest}:/cwa-book-ingest
-      - ${DOCKER_ROOT:-/volume1/docker}/readarr/scripts:/scripts:ro
-      - *seedbox-mount
-    ports:
-      - "8787:8787"
-    restart: always
-    depends_on:
-      - rreading-glasses
-
-  # ----------------------------------------------------------------------------
-  # rreading-glasses — self-hosted Readarr metadata provider (Phase B).
-  # Canonical compose: github.com/blampe/rreading-glasses (docker-compose-gr.yml).
-  # Goodreads upstream = backward-compatible with existing Readarr installs.
-  # Point Readarr at http://rreading-glasses:8788 in Settings > Development
-  # (Metadata Provider Source) — that page is hidden; browse to it directly.
-  #
-  # PINNING: this project publishes NO semver releases — only the rolling tags
-  # `latest` (Goodreads) and `hardcover`. To honor "never :latest", pin by
-  # IMMUTABLE DIGEST. Refresh the digest deliberately when you choose to update:
-  #   docker buildx imagetools inspect blampe/rreading-glasses:latest
-  # PINNING: refresh deliberately when Goodreads auth breaks — `docker buildx imagetools inspect blampe/rreading-glasses:latest`
-  # Verified amd64 index digest 2026-06-28 (replaces sha256:8d5062e2… which 400s on credential generation).
-  rreading-glasses:
-    image: blampe/rreading-glasses@sha256:dd996a1db19ac4ef18df47f1671f608c0f097ed43c4776ebde94dee20c6b43c8
-    container_name: rreading-glasses
-    hostname: rreading-glasses
-    entrypoint: ["/main", "serve"]
-    command:
-      - --upstream=www.goodreads.com
-      - --verbose
-      - --postgres-host=rreading-glasses-db
-      - --postgres-user=${RG_DB_USER:-rreading-glasses}
-      - --postgres-password=${RG_DB_PASSWORD:?set RG_DB_PASSWORD in .env (no special symbols)}
-      - --postgres-database=${RG_DB_NAME:-rreading-glasses}
-    mem_limit: 128m   # uses all available RAM for cache; cap it (upstream guidance)
-    ports:
-      - "8788:8788"
-    restart: always
-    depends_on:
-      rreading-glasses-db:
-        condition: service_healthy
 
   # ----------------------------------------------------------------------------
   # rreading-glasses-hc — HARDCOVER-mode metadata provider (books cutover
@@ -393,6 +333,17 @@ services:
     user: ${PUID:?set PUID in .env}:${PGID:?set PGID in .env}
     environment:
       TZ: ${TZ:-America/New_York}
+      # Bookshelf instance (bmig-05, replaced the [[readarr]] TOML section).
+      # Configured via env — NOT unpackerr.conf — so the API key lives in the
+      # gitignored .env instead of a cleartext TOML literal (sec-10: do not add
+      # more keys to unpackerr.conf; the remaining TOML sections are sec-10's
+      # backlog). Bookshelf speaks the Readarr API, hence the UN_READARR_ prefix.
+      UN_READARR_0_URL: http://bookshelf:8787
+      UN_READARR_0_API_KEY: ${BOOKSHELF_API_KEY:?set BOOKSHELF_API_KEY in .env (vault arr_api_keys.bookshelf)}
+      UN_READARR_0_PATHS_0: /seedbox/books
+      UN_READARR_0_PROTOCOLS: torrent
+      UN_READARR_0_DELETE_ORIG: "false"
+      UN_READARR_0_DELETE_DELAY: 10m
     volumes:
       - ./unpackerr/unpackerr.conf:/etc/unpackerr/unpackerr.conf:ro
       - *seedbox-mount                 # /seedbox (rslave) — MUST match the *arrs exactly
@@ -421,7 +372,7 @@ services:
       - sonarr
       - radarr
       - lidarr
-      - readarr
+      - bookshelf
 
   # ----------------------------------------------------------------------------
   # Whisparr v2 — adult scene automation (seed-13). DOWNLOAD-TOUCHING -> /seedbox.

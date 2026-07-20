@@ -28,7 +28,7 @@ the arrs and soularr crossed the WAN in cleartext. Now:
   inbound tailnet connections to loopback — so NAS/mini/laptop reach the loopback-bound
   services at `100.119.134.94:<port>` (seedbox.tailb31641.ts.net) while the public IP
   exposes only sshd + BT/Soulseek peer ports. Consumers repointed: sonarr/radarr/lidarr/
-  readarr Deluge client + soularr `host_url` → `100.119.134.94`.
+  bookshelf (ex-readarr, bmig-05) Deluge client + soularr `host_url` → `100.119.134.94`.
 - **NAS side**: the Synology Tailscale package needed TUN mode for outbound tailnet TCP
   (`sudo tailscale configure synology` + package restart). DSM task id 13 re-asserts it
   daily (mirror: `configs/nas/tailscale/13.task`).
@@ -75,9 +75,11 @@ assert, sonarr→Deluge e2e test, slskd LoggedIn e2e, service manifest). Runbook
 - `slskd-native/.env.example` → live `~/slskd-native/.env` (values in vault `soulseek.*`)
 - `deluge-reaper.py` — queue hygiene cron (connects to `127.0.0.1:3254`, unaffected).
   Since fix-25 (2026-07-17, quality-gate L42) it reaps **all** *arr label pairs
-  (`sonarr`/`radarr`/`lidarr`/`readarr`/`tv-whisparr` + `*-imported`, legacy `tv-sonarr`),
+  (`sonarr`/`radarr`/`lidarr`/`bookshelf`/`tv-whisparr` + `*-imported`, legacy `tv-sonarr`),
   not just sonarr — safe because `deluge-preimport-stuck.py` alarms >48h-stuck
-  pre-import torrents long before the 14-day reap age.
+  pre-import torrents long before the 14-day reap age. The `readarr` pair stays
+  in ARR_LABELS only until its last `-imported` torrent passes reap age
+  (readarr decommissioned 2026-07-20 bmig-05; removable after ~2026-08-03).
 - `deluge-preimport-stuck.py` → live `~/scripts/` — verification probe (fix-25): fails if a
   100%-complete torrent sits in a PRE-import label >48h (import path broken / Post-Import
   Category regressed). Wired as `deluge-preimport-stuck` in `verification/checks.d/seedbox.yaml`.

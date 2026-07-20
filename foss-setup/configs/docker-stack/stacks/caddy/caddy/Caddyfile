@@ -288,9 +288,10 @@ lidarr.{$DOMAIN} {
 	reverse_proxy {$NAS_IP}:8686
 }
 
-readarr.{$DOMAIN} {
+# readarr retired 2026-07-20 (bmig-05) — bookshelf (Readarr fork) replaced it on :8790
+bookshelf.{$DOMAIN} {
 	import local_tls
-	reverse_proxy {$NAS_IP}:8787
+	reverse_proxy {$NAS_IP}:8790
 }
 
 prowlarr.{$DOMAIN} {

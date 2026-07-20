@@ -24,7 +24,8 @@ MONITORS=(
   "NAS Sonarr|http://${NAS_IP}:8989|${ACCEPT_ARR}"
   "NAS Radarr|http://${NAS_IP}:7878|${ACCEPT_ARR}"
   "NAS Lidarr|http://${NAS_IP}:8686|${ACCEPT_ARR}"
-  "NAS Readarr|http://${NAS_IP}:8787|${ACCEPT_ARR}"
+  # readarr -> bookshelf 2026-07-20 (bmig-05); live monitor renamed via SQL UPDATE
+  "NAS Bookshelf|http://${NAS_IP}:8790|${ACCEPT_ARR}"
   "NAS Prowlarr|http://${NAS_IP}:9696|${ACCEPT_ARR}"
   "NAS FlareSolverr|http://${NAS_IP}:8191|${ACCEPT_OK}"
   "NAS Immich|http://${NAS_IP}:2283|${ACCEPT_OK}"

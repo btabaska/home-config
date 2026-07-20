@@ -245,6 +245,48 @@ uses must stay covered; `unpackerr.conf` readarr section → bookshelf (this fil
 sec-10's cleartext-key finding — do not make it worse; reference env/vault per unpackerr's
 supported config). Compose + .env.example + repo mirrors updated (anti-drift).
 
+> **done 2026-07-20** — cleanup, re-drive, decommission all shipped. **Archives**
+> (`nas:/volume1/archive/books-cutover-bmig05/`, all verified before any delete):
+> wrong-books-files.tar.gz (8 epubs), cwa-export/ + cwa-metadata-before.db,
+> readarr-config.tar.gz (91 MB, library excluded), rreading-glasses-goodreads-db.pgdump
+> (6.6 GB, TOC-verified). **Cleanup**: readarr wrong records 691/693 (files) +
+> 692/564/684/687 deleted; queue items 687 Blackout + 689 deadline removed with
+> client removal; the 6 foreign GRRM files (bmig-04 discovery) purged from disk +
+> Bookshelf (41/43/106-109) + readarr (703-710); CWA removed ids 79-86 → 67 books;
+> none of the C5 records had migrated into Bookshelf. LOTR-companion + Rolling
+> torrents relabelled readarr-imported (MAM H&R-safe; reaper ages them out).
+> **Decommission**: readarr + rreading-glasses containers removed via compose
+> (--remove-orphans); goodreads DB **kept** until bmig-06 checks green (per
+> rollback plan — bmig-06 must DROP it); Prowlarr app 4 deleted; homepage tile +
+> caddy route → bookshelf.tabaska.us:8790 (HOMEPAGE_VAR_BOOKSHELF_KEY); Kuma
+> monitor 5 → "NAS Bookshelf"; seedbox scripts + README → bookshelf labels
+> (readarr pair drains until ~2026-08-03); unpackerr [[readarr]] TOML → UN_READARR_0_*
+> env pointing at bookshelf (one cleartext key REMOVED from git, sec-10 improved);
+> coverage manifest −readarr −rreading-glasses (COVERAGE_OK), nas-readarr +
+> nas-rreading-glasses checks retired. **Re-drive (correct-or-loud, all 13)**:
+> P&P→24, Feed→98, Blackout→100, Countdown→110 (bmig-04, imported); RotK→64,
+> Fellowship→59, LOTR→65, Hobbit→70, Deadline→101 (imported this session — CWA
+> 91-95); Kushiel's Legacy = satisfied-by-content (omnibus parts Dart/Chosen/Avatar
+> 77/78/79 all on disk); Wuthering Heights, Persuasion, Rolling in the Deep,
+> Rotten Romans→113 = LOUD ntfy failures or clean binds (Persuasion/Rolling: no
+> clean hc candidate exists — correct refusal; Rotten Romans bound 113 after the
+> quota storm cleared, unmonitored pending search). **Two new guards shipped**:
+> (a) libreseerr title gate now rejects derivative-work title EXTENSIONS —
+> 'Persuasion, The Coloring Book' is filed under the real Austen in hc, passed
+> author gate + bare prefix rule and silently bound before the patch (app.py,
+> mirrored); (b) Bookshelf release profile 1 gained /companion|coloring book|
+> unofficial/i ignore terms — LOTR's auto-search re-picked the companion book
+> (only survivor of format filters; retail trilogy EPUBs all fail arr parsing
+> "Unable to parse books from release name" → grabbed via interactive override,
+> which the obfuscated scene payloads then cross-imported onto one record —
+> repaired with ManualImport byte-size verification). **Learned**: arr
+> deleteFiles=true does NOT delete files on this NAS (readarr AND bookshelf) —
+> always verify on disk + rm manually; obfuscated scene epubs (jtferim1.epub)
+> import fine but stack onto whichever record the release name parses to;
+> unpackerr env-var instance extracted all 4 scene rars end-to-end. CWA web
+> worker found hung (every :8083 call timing out since the 15:42Z import;
+> healthcheck unhealthy) — restarted, 302 in 24 ms after.
+
 ### bmig-06 — Monitoring/checks migration + docs + program close
 Port every readarr-coupled check to Bookshelf endpoints/keys (inventory from 2026-07-20):
 `checks.d/reading.yaml` — readarr-foreign-records, readarr-foreign-grab-history,
