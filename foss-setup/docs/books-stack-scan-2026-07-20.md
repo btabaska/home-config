@@ -86,7 +86,9 @@ work — the enabler for both foreign-release grabs (B1) and wrong-edition filin
 > English "Naamah's Kiss" edition (5659537); omnibus 554 unmonitored; leftover Portuguese
 > record 303 deleted. B5: importable epubs drained; remaining `/seedbox/books` files are
 > intentional mobi/lit/pdf seed-store siblings (operator decision — do not delete, seeding).
-> B6: all 6 titles re-monitored + re-searched (06-28 downloads no longer on the seedbox);
+> B6: all 6 titles **recovered end-to-end** — re-monitored, re-searched (grabs landed in
+> minutes), hit the same 80 % matcher wall again (proving the class), then force-imported
+> via explicit ManualImport (queue drained via downloadId) and staged into CWA;
 > dead-ends now page via `readarr-import-deadends` (48 h window — custom-script Connect
 > cannot hook OnImportFailure). B7: PDFs for Scion/Blessing replaced with the release epubs;
 > all ebook authors moved to profile "EPUB Preferred" (upgradeAllowed, cutoff EPUB, PDF
