@@ -77,6 +77,24 @@ work — the enabler for both foreign-release grabs (B1) and wrong-edition filin
 
 ## Cluster 2 — Import completion & file↔record correctness (`fix-47`)
 
+> **RESOLVED 2026-07-20 (fix-47).** B4: 4 cross-wired bookfiles deleted (66 Avatar-content
+> on Mercy, 70 Curse-content on "Namaah's Kiss", 67 Scion-content on Chosen, 69 Justice on
+> the French edition) + correct epubs re-imported via ManualImport with explicit
+> bookId/editionId/foreignEditionId; the 2 lost books recovered end-to-end — **Kushiel's
+> Mercy (70)** and **Naamah's Kiss (71)** now in Calibre (ManualImport does NOT fire the
+> Connect script; hand-staged into CWA ingest). Record 262 pinned to the properly-spelled
+> English "Naamah's Kiss" edition (5659537); omnibus 554 unmonitored; leftover Portuguese
+> record 303 deleted. B5: importable epubs drained; remaining `/seedbox/books` files are
+> intentional mobi/lit/pdf seed-store siblings (operator decision — do not delete, seeding).
+> B6: all 6 titles re-monitored + re-searched (06-28 downloads no longer on the seedbox);
+> dead-ends now page via `readarr-import-deadends` (48 h window — custom-script Connect
+> cannot hook OnImportFailure). B7: PDFs for Scion/Blessing replaced with the release epubs;
+> all ebook authors moved to profile "EPUB Preferred" (upgradeAllowed, cutoff EPUB, PDF
+> disallowed), guarded by `books-format-guard`. Cross-wiring class check:
+> `books-pipeline-lost-imports` (Readarr-claims vs Calibre-has — filenames can't detect it,
+> Readarr renames to the record title). db-locked SQLite task errors: none during the repair;
+> left as a watch item. Runbook: `wiki/docs/runbooks/books-imports.md`.
+
 ### B4 (high, nas) — 2026-07-18 series-pack import cross-wired files into wrong/French records; 2 books lost
 
 During the `Kushiel's Legacy series 1-8` pack import (12:47–12:48 EDT), Readarr filed English

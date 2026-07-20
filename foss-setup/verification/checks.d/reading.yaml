@@ -228,6 +228,107 @@ checks:
     runbook: wiki/docs/runbooks/books-language.md
     enabled: true
 
+  # ────────────────────────────────────────────────────────────────────────
+  # fix-47 (books-stack scan B4-B7, 2026-07-20): import completion + file↔
+  # record correctness. The 07-18 pack import cross-wired English epubs into
+  # wrong/French records and silently lost 2 books (Readarr said "has file",
+  # Calibre never got them); 6 titles died at the 80% match threshold with no
+  # alert; PDF was imported over EPUB. Readarr renames files to the record
+  # title, so post-import filename checks can't see cross-wiring — the only
+  # honest consumer probe is Readarr-claims vs Calibre-has.
+
+  # ── B4 regression + lost-book class: every Readarr book with a file must
+  # exist in the Calibre library (the pipeline promise Readarr→CWA→Kobo).
+  # Catches cross-wired imports (record "has file" but real title missing
+  # downstream) AND Connect-script drops (the 07-13 apostrophe class).
+  - id: books-pipeline-lost-imports
+    name: "every Readarr book with a file is present in Calibre (fix-47 B4)"
+    host: mini
+    cmd: |-
+      python3 -c '
+      import json, os, re, subprocess, urllib.request
+      def norm(s): return re.sub(r"[^a-z0-9]", "", s.lower())
+      req = urllib.request.Request("http://192.168.10.4:8787/api/v1/book", headers={"X-Api-Key": os.environ["READARR_API_KEY"]})
+      books = json.load(urllib.request.urlopen(req, timeout=30))
+      with_files = {b["title"]: norm(b["title"]) for b in books if (b.get("statistics") or {}).get("bookFileCount", 0) > 0}
+      out = subprocess.run(["ssh", "nas", "sqlite3 \x27file:/volume1/books/metadata.db?mode=ro\x27 \x27select title from books;\x27"], capture_output=True, text=True, timeout=60)
+      cal = [norm(t) for t in out.stdout.splitlines() if t.strip()]
+      lost = [t for t, n in with_files.items() if not any(n in c or c in n for c in cal)]
+      print("LOST_BOOKS=" + ("; ".join(sorted(lost)) if lost else "NONE"))'
+    expect: '^LOST_BOOKS=NONE$'
+    severity: warn
+    task_id: fix-47
+    runbook: wiki/docs/runbooks/books-imports.md
+    enabled: true
+
+  # ── B6 class: grab→import dead-ends must page, not rot silently. A book
+  # whose import went incomplete in the last 48h and that still has no file
+  # and is not in the queue is a wasted grab needing operator action.
+  # (Custom-script Connect handlers cannot hook OnImportFailure — Readarr
+  # supportsOnImportFailure=false — so this check IS the alert path.)
+  - id: readarr-import-deadends
+    name: "no silent Readarr import dead-ends in the last 48h (fix-47 B6)"
+    host: mini
+    cmd: |-
+      python3 -c '
+      import datetime, json, os, urllib.request
+      def get(path):
+          req = urllib.request.Request("http://192.168.10.4:8787/api/v1/" + path, headers={"X-Api-Key": os.environ["READARR_API_KEY"]})
+          return json.load(urllib.request.urlopen(req, timeout=30))
+      cutoff = (datetime.datetime.utcnow() - datetime.timedelta(hours=48)).strftime("%Y-%m-%dT%H:%M:%SZ")
+      recs = get("history?pageSize=200&sortKey=date&sortDirection=descending").get("records", [])
+      incomplete = {r["bookId"]: r.get("sourceTitle") or "?" for r in recs if r.get("eventType") == "bookImportIncomplete" and (r.get("date") or "") >= cutoff}
+      dead = []
+      if incomplete:
+          queue_ids = {i.get("bookId") for i in (get("queue?pageSize=100").get("records") or [])}
+          for bid, src in incomplete.items():
+              b = get("book/%d" % bid)
+              if (b.get("statistics") or {}).get("bookFileCount", 0) == 0 and bid not in queue_ids:
+                  dead.append("%s (book %d)" % (src[:60], bid))
+      print("IMPORT_DEADENDS=" + ("; ".join(sorted(dead)) if dead else "NONE"))'
+    expect: '^IMPORT_DEADENDS=NONE$'
+    severity: warn
+    task_id: fix-47
+    runbook: wiki/docs/runbooks/books-imports.md
+    enabled: true
+
+  # ── B7 guard: EPUB-first format policy stays wired — profile "EPUB
+  # Preferred" (upgrade to EPUB cutoff, PDF disallowed) exists and every
+  # non-audiobook author is on it. Alert on profile drift or new authors
+  # landing on a PDF-tolerant profile.
+  - id: books-format-guard
+    name: "EPUB-Preferred profile intact + all ebook authors on it (fix-47 B7)"
+    host: mini
+    cmd: |-
+      python3 -c '
+      import json, os, urllib.request
+      def get(path):
+          req = urllib.request.Request("http://192.168.10.4:8787/api/v1/" + path, headers={"X-Api-Key": os.environ["READARR_API_KEY"]})
+          return json.load(urllib.request.urlopen(req, timeout=30))
+      bad = []
+      profs = {p["id"]: p for p in get("qualityprofile")}
+      ep = next((p for p in profs.values() if p["name"] == "EPUB Preferred"), None)
+      if not ep:
+          bad.append("EPUB-Preferred profile missing")
+      else:
+          if not ep.get("upgradeAllowed"): bad.append("upgradeAllowed off")
+          if ep.get("cutoff") != 3: bad.append("cutoff not EPUB")
+          for it in ep["items"]:
+              q = it.get("quality") or {}
+              if q.get("id") == 1 and it.get("allowed"): bad.append("PDF allowed")
+              if q.get("id") == 3 and not it.get("allowed"): bad.append("EPUB not allowed")
+      spoken = {p["id"] for p in profs.values() if p["name"] == "Spoken"}
+      for a in get("author"):
+          if a["qualityProfileId"] in spoken: continue
+          if not ep or a["qualityProfileId"] != ep["id"]:
+              bad.append("author %s on profile %d" % (a["authorName"], a["qualityProfileId"]))
+      print("FORMAT_GUARD=" + ("; ".join(bad) if bad else "OK"))'
+    expect: '^FORMAT_GUARD=OK$'
+    severity: warn
+    task_id: fix-47
+    runbook: wiki/docs/runbooks/books-imports.md
+    enabled: true
+
   # ── L47 regression: every book renders a cover (has_cover=0 was Hunter's Run) ──
   - id: cwa-library-covers
     name: "every CWA library book has a cover (L47)"
