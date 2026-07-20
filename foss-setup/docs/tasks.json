@@ -11824,13 +11824,14 @@
     ],
     "estimate": "90-150 min",
     "title": "Books cutover 6/6: migrate all checks to Bookshelf + new tripwires (token expiry, author parity, search canary) + docs + close",
-    "summary": "Port every readarr-coupled check/tool to Bookshelf (reading.yaml x7, nas-services nas-readarr->nas-bookshelf(+hc), media.yaml, seedbox.yaml, bin/arr-grab-audit.py, bin/request-layer-audit.py, bin/unpackerr-poll-advancing.py, skills/media-triage.md; BOOKSHELF_API_KEY into /etc/verification/env 640 root:btabaska). NEW: hardcover-token-valid (must alert BEFORE the Jan-1 token expiry, warn from Dec 15), request-author-parity (C1/C4 class regression), metadata-search-canary (C2 class). Coverage manifest +bookshelf +rreading-glasses-hc -readarr -rreading-glasses. Wiki enrichment/runbooks repointed; cross-link this doc from quality-gate (H15 family) + books-scan docs. Close the bmig program.",
+    "summary": "Port every readarr-coupled check/tool to Bookshelf (reading.yaml x7, nas-services nas-readarr->nas-bookshelf(+hc), media.yaml, seedbox.yaml, bin/arr-grab-audit.py, bin/request-layer-audit.py, bin/unpackerr-poll-advancing.py, skills/media-triage.md; BOOKSHELF_API_KEY into /etc/verification/env 640 root:btabaska). NEW: hardcover-token-valid (must alert BEFORE the Jan-1 token expiry, warn from Dec 15), request-author-parity (C1/C4 class regression), metadata-search-canary (C2 class). Coverage manifest +bookshelf +rreading-glasses-hc -readarr -rreading-glasses. Wiki enrichment/runbooks repointed; cross-link this doc from quality-gate (H15 family) + books-scan docs. FINAL: once all ported checks run green, DROP DATABASE \"rreading-glasses\" (14GB goodreads cache) from the shared rreading-glasses-db postgres — pgdump archived at /volume1/archive/books-cutover-bmig05/rreading-glasses-goodreads-db.pgdump (rollback plan gates the drop on green checks). Close the bmig program.",
     "steps": [
       "Port + deploy all repointed checks; full --host nas + reading-tier run green",
       "Add the 3 new tripwires; negative-test the author-parity check",
+      "Checks green -> pg_dump exists? verify, then DROP DATABASE \"rreading-glasses\" (keep container; hc uses it)",
       "Coverage manifest + wiki + cross-links + program close-out"
     ],
-    "verify": "Full check run green on the new stack with zero readarr references left in checks.d/bin; 3 new tripwires deployed (author-parity negative-tested); coverage manifest reflects the swap."
+    "verify": "Full check run green on the new stack with zero readarr references left in checks.d/bin; 3 new tripwires deployed (author-parity negative-tested); coverage manifest reflects the swap; old goodreads database dropped (psql \\\\l shows only rreading_glasses_hc + system DBs) with the archived pgdump verified first."
   },
   {
     "track": "books-cutover",
@@ -11878,5 +11879,29 @@
       "Re-ingest a test book: no checksum ERROR; KOReader checksum row present if enabled"
     ],
     "verify": "An ingest completes with zero cps.progress_syncing ERROR lines; if feature kept, book_format_checksums table exists and gains a row per ingested format."
+  },
+  {
+    "id": "media-10",
+    "title": "Seedbox: retire drained readarr label pair from deluge-reaper",
+    "host": "seedbox",
+    "type": "sync",
+    "depends_on": [
+      "bmig-05"
+    ],
+    "estimate": "10 min",
+    "required": false,
+    "track": "media-pipeline",
+    "run": 7,
+    "mode": "ai",
+    "gate": "not before 2026-08-04",
+    "source": "bmig-05 decommission 2026-07-20",
+    "findings": [],
+    "summary": "readarr was decommissioned 2026-07-20 (bmig-05) but deluge-reaper.py keeps 'readarr' in ARR_LABELS so the ~26 readarr/readarr-imported torrents still seeding on betty age out at the 14-day reap (last one added 2026-07-20 -> drained ~2026-08-03; MAM H&R-safe). After the last one is reaped: remove 'readarr' from ARR_LABELS in configs/host/seedbox/deluge-reaper.py, update the README note, redeploy to seedbox ~/scripts/, and confirm deluge shows zero readarr-labeled torrents.",
+    "steps": [
+      "Confirm deluge has zero readarr/readarr-imported torrents left (web JSON API label counts)",
+      "Drop 'readarr' from ARR_LABELS + README drain-down note; scp to seedbox ~/scripts/",
+      "Dry-run reaper: labels list no longer includes readarr pair, run clean"
+    ],
+    "verify": "deluge label counts show no readarr/readarr-imported; deployed reaper dry-run logs labels without the readarr pair."
   }
 ]
