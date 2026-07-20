@@ -380,6 +380,7 @@ nav:
       - apps: roadmap/apps.md
       - audit-fixes: roadmap/audit-fixes.md
       - backups-offsite: roadmap/backups-offsite.md
+      - books-cutover: roadmap/books-cutover.md
       - desktop: roadmap/desktop.md
       - docker-host: roadmap/docker-host.md
       - ebook-mgmt: roadmap/ebook-mgmt.md

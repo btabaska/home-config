@@ -11682,5 +11682,154 @@
     ],
     "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki page written; progress.json updated. Source: docs/books-stack-scan-2026-07-20.md.",
     "source": "books-stack deep scan 2026-07-19/20 (docs/books-stack-scan-2026-07-20.md)"
+  },
+  {
+    "track": "books-cutover",
+    "type": "async",
+    "required": true,
+    "run": 1,
+    "mode": "ai",
+    "gate": "",
+    "source": "books-metadata-cutover-2026-07-20.md",
+    "findings": [],
+    "id": "bmig-01",
+    "host": "nas",
+    "depends_on": [],
+    "estimate": "45-90 min",
+    "title": "Books cutover 1/6: Hardcover API key + parallel rreading-glasses:hardcover instance (C2/C3 source fix)",
+    "summary": "Owner-approved full pivot off Goodreads-mode metadata (see source doc, findings C1-C5; pre-approved to run outside the maintenance window). Get the Hardcover API token from the owner (AskUserQuestion; token includes the 'Bearer ' prefix; store at vault books.hardcover_api_token via merge), then deploy rreading-glasses-hc (hardcover tag, DIGEST-pinned, port 8789, mem_limit 128m, new database rreading_glasses_hc inside the existing rreading-glasses-db postgres). Old goodreads instance stays running untouched.",
+    "steps": [
+      "Owner supplies Hardcover token -> vault books.hardcover_api_token (merge, never blind-assign)",
+      "CREATE DATABASE rreading_glasses_hc in the existing rreading-glasses-db container",
+      "Add rreading-glasses-hc service to media-automation compose (hardcover tag @digest, :8789, --hardcover-auth)",
+      "Acceptance: poison corpus direct against :8789 \u2014 'Pride and Prejudice Jane Austen' returns the canonical work; Wuthering Heights author is clean 'Emily Bront\u00eb'; Feed resolves Mira Grant w/ Seanan McGuire alias",
+      "Codify compose + .env.example + enrichment; liveness check only (full checks = bmig-06)"
+    ],
+    "verify": "curl :8789 poison-corpus queries return canonical works/clean authors; old :8788 goodreads instance still serving readarr; compose committed."
+  },
+  {
+    "track": "books-cutover",
+    "type": "async",
+    "required": true,
+    "run": 1,
+    "mode": "ai",
+    "gate": "",
+    "source": "books-metadata-cutover-2026-07-20.md",
+    "findings": [],
+    "id": "bmig-02",
+    "host": "nas",
+    "depends_on": [
+      "bmig-01"
+    ],
+    "estimate": "60-120 min",
+    "title": "Books cutover 2/6: deploy Bookshelf (Readarr fork) in parallel, wired to hardcover metadata",
+    "summary": "Add the bookshelf container (resolve current official image in-session, DIGEST-pin) to media-automation: config /volume1/docker/bookshelf, port 8790, metadata http://rreading-glasses-hc:8788. Mirror readarr's working config exactly: /readarr-library root, 'EPUB Preferred' quality profile (PDF disallowed, cutoff EPUB, upgradeAllowed), foreign-language release-profile blocklist (B2 guard), Deluge@betty download client + /seedbox remote path mapping, Connect readarr-copy-to-cwa-ingest.sh (On Import + On Upgrade), Prowlarr application fullSync. API key -> vault arr_api_keys.bookshelf. No RSS/auto-add racing the still-live readarr.",
+    "steps": [
+      "Resolve + digest-pin the Bookshelf image; add service to compose with readarr-parity binds",
+      "Configure profiles/release-blocklist/download-client/remote-path-mapping/Connect script",
+      "Register as Prowlarr application (expect MAM/IPT/Zenith fullSync)",
+      "Acceptance: status green, 3 indexers synced, interactive search returns MAM candidates, Connect Test logs"
+    ],
+    "verify": "Bookshelf :8790 green with 3 synced indexers, EPUB-Preferred + foreign blocklist + Connect script all present, readarr untouched."
+  },
+  {
+    "track": "books-cutover",
+    "type": "async",
+    "required": true,
+    "run": 1,
+    "mode": "ai",
+    "gate": "",
+    "source": "books-metadata-cutover-2026-07-20.md",
+    "findings": [],
+    "id": "bmig-03",
+    "host": "nas",
+    "depends_on": [
+      "bmig-02"
+    ],
+    "estimate": "90-150 min",
+    "title": "Books cutover 3/6: migrate the library into Bookshelf (authors + existing files, no re-downloads)",
+    "summary": "Enumerate old readarr (books with files ~65, authors ~20, plus wanted list). Add each author via hardcover lookup (expect clean identities), match each existing file to the right hardcover work/edition (ISBN first) and ManualImport IN PLACE (no rename/move; byte-size is file-identity ground truth; ManualImport needs languages + foreignEditionId and does not fire Connect \u2014 CWA already has these books, no hand-staging).",
+    "steps": [
+      "Inventory old readarr books/files/wanted via API; snapshot to a session file",
+      "Add authors + match books in Bookshelf via hardcover ids (ISBN-first)",
+      "ManualImport existing files in place; verify per-file by byte size",
+      "Acceptance: with-file count parity, 5-title spot-check by size, zero cross-wired records, CWA count unchanged"
+    ],
+    "verify": "Bookshelf book-with-file count == readarr's; spot-checks map correct files; CWA library count unchanged (media-08 automerge guard green)."
+  },
+  {
+    "track": "books-cutover",
+    "type": "async",
+    "required": true,
+    "run": 1,
+    "mode": "ai",
+    "gate": "",
+    "source": "books-metadata-cutover-2026-07-20.md",
+    "findings": [],
+    "id": "bmig-04",
+    "host": "mini",
+    "depends_on": [
+      "bmig-03"
+    ],
+    "estimate": "60-120 min",
+    "title": "Books cutover 4/6: libreseerr -> Bookshelf backend + author-gate + ISBN-first + fail-loudly (C1/C4 fix)",
+    "summary": "Patch bind-mounted app.py/client (mirror to repo stacks/libreseerr): author-verification gate in _attempt_add (candidate's OWN author must token-match the request; never stamp the requested author onto authorless candidates), ISBN-first lookup, PermanentRequestError + ntfy 'books' when no eligible candidate (never add-the-next-thing). Switch backend to BookshelfClient :8790. Preserve fix-48 guards (gunicorn --timeout 300, READARR_TIMEOUT=60). Recreate container (not restart).",
+    "steps": [
+      "Patch _attempt_add: author gate + ISBN-first + loud failure; keep candidate ranking for eligible set",
+      "Point libreseerr at Bookshelf (:8790, arr_api_keys.bookshelf)",
+      "Acceptance: failure corpus through the UI/API \u2014 P&P/Austen, Feed+Blackout+Countdown/McGuire, Hobbit, Wuthering Heights, LOTR \u2014 every request binds the CORRECT record (paste title+author) or fails loudly to ntfy",
+      "Mirror patches to repo; verify fix-48 request-path guards still green"
+    ],
+    "verify": "Corpus requests bind correct records or error loudly with ntfy; libreseerr-request-path-guards check green against the new backend."
+  },
+  {
+    "track": "books-cutover",
+    "type": "async",
+    "required": true,
+    "run": 1,
+    "mode": "ai",
+    "gate": "",
+    "source": "books-metadata-cutover-2026-07-20.md",
+    "findings": [],
+    "id": "bmig-05",
+    "host": "nas",
+    "depends_on": [
+      "bmig-04"
+    ],
+    "estimate": "90-150 min",
+    "title": "Books cutover 5/6: collateral cleanup (C5), re-drive stuck requests, decommission readarr + goodreads metadata",
+    "summary": "Archive-before-delete throughout. Remove C5 wrong records (readarr 692/564/684/687/691 + LOTR companion grab) ensuring none migrated into Bookshelf; CWA export-then-remove wrong books (Feed/M.T.Anderson, Pride Prejudice and Peril, Prada and Prejudice; -u abc, cp metadata.db first); re-drive the stuck request list through the new path (correct-or-loud). Decommission: stop+remove readarr + rreading-glasses(goodreads) containers, pg_dump then drop old database, archive /volume1/docker/readarr, remove readarr Prowlarr app, homepage tile + Uptime-Kuma monitor -> bookshelf, seedbox deluge label scripts still cover Bookshelf's label, unpackerr.conf readarr section -> bookshelf (do not worsen sec-10).",
+    "steps": [
+      "Tarball/pg_dump/calibredb-export archives FIRST; verify archives exist",
+      "Delete wrong records + wrong CWA books + wrong queue items",
+      "Re-drive all stuck requests via the new pipeline; confirm correct-or-loud each",
+      "Decommission old containers/app registrations/tiles/monitors; fix seedbox label + unpackerr wiring",
+      "Compose + .env.example + repo mirrors updated"
+    ],
+    "verify": "Wrong books gone from Bookshelf+CWA (archives retained); every re-driven request correct-or-loud; readarr + goodreads-mode containers removed; Prowlarr/homepage/Kuma/seedbox/unpackerr all repointed."
+  },
+  {
+    "track": "books-cutover",
+    "type": "async",
+    "required": true,
+    "run": 1,
+    "mode": "ai",
+    "gate": "",
+    "source": "books-metadata-cutover-2026-07-20.md",
+    "findings": [],
+    "id": "bmig-06",
+    "host": "mini",
+    "depends_on": [
+      "bmig-05"
+    ],
+    "estimate": "90-150 min",
+    "title": "Books cutover 6/6: migrate all checks to Bookshelf + new tripwires (token expiry, author parity, search canary) + docs + close",
+    "summary": "Port every readarr-coupled check/tool to Bookshelf (reading.yaml x7, nas-services nas-readarr->nas-bookshelf(+hc), media.yaml, seedbox.yaml, bin/arr-grab-audit.py, bin/request-layer-audit.py, bin/unpackerr-poll-advancing.py, skills/media-triage.md; BOOKSHELF_API_KEY into /etc/verification/env 640 root:btabaska). NEW: hardcover-token-valid (must alert BEFORE the Jan-1 token expiry, warn from Dec 15), request-author-parity (C1/C4 class regression), metadata-search-canary (C2 class). Coverage manifest +bookshelf +rreading-glasses-hc -readarr -rreading-glasses. Wiki enrichment/runbooks repointed; cross-link this doc from quality-gate (H15 family) + books-scan docs. Close the bmig program.",
+    "steps": [
+      "Port + deploy all repointed checks; full --host nas + reading-tier run green",
+      "Add the 3 new tripwires; negative-test the author-parity check",
+      "Coverage manifest + wiki + cross-links + program close-out"
+    ],
+    "verify": "Full check run green on the new stack with zero readarr references left in checks.d/bin; 3 new tripwires deployed (author-parity negative-tested); coverage manifest reflects the swap."
   }
 ]

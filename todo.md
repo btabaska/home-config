@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**192/273 done** · **50 open** · **18 deferred** · 13 retired.
+**192/279 done** · **56 open** · **18 deferred** · 13 retired.
 
 ---
 
@@ -10,6 +10,14 @@
 
 ### agent-handoff
 - [ ] **`handoff-12`** Post-sprint cleanup — delete vault and rotate keys _(est 10 min)_
+
+### books-cutover
+- [ ] **`bmig-01`** Books cutover 1/6: Hardcover API key + parallel rreading-glasses:hardcover instance (C2/C3 source fix) _(est 45-90 min)_
+- [ ] **`bmig-02`** Books cutover 2/6: deploy Bookshelf (Readarr fork) in parallel, wired to hardcover metadata _(est 60-120 min)_
+- [ ] **`bmig-03`** Books cutover 3/6: migrate the library into Bookshelf (authors + existing files, no re-downloads) _(est 90-150 min)_
+- [ ] **`bmig-04`** Books cutover 4/6: libreseerr -> Bookshelf backend + author-gate + ISBN-first + fail-loudly (C1/C4 fix) _(est 60-120 min)_
+- [ ] **`bmig-05`** Books cutover 5/6: collateral cleanup (C5), re-drive stuck requests, decommission readarr + goodreads metadata _(est 90-150 min)_
+- [ ] **`bmig-06`** Books cutover 6/6: migrate all checks to Bookshelf + new tripwires (token expiry, author parity, search canary) + docs + close _(est 90-150 min)_
 
 ### desktop
 - [ ] **`foss-02`** Package the FOSS desktop suite: cachyos-desktop-suite.sh + macOS Brewfile (chezmoi-tracked) _(est ~half day)_
