@@ -107,13 +107,15 @@ checks:
     enabled: true
 
   # ── M18 · romm library/DB reconciliation ─────────────────────────────────
-  # RomM is ACCEPTED-EMPTY (2026-07-18): shelf ready, no content yet, owner
-  # adds ROMs manually. The green-but-broken failure this guards: files appear
-  # on the NAS share but never reach the DB (scan broken/never run), or the DB
-  # claims ROMs while the share is empty (the Immich-class vanished-library
-  # bug). Empty+empty is CONSISTENT and passes. Fails loudly if the CIFS mount
-  # is down — a vacuous pass would hide exactly what we care about. DB auth
-  # rides romm-db's own MARIADB_ROOT_PASSWORD env; no secret leaves the host.
+  # RomM is POPULATED (2026-07-20): 8,364 games imported from the seedbox ROM
+  # sets. The green-but-broken failure this guards: files appear on the NAS
+  # share but never reach the DB (scan broken/never run — the exact state after
+  # the 4h-timeout partial scan during this import), or the DB claims ROMs while
+  # the share is empty (the Immich-class vanished-library bug). files>0 & roms>0
+  # is CONSISTENT and passes (empty+empty also passed, back when the shelf was
+  # bare). Fails loudly if the CIFS mount is down — a vacuous pass would hide
+  # exactly what we care about. DB auth rides romm-db's own MARIADB_ROOT_PASSWORD
+  # env; no secret leaves the host.
   - id: romm-content-ingest
     name: "romm: NAS share content and DB rom count are consistent (M18 class)"
     host: mini
