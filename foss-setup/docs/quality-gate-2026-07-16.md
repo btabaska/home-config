@@ -431,6 +431,13 @@ sqlite3 library.db "select ... from request_history where status not in ('comple
 
 **Host:** nas · **Component:** readarr / rreading-glasses metadata · **Auditor:** flow:books
 
+> **Superseded by the books metadata cutover (2026-07-20):** the H15 failure family
+> (junk goodreads editions binding wrong records) was root-caused to the
+> goodreads-mode metadata provider itself and eliminated by the full pivot to
+> Bookshelf + rreading-glasses:hardcover — program doc
+> `docs/books-metadata-cutover-2026-07-20.md` (bmig-01…06; readarr + goodreads
+> provider decommissioned, C1–C5 classes tripwired in `checks.d/reading.yaml`).
+
 > **Resolution (2026-07-17, task `fix-26`):** discovery: 262 is not a duplicate work — it is the
 > ONLY Naamah's Kiss record upstream, whose Readarr-picked edition (fgnEd 23551502, no ISBN) is a
 > junk misspelled Goodreads edition; a correct edition (fgnEd 5659537, ISBN 9780446198035) sat

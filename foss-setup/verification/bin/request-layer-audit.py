@@ -7,7 +7,7 @@ with every liveness signal green:
     after the request (dangling externalServiceId, H4)
   - a seerr movie request PROCESSING for 10+ days with ZERO Radarr history —
     no release exists, and nothing ever tells the user (M12)
-  - a libreseerr request "completed 100%" whose Readarr book has no file
+  - a libreseerr request "completed 100%" whose Bookshelf book has no file
     (imported into a junk duplicate edition record, H15)
   - a libreseerr request "processing 0%" days after a successful import,
     because statuses only refreshed on a UI POST (M36 — now fixed by an

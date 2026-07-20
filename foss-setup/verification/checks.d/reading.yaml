@@ -156,27 +156,34 @@ checks:
 
   # ────────────────────────────────────────────────────────────────────────
   # fix-46 (books-stack scan B1/B2/B3, 2026-07-20): the French/wrong-edition
-  # class. rreading-glasses serves foreign editions as canonical records AND
-  # stamps them language=eng, so Readarr's allowedLanguages filter can never
-  # catch them — the only reliable detectors are title patterns (library) and
-  # release-name markers (grab history). Guards now in place: release profile
-  # id=1 (grab-time blocklist, regex terms verified enforced 2026-07-20) and
-  # libreseerr anyEditionOk=False (edition pinning).
+  # class. The goodreads-era metadata provider served foreign editions as
+  # canonical records AND stamped them language=eng, so the arr-side
+  # allowedLanguages filter can never catch them — the only reliable detectors
+  # are title patterns (library) and release-name markers (grab history).
+  # Guards in place: Bookshelf release profile id=1 (grab-time blocklist,
+  # cloned from the fix-46 original in bmig-02, companion/coloring terms added
+  # bmig-05) and libreseerr anyEditionOk=False (edition pinning).
+  # Ported readarr:8787 → bookshelf:8790 in bmig-06 (2026-07-20).
 
-  # ── B1 regression: no foreign-language book records in the Readarr library ──
-  # Probes the consumer end: the record list auto-search acts on. Title-pattern
-  # match because rreading-glasses language metadata is untrustworthy (the
-  # French Kushiel editions carried language=eng).
-  - id: readarr-foreign-records
-    name: "Readarr library has no foreign-language book records (fix-46 B1)"
+  # ── B1 regression: no foreign-language book records in the Bookshelf library ──
+  # Probes the consumer end: the record set auto-search/import can act on =
+  # monitored records + records that already hold a file. Unmonitored fileless
+  # catalog entries are excluded: hardcover author refreshes legitimately
+  # create records for an author's WHOLE catalog including foreign-titled
+  # works (e.g. Tolkien's "LA Carta De Papa Noel"), and those are inert.
+  # Title-pattern match because provider language metadata is untrustworthy
+  # (the French Kushiel editions carried language=eng).
+  - id: bookshelf-foreign-records
+    name: "Bookshelf has no actionable foreign-language book records (fix-46 B1)"
     host: mini
     cmd: |-
       python3 -c '
       import json, os, re, urllib.request
-      req = urllib.request.Request("http://192.168.10.4:8787/api/v1/book", headers={"X-Api-Key": os.environ["READARR_API_KEY"]})
+      req = urllib.request.Request("http://192.168.10.4:8790/api/v1/book", headers={"X-Api-Key": os.environ["BOOKSHELF_API_KEY"]})
       books = json.load(urllib.request.urlopen(req, timeout=30))
       pat = re.compile("^(L[\\x27\\u2019]|La |Le |Les |El |Los )|\\bTome ?\\d|, T\\d\\b|Urzeala|Fest\\u00edn", re.I)
-      bad = ["%s:%s" % (b["id"], b["title"]) for b in books if pat.search(b["title"])]
+      live = [b for b in books if b.get("monitored") or (b.get("statistics") or {}).get("bookFileCount", 0) > 0]
+      bad = ["%s:%s" % (b["id"], b["title"]) for b in live if pat.search(b["title"])]
       print("FOREIGN_RECORDS=" + ("; ".join(bad) if bad else "NONE"))'
     expect: '^FOREIGN_RECORDS=NONE$'
     severity: warn
@@ -187,16 +194,16 @@ checks:
   # ── B2 class, consumer end: no foreign-marker GRABS since the guard landed ──
   # Catches any foreign release that slips past by any path (new indexer, new
   # record shape, profile deleted) at the moment it is actually grabbed.
-  # Cutoff 2026-07-20 = guard deploy date; the 2026-06-28 foreign grabs before
-  # it are the incident this closes, not a live failure.
-  - id: readarr-foreign-grab-history
-    name: "no foreign-language grabs in Readarr history since fix-46 guard (B2 class)"
+  # Cutoff 2026-07-20 = guard deploy date (also the bmig-02 Bookshelf deploy
+  # date, so the whole Bookshelf grab history is in scope).
+  - id: bookshelf-foreign-grab-history
+    name: "no foreign-language grabs in Bookshelf history since fix-46 guard (B2 class)"
     host: mini
     cmd: |-
       python3 -c '
       import json, os, re, urllib.request
-      url = "http://192.168.10.4:8787/api/v1/history?pageSize=200&sortKey=date&sortDirection=descending"
-      req = urllib.request.Request(url, headers={"X-Api-Key": os.environ["READARR_API_KEY"]})
+      url = "http://192.168.10.4:8790/api/v1/history?pageSize=200&sortKey=date&sortDirection=descending"
+      req = urllib.request.Request(url, headers={"X-Api-Key": os.environ["BOOKSHELF_API_KEY"]})
       recs = json.load(urllib.request.urlopen(req, timeout=30)).get("records", [])
       pat = re.compile("\\[(FRE|FRA|SPA|ESP|ROM|GER|ITA|POR)\\]|FRENCH|SPANISH|VOSTFR|\\bVF\\b|\\bTome ?\\d", re.I)
       bad = sorted({r.get("sourceTitle") or "" for r in recs if r.get("eventType") == "grabbed" and (r.get("date") or "") >= "2026-07-20" and pat.search(r.get("sourceTitle") or "")})
@@ -208,16 +215,21 @@ checks:
     enabled: true
 
   # ── B2/B3 guard presence: blocklist profile enabled + edition pinning live ──
-  # The grab-time release profile and the libreseerr anyEditionOk=False patch
-  # are the two guards; alert if either is deleted, disabled, or drifts.
+  # The grab-time release profile (foreign terms + the bmig-05 companion/
+  # coloring-book derivative guard) and the libreseerr anyEditionOk=False
+  # patch are the guards; alert if any is deleted, disabled, or drifts.
+  # The pin grep targets the patched ReadarrClient base class file that
+  # BookshelfClient inherits from (live filename in /opt/stacks/libreseerr).
   - id: books-language-guard
-    name: "Readarr language blocklist + libreseerr edition pinning still in place (fix-46 B2/B3)"
+    name: "Bookshelf language+derivative blocklist + libreseerr edition pinning in place (fix-46 B2/B3)"
     host: mini
     cmd: |-
-      rp=$(curl -sm 20 -H "X-Api-Key: $READARR_API_KEY" http://192.168.10.4:8787/api/v1/releaseprofile | python3 -c '
+      rp=$(curl -sm 20 -H "X-Api-Key: $BOOKSHELF_API_KEY" http://192.168.10.4:8790/api/v1/releaseprofile | python3 -c '
       import json, sys
       ps = json.load(sys.stdin)
-      ok = any(p.get("enabled") and any("french" in t.lower() for t in p.get("ignored") or []) for p in ps)
+      en = [p for p in ps if p.get("enabled")]
+      terms = " ".join(t.lower() for p in en for t in p.get("ignored") or [])
+      ok = "french" in terms and "companion" in terms and "coloring book" in terms
       print("RP_OK" if ok else "RP_MISSING")');
       pin=$(grep -c '"anyEditionOk": False' /opt/stacks/libreseerr/readarr.py 2>/dev/null);
       if [ "$rp" = RP_OK ] && [ "$pin" = 1 ]; then echo LANG_GUARD_OK;
@@ -231,29 +243,34 @@ checks:
   # ────────────────────────────────────────────────────────────────────────
   # fix-47 (books-stack scan B4-B7, 2026-07-20): import completion + file↔
   # record correctness. The 07-18 pack import cross-wired English epubs into
-  # wrong/French records and silently lost 2 books (Readarr said "has file",
-  # Calibre never got them); 6 titles died at the 80% match threshold with no
-  # alert; PDF was imported over EPUB. Readarr renames files to the record
-  # title, so post-import filename checks can't see cross-wiring — the only
-  # honest consumer probe is Readarr-claims vs Calibre-has.
+  # wrong/French records and silently lost 2 books (the arr record said "has
+  # file", Calibre never got them); 6 titles died at the 80% match threshold
+  # with no alert; PDF was imported over EPUB. The arr renames files to the
+  # record title, so post-import filename checks can't see cross-wiring — the
+  # only honest consumer probe is Bookshelf-claims vs Calibre-has.
+  # Ported readarr:8787 → bookshelf:8790 in bmig-06 (2026-07-20).
 
-  # ── B4 regression + lost-book class: every Readarr book with a file must
-  # exist in the Calibre library (the pipeline promise Readarr→CWA→Kobo).
+  # ── B4 regression + lost-book class: every Bookshelf book with a file must
+  # exist in the Calibre library (the pipeline promise Bookshelf→CWA→Kobo).
   # Catches cross-wired imports (record "has file" but real title missing
   # downstream) AND Connect-script drops (the 07-13 apostrophe class).
+  # Matching is stopword-tolerant (bmig-03: hardcover edition titles vary as
+  # "Artemis Fowl and the ..." vs CWA "Artemis Fowl: The ..." — plain
+  # normalized containment false-flags those).
   - id: books-pipeline-lost-imports
-    name: "every Readarr book with a file is present in Calibre (fix-47 B4)"
+    name: "every Bookshelf book with a file is present in Calibre (fix-47 B4)"
     host: mini
     cmd: |-
       python3 -c '
       import json, os, re, subprocess, urllib.request
-      def norm(s): return re.sub(r"[^a-z0-9]", "", s.lower())
-      req = urllib.request.Request("http://192.168.10.4:8787/api/v1/book", headers={"X-Api-Key": os.environ["READARR_API_KEY"]})
+      STOP = {"a", "an", "and", "the", "or", "of"}
+      def full(s): return frozenset(w for w in re.findall(r"[a-z0-9]+", s.lower()) if w not in STOP)
+      req = urllib.request.Request("http://192.168.10.4:8790/api/v1/book", headers={"X-Api-Key": os.environ["BOOKSHELF_API_KEY"]})
       books = json.load(urllib.request.urlopen(req, timeout=30))
-      with_files = {b["title"]: norm(b["title"]) for b in books if (b.get("statistics") or {}).get("bookFileCount", 0) > 0}
+      with_files = {b["title"]: full(b["title"]) for b in books if (b.get("statistics") or {}).get("bookFileCount", 0) > 0}
       out = subprocess.run(["ssh", "nas", "sqlite3 \x27file:/volume1/books/metadata.db?mode=ro\x27 \x27select title from books;\x27"], capture_output=True, text=True, timeout=60)
-      cal = [norm(t) for t in out.stdout.splitlines() if t.strip()]
-      lost = [t for t, n in with_files.items() if not any(n in c or c in n for c in cal)]
+      cal = [full(t) for t in out.stdout.splitlines() if t.strip()]
+      lost = [t for t, n in with_files.items() if n and not any(n <= c or c <= n for c in cal)]
       print("LOST_BOOKS=" + ("; ".join(sorted(lost)) if lost else "NONE"))'
     expect: '^LOST_BOOKS=NONE$'
     severity: warn
@@ -264,16 +281,16 @@ checks:
   # ── B6 class: grab→import dead-ends must page, not rot silently. A book
   # whose import went incomplete in the last 48h and that still has no file
   # and is not in the queue is a wasted grab needing operator action.
-  # (Custom-script Connect handlers cannot hook OnImportFailure — Readarr
-  # supportsOnImportFailure=false — so this check IS the alert path.)
-  - id: readarr-import-deadends
-    name: "no silent Readarr import dead-ends in the last 48h (fix-47 B6)"
+  # (Custom-script Connect handlers cannot hook OnImportFailure —
+  # supportsOnImportFailure=false in the arr — so this check IS the alert path.)
+  - id: bookshelf-import-deadends
+    name: "no silent Bookshelf import dead-ends in the last 48h (fix-47 B6)"
     host: mini
     cmd: |-
       python3 -c '
       import datetime, json, os, urllib.request
       def get(path):
-          req = urllib.request.Request("http://192.168.10.4:8787/api/v1/" + path, headers={"X-Api-Key": os.environ["READARR_API_KEY"]})
+          req = urllib.request.Request("http://192.168.10.4:8790/api/v1/" + path, headers={"X-Api-Key": os.environ["BOOKSHELF_API_KEY"]})
           return json.load(urllib.request.urlopen(req, timeout=30))
       cutoff = (datetime.datetime.utcnow() - datetime.timedelta(hours=48)).strftime("%Y-%m-%dT%H:%M:%SZ")
       recs = get("history?pageSize=200&sortKey=date&sortDirection=descending").get("records", [])
@@ -295,7 +312,10 @@ checks:
   # ── B7 guard: EPUB-first format policy stays wired — profile "EPUB
   # Preferred" (upgrade to EPUB cutoff, PDF disallowed) exists and every
   # non-audiobook author is on it. Alert on profile drift or new authors
-  # landing on a PDF-tolerant profile.
+  # landing on a PDF-tolerant profile. This fired for real in bmig-06: the
+  # stock Bookshelf "eBook" profile (id 1) was the libreseerr request default
+  # and collected 2 authors — profile deleted, client ordering patched
+  # (bookshelf.py get_quality_profiles), authors moved to EPUB Preferred.
   - id: books-format-guard
     name: "EPUB-Preferred profile intact + all ebook authors on it (fix-47 B7)"
     host: mini
@@ -303,7 +323,7 @@ checks:
       python3 -c '
       import json, os, urllib.request
       def get(path):
-          req = urllib.request.Request("http://192.168.10.4:8787/api/v1/" + path, headers={"X-Api-Key": os.environ["READARR_API_KEY"]})
+          req = urllib.request.Request("http://192.168.10.4:8790/api/v1/" + path, headers={"X-Api-Key": os.environ["BOOKSHELF_API_KEY"]})
           return json.load(urllib.request.urlopen(req, timeout=30))
       bad = []
       profs = {p["id"]: p for p in get("qualityprofile")}
@@ -331,14 +351,17 @@ checks:
 
   # ────────────────────────────────────────────────────────────────────────
   # media-08 (fix-26/H15 follow-through, 2026-07-20): CWA duplicate ingest on
-  # Readarr re-import. The readarr→CWA Connect script copies unconditionally
-  # (it CANNOT dedupe — the readarr container can't see the CWA library), and
-  # CWA's auto_ingest_automerge was 'new_record', so every re-import/upgrade
-  # of a book CWA already had minted a user-facing duplicate ("Naamah's Curse
-  # (62)" beside (58); the 07-18 Connect re-fire did it again → hand-deleted
-  # ids 63/65/67/68). Fix = automerge 'overwrite': same title+author merges
-  # into the existing record (Readarr quality upgrades now propagate, book
-  # ids stay stable for Kobo sync/shelves). The setting lives in cwa.db — a
+  # arr re-import. The Bookshelf→CWA Connect script (filename still
+  # readarr-copy-to-cwa-ingest.sh from the pre-bmig era) copies
+  # unconditionally (it CANNOT dedupe — the arr container can't see the CWA
+  # library), and CWA's auto_ingest_automerge was 'new_record', so every
+  # re-import/upgrade of a book CWA already had minted a user-facing duplicate
+  # ("Naamah's Curse (62)" beside (58); the 07-18 Connect re-fire did it again
+  # → hand-deleted ids 63/65/67/68). Fix = automerge 'overwrite': same
+  # title+author merges into the existing record (arr quality upgrades now
+  # propagate, book ids stay stable for Kobo sync/shelves). Note: Bookshelf
+  # ManualImport DOES fire Connect (bmig-03), so hand-imports re-ingest and
+  # rely on this overwrite guard. The setting lives in cwa.db — a
   # runtime DB no compose file owns — so this guard IS the anti-drift codify.
   # Detection siblings: cwa-library-dup-titles + cwa-library-author-split
   # (punctuation-variant titles/authors dodge exact-match automerge).
@@ -370,7 +393,7 @@ checks:
   # ────────────────────────────────────────────────────────────────────────
   # fix-48 (books-stack scan B8-B12, 2026-07-20): libreseerr request-path
   # robustness. The 07-18 burst errored 13 of 18 requests: OL work-ids POSTed
-  # as foreignBookId (guaranteed Readarr 400/500), hard-coded 15s lookup
+  # as foreignBookId (guaranteed arr-side 400/500), hard-coded 15s lookup
   # timeouts stored silently, no reconciler path for monitored-no-file-not-
   # queued (Rotten Romans stuck 6 days), combining-diacritic author names
   # never matching, and a one-shot model with no retry and no operator
@@ -403,10 +426,13 @@ checks:
   # ── B8/B9/B11 class + guard presence: no resurfaced failure signature in
   # recent terminal errors (an OL-id 400, a 15s read timeout, or an author-
   # match failure means the local patch was reverted — e.g. by an image bump,
-  # which the compose file warns re-derives app.py/readarr.py), and the four
-  # guards must be physically present: patched app.py + readarr.py, gunicorn
-  # --timeout (workers died at the 30s default once READARR_TIMEOUT=60), and
-  # the ntfy token (silent failures were the root enabler of this cluster).
+  # which the compose file warns re-derives app.py/readarr.py), and the five
+  # guards must be physically present: patched app.py + readarr.py (the
+  # ReadarrClient base impl) + bookshelf.py (the BookshelfClient shadow that
+  # routes the live Bookshelf backend through those patches, bmig-04),
+  # gunicorn --timeout (workers died at the 30s default once
+  # READARR_TIMEOUT=60), and the ntfy token (silent failures were the root
+  # enabler of this cluster).
   - id: libreseerr-request-path-guards
     name: "libreseerr: no resurfaced failure classes, request-path guards in place (fix-48 B8/B9/B11)"
     host: mini
@@ -420,6 +446,7 @@ checks:
       guard=OK;
       grep -q "PermanentRequestError" /opt/stacks/libreseerr/app.py || guard=NO_PATCH_APP;
       grep -q "adopt_library_book" /opt/stacks/libreseerr/readarr.py || guard=NO_PATCH_READARR;
+      grep -q "class BookshelfClient(ReadarrClient)" /opt/stacks/libreseerr/bookshelf.py || guard=NO_PATCH_BOOKSHELF;
       docker inspect libreseerr --format '{{json .Config.Cmd}}' | grep -q -- --timeout || guard=NO_GUNICORN_TIMEOUT;
       [ -n "$(docker exec libreseerr printenv NTFY_TOKEN 2>/dev/null)" ] || guard=NO_NTFY_TOKEN;
       if [ "$sig" = NONE ] && [ "$guard" = OK ]; then echo REQUEST_PATH_OK;
@@ -428,4 +455,116 @@ checks:
     severity: warn
     task_id: fix-48
     runbook: wiki/docs/runbooks/books-requests.md
+    enabled: true
+
+  # ────────────────────────────────────────────────────────────────────────
+  # bmig-06 (books metadata cutover close-out, 2026-07-20): three tripwires
+  # for the new Bookshelf + rreading-glasses:hardcover stack. See
+  # docs/books-metadata-cutover-2026-07-20.md for the C1-C5 failure classes.
+
+  # ── Hardcover API tokens expire every Jan 1 (upstream policy). When the
+  # token dies, rreading-glasses-hc keeps serving its warm cache, so the
+  # failure would otherwise surface WEEKS later as silently-stale metadata.
+  # Decodes the JWT exp claim and alerts from 17 days out (≈ Dec 15), and
+  # proves the token still authenticates with a minimal 1-query GraphQL call
+  # (Hardcover caps requests ~60/min account-wide — rg-hc refresh herds can
+  # 429 this briefly; one retry absorbs that). Renewal: hardcover.app →
+  # Settings → Hardcover API → vault books.hardcover_api_token → recreate
+  # rreading-glasses-hc (see runbook).
+  - id: hardcover-token-valid
+    name: "hardcover API token authenticates and is >17d from Jan-1 expiry (bmig-06)"
+    host: mini
+    cmd: |-
+      python3 -c '
+      import base64, json, os, time, urllib.error, urllib.request
+      tok = (os.environ.get("HARDCOVER_API_TOKEN") or "").strip()
+      if not tok:
+          print("HC_TOKEN_ERROR missing HARDCOVER_API_TOKEN"); raise SystemExit
+      if not tok.lower().startswith("bearer "):
+          tok = "Bearer " + tok
+      try:
+          pay = tok.split(" ", 1)[1].split(".")[1]
+          exp = json.loads(base64.urlsafe_b64decode(pay + "=" * (-len(pay) % 4)))["exp"]
+          days = (exp - time.time()) / 86400
+      except Exception as e:
+          print("HC_TOKEN_ERROR cannot decode JWT exp: %r" % e); raise SystemExit
+      body = json.dumps({"query": "query { me { username } }"}).encode()
+      user, code = "", 0
+      for attempt in (1, 2):
+          try:
+              req = urllib.request.Request("https://api.hardcover.app/v1/graphql", data=body,
+                  headers={"Authorization": tok, "Content-Type": "application/json"})
+              resp = json.load(urllib.request.urlopen(req, timeout=25))
+              me = (resp.get("data") or {}).get("me")
+              if isinstance(me, list): me = (me or [{}])[0]
+              user = (me or {}).get("username")
+              code = 200 if user else 0
+              if user or "errors" in resp: break
+          except urllib.error.HTTPError as e:
+              code = e.code
+              if e.code == 429 and attempt == 1: time.sleep(20); continue
+              break
+          except Exception:
+              break
+      if not user:
+          print("HC_TOKEN_INVALID http=%s days_left=%.0f" % (code, days))
+      elif days < 17:
+          print("HC_TOKEN_EXPIRING days_left=%.1f user=%s - renew at hardcover.app before Jan 1" % (days, user))
+      else:
+          print("HC_TOKEN_OK days_left=%.0f user=%s" % (days, user))'
+    expect: '^HC_TOKEN_OK '
+    severity: warn
+    task_id: bmig-06
+    runbook: wiki/docs/runbooks/books-metadata.md
+    enabled: true
+
+  # ── C1/C4-class regression: every non-error libreseerr request must be
+  # bound to a Bookshelf record whose ACTUAL author matches the requested
+  # author (token match, alias pass via the record author's hardcover bio —
+  # Feed binds Mira Grant when Seanan McGuire was requested). The bmig-04
+  # author gate prevents this at request time; this check catches the gate
+  # being reverted (image bump) or bypassed (manual add, future code path).
+  # Negative-tested in bmig-06 against a doctored requests file.
+  - id: request-author-parity
+    name: "libreseerr: every bound request author-matches the request (C1/C4 tripwire)"
+    host: mini
+    cmd: python3 /opt/verification/bin/books-author-parity.py
+    expect: '^AUTHOR_PARITY_OK'
+    severity: warn
+    task_id: bmig-06
+    runbook: wiki/docs/runbooks/books-requests.md
+    enabled: true
+
+  # ── C2-class canary: tracker-searchable canonical metadata. The goodreads
+  # era failed this exact lookup (the real Austen novel ABSENT from the
+  # result set entirely — fanfic/omnibus/junk instead, C1 evidence). The
+  # plan doc said "top 3", but Bookshelf lookup ORDERING is nondeterministic
+  # (measured 2026-07-20: canonical rank 1/7/4 across three back-to-back
+  # identical calls on a stable 14-result set) and the real consumer
+  # (libreseerr) re-ranks candidates through its own title+author gates, so
+  # the order-independent, consumer-faithful assertion is PRESENCE of the
+  # canonical Austen work in the result set. P&P is permanently warm in the
+  # rg-hc cache (library-bound record), so this is served from postgres and
+  # does not spend Hardcover quota; degraded/empty lookups during a rare
+  # cold-cache refresh herd fail this loudly — that state also degrades real
+  # requests, so loud is correct.
+  - id: metadata-search-canary
+    name: "Bookshelf lookup: canonical Pride & Prejudice present + rank (C2 canary)"
+    host: mini
+    cmd: |-
+      python3 -c '
+      import json, os, re, urllib.parse, urllib.request
+      norm = lambda s: re.sub(r"[^a-z0-9]", "", (s or "").lower().replace("&", " and "))
+      url = "http://192.168.10.4:8790/api/v1/book/lookup?term=" + urllib.parse.quote("Pride and Prejudice Jane Austen")
+      req = urllib.request.Request(url, headers={"X-Api-Key": os.environ["BOOKSHELF_API_KEY"]})
+      results = json.load(urllib.request.urlopen(req, timeout=45))
+      rank = next((i for i, r in enumerate(results) if norm(r.get("title")) == "prideandprejudice" and "austen" in norm(r.get("authorTitle") or str(r.get("author", {}).get("authorName", "")))), None)
+      if rank is None:
+          print("CANARY_MISS results=%d: %s" % (len(results), " | ".join((r.get("title") or "?")[:30] for r in results[:5])))
+      else:
+          print("CANARY_OK rank=%d results=%d" % (rank, len(results)))'
+    expect: '^CANARY_OK '
+    severity: warn
+    task_id: bmig-06
+    runbook: wiki/docs/runbooks/books-metadata.md
     enabled: true

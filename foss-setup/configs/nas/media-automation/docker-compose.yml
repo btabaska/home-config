@@ -261,11 +261,15 @@ services:
     environment:
       POSTGRES_USER: ${RG_DB_USER:-rreading-glasses}
       POSTGRES_PASSWORD: ${RG_DB_PASSWORD:?set RG_DB_PASSWORD in .env}
-      POSTGRES_DB: ${RG_DB_NAME:-rreading-glasses}
+      # bmig-06 (2026-07-20): default DB is the hardcover one — the goodreads
+      # database was DROPPED (goodreads cache; pgdump archived at
+      # /volume1/archive/books-cutover-bmig05/). A fresh datadir now inits
+      # straight to the hc database.
+      POSTGRES_DB: ${RG_DB_NAME:-rreading_glasses_hc}
     volumes:
       - ${DOCKER_ROOT:-/volume1/docker}/rreading-glasses/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rreading-glasses -d rreading-glasses"]
+      test: ["CMD-SHELL", "pg_isready -U rreading-glasses -d rreading_glasses_hc"]
       interval: 5s
       timeout: 5s
       retries: 12

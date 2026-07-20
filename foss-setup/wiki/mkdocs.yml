@@ -140,6 +140,7 @@ nav:
       - Books — language & edition correctness (foreign records / grab guard / pinning): runbooks/books-language.md
       - Books — import completion & file↔record correctness (cross-wired packs / dead-ends / EPUB-first): runbooks/books-imports.md
       - Books — request-path robustness (Libreseerr errors / retries / ntfy): runbooks/books-requests.md
+      - Books — hardcover metadata health (token expiry / search canary): runbooks/books-metadata.md
       - Host hygiene (dead services / silent crons / spent timers): runbooks/host-hygiene.md
       - NAS host hygiene (timezone / DNS attribution / single-disk): runbooks/nas-host-hygiene.md
       - Fleet hygiene (junk classes / reapers / accepted state): runbooks/fleet-hygiene.md

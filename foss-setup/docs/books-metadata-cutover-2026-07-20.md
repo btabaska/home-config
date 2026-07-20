@@ -308,6 +308,42 @@ to hc), books runbooks repointed, this doc linked from the quality-gate doc (H15
 the books-stack scan doc. Close the program: all bmig tasks done in progress.json, regen,
 one commit, publish-deploy.
 
+> **done 2026-07-20 — PROGRAM COMPLETE.** All readarr-coupled checks/tools ported
+> (reading.yaml ×6 + media.yaml copy-drops → bookshelf:8790 + BOOKSHELF_API_KEY;
+> arr-grab-audit.py, unpackerr-poll-advancing.py, media-triage.md, seedbox.yaml;
+> READARR_API_KEY retired from /etc/verification/env; residual "readarr" strings are
+> live filenames only — readarr.py patch base, readarr-copy-to-cwa-ingest.{sh,log},
+> readarr_book_id, UN_READARR_0_*). 3 tripwires live: `hardcover-token-valid` (JWT
+> exp decode, warns <17d ≈ Dec 15 + authenticated 1-query me{} probe),
+> `request-author-parity` (bin/books-author-parity.py, alias-aware via hardcover
+> bios, negative-tested: doctored author → AUTHOR_PARITY_BAD), `metadata-search-canary`
+> (**deviation:** asserts canonical-work PRESENCE not top-3 — Bookshelf lookup
+> ordering measured nondeterministic, rank 1/7/4 across identical calls; libreseerr
+> re-ranks anyway). Goodreads DB dropped after pgdump TOC re-verified + all books
+> checks green (\l = rreading_glasses_hc + system only; compose healthcheck +
+> RG_DB_NAME defaults now rreading_glasses_hc, live .env flipped, db container
+> recreated healthy). Coverage manifest was already current (COVERAGE_OK). Wiki:
+> books-language/imports runbooks rewritten for Bookshelf, new books-metadata.md
+> (token renewal + canary), media-automation/CWA enrichment post-cutover, H15 +
+> books-scan docs cross-linked, built --strict. **The ported checks caught real
+> rot in-session:** (a) B7 format guard — Bookshelf stock "eBook" profile (id 1)
+> was libreseerr's request default (old readarr's id 1 WAS EPUB Preferred);
+> 2 authors moved, profile deleted, root-folder default → 3, bookshelf.py
+> get_quality_profiles now orders EPUB Preferred first (mirrored); (b) CWA author
+> splits from bmig-04/05 imports merged (Mira Grant, J.R.R. Tolkien ×5 books);
+> (c) lost-imports flagged record 79 "Kushiel's Avatar" — owner (curating live,
+> confirmed via question) had replaced the epub with PDFs; epub archived to
+> /volume1/archive/books-cutover-bmig06/ + bookfile record deleted; (d)
+> unpackerr-poll-advancing had restart-blindness (frozen vs pre-restart
+> high-water mark) — fixed; (e) foreign-records scoped to monitored-or-has-file
+> (hc author catalogs carry inert foreign-titled works). Final: reading 20/20,
+> --host nas 24/24, seedbox 8/8, edge 5/5 (+ports 8789/8790 in WAN probe) green.
+> Discoveries logged, NOT fixed here: dns-06 (NAS AdGuard external resolution
+> CRIT), net-16 (homepage container DNS EAI_AGAIN), media-11 (lidarr orphan
+> flag), nas-31 (immich checks red), sec-11 (rotate bookshelf API key — agent
+> redaction miss printed it to transcript). Remaining books follow-ups already
+> tracked: books-hc-upstream-swap, media-10 (seedbox label retirement), read-15.
+
 ## Rollback
 
 Until bmig-05 the old path is untouched — rollback = point libreseerr back at readarr

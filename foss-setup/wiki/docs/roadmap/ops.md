@@ -1,6 +1,6 @@
 # Roadmap — ops
 
-26 task(s). Status mirrors `docs/progress.json` (the source of truth).
+29 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -9,6 +9,7 @@
 | `dns-03` | UniFi DHCP fail-open DNS chain (mini → NAS → gateway) | ✅ done | 15 min |
 | `dns-04` | DNS outage runbook + automated verify script | ✅ done | 15 min |
 | `dns-05` | NAT :53 redirect + DoH blocking (only after fail-open chain) | 🗑️ retired | 20-30 min |
+| `dns-06` | NAS AdGuard: external resolution failing (dns-nas-external crit) | ⬜ open | 20-40 min |
 | `docker-06` | Deploy Caddy reverse proxy with automatic HTTPS | ✅ done | 45 min |
 | `docker-07` | Deploy AdGuard Home network DNS filtering (chosen over Pi-hole) | ✅ done | 30 min |
 | `docker-08` | Deploy Dockge container manager (chosen default; Dockhand is optional upgrade) | ✅ done | 15 min |
@@ -25,6 +26,8 @@
 | `glue-06` | Push ALL configs to Git + run the rebuild drill (capstone) | ⏸️ deferred | 1-2 hr |
 | `glue-07` | Fleet maintenance with Ansible (run one command across every box) | ✅ done | 1-1.5 hr |
 | `glue-08` | Self-converging fleet with ansible-pull + roles (the set-and-forget layer) | ✅ done | 2-3 hr |
+| `nas-31` | Immich: backup freshness + mobile pairing checks failing (fix-35 regression) | ⬜ open | 30-60 min |
+| `net-16` | homepage container DNS: EAI_AGAIN on tabaska.us names (159 errors/2h) | ⬜ open | 20-40 min |
 | `sbom-01` | Deploy OWASP Dependency-Track v5 (the SBOM / vulnerability dashboard) | 🗑️ retired | 45-60 min |
 | `sbom-02` | Nightly SBOMs with Syft + Grype, uploaded to Dependency-Track | 🗑️ retired | 45-60 min/host |
 | `sbom-03` | Track /etc in Git with etckeeper (auto-commit on every package op) | ✅ done | 30-45 min/host |

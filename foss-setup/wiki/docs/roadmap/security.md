@@ -1,6 +1,6 @@
 # Roadmap — security
 
-15 task(s). Status mirrors `docs/progress.json` (the source of truth).
+16 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -19,5 +19,6 @@
 | `sec-08` | Rotate credentials that left the fleet: Plex token (iCloud snapshot) + secrets printed in the committed audit doc; purge iCloud Recently Deleted | ⬜ open | 1-2 hrs |
 | `sec-09` | Cloudflare token least-privilege: read-only DNS token for verification; keep the write token vault-only | ⬜ open | 30-45 min |
 | `sec-10` | arr API keys committed in cleartext in the repo (unpackerr.conf) — rotate + externalize to a gitignored env | ⬜ open | 45-90 min |
+| `sec-11` | Rotate bookshelf API key (exposed in agent session transcript) | ⬜ open | 30-45 min |
 
 [← Roadmap overview](index.md)

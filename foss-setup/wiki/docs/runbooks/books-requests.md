@@ -105,9 +105,9 @@ rreading-glasses' `Emily 1818-1848 Bronte&#776;`, both match plain "Emily Bronte
   `data/config.json`; requests created before the bmig-04 cutover are counted as
   `legacy_skipped` until bmig-05 cleans them.
 
-## Note: the 6-hourly "Invalid request Validation failed" bursts in Readarr's log
+## Note (historical): 6-hourly "Invalid request Validation failed" bursts in the readarr-era log
 
 Investigated during fix-48 and **not** Libreseerr: each warning pairs with *"Query
 successful, but no results in the configured categories were returned from your indexer"* —
-they come from Readarr's own scheduled RSS-sync/missing-search hitting an indexer category
+they came from the arr's own scheduled RSS-sync/missing-search hitting an indexer category
 mismatch, and are harmless noise unless a wanted book stops matching entirely.

@@ -25,7 +25,7 @@ checks:
       WAN=$(curl -s -m 10 https://ifconfig.me);
       echo "$WAN" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$' || { echo NO_WAN_IP; exit 0; };
       extra=$(ssh -o BatchMode=yes -o ConnectTimeout=10 seedbox
-      "for p in 22 80 443 853 2222 3000 3254 5000 5001 5945 6969 7878 8123 8443 8686 8787 8989 9696 13091 32400;
+      "for p in 22 80 443 853 2222 3000 3254 5000 5001 5945 6969 7878 8123 8443 8686 8787 8789 8790 8989 9696 13091 32400;
       do (timeout 4 bash -c \"</dev/tcp/$WAN/\$p\" >/dev/null 2>&1 && echo \$p) & done; wait"
       | grep -v '^32400$' | sort -n | xargs); [ -z "$extra" ] && echo NO_UNEXPECTED_PORTS || echo "UNEXPECTED_OPEN:$extra"
     expect: '^NO_UNEXPECTED_PORTS$'

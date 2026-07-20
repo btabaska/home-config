@@ -25,7 +25,7 @@ import urllib.request
 
 URL = os.environ.get("UNPACKERR_METRICS_URL", "http://192.168.10.4:5656/metrics")
 STATE = "/var/lib/verification/unpackerr-fetch.state"
-MIN_APPS = 5          # Sonarr, Radarr, Lidarr, Readarr, Whisparr
+MIN_APPS = 5          # Sonarr, Radarr, Lidarr, Bookshelf (readarr-protocol slot), Whisparr
 STALL_S = 300         # frozen counter for > 5 min (> 2 poll cycles) = wedged
 
 
@@ -50,6 +50,13 @@ def main():
             prev_ts, prev_sum = float(parts[0]), int(parts[1])
     except Exception:  # noqa: BLE001  (first run / unreadable → bootstrap)
         pass
+
+    # A counter BELOW the saved sample means unpackerr restarted (prometheus
+    # counters reset to 0) — without this, the check reads "frozen" against the
+    # pre-restart high-water mark until the new counter overtakes it, which can
+    # take days (bit for real after the bmig-05 unpackerr recreate, 2026-07-20).
+    if prev_sum is not None and cur < prev_sum:
+        prev_ts = prev_sum = None
 
     # Advance the saved sample only when the counter moves (or first run), so the
     # stall clock measures time-since-last-progress, not time-since-last-check.

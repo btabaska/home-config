@@ -25,15 +25,15 @@ The 2026-07-16 audit found the reading cluster **green but drifted**:
   to `/volume1/docker/calibre-web-automated/fix38-removed-books/` on the NAS before
   deletion — includes the 739 MB illustrated *A Game of Thrones*). On its first run the
   new dup-titles check caught **4 fresh duplicates** created 2026-07-17/18 by re-driven
-  Readarr requests re-importing already-present titles — the class recurs, keep the check.
+  arr requests re-importing already-present titles — the class recurs, keep the check.
 
-- **media-08** (fix-26/H15 follow-through, closed 2026-07-20) — every Readarr
+- **media-08** (fix-26/H15 follow-through, closed 2026-07-20) — every arr
   re-import/upgrade of a book CWA already had minted a **duplicate library entry**
   ("Naamah's Curse (62)" beside (58); the 2026-07-18 Connect re-fire repeated it, ids
-  63/65/67/68 hand-deleted). Root cause: the readarr→CWA Connect script copies
-  unconditionally (it *cannot* dedupe — the readarr container can't see the CWA
+  63/65/67/68 hand-deleted). Root cause: the books-arr→CWA Connect script copies
+  unconditionally (it *cannot* dedupe — the arr container can't see the CWA
   library), and CWA's `auto_ingest_automerge` was `new_record`. Fix: `overwrite` —
-  calibredb merges same-title+author imports into the existing record, so Readarr
+  calibredb merges same-title+author imports into the existing record, so Bookshelf
   quality upgrades propagate and book ids stay stable for Kobo sync/shelves.
   Verified 2026-07-20: re-ingesting an existing epub left book count and max id
   unchanged and bumped the record's `last_modified` instead of creating a new row.
@@ -84,7 +84,7 @@ Fix with `calibredb` inside the container (procedure with exact commands is on t
 `/volume1/books/metadata.db`, then merge authors with `set_metadata --field authors:`,
 export-then-`remove --permanent` duplicate/unwanted editions, and set missing covers with
 `ebook-meta --get-cover` + `set_metadata --field cover:`. Root-cause prevention for
-foreign/duplicate editions is Readarr edition pinning (`anyEditionOk=false`).
+foreign/duplicate editions is libreseerr edition pinning (`anyEditionOk=false`) plus the Bookshelf release-profile blocklist.
 
 ### `cwa-ingest-automerge-guard` — the dedupe setting drifted
 Not an outage: `auto_ingest_automerge` in
@@ -92,7 +92,7 @@ Not an outage: `auto_ingest_automerge` in
 longer `overwrite`, or duplicate detection / the after-import scan was switched off.
 This setting lives in a **runtime DB no compose file owns**, so this check is the
 anti-drift codification — a CWA image bump or a click in Admin → CWA Settings can
-revert it silently, and with `new_record` every Readarr re-import/upgrade mints a
+revert it silently, and with `new_record` every Bookshelf re-import/upgrade mints a
 user-facing duplicate again (the media-08 class). Restore via the CWA admin UI or
 `sqlite3 …/cwa.db "UPDATE cwa_settings SET auto_ingest_automerge='overwrite'"` (takes
 effect next ingest, no restart needed — the ingest processor re-reads settings per

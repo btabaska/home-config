@@ -1,5 +1,12 @@
 # Books-stack deep scan — 2026-07-19/20
 
+> **Superseded (2026-07-20): the pipeline this scan describes was replaced the same week** —
+> readarr + goodreads-mode rreading-glasses were decommissioned by the books metadata
+> cutover (`docs/books-metadata-cutover-2026-07-20.md`, bmig-01…06). The B-findings'
+> *classes* live on as Bookshelf-pointed checks (`fix-46/47/48` families in
+> `checks.d/reading.yaml` + the bmig-06 tripwires); the readarr-specific evidence below
+> is historical.
+
 Read-only investigation of the end-to-end ebook pipeline after the failed 2026-07-18 end-to-end
 test (`ebook-06`). Four parallel evidence passes: Libreseerr (mini), Readarr (NAS), seedbox/deluge
 + transport, CWA/Kobo (NAS). **No live state was changed during the scan.**

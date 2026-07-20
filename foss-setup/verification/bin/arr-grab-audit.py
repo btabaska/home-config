@@ -16,11 +16,12 @@ Modes:
                   no file (a later re-grab that imported clears it).
   monitor-flags — the H6/H14 root-cause tripwire: monitored media that is
                   INVISIBLE to wanted/missing because its parent is unmonitored
-                  (readarr book with unmonitored author, lidarr album with
+                  (bookshelf book with unmonitored author, lidarr album with
                   unmonitored artist) is un-retryable: a failed first search is
                   permanent. Must always be zero.
 
-Env: SONARR_API_KEY RADARR_API_KEY LIDARR_API_KEY READARR_API_KEY WHISPARR_API_KEY.
+Env: SONARR_API_KEY RADARR_API_KEY LIDARR_API_KEY BOOKSHELF_API_KEY WHISPARR_API_KEY.
+(bookshelf replaced the retired readarr backend in bmig-06, 2026-07-20.)
 Prints one line; expect-regex friendly:
   GRABS_OK checked=N   | GRABS_STUCK n: arr:title; ...
   FLAGS_OK checked=N   | FLAGS_HIDDEN n: arr:title; ...
@@ -40,7 +41,7 @@ ARRS = {
     "sonarr": ("http://192.168.10.4:8989", "v3", "SONARR_API_KEY"),
     "radarr": ("http://192.168.10.4:7878", "v3", "RADARR_API_KEY"),
     "lidarr": ("http://192.168.10.4:8686", "v1", "LIDARR_API_KEY"),
-    "readarr": ("http://192.168.10.4:8787", "v1", "READARR_API_KEY"),
+    "bookshelf": ("http://192.168.10.4:8790", "v1", "BOOKSHELF_API_KEY"),
     "whisparr": ("http://192.168.10.4:6969", "v3", "WHISPARR_API_KEY"),
 }
 
@@ -65,7 +66,7 @@ def media_has_file(arr, base, ver, key, rec):
         if arr == "lidarr" and rec.get("albumId"):
             st = api(base, ver, key, f"/album/{rec['albumId']}").get("statistics", {})
             return (st.get("sizeOnDisk") or 0) > 0
-        if arr == "readarr" and rec.get("bookId"):
+        if arr == "bookshelf" and rec.get("bookId"):
             st = api(base, ver, key, f"/book/{rec['bookId']}").get("statistics", {})
             return (st.get("bookFileCount") or 0) > 0
     except Exception:
@@ -120,22 +121,22 @@ def mode_grabs():
 
 def mode_monitor_flags():
     hidden, checked = [], 0
-    key = os.environ.get("READARR_API_KEY")
+    key = os.environ.get("BOOKSHELF_API_KEY")
     if not key:
-        print("CONFIG_ERR missing READARR_API_KEY")
+        print("CONFIG_ERR missing BOOKSHELF_API_KEY")
         sys.exit(1)
     # The bulk /book endpoint omits the nested author object entirely (verified
     # live 2026-07-17, fix-26) — resolving the embedded field made every
     # monitored+fileless book a false positive. Resolve parents via /author.
-    authors = {a["id"]: a for a in api(*ARRS["readarr"][:2], key, "/author")}
-    for b in api(*ARRS["readarr"][:2], key, "/book"):
+    authors = {a["id"]: a for a in api(*ARRS["bookshelf"][:2], key, "/author")}
+    for b in api(*ARRS["bookshelf"][:2], key, "/book"):
         if not b.get("monitored"):
             continue
         checked += 1
         parent = authors.get(b.get("authorId")) or b.get("author") or {}
         if ((b.get("statistics", {}).get("bookFileCount") or 0) == 0
                 and not parent.get("monitored")):
-            hidden.append(f"readarr:{(b.get('title') or '?')[:40]}")
+            hidden.append(f"bookshelf:{(b.get('title') or '?')[:40]}")
     key = os.environ.get("LIDARR_API_KEY")
     if not key:
         print("CONFIG_ERR missing LIDARR_API_KEY")

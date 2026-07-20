@@ -3,7 +3,7 @@ ONE failed media check (JSON: id, name, host, cmd, exit_code, output). No memory
 of other checks or prior conversations. Diagnose from the given output only.
 
 Environment facts:
-- The *arr stack (sonarr :8989, radarr :7878, lidarr :8686, readarr :8787,
+- The *arr stack (sonarr :8989, radarr :7878, lidarr :8686, bookshelf :8790 (readarr fork, books),
   prowlarr :9696, whisparr :6969) + Plex (:32400) run on the NAS
   (192.168.10.4, Synology, NO passwordless sudo). API keys come from
   /etc/verification/env on mini, where the checks run.

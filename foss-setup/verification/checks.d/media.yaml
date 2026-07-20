@@ -197,25 +197,29 @@ checks:
     enabled: true
 
   # ---------------------------------------------------------------------------
-  # LIBRESEERR -> READARR -> CWA book pipeline (added 2026-07-13). Requested
-  # books grabbed+imported fine in Readarr but never reached the CWA reading
-  # library: the Readarr custom script that copies imports into /cwa-book-ingest
-  # trimmed whitespace with `xargs`, which does shell-quote processing and
-  # STRIPPED apostrophes ("Kushiel's Chosen" -> "Kushiels Chosen"), so every
-  # apostrophe title failed the file test and was silently dropped — only
-  # "Miranda and Caliban" got through. libreseerr->Readarr was healthy the whole
-  # time. These guard both halves of the Readarr->CWA handoff.
+  # LIBRESEERR -> BOOKSHELF -> CWA book pipeline (added 2026-07-13 against the
+  # retired readarr backend; ported to Bookshelf in bmig-06, 2026-07-20).
+  # Requested books grabbed+imported fine in the arr but never reached the CWA
+  # reading library: the Connect custom script that copies imports into
+  # /cwa-book-ingest trimmed whitespace with `xargs`, which does shell-quote
+  # processing and STRIPPED apostrophes ("Kushiel's Chosen" -> "Kushiels
+  # Chosen"), so every apostrophe title failed the file test and was silently
+  # dropped — only "Miranda and Caliban" got through. The request layer was
+  # healthy the whole time. These guard both halves of the Bookshelf->CWA
+  # handoff. (The script keeps its pre-bmig filename
+  # readarr-copy-to-cwa-ingest.sh — it is registered under that path in
+  # Bookshelf's Connect config and logs beside the Bookshelf config dir.)
   # ---------------------------------------------------------------------------
 
   # THE bug's direct signature: the copy script dropped a book (path didn't
   # resolve). Any such error means a requested book never reached CWA. crit.
-  - id: readarr-cwa-copy-drops
-    name: "readarr->cwa copy script dropped no books (no path-resolution errors)"
+  - id: bookshelf-cwa-copy-drops
+    name: "bookshelf->cwa copy script dropped no books (no path-resolution errors)"
     host: mini
     cmd: >-
       c=$(printf '%s\n' "$NAS_SUDO_PASSWORD"
       | ssh -o BatchMode=yes -o ConnectTimeout=10 nas
-      "sudo -S -p '' grep -cE 'ERROR - (Not a file|.*no name match)' /volume1/docker/readarr/config/logs/readarr-copy-to-cwa-ingest.log 2>/dev/null"
+      "sudo -S -p '' grep -cE 'ERROR - (Not a file|.*no name match)' /volume1/docker/bookshelf/config/logs/readarr-copy-to-cwa-ingest.log 2>/dev/null"
       2>/dev/null); [ "${c:-0}" = "0" ] && echo drops=0 || echo drops=$c
     expect: '^drops=0$'
     severity: crit
@@ -311,7 +315,7 @@ checks:
   # SILENT "grabbed -> never imported" class (added 2026-07-17, fix-25 / H3 H5
   # H6 H14 H16). Two shapes from the quality gate: a grab handed to Deluge that
   # then VANISHED (hash absent, queue empty, no error — 3 movies stuck 10 days),
-  # and a completed torrent that fell out of Readarr's tracking unimported.
+  # and a completed torrent that fell out of the books arr's tracking unimported.
   # Every liveness check stayed green. arr-grab-audit.py probes the CONSUMER
   # end: a 'grabbed' history event >48h old with no follow-up event, not in the
   # queue, and media still fileless = silent loss. Keys in /etc/verification/env
@@ -348,7 +352,7 @@ checks:
   # Four audited shapes: seerr request whose sonarr series was deleted after the
   # request (dangling, PROCESSING forever); seerr movie with zero radarr history
   # 10+ days (no release exists, user never told); libreseerr 'completed' whose
-  # readarr book has no file (junk-edition mis-import); libreseerr 'processing'
+  # backend book has no file (junk-edition mis-import); libreseerr 'processing'
   # days after import (statuses only refreshed on UI POST — now a background
   # reconciler in app.py, this check fires if it dies). Probes the CONSUMER end:
   # stored request state vs live backend truth.
@@ -364,7 +368,7 @@ checks:
     enabled: true
 
   - id: libreseerr-request-rot
-    name: "libreseerr: stored request statuses match readarr truth (H15/M36 class)"
+    name: "libreseerr: stored request statuses match bookshelf truth (H15/M36 class)"
     host: mini
     cmd: python3 /opt/verification/bin/request-layer-audit.py libreseerr
     expect: '^LIBRESEERR_OK'

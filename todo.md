@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**197/282 done** · **54 open** · **18 deferred** · 13 retired.
+**198/287 done** · **58 open** · **18 deferred** · 13 retired.
 
 ---
 
@@ -12,7 +12,6 @@
 - [ ] **`handoff-12`** Post-sprint cleanup — delete vault and rotate keys _(est 10 min)_
 
 ### books-cutover
-- [ ] **`bmig-06`** Books cutover 6/6: migrate all checks to Bookshelf + new tripwires (token expiry, author parity, search canary) + docs + close _(est 90-150 min)_
 - [ ] **`books-hc-upstream-swap`** Swap rreading-glasses-hc off the temporary local image once upstream fixes Hardcover batch limit (#574) _(est 15-30 min)_
 
 ### desktop
@@ -38,9 +37,15 @@
 - [ ] **`media-07`** MusicSeerr can still create unmonitored-artist requests (upstream monitor_artist=0 default) — tripwire-covered, close the generator _(est 30-45 min)_
 - [ ] **`media-09`** fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs _(est 1-2 hrs)_
 - [ ] **`media-10`** Seedbox: retire drained readarr label pair from deluge-reaper _(est 10 min)_ — ⛔ gate: not before 2026-08-04
+- [ ] **`media-11`** Lidarr: 'Camera' album monitored under unmonitored artist (orphan flag) _(est 10-20 min)_
 
 ### network
 - [ ] **`net-15`** Edge/verification doc-truth trivia: stale seedbox-SSH claim in verification README; Plex ManualPortMappingMode mismatch _(est 20 min)_
+
+### ops
+- [ ] **`dns-06`** NAS AdGuard: external resolution failing (dns-nas-external crit) _(est 20-40 min)_
+- [ ] **`nas-31`** Immich: backup freshness + mobile pairing checks failing (fix-35 regression) _(est 30-60 min)_
+- [ ] **`net-16`** homepage container DNS: EAI_AGAIN on tabaska.us names (159 errors/2h) _(est 20-40 min)_
 
 ### photos
 - [ ] **`nas-08b`** Import mirrorless-camera SD card into Immich via immich-go (+ pbak option) _(est 30 min)_
@@ -64,6 +69,7 @@
 - [ ] **`sec-08`** Rotate credentials that left the fleet: Plex token (iCloud snapshot) + secrets printed in the committed audit doc; purge iCloud Recently Deleted _(est 1-2 hrs)_ — ⛔ gate: plex-token-rotation-signs-out-devices
 - [ ] **`sec-09`** Cloudflare token least-privilege: read-only DNS token for verification; keep the write token vault-only _(est 30-45 min)_
 - [ ] **`sec-10`** arr API keys committed in cleartext in the repo (unpackerr.conf) — rotate + externalize to a gitignored env _(est 45-90 min)_
+- [ ] **`sec-11`** Rotate bookshelf API key (exposed in agent session transcript) _(est 30-45 min)_
 
 ### smart-home
 - [ ] **`ha-04`** Install HACS (community store) _(est 15 min)_

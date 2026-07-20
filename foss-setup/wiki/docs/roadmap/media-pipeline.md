@@ -1,6 +1,6 @@
 # Roadmap — media-pipeline
 
-35 task(s). Status mirrors `docs/progress.json` (the source of truth).
+36 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -16,6 +16,7 @@
 | `media-08` | CWA duplicate ingest on Readarr re-import — connect script has no dedupe, add a books-dup tripwire | ✅ done | 30-60 min |
 | `media-09` | fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs | ⬜ open | 1-2 hrs |
 | `media-10` | Seedbox: retire drained readarr label pair from deluge-reaper | ⬜ open | 10 min |
+| `media-11` | Lidarr: 'Camera' album monitored under unmonitored artist (orphan flag) | ⬜ open | 10-20 min |
 | `nas-10` | Deploy Plex Media Server on the NAS (libraries + Quick Sync) | ✅ done | 45-60 min |
 | `nas-20` | rclone SFTP mount of the seedbox files (persistent + self-healing) | ✅ done | 45 min |
 | `nas-21` | Deploy the NAS media-automation *arr stack (phased, pinned) | ✅ done | 1-2 hrs |

@@ -1,6 +1,6 @@
 # Seedbox "betty" exposure + tailnet-path checks — fix-21 (quality-gate H2/L9/M25,
 # 2026-07-17). The lockdown moved Deluge RPC/web + slskd to loopback binds, retired
-# qBittorrent, and repointed every consumer (sonarr/radarr/lidarr/readarr/whisparr
+# qBittorrent, and repointed every consumer (sonarr/radarr/lidarr/bookshelf/whisparr
 # Deluge client + soularr slskd host_url) at the tailnet address 100.119.134.94,
 # reached through userspace-tailscaled's inbound-to-loopback forwarding. These checks
 # probe BOTH failure directions: services leaking back onto the public IP (exposure
