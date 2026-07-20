@@ -15,10 +15,22 @@ services:
     image: ghcr.io/zamnzim/libreseerr@sha256:820134e44279c964ddf54090ab45b444a28e7f562256baaadf20fffaf36911f3
     container_name: libreseerr
     restart: unless-stopped
+    # fix-48: image CMD has no --timeout, so gunicorn kills sync workers at the
+    # default 30s — which the request path now exceeds by design (Readarr
+    # lookups run with READARR_TIMEOUT=60s, B9). 300s covers a full
+    # lookup+add+search chain; keep >= READARR_TIMEOUT*3.
+    command: ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "300", "app:app"]
     environment:
       - TZ=${TZ:-America/New_York}
       - SECRET_KEY=${SECRET_KEY:?set SECRET_KEY in .env — openssl rand -hex 32}
       - PYTHONUNBUFFERED=1
+      # fix-48: Readarr lookups exceed 15s under burst load (B9)
+      - READARR_TIMEOUT=${READARR_TIMEOUT:-60}
+      # fix-48 B12: terminal request failures push to ntfy (same edge network).
+      # Token in .env (vault ntfy.libreseerr_token); empty token = notifications off.
+      - NTFY_URL=http://ntfy:80
+      - NTFY_TOPIC=${NTFY_TOPIC:-books}
+      - NTFY_TOKEN=${NTFY_TOKEN:-}
     ports:
       - "8789:5000" # LAN/Tailscale; front with Caddy on the edge network if desired
     volumes:

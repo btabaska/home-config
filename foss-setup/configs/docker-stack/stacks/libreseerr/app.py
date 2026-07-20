@@ -4,7 +4,7 @@ import os
 import sys
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 
 import requests as http_requests
@@ -953,7 +953,7 @@ def check_availability():
             app.logger.warning("Failed to get books from %s: %s", server_type, e)
 
     # Also include books with active requests (pending/processing/downloading)
-    active_statuses = {"pending", "processing", "downloading"}
+    active_statuses = {"pending", "processing", "retrying", "downloading"}
     requests_by_type = {"ebook": {"isbns": set(), "titles": set()}, "audiobook": {"isbns": set(), "titles": set()}}
     with lock:
         for req in requests_history:
@@ -1007,6 +1007,155 @@ def get_root_folders(server_type):
         return jsonify({"error": str(e)}), 500
 
 
+# ─── Failure handling: retry classification + ntfy (fix-48 B8/B9/B10/B12) ───
+# The 2026-07-18 burst showed the one-shot request model failing 13/18 requests
+# with errors that were stored silently: transient Readarr timeouts became
+# permanent errors, metadata no-matches were papered over by POSTing Open
+# Library ids Readarr can never accept, and nothing ever told the operator.
+# Now: transient failures retry via the reconciler, permanent failures error
+# once and push to ntfy, and every terminal transition notifies.
+
+NTFY_URL = os.environ.get("NTFY_URL", "http://ntfy:80")
+NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "books")
+NTFY_TOKEN = os.environ.get("NTFY_TOKEN", "")
+MAX_ADD_RETRIES = int(os.environ.get("MAX_ADD_RETRIES", "5"))
+MAX_SEARCH_ATTEMPTS = int(os.environ.get("MAX_SEARCH_ATTEMPTS", "4"))
+SEARCH_RETRY_HOURS = float(os.environ.get("SEARCH_RETRY_HOURS", "6"))
+
+
+class PermanentRequestError(Exception):
+    """The backend definitively rejected the request; retrying cannot help."""
+
+
+def _notify_failure(req, reason):
+    """Push a terminal request failure to ntfy (fix-48 B12). Never raises."""
+    if not NTFY_TOKEN:
+        return
+    try:
+        http_requests.post(
+            f"{NTFY_URL}/{NTFY_TOPIC}",
+            data=f"{req.get('title')} by {req.get('author')}: {reason}".encode(),
+            headers={
+                "Authorization": f"Bearer {NTFY_TOKEN}",
+                "Title": "Book request failed",
+                "Tags": "books,warning",
+                "Priority": "high",
+            },
+            timeout=10,
+        )
+    except Exception:
+        app.logger.exception("ntfy notification failed for '%s'", req.get("title"))
+
+
+def _fail_request(req, reason):
+    """Mark a request terminally failed, loudly: log + ntfy."""
+    req["status"] = "error"
+    req["error"] = reason
+    app.logger.warning("Request '%s' failed terminally: %s", req.get("title"), reason)
+    _notify_failure(req, reason)
+
+
+def _is_transient(exc):
+    """Timeouts, connection drops and backend 5xx are worth retrying (B9/B12)."""
+    if isinstance(exc, (http_requests.exceptions.Timeout,
+                        http_requests.exceptions.ConnectionError)):
+        return True
+    resp = getattr(exc, "response", None)
+    return resp is not None and resp.status_code >= 500
+
+
+def _attempt_add(client, req):
+    """Look up the request in the backend's metadata, rank candidates, add the
+    best one accepted. Returns the backend book record.
+
+    Raises PermanentRequestError when the metadata provider has no match at
+    all (fix-48 B8): the old code then POSTed the Open Library work id as
+    foreignBookId, which Readarr validates as a GoodreadsId — a guaranteed
+    400 ("A book with this ID was not found") or 500 (AddSkyhookData). An OL
+    id must never reach POST /book. Transient transport errors propagate for
+    retry classification by the caller.
+    """
+    title = req["title"]
+    author_name = req.get("author") or "Unknown"
+    isbn = req.get("isbn", "")
+
+    # Library first: the canonical record may already exist (auto-added with
+    # the author's bibliography) while the metadata lookup returns only junk
+    # editions that 400 on add — The Return of the King failed exactly this
+    # way. Adoption monitors + searches the existing record, no POST needed.
+    adopt = getattr(client, "adopt_library_book", None)
+    if adopt:
+        existing = adopt(title, author_name)
+        if existing:
+            return existing
+
+    readarr_books = []
+    if isbn:
+        readarr_books = client.lookup_by_isbn(isbn)
+    if not readarr_books:
+        readarr_books = client.search_books(f"{title} {author_name}")
+    if not readarr_books:
+        # Broader net before giving up — author qualifiers sometimes sink an
+        # otherwise-present work in the lookup.
+        readarr_books = client.search_books(title)
+    if not readarr_books:
+        raise PermanentRequestError(
+            f"'{title}' by {author_name} was not found in the backend metadata "
+            "provider (Goodreads) — it cannot be added automatically"
+        )
+
+    # rreading-glasses (Goodreads upstream) frequently ranks junk
+    # user-uploaded editions (ALL-CAPS, "TITLE BY AUTHOR", 0 ratings,
+    # phantom author IDs that 404 -> Readarr 400) ABOVE the canonical
+    # work. Taking [0] blindly caused both the 400s at request time and
+    # the stuck-forever books (Readarr then searched trackers for the
+    # junk title). Rank so the canonical edition wins, then try the
+    # candidates in order until Readarr actually accepts one.
+    #   -- local patch (libreseerr-diagnosis 2026-07-12); re-derive on
+    #      image bump. Upstream selects readarr_books[0] unconditionally.
+    import re as _re
+    _want = _re.sub(r"[^a-z0-9]+", " ", (title or "").lower()).strip()
+
+    def _cand_score(b):
+        _t = b.get("title") or ""
+        _norm = _re.sub(r"[^a-z0-9]+", " ", _t.lower()).strip()
+        _votes = (b.get("ratings") or {}).get("votes") or 0
+        _exact = 1 if _norm == _want else 0
+        _prefix = 1 if (_want and (_norm.startswith(_want) or _want.startswith(_norm))) else 0
+        _allcaps = 1 if (_t and _t.upper() == _t and any(c.isalpha() for c in _t)) else 0
+        _byauthor = 1 if " by " in _t.lower() else 0
+        return (_exact, _prefix, -_allcaps, -_byauthor, _votes)
+
+    candidates = sorted(readarr_books, key=_cand_score, reverse=True)
+
+    last_err = None
+    saw_transient = False
+    for _cand in candidates:
+        if not _cand.get("author", {}).get("authorName"):
+            _cand["author"] = {
+                "authorName": author_name,
+                "foreignAuthorId": "",
+            }
+        app.logger.info(
+            "Trying Readarr candidate for '%s': title='%s', author=%s",
+            title, _cand.get("title"), json.dumps(_cand.get("author", {})),
+        )
+        try:
+            return client.add_book(_cand, req["quality_profile_id"], req["root_folder"])
+        except Exception as _e:
+            last_err = _e
+            saw_transient = saw_transient or _is_transient(_e)
+            app.logger.warning(
+                "Candidate rejected for '%s' (title='%s'): %s; trying next",
+                title, _cand.get("title"), str(_e)[:200],
+            )
+    if saw_transient:
+        raise last_err  # retryable — let the caller classify
+    raise PermanentRequestError(
+        f"Backend rejected every metadata candidate for '{title}': {last_err}"
+    )
+
+
 # ─── Download / Request API ───
 
 @app.route("/api/request", methods=["POST"])
@@ -1038,89 +1187,34 @@ def create_request():
         "cover_url": cover_url,
         "server_type": server_type,
         "quality_profile_id": quality_profile_id,
+        # Stored so the reconciler can re-attempt the add (fix-48 B12).
+        "root_folder": root_folder,
         "isbn": isbn,
-        "status": "pending",
+        "status": "processing",
         "progress": 0,
+        "retry_count": 0,
         "error": None,
         "created_at": datetime.utcnow().isoformat(),
     }
 
     try:
-        # First, try to find the book in Readarr via ISBN lookup
-        readarr_books = []
-        if isbn:
-            readarr_books = client.lookup_by_isbn(isbn)
-        if not readarr_books:
-            readarr_books = client.search_books(f"{title} {author_name}")
-
-        if readarr_books:
-            # rreading-glasses (Goodreads upstream) frequently ranks junk
-            # user-uploaded editions (ALL-CAPS, "TITLE BY AUTHOR", 0 ratings,
-            # phantom author IDs that 404 -> Readarr 400) ABOVE the canonical
-            # work. Taking [0] blindly caused both the 400s at request time and
-            # the stuck-forever books (Readarr then searched trackers for the
-            # junk title). Rank so the canonical edition wins, then try the
-            # candidates in order until Readarr actually accepts one.
-            #   -- local patch (libreseerr-diagnosis 2026-07-12); re-derive on
-            #      image bump. Upstream selects readarr_books[0] unconditionally.
-            import re as _re
-            _want = _re.sub(r"[^a-z0-9]+", " ", (title or "").lower()).strip()
-
-            def _cand_score(b):
-                _t = b.get("title") or ""
-                _norm = _re.sub(r"[^a-z0-9]+", " ", _t.lower()).strip()
-                _votes = (b.get("ratings") or {}).get("votes") or 0
-                _exact = 1 if _norm == _want else 0
-                _prefix = 1 if (_want and (_norm.startswith(_want) or _want.startswith(_norm))) else 0
-                _allcaps = 1 if (_t and _t.upper() == _t and any(c.isalpha() for c in _t)) else 0
-                _byauthor = 1 if " by " in _t.lower() else 0
-                return (_exact, _prefix, -_allcaps, -_byauthor, _votes)
-
-            candidates = sorted(readarr_books, key=_cand_score, reverse=True)
-            request_entry["status"] = "processing"
-
-            result = None
-            last_err = None
-            for _cand in candidates:
-                if not _cand.get("author", {}).get("authorName"):
-                    _cand["author"] = {
-                        "authorName": author_name,
-                        "foreignAuthorId": "",
-                    }
-                app.logger.info(
-                    "Trying Readarr candidate for '%s': title='%s', author=%s",
-                    title, _cand.get("title"), json.dumps(_cand.get("author", {})),
-                )
-                try:
-                    result = client.add_book(_cand, quality_profile_id, root_folder)
-                    break
-                except Exception as _e:
-                    last_err = _e
-                    app.logger.warning(
-                        "Candidate rejected for '%s' (title='%s'): %s; trying next",
-                        title, _cand.get("title"), str(_e)[:200],
-                    )
-            if result is None:
-                raise last_err if last_err else RuntimeError(
-                    "No addable Readarr candidate for '%s'" % title
-                )
-        else:
-            # Fallback: build data from Open Library
-            readarr_book = {
-                "title": title,
-                "author": {
-                    "authorName": author_name,
-                    "foreignAuthorId": "",
-                },
-                "foreignBookId": isbn or book_data.get("id", ""),
-            }
-            app.logger.info("No Readarr match, using Open Library fallback for '%s' by '%s'", title, author_name)
-            request_entry["status"] = "processing"
-            result = client.add_book(readarr_book, quality_profile_id, root_folder)
+        result = _attempt_add(client, request_entry)
         request_entry["readarr_book_id"] = result.get("id")
+    except PermanentRequestError as e:
+        _fail_request(request_entry, str(e))
     except Exception as e:
-        request_entry["status"] = "error"
-        request_entry["error"] = str(e)
+        # Never store an error silently (fix-48 B9 — 3 of 4 timeout failures
+        # left no log line at all).
+        app.logger.exception("Request '%s' add attempt failed", title)
+        if _is_transient(e):
+            request_entry["status"] = "retrying"
+            request_entry["retry_count"] = 1
+            request_entry["error"] = (
+                f"{e} — transient, will retry automatically "
+                f"(1/{MAX_ADD_RETRIES})"
+            )
+        else:
+            _fail_request(request_entry, str(e))
 
     with lock:
         requests_history.insert(0, request_entry)
@@ -1150,6 +1244,35 @@ def _reconcile_requests():
         client = get_client(req["server_type"])
         if not client:
             continue
+
+        # Transient add failures re-attempt here (fix-48 B12) instead of the
+        # old one-shot model where a momentary Readarr timeout permanently
+        # errored a request that would have succeeded seconds later.
+        if req["status"] == "retrying":
+            retries = req.get("retry_count", 0)
+            if "root_folder" not in req:
+                _fail_request(req, f"Cannot retry (pre-fix-48 request without stored payload): {req.get('error')}")
+                continue
+            try:
+                result = _attempt_add(client, req)
+                req["readarr_book_id"] = result.get("id")
+                req["status"] = "processing"
+                req["error"] = None
+                app.logger.info("Retry succeeded for request '%s'", req.get("title"))
+            except PermanentRequestError as e:
+                _fail_request(req, str(e))
+            except Exception as e:
+                app.logger.exception("Retry failed for request '%s'", req.get("title"))
+                if retries + 1 >= MAX_ADD_RETRIES:
+                    _fail_request(req, f"Gave up after {MAX_ADD_RETRIES} attempts: {e}")
+                else:
+                    req["retry_count"] = retries + 1
+                    req["error"] = (
+                        f"{e} — transient, will retry automatically "
+                        f"({retries + 1}/{MAX_ADD_RETRIES})"
+                    )
+            continue
+
         try:
             queue = client.get_queue()
             req_book_id = req.get("readarr_book_id")
@@ -1177,28 +1300,45 @@ def _reconcile_requests():
                 book = client.get_book_status(req_book_id)
                 if book is None:
                     # get_book_status returns None only on a definitive 404
-                    req["status"] = "error"
-                    req["error"] = (
+                    _fail_request(req, (
                         "Backend book record no longer exists (dangling request) "
                         "— re-request the title"
-                    )
-                    app.logger.warning(
-                        "Request '%s': book id=%s gone from backend, marked error",
-                        req.get("title"), req_book_id,
-                    )
+                    ))
                 elif (book.get("statistics") or {}).get("bookFileCount", 0) > 0:
                     req["status"] = "completed"
                     req["progress"] = 100
                 elif not book.get("monitored"):
-                    req["status"] = "error"
-                    req["error"] = (
+                    _fail_request(req, (
                         "Book is unmonitored in the backend with no file — "
                         "nothing will ever search for it. Monitor it or re-request."
-                    )
-                    app.logger.warning(
-                        "Request '%s': book id=%s unmonitored with no file, marked error",
-                        req.get("title"), req_book_id,
-                    )
+                    ))
+                else:
+                    # Monitored, no file, not in the queue: the one-shot add-time
+                    # search found nothing and NOTHING re-triggered it — requests
+                    # sat "processing" forever (fix-48 B10: The Rotten Romans,
+                    # 6 days). Re-search with spacing, then fail loudly.
+                    attempts = req.get("search_attempts", 1)
+                    last = req.get("last_search_at") or req.get("created_at") or ""
+                    try:
+                        due = (datetime.utcnow() - datetime.fromisoformat(last)
+                               >= timedelta(hours=SEARCH_RETRY_HOURS))
+                    except (TypeError, ValueError):
+                        due = True
+                    if not due:
+                        pass
+                    elif attempts >= MAX_SEARCH_ATTEMPTS:
+                        _fail_request(req, (
+                            f"No download source found after {attempts} searches "
+                            f"over {SEARCH_RETRY_HOURS * (attempts - 1):.0f}+ hours — giving up"
+                        ))
+                    elif getattr(client, "trigger_search", None):
+                        client.trigger_search(req_book_id)
+                        req["search_attempts"] = attempts + 1
+                        req["last_search_at"] = datetime.utcnow().isoformat()
+                        app.logger.info(
+                            "Request '%s': re-triggered search %d/%d for book id=%s",
+                            req.get("title"), attempts + 1, MAX_SEARCH_ATTEMPTS, req_book_id,
+                        )
         except Exception:
             # Keep current status, but never swallow silently (M36)
             app.logger.exception(

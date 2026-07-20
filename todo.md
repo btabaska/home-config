@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**190/273 done** · **52 open** · **18 deferred** · 13 retired.
+**191/273 done** · **51 open** · **18 deferred** · 13 retired.
 
 ---
 
@@ -42,7 +42,6 @@
 - [ ] **`nas-08b`** Import mirrorless-camera SD card into Immich via immich-go (+ pbak option) _(est 30 min)_
 
 ### reading
-- [ ] **`fix-48`** Libreseerr request-path robustness (OL-id 400s, 15s timeouts, reconciler dead-ends, unicode authors, no retry) _(est 1-3 hrs)_
 - [ ] **`read-02`** Set up Syncthing as a systemd user service on CachyOS _(est 20 min)_
 - [ ] **`read-05`** Connect KOReader to Calibre/CWA over WiFi (OPDS + wireless send) _(est 20 min)_
 - [ ] **`read-06`** Enable CWA built-in KOReader progress sync (KOSync) on the Kobo _(est 20 min)_

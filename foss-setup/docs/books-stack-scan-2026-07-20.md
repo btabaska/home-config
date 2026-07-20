@@ -138,6 +138,30 @@ EPUB (quality-profile format ordering). Also noted here for the record: recurrin
 
 ## Cluster 3 — Libreseerr request-path defects (`fix-48`)
 
+> **RESOLVED 2026-07-20 (fix-48).** All 15 broken requests re-driven end-to-end through the
+> fixed path: 0 errors on the board (6 completed incl. Parasite/Deadline/Blackout with files
+> landed, rest `processing` with live searches). B8: the OL-id fallback is gone —
+> no-metadata-match now raises `PermanentRequestError` (clear message + ntfy), and a new
+> **library-first adoption** path rescues requests whose canonical record already exists
+> while the lookup returns only junk (*The Return of the King*: record 630 sat unmonitored;
+> every lookup hit was a "Custom Rebind by ValBinds" 400). B9: `READARR_TIMEOUT=60`
+> (env-tunable) — which surfaced a second latent bug, gunicorn's 30 s sync-worker default
+> killing long adds mid-flight (`WORKER TIMEOUT` → 500), fixed with `--timeout 300` in the
+> compose command; all exceptions now logged, never stored silently. B10: new reconciler
+> branch re-triggers `BookSearch` every ≥6 h up to 4 attempts for monitored-no-file-not-
+> queued, then terminal-errors loudly (*The Rotten Romans* re-searched live,
+> `search_attempts=2`). B11: `_norm_name` HTML-unescapes + NFKD-strips + drops numeric
+> tokens — the real metadata form was `Emily 1818-1848 Bronte&#776;` (dates + HTML-entity
+> combining mark), worse than the scan knew; *Wuthering Heights* added as record 702. B12:
+> transient failures (timeout/connect/5xx) get status `retrying`, reconciler re-attempts 5×;
+> every terminal failure pushes to ntfy topic `books` (token minted, vault
+> `ntfy.libreseerr_token`; delivery verified live). **6-hourly burst identified — NOT B8:**
+> each `Invalid request Validation failed` pairs with "no results in the configured
+> categories … from your indexer" — Readarr's own scheduled RSS-sync/missing-search hitting
+> an indexer category mismatch; harmless noise. Checks `libreseerr-request-stuck` +
+> `libreseerr-request-path-guards` (reading.yaml) green. Runbook:
+> `wiki/docs/runbooks/books-requests.md`.
+
 13 of 18 requests errored, 2 stuck `processing` — all in the 2026-07-18 16:42–16:52 UTC burst
 (state: `/opt/stacks/libreseerr/data/requests.json`).
 

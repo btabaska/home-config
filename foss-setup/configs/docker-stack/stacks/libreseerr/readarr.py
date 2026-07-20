@@ -1,10 +1,35 @@
+import html
 import json
 import logging
+import os
+import re
+import unicodedata
 from typing import Optional
 
 import requests
 
 logger = logging.getLogger(__name__)
+
+# Readarr lookup latency exceeds 15 s under burst load (fix-48 B9: 4 of the 13
+# 2026-07-18 request failures were read timeouts at the old hard-coded 15 s).
+LOOKUP_TIMEOUT = int(os.environ.get("READARR_TIMEOUT", "60"))
+
+
+def _norm_name(s: str) -> str:
+    """Robust name/title comparison key (fix-48 B11).
+
+    Open Library sends 'Emily Brontë' with a combining diaeresis (e + U+0308)
+    while rreading-glasses serves the same author as
+    'Emily 1818-1848 Bronte&#776;' — HTML-entity-encoded combining mark plus
+    embedded life dates. Raw .lower() equality can never match any of these.
+    HTML-unescape, NFKD-decompose, drop combining marks, casefold, then keep
+    only alphabetic tokens (drops the dates) as an order-insensitive key.
+    """
+    s = "".join(
+        c for c in unicodedata.normalize("NFKD", html.unescape(s or ""))
+        if not unicodedata.combining(c)
+    ).casefold()
+    return " ".join(sorted(t for t in re.split(r"[^a-z]+", s) if t))
 
 
 class ReadarrClient:
@@ -28,7 +53,7 @@ class ReadarrClient:
     def search_books(self, query: str) -> list:
         """Search for books using the Readarr lookup endpoint."""
         resp = self.session.get(
-            self._url("/book/lookup"), params={"term": query}, timeout=15
+            self._url("/book/lookup"), params={"term": query}, timeout=LOOKUP_TIMEOUT
         )
         resp.raise_for_status()
         return resp.json()
@@ -36,7 +61,7 @@ class ReadarrClient:
     def lookup_by_isbn(self, isbn: str) -> list:
         """Look up a book in Readarr by ISBN."""
         resp = self.session.get(
-            self._url("/book/lookup"), params={"term": f"isbn:{isbn}"}, timeout=15
+            self._url("/book/lookup"), params={"term": f"isbn:{isbn}"}, timeout=LOOKUP_TIMEOUT
         )
         resp.raise_for_status()
         return resp.json()
@@ -44,7 +69,7 @@ class ReadarrClient:
     def lookup_author(self, name: str) -> list:
         """Look up an author in Readarr by name."""
         resp = self.session.get(
-            self._url("/author/lookup"), params={"term": name}, timeout=15
+            self._url("/author/lookup"), params={"term": name}, timeout=LOOKUP_TIMEOUT
         )
         resp.raise_for_status()
         return resp.json()
@@ -90,9 +115,9 @@ class ReadarrClient:
         if author_id is None:
             return author
         try:
-            full = self.session.get(self._url(f"/author/{author_id}"), timeout=15).json()
+            full = self.session.get(self._url(f"/author/{author_id}"), timeout=LOOKUP_TIMEOUT).json()
             full["monitored"] = True
-            resp = self.session.put(self._url(f"/author/{author_id}"), json=full, timeout=30)
+            resp = self.session.put(self._url(f"/author/{author_id}"), json=full, timeout=LOOKUP_TIMEOUT)
             if resp.ok:
                 logger.info("Monitored author id=%s '%s'", author_id, full.get("authorName"))
                 return resp.json()
@@ -117,7 +142,7 @@ class ReadarrClient:
         )
 
         # Check existing authors in Readarr
-        existing = self.session.get(self._url("/author"), timeout=15).json()
+        existing = self.session.get(self._url("/author"), timeout=LOOKUP_TIMEOUT).json()
 
         # Match by foreignAuthorId first (most reliable)
         if foreign_author_id:
@@ -129,9 +154,9 @@ class ReadarrClient:
                 logger.info("Author already exists (matched by ID): %s", match.get("authorName"))
                 return self._ensure_author_monitored(match)
 
-        # Match by name
+        # Match by name (diacritic-insensitive, fix-48 B11)
         match = next(
-            (a for a in existing if a.get("authorName", "").lower() == author_name.lower()),
+            (a for a in existing if _norm_name(a.get("authorName", "")) == _norm_name(author_name)),
             None,
         )
         if match:
@@ -146,7 +171,7 @@ class ReadarrClient:
             lookup = self.session.get(
                 self._url("/author/lookup"),
                 params={"term": author_name},
-                timeout=15,
+                timeout=LOOKUP_TIMEOUT,
             )
             if lookup.ok and lookup.json():
                 all_results = lookup.json()
@@ -155,10 +180,10 @@ class ReadarrClient:
                         "  lookup[%d]: '%s' (foreignAuthorId='%s')",
                         i, r.get("authorName", ""), r.get("foreignAuthorId", ""),
                     )
-                # Prefer exact name match
+                # Prefer exact name match (diacritic-insensitive, fix-48 B11)
                 exact = [
                     a for a in all_results
-                    if a.get("authorName", "").lower() == author_name.lower()
+                    if _norm_name(a.get("authorName", "")) == _norm_name(author_name)
                 ]
                 if exact:
                     author_data = exact[0]
@@ -192,14 +217,14 @@ class ReadarrClient:
                 author_payload[key] = author_data[key]
 
         resp = self.session.post(
-            self._url("/author"), json=author_payload, timeout=30
+            self._url("/author"), json=author_payload, timeout=LOOKUP_TIMEOUT
         )
 
         if resp.ok:
             return self._ensure_author_monitored(resp.json())
 
         # Still failing — check if author was added by another process
-        updated = self.session.get(self._url("/author"), timeout=15).json()
+        updated = self.session.get(self._url("/author"), timeout=LOOKUP_TIMEOUT).json()
         match = next(
             (a for a in updated if a.get("foreignAuthorId") == foreign_author_id),
             None,
@@ -207,7 +232,7 @@ class ReadarrClient:
         if match:
             return self._ensure_author_monitored(match)
         match = next(
-            (a for a in updated if a.get("authorName", "").lower() == author_name.lower()),
+            (a for a in updated if _norm_name(a.get("authorName", "")) == _norm_name(author_name)),
             None,
         )
         if match:
@@ -230,7 +255,7 @@ class ReadarrClient:
 
         # Check if the book already exists in Readarr
         if foreign_book_id:
-            existing_books = self.session.get(self._url("/book"), timeout=15).json()
+            existing_books = self.session.get(self._url("/book"), timeout=LOOKUP_TIMEOUT).json()
             match = next(
                 (b for b in existing_books if b.get("foreignBookId") == foreign_book_id),
                 None,
@@ -281,13 +306,13 @@ class ReadarrClient:
         logger.info("Adding book: %s", json.dumps(book_payload))
 
         resp = self.session.post(
-            self._url("/book"), json=book_payload, timeout=30
+            self._url("/book"), json=book_payload, timeout=LOOKUP_TIMEOUT
         )
 
         if not resp.ok:
             # The book may already exist (orphaned from a prior partial add).
             # Re-check and return the existing book.
-            existing_books = self.session.get(self._url("/book"), timeout=15).json()
+            existing_books = self.session.get(self._url("/book"), timeout=LOOKUP_TIMEOUT).json()
             match = next(
                 (b for b in existing_books if b.get("foreignBookId") == foreign_book_id),
                 None,
@@ -308,7 +333,7 @@ class ReadarrClient:
             search_resp = self.session.post(
                 self._url("/command"),
                 json={"name": "BookSearch", "bookIds": [book_id]},
-                timeout=15,
+                timeout=LOOKUP_TIMEOUT,
             )
             if search_resp.ok:
                 logger.info("Triggered BookSearch for book id=%d", book_id)
@@ -337,7 +362,7 @@ class ReadarrClient:
                 self.session.put(
                     self._url("/book/monitor"),
                     json={"bookIds": [book_id], "monitored": True},
-                    timeout=15,
+                    timeout=LOOKUP_TIMEOUT,
                 )
                 logger.info("Monitored pre-existing book id=%s", book_id)
             except Exception as e:
@@ -347,11 +372,56 @@ class ReadarrClient:
                 self.session.post(
                     self._url("/command"),
                     json={"name": "BookSearch", "bookIds": [book_id]},
-                    timeout=15,
+                    timeout=LOOKUP_TIMEOUT,
                 )
                 logger.info("Triggered BookSearch for pre-existing book id=%s", book_id)
             except Exception as e:
                 logger.warning("BookSearch failed for book id=%s: %s", book_id, e)
+
+    def adopt_library_book(self, title: str, author_name: str) -> Optional[dict]:
+        """Find an existing library record by normalized title/author, ensure
+        it is monitored and searched, and return it (fix-48).
+
+        The metadata lookup often ranks junk user-uploaded editions above the
+        canonical work — or omits the canonical work entirely (The Return of
+        the King: every lookup hit was a 'Custom Rebind by ValBinds' record
+        that 400s on add, while the real record already sat in the library
+        unmonitored). Matching the library directly rescues those requests
+        without any POST /book.
+        """
+        want_t = _norm_name(title)
+        if not want_t:
+            return None
+        want_a = _norm_name(author_name) if author_name and author_name != "Unknown" else ""
+        for b in self.get_books():
+            if _norm_name(b.get("title", "")) != want_t:
+                continue
+            have_a = (b.get("author") or {}).get("authorName", "")
+            if want_a and have_a and _norm_name(have_a) != want_a:
+                continue
+            logger.info(
+                "Request '%s' matches existing library book id=%s ('%s') — adopting",
+                title, b.get("id"), b.get("title"),
+            )
+            self._monitor_and_search(b)
+            return b
+        return None
+
+    def trigger_search(self, book_id: int) -> bool:
+        """Re-trigger a BookSearch for one book (fix-48 B10 reconciler retry)."""
+        resp = self.session.post(
+            self._url("/command"),
+            json={"name": "BookSearch", "bookIds": [book_id]},
+            timeout=LOOKUP_TIMEOUT,
+        )
+        if resp.ok:
+            logger.info("Re-triggered BookSearch for book id=%s", book_id)
+        else:
+            logger.warning(
+                "BookSearch re-trigger failed for book id=%s (%d): %s",
+                book_id, resp.status_code, resp.text[:200],
+            )
+        return resp.ok
 
     def get_queue(self) -> list:
         """Get current download queue."""
@@ -370,7 +440,7 @@ class ReadarrClient:
 
     def get_books(self) -> list:
         """Get all books from the Readarr library."""
-        resp = self.session.get(self._url("/book"), timeout=30)
+        resp = self.session.get(self._url("/book"), timeout=LOOKUP_TIMEOUT)
         resp.raise_for_status()
         return resp.json()
 

@@ -341,3 +341,66 @@ checks:
     task_id: fix-38
     runbook: wiki/docs/runbooks/reading-cwa.md
     enabled: true
+
+  # ────────────────────────────────────────────────────────────────────────
+  # fix-48 (books-stack scan B8-B12, 2026-07-20): libreseerr request-path
+  # robustness. The 07-18 burst errored 13 of 18 requests: OL work-ids POSTed
+  # as foreignBookId (guaranteed Readarr 400/500), hard-coded 15s lookup
+  # timeouts stored silently, no reconciler path for monitored-no-file-not-
+  # queued (Rotten Romans stuck 6 days), combining-diacritic author names
+  # never matching, and a one-shot model with no retry and no operator
+  # surfacing. Fixed: library-first adoption, PermanentRequestError instead
+  # of OL fallback, READARR_TIMEOUT=60 + gunicorn --timeout 300, tokenized
+  # unicode name matching, reconciler retry (5x) + re-search (4x/6h) with
+  # ntfy on every terminal failure (topic: books).
+
+  # ── B10/B12 regression, consumer end: the request board a user sees. A
+  # non-terminal request with no activity for 48h means the reconciler
+  # dead-ended again (search/retry loops either progress a request or
+  # terminal-error it within ~24h by design).
+  - id: libreseerr-request-stuck
+    name: "libreseerr: no non-terminal request without activity >48h (fix-48 B10/B12)"
+    host: mini
+    cmd: |-
+      python3 -c '
+      import json, datetime
+      reqs = json.load(open("/opt/stacks/libreseerr/data/requests.json"))
+      now = datetime.datetime.utcnow()
+      act = lambda r: datetime.datetime.fromisoformat(r.get("last_search_at") or r.get("created_at"))
+      stuck = ["%s(%s %.0fh)" % (r.get("title"), r.get("status"), (now - act(r)).total_seconds() / 3600) for r in reqs if r.get("status") in ("pending", "processing", "retrying", "downloading") and (now - act(r)).total_seconds() > 48 * 3600]
+      print("STUCK_REQUESTS=" + ("; ".join(stuck) if stuck else "NONE"))'
+    expect: '^STUCK_REQUESTS=NONE$'
+    severity: warn
+    task_id: fix-48
+    runbook: wiki/docs/runbooks/books-requests.md
+    enabled: true
+
+  # ── B8/B9/B11 class + guard presence: no resurfaced failure signature in
+  # recent terminal errors (an OL-id 400, a 15s read timeout, or an author-
+  # match failure means the local patch was reverted — e.g. by an image bump,
+  # which the compose file warns re-derives app.py/readarr.py), and the four
+  # guards must be physically present: patched app.py + readarr.py, gunicorn
+  # --timeout (workers died at the 30s default once READARR_TIMEOUT=60), and
+  # the ntfy token (silent failures were the root enabler of this cluster).
+  - id: libreseerr-request-path-guards
+    name: "libreseerr: no resurfaced failure classes, request-path guards in place (fix-48 B8/B9/B11)"
+    host: mini
+    cmd: |-
+      sig=$(python3 -c '
+      import json, re
+      reqs = json.load(open("/opt/stacks/libreseerr/data/requests.json"))
+      pat = re.compile("read timeout=15|A book with this ID was not found|AddSkyhookData|Could not find author")
+      bad = [str(r.get("title")) for r in reqs if r.get("status") == "error" and (r.get("created_at") or "") >= "2026-07-21" and pat.search(str(r.get("error")))]
+      print(";".join(bad) if bad else "NONE")');
+      guard=OK;
+      grep -q "PermanentRequestError" /opt/stacks/libreseerr/app.py || guard=NO_PATCH_APP;
+      grep -q "adopt_library_book" /opt/stacks/libreseerr/readarr.py || guard=NO_PATCH_READARR;
+      docker inspect libreseerr --format '{{json .Config.Cmd}}' | grep -q -- --timeout || guard=NO_GUNICORN_TIMEOUT;
+      [ -n "$(docker exec libreseerr printenv NTFY_TOKEN 2>/dev/null)" ] || guard=NO_NTFY_TOKEN;
+      if [ "$sig" = NONE ] && [ "$guard" = OK ]; then echo REQUEST_PATH_OK;
+      else echo "REQUEST_PATH_BAD sig=$sig guard=$guard"; fi
+    expect: '^REQUEST_PATH_OK$'
+    severity: warn
+    task_id: fix-48
+    runbook: wiki/docs/runbooks/books-requests.md
+    enabled: true
