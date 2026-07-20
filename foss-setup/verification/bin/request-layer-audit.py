@@ -20,13 +20,16 @@ Modes:
                 NEVER_GRABBED_D days is NEVER_GRABBED (no release found and
                 nobody was told).
   libreseerr  — for every stored libreseerr request: 'completed' requires the
-                Readarr book to exist with >=1 file (else FALSE_COMPLETE);
+                backend book to exist with >=1 file (else FALSE_COMPLETE);
                 'processing'/'downloading' older than STALE_AFTER_H hours
                 requires the book to exist (DANGLING), be monitored or have a
                 file (DEAD), and NOT already have a file (STALE_STATUS = the
-                background reconciler is broken).
+                background reconciler is broken). The backend URL/key come
+                from libreseerr's own data/config.json (bmig-04: Bookshelf);
+                requests created before the bmig-04 backend cutover carry OLD
+                readarr book ids and are skipped (bmig-05 re-drives them).
 
-Env: SONARR_API_KEY RADARR_API_KEY READARR_API_KEY. The seerr API key is read
+Env: SONARR_API_KEY RADARR_API_KEY. The seerr API key is read
 from /opt/stacks/seerr/config/settings.json (runs on mini, world-readable);
 libreseerr state from /opt/stacks/libreseerr/data/requests.json.
 Prints one line; expect-regex friendly:
@@ -44,9 +47,14 @@ from datetime import datetime, timezone
 SEERR_URL = "http://192.168.10.2:5055"
 SEERR_SETTINGS = "/opt/stacks/seerr/config/settings.json"
 LIBRESEERR_REQUESTS = "/opt/stacks/libreseerr/data/requests.json"
+LIBRESEERR_CONFIG = "/opt/stacks/libreseerr/data/config.json"
 SONARR_URL = "http://192.168.10.4:8989"
 RADARR_URL = "http://192.168.10.4:7878"
-READARR_URL = "http://192.168.10.4:8787"
+# bmig-04 backend cutover (readarr :8787 -> bookshelf :8790, 2026-07-20).
+# Stored requests older than this reference book ids in the OLD readarr;
+# bmig-05 re-drives/cleans them. Compared as ISO strings (created_at is
+# naive-UTC isoformat).
+BACKEND_CUTOVER = "2026-07-20T19:30:00"
 
 MEDIA_PROCESSING = 3          # seerr media status enum
 NEVER_GRABBED_D = 7           # movie available+monitored, no history after this = rot
@@ -123,9 +131,14 @@ def check_seerr():
 
 
 def check_libreseerr():
-    readarr_key = os.environ.get("READARR_API_KEY")
-    if not readarr_key:
-        print("CONFIG_ERR missing READARR_API_KEY")
+    try:
+        cfg = json.load(open(LIBRESEERR_CONFIG)).get("ebook") or {}
+        backend_url, backend_key = cfg.get("url"), cfg.get("api_key")
+    except Exception as e:
+        print(f"CONFIG_ERR cannot read libreseerr backend config: {e}")
+        return 2
+    if not (backend_url and backend_key):
+        print("CONFIG_ERR libreseerr ebook backend not configured")
         return 2
     try:
         reqs = json.load(open(LIBRESEERR_REQUESTS))
@@ -133,15 +146,18 @@ def check_libreseerr():
         print(f"CONFIG_ERR cannot read libreseerr requests: {e}")
         return 2
 
-    rot, checked = [], 0
+    rot, checked, legacy = [], 0, 0
     for r in reqs:
         status = r.get("status")
         book_id = r.get("readarr_book_id")
         title = r.get("title", "?")
         if not book_id or status == "error":  # errors are already surfaced to the user
             continue
+        if (r.get("created_at") or "") < BACKEND_CUTOVER:
+            legacy += 1  # old-readarr book id; bmig-05 re-drives these
+            continue
         checked += 1
-        book = api_or_404(READARR_URL, "v1", readarr_key, f"/book/{book_id}")
+        book = api_or_404(backend_url, "v1", backend_key, f"/book/{book_id}")
         files = ((book or {}).get("statistics") or {}).get("bookFileCount", 0)
         if status == "completed":
             if book is None:
@@ -160,7 +176,7 @@ def check_libreseerr():
     if rot:
         print(f"LIBRESEERR_ROT {len(rot)}: " + "; ".join(rot))
         return 1
-    print(f"LIBRESEERR_OK checked={checked}")
+    print(f"LIBRESEERR_OK checked={checked} legacy_skipped={legacy}")
     return 0
 
 

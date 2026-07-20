@@ -2,7 +2,9 @@
 # Phase 2 (ebook-mgmt workstream). Seerr = movies/TV; MusicSeerr = music; Libreseerr = books.
 # Docs: https://github.com/zamnzim/Libreseerr
 #
-# Runs on the Mac mini alongside Seerr + MusicSeerr. Talks to Readarr on the NAS (:8787).
+# Runs on the Mac mini alongside Seerr + MusicSeerr. Talks to Bookshelf on the
+# NAS (:8790, hardcover metadata) since bmig-04; the old Readarr (:8787) path
+# is decommissioned in bmig-05.
 
 services:
   libreseerr:
@@ -35,10 +37,13 @@ services:
       - "8789:5000" # LAN/Tailscale; front with Caddy on the edge network if desired
     volumes:
       - ./data:/app/data
-      # Local patch: rank Readarr lookup candidates + retry-until-accepted
-      # (fixes junk-edition 400s / stuck books). Re-derive app.py on image bump.
+      # Local patch: rank lookup candidates + retry-until-accepted (junk-
+      # edition 400s / stuck books), bmig-04 author gate + ISBN-first +
+      # fail-loudly. bookshelf.py shadows the image's unpatched client with a
+      # ReadarrClient subclass. Re-derive all three on image bump.
       - ./app.py:/app/app.py:ro
       - ./readarr.py:/app/readarr.py:ro
+      - ./bookshelf.py:/app/bookshelf.py:ro
     networks:
       - edge
 

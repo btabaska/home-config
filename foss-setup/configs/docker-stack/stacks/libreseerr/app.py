@@ -26,7 +26,7 @@ except ImportError:
     OIDC_AVAILABLE = False
 
 from bookshelf import BookshelfClient
-from readarr import ReadarrClient
+from readarr import ReadarrClient, _name_match, _norm_name
 from lazylibrarian import LazyLibrarianClient
 
 app = Flask(__name__)
@@ -841,12 +841,19 @@ def _normalize_ol_subject_work(work):
     }
 
 
+# Open Library search.json stopped including isbn in its DEFAULT field set —
+# without an explicit fields list every doc arrives isbn-less and the
+# ISBN-first backend lookup (bmig-04) can never fire. Request the fields
+# _normalize_ol_doc actually reads.
+_OL_SEARCH_FIELDS = ("key,title,author_name,cover_i,first_publish_year,"
+                     "isbn,language,number_of_pages_median,subject")
+
 # Category keys mapped to Open Library API details
 _DISCOVER_CATEGORIES = {
-    "new_releases":   ("search.json",  {"sort": "new", "limit": 20}),
-    "trending":       ("search.json",  {"sort": "rating", "limit": 20}),
-    "best_sellers":   ("search.json",  {"q": "subject:bestsellers", "sort": "rating", "limit": 20}),
-    "classics":       ("search.json",  {"q": "subject:classics", "sort": "rating", "limit": 20}),
+    "new_releases":   ("search.json",  {"sort": "new", "limit": 20, "fields": _OL_SEARCH_FIELDS}),
+    "trending":       ("search.json",  {"sort": "rating", "limit": 20, "fields": _OL_SEARCH_FIELDS}),
+    "best_sellers":   ("search.json",  {"q": "subject:bestsellers", "sort": "rating", "limit": 20, "fields": _OL_SEARCH_FIELDS}),
+    "classics":       ("search.json",  {"q": "subject:classics", "sort": "rating", "limit": 20, "fields": _OL_SEARCH_FIELDS}),
     "fiction":        ("subjects/fiction.json",          {"limit": 20}),
     "science_fiction":("subjects/science_fiction.json",  {"limit": 20}),
     "mystery":        ("subjects/mystery.json",          {"limit": 20}),
@@ -893,7 +900,7 @@ def search_books():
     try:
         resp = http_requests.get(
             "https://openlibrary.org/search.json",
-            params={"q": query, "limit": 20},
+            params={"q": query, "limit": 20, "fields": _OL_SEARCH_FIELDS},
             timeout=10,
         )
         resp.raise_for_status()
@@ -1064,16 +1071,55 @@ def _is_transient(exc):
     return resp is not None and resp.status_code >= 500
 
 
-def _attempt_add(client, req):
-    """Look up the request in the backend's metadata, rank candidates, add the
-    best one accepted. Returns the backend book record.
+def _candidate_author_name(cand):
+    """A lookup candidate's OWN author name (bmig-04).
 
-    Raises PermanentRequestError when the metadata provider has no match at
-    all (fix-48 B8): the old code then POSTed the Open Library work id as
-    foreignBookId, which Readarr validates as a GoodreadsId — a guaranteed
-    400 ("A book with this ID was not found") or 500 (AddSkyhookData). An OL
-    id must never reach POST /book. Transient transport errors propagate for
-    retry classification by the caller.
+    Bookshelf's /book/lookup results carry author=None; the name is
+    recoverable from authorTitle, which is '<lastname, firstname(s)> <title>'
+    with the author part lowercased. Returns '' when nothing trustworthy is
+    recoverable — the caller must then treat the candidate as ineligible,
+    never substitute the requested author.
+    """
+    name = (cand.get("author") or {}).get("authorName", "")
+    if name:
+        return name
+    at = cand.get("authorTitle") or ""
+    t = cand.get("title") or ""
+    if t and at.lower().endswith(t.lower()):
+        at = at[: len(at) - len(t)]
+    at = at.strip()
+    if "," in at:
+        last, _, first = at.partition(",")
+        at = f"{first.strip()} {last.strip()}".strip()
+    return at
+
+
+def _attempt_add(client, req):
+    """Look up the request in the backend's metadata and add it — but only a
+    candidate that is verifiably the requested book (bmig-04, C1/C4 fix).
+    Returns the backend book record.
+
+    Eligibility gates, applied to every candidate:
+      * title: normalized exact or prefix match — right-author-wrong-title
+        ('Hex in the City' for 'Feed') is still a wrong book. This applies to
+        ISBN hits too: hardcover works carry junk edition titles (an OL isbn
+        for 'Wuthering Heights' resolved to the correct work but pinned its
+        Vietnamese edition "TH'inh gio hu", which then made the record
+        tracker-unsearchable — the bmig-03 junk-edition class). A mismatched
+        isbn edition falls through to term search.
+      * author: the candidate's OWN author must token-match the requested
+        author, or be a provider-documented pen name (author_alias_match).
+        The requested author is NEVER stamped onto an authorless candidate —
+        that was the C4 behavior that silently bound 'Pride, Prejudice, and
+        Peril' (Katie Oliver) to a Jane Austen request.
+    Within the eligible set the ranked retry-until-accepted walk is kept
+    (junk editions still 400 on add). No eligible candidate, or every
+    eligible one permanently rejected => PermanentRequestError (=> ntfy
+    'books'), never add-the-next-thing. Transient transport errors propagate
+    for retry classification by the caller (fix-48 B9/B12).
+
+    Also still raises PermanentRequestError when the provider has no match at
+    all (fix-48 B8): an Open Library id must never reach POST /book.
     """
     title = req["title"]
     author_name = req.get("author") or "Unknown"
@@ -1083,39 +1129,23 @@ def _attempt_add(client, req):
     # the author's bibliography) while the metadata lookup returns only junk
     # editions that 400 on add — The Return of the King failed exactly this
     # way. Adoption monitors + searches the existing record, no POST needed.
+    # (Since bmig-04, adoption itself is author-gated in the client.)
     adopt = getattr(client, "adopt_library_book", None)
     if adopt:
         existing = adopt(title, author_name)
         if existing:
             return existing
 
-    readarr_books = []
-    if isbn:
-        readarr_books = client.lookup_by_isbn(isbn)
-    if not readarr_books:
-        readarr_books = client.search_books(f"{title} {author_name}")
-    if not readarr_books:
-        # Broader net before giving up — author qualifiers sometimes sink an
-        # otherwise-present work in the lookup.
-        readarr_books = client.search_books(title)
-    if not readarr_books:
-        raise PermanentRequestError(
-            f"'{title}' by {author_name} was not found in the backend metadata "
-            "provider (Goodreads) — it cannot be added automatically"
-        )
-
-    # rreading-glasses (Goodreads upstream) frequently ranks junk
-    # user-uploaded editions (ALL-CAPS, "TITLE BY AUTHOR", 0 ratings,
-    # phantom author IDs that 404 -> Readarr 400) ABOVE the canonical
-    # work. Taking [0] blindly caused both the 400s at request time and
-    # the stuck-forever books (Readarr then searched trackers for the
-    # junk title). Rank so the canonical edition wins, then try the
-    # candidates in order until Readarr actually accepts one.
-    #   -- local patch (libreseerr-diagnosis 2026-07-12); re-derive on
-    #      image bump. Upstream selects readarr_books[0] unconditionally.
     import re as _re
     _want = _re.sub(r"[^a-z0-9]+", " ", (title or "").lower()).strip()
+    want_author = author_name if author_name and author_name != "Unknown" else ""
 
+    # rreading-glasses frequently ranks junk user-uploaded editions above the
+    # canonical work. Taking [0] blindly caused both 400s at request time and
+    # stuck-forever books. Rank so the canonical edition wins, then try the
+    # eligible candidates in order until the backend actually accepts one.
+    #   -- local patch (libreseerr-diagnosis 2026-07-12); re-derive on
+    #      image bump. Upstream selects readarr_books[0] unconditionally.
     def _cand_score(b):
         _t = b.get("title") or ""
         _norm = _re.sub(r"[^a-z0-9]+", " ", _t.lower()).strip()
@@ -1126,33 +1156,108 @@ def _attempt_add(client, req):
         _byauthor = 1 if " by " in _t.lower() else 0
         return (_exact, _prefix, -_allcaps, -_byauthor, _votes)
 
-    candidates = sorted(readarr_books, key=_cand_score, reverse=True)
+    _alias_verdict = {}
 
+    def _author_ok(cand_author):
+        if not want_author:
+            return True
+        if _name_match(want_author, cand_author):
+            return True
+        key = _norm_name(cand_author)
+        if key not in _alias_verdict:
+            fn = getattr(client, "author_alias_match", None)
+            _alias_verdict[key] = bool(fn and fn(want_author, cand_author))
+        return _alias_verdict[key]
+
+    def _phases():
+        # ISBN-first (bmig-04): an isbn identifies one exact edition; when
+        # the OL doc carries one it beats any term ranking. Term search stays
+        # as the fallback — including when the isbn's candidates all fail the
+        # gates or the backend rejects them.
+        if isbn:
+            try:
+                hits = client.lookup_by_isbn(isbn)
+            except Exception as e:
+                if _is_transient(e):
+                    raise
+                app.logger.warning(
+                    "ISBN lookup '%s' failed for '%s': %s — term fallback",
+                    isbn, title, e,
+                )
+                hits = []
+            for c in hits:
+                c["_isbn_hit"] = True
+            if hits:
+                yield hits
+        hits = client.search_books(f"{title} {author_name}")
+        if not hits:
+            # Broader net before giving up — author qualifiers sometimes sink
+            # an otherwise-present work in the lookup.
+            hits = client.search_books(title)
+        if hits:
+            yield hits
+
+    rejected = []
     last_err = None
     saw_transient = False
-    for _cand in candidates:
-        if not _cand.get("author", {}).get("authorName"):
-            _cand["author"] = {
-                "authorName": author_name,
-                "foreignAuthorId": "",
-            }
-        app.logger.info(
-            "Trying Readarr candidate for '%s': title='%s', author=%s",
-            title, _cand.get("title"), json.dumps(_cand.get("author", {})),
-        )
-        try:
-            return client.add_book(_cand, req["quality_profile_id"], req["root_folder"])
-        except Exception as _e:
-            last_err = _e
-            saw_transient = saw_transient or _is_transient(_e)
-            app.logger.warning(
-                "Candidate rejected for '%s' (title='%s'): %s; trying next",
-                title, _cand.get("title"), str(_e)[:200],
+    found_any = False
+    tried_any = False
+    for phase_hits in _phases():
+        found_any = True
+        for _cand in sorted(phase_hits, key=_cand_score, reverse=True):
+            _ct = _cand.get("title") or ""
+            _cn = _re.sub(r"[^a-z0-9]+", " ", _ct.lower()).strip()
+            if not (_cn == _want or _cn.startswith(_want + " ")
+                    or _want.startswith(_cn + " ")):
+                rejected.append(f"'{_ct}': title mismatch")
+                continue
+            cand_author = _candidate_author_name(_cand)
+            if not cand_author:
+                rejected.append(f"'{_ct}': candidate has no author")
+                continue
+            if not _author_ok(cand_author):
+                rejected.append(f"'{_ct}' by {cand_author}: author mismatch")
+                continue
+            if not (_cand.get("author") or {}).get("foreignAuthorId"):
+                # Bind the candidate to its OWN full author record (POST
+                # /book needs foreignAuthorId + the author object) — looked
+                # up, never synthesized.
+                resolver = getattr(client, "resolve_author", None)
+                resolved = resolver(cand_author) if resolver else None
+                if not resolved:
+                    rejected.append(f"'{_ct}' by {cand_author}: author unresolvable")
+                    continue
+                _cand["author"] = resolved
+            tried_any = True
+            app.logger.info(
+                "Trying candidate for '%s': title='%s', author='%s' (%s)",
+                title, _ct, (_cand.get("author") or {}).get("authorName"),
+                "isbn" if _cand.get("_isbn_hit") else "term",
             )
+            try:
+                return client.add_book(_cand, req["quality_profile_id"], req["root_folder"])
+            except Exception as _e:
+                last_err = _e
+                saw_transient = saw_transient or _is_transient(_e)
+                app.logger.warning(
+                    "Backend rejected candidate for '%s' (title='%s'): %s; trying next",
+                    title, _ct, str(_e)[:200],
+                )
     if saw_transient:
         raise last_err  # retryable — let the caller classify
+    if not found_any:
+        raise PermanentRequestError(
+            f"'{title}' by {author_name} was not found in the backend metadata "
+            "provider (Hardcover) — it cannot be added automatically"
+        )
+    if not tried_any:
+        detail = "; ".join(rejected[:6]) or "no candidates"
+        raise PermanentRequestError(
+            f"No eligible metadata candidate for '{title}' by {author_name} — "
+            f"refusing to add a different book (author gate). Rejected: {detail}"
+        )
     raise PermanentRequestError(
-        f"Backend rejected every metadata candidate for '{title}': {last_err}"
+        f"Backend rejected every eligible candidate for '{title}': {last_err}"
     )
 
 

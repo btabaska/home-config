@@ -32,6 +32,33 @@ def _norm_name(s: str) -> str:
     return " ".join(sorted(t for t in re.split(r"[^a-z]+", s) if t))
 
 
+def _norm_text(s: str) -> str:
+    """Like _norm_name but order-preserving — for finding one name INSIDE a
+    longer text (pen-name mentions in an author bio, bmig-04)."""
+    s = "".join(
+        c for c in unicodedata.normalize("NFKD", html.unescape(s or ""))
+        if not unicodedata.combining(c)
+    ).casefold()
+    return " ".join(t for t in re.split(r"[^a-z]+", s) if t)
+
+
+def _name_match(a: str, b: str) -> bool:
+    """Token-level author identity match (bmig-04 author gate).
+
+    _norm_name equality handles 'Austen, Jane' vs 'Jane Austen' plus the
+    diacritic/life-date/HTML-entity junk; token-subset covers middle names
+    ('Emily Jane Brontë' vs 'Emily Brontë'). Empty on either side is never a
+    match — an authorless candidate must not pass the gate.
+    """
+    na, nb = _norm_name(a), _norm_name(b)
+    if not na or not nb:
+        return False
+    if na == nb:
+        return True
+    ta, tb = set(na.split()), set(nb.split())
+    return ta <= tb or tb <= ta
+
+
 class ReadarrClient:
     """Client for interacting with a Readarr instance."""
 
@@ -73,6 +100,57 @@ class ReadarrClient:
         )
         resp.raise_for_status()
         return resp.json()
+
+    def get_authors(self) -> list:
+        """Get all library authors (Bookshelf's /book LIST omits the embedded
+        author object — resolve record authors via authorId, bmig-04)."""
+        resp = self.session.get(self._url("/author"), timeout=LOOKUP_TIMEOUT)
+        resp.raise_for_status()
+        return resp.json()
+
+    def resolve_author(self, name: str) -> Optional[dict]:
+        """Metadata-provider author record for a name — exact-ish match only
+        (hardcover's author/lookup needs near-exact terms; a fuzzy hit here
+        would defeat the bmig-04 author gate)."""
+        try:
+            for a in self.lookup_author(name):
+                if _name_match(a.get("authorName", ""), name):
+                    return a
+        except Exception as e:
+            logger.warning("Author lookup failed for '%s': %s", name, e)
+        return None
+
+    def _author_record_cached(self, name: str) -> Optional[dict]:
+        key = _norm_name(name)
+        cache = getattr(self, "_author_rec_cache", None)
+        if cache is None:
+            cache = self._author_rec_cache = {}
+        if key not in cache:
+            cache[key] = self.resolve_author(name)
+        return cache[key]
+
+    def author_alias_match(self, requested: str, candidate: str,
+                           candidate_overview: str = "") -> bool:
+        """True when the metadata provider's own author bios link the two
+        names as one person (pen names, bmig-04).
+
+        Hardcover keeps 'Mira Grant' and 'Seanan McGuire' as separate author
+        identities and author/lookup does NOT surface the link — but genuine
+        pen-name pairs name each other in BOTH bios. The mention must hold in
+        both directions: a parody author's bio ('Pride and Prejudice and
+        Zombies') names the original author one-directionally and must not
+        pass the gate.
+        """
+        want, have = _norm_text(requested), _norm_text(candidate)
+        if not want or not have:
+            return False
+        cand_over = candidate_overview or (
+            (self._author_record_cached(candidate) or {}).get("overview") or ""
+        )
+        if f" {want} " not in f" {_norm_text(cand_over)} ":
+            return False
+        req_over = (self._author_record_cached(requested) or {}).get("overview") or ""
+        return f" {have} " in f" {_norm_text(req_over)} "
 
     def get_quality_profiles(self) -> list:
         """Get available quality profiles."""
@@ -392,13 +470,30 @@ class ReadarrClient:
         want_t = _norm_name(title)
         if not want_t:
             return None
-        want_a = _norm_name(author_name) if author_name and author_name != "Unknown" else ""
+        want_a = author_name if author_name and author_name != "Unknown" else ""
+        authors_by_id = None
         for b in self.get_books():
             if _norm_name(b.get("title", "")) != want_t:
                 continue
-            have_a = (b.get("author") or {}).get("authorName", "")
-            if want_a and have_a and _norm_name(have_a) != want_a:
-                continue
+            author = b.get("author") or {}
+            have_a = author.get("authorName", "")
+            if not have_a and b.get("authorId"):
+                # Bookshelf's /book list carries author=None — resolve via the
+                # (lazily cached) author list. (bmig-04)
+                if authors_by_id is None:
+                    authors_by_id = {a.get("id"): a for a in self.get_authors()}
+                author = authors_by_id.get(b.get("authorId")) or {}
+                have_a = author.get("authorName", "")
+            if want_a:
+                # The C4 author gate applies to adoption too: a title
+                # coincidence ('Feed') must not adopt another author's
+                # record. (bmig-04)
+                if not have_a:
+                    continue
+                if not (_name_match(want_a, have_a)
+                        or self.author_alias_match(
+                            want_a, have_a, author.get("overview") or "")):
+                    continue
             logger.info(
                 "Request '%s' matches existing library book id=%s ('%s') — adopting",
                 title, b.get("id"), b.get("title"),

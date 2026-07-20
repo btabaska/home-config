@@ -197,6 +197,34 @@ Heights", "The Lord of the Rings" — each must bind the CORRECT record (paste r
 title+author for each) or fail loudly with an ntfy push; zero silent wrong-books. gunicorn
 --timeout 300 + READARR_TIMEOUT=60 survive the patch (fix-48 B9 regression risk).
 
+> **done 2026-07-20** — libreseerr cut over to Bookshelf :8790 (`data/config.json`, key
+> vault `arr_api_keys.bookshelf`); patch set now app.py + readarr.py + **bookshelf.py**
+> (BookshelfClient = ReadarrClient subclass shadowing the image's unpatched client — one
+> implementation keeps fix-25/46/48 guards). Author gate live in `_attempt_add` AND
+> `adopt_library_book`; Bookshelf's /book list + /book/lookup omit the author object, so
+> candidate authors are recovered from `authorTitle` and record authors via
+> authorId→/author — the requested author is NEVER stamped. Pen names pass only when both
+> hardcover bios name each other (Mira Grant ↔ Seanan McGuire ✓; blocks parody-bio
+> false-positives like Grahame-Smith name-dropping Austen). ISBN-first actually fixed: OL
+> search.json stopped returning `isbn` by default — explicit `fields=` added; **isbn hits
+> are title-gated too** (Wuthering isbn resolved to the correct hc work but its junk
+> Vietnamese edition "TH'inh gio hu" — pinning it = tracker-unsearchable, bmig-03 class).
+> No-eligible → PermanentRequestError + ntfy `books` (POSTs verified 200). Acceptance
+> corpus: P&P→24/Austen, Feed→98/Mira Grant, Blackout→100, Countdown→110 (novella),
+> Hobbit→70, LOTR→65 — all correct records; 4 already imported end-to-end (CWA ids 87-90);
+> Wuthering Heights = LOUD author-gate error + ntfy (hardcover has no clean-titled
+> candidate; note rg-hc lookups return 0/junk during quota storms — bmig-01 herd behavior
+> reconfirmed, a refresh took 4m27s of 429s). Zero silent wrong-books. Reconciler loudly
+> dangled all 11 pre-cutover stuck requests (expected — bmig-05 re-drives them).
+> request-layer-audit.py reads the backend from libreseerr's config.json now + skips
+> pre-cutover requests (`legacy_skipped`). Checks green: libreseerr-request-path-guards,
+> -request-stuck, -request-rot. gunicorn --timeout 300 + READARR_TIMEOUT=60 intact.
+> **Discovery for bmig-05 (old-path collateral, NOT touched — parallel-run rule):** old
+> readarr's scheduled search grabbed ~6 FOREIGN GRRM editions 19:32-19:35Z (FRE/SPA/ROM:
+> Le trône de fer ×3+, La bataille des rois, Urzeala tronurilor, Festín de cuervos) and
+> its Connect ingested them into CWA (ids 83-86+) — add these to the C5 CWA/readarr
+> cleanup list; books-language-guard should be flagging them.
+
 ### bmig-05 — Collateral cleanup, request re-drive, old-path decommission
 Cleanup (archive-before-delete: tarball/export BEFORE any rm, verify the archive exists):
 delete the C5 wrong records from the old readarr AND make sure they were not migrated into
