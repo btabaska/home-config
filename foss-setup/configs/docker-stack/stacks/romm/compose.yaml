@@ -45,6 +45,8 @@ services:
       - IGDB_CLIENT_ID=${IGDB_CLIENT_ID}
       - IGDB_CLIENT_SECRET=${IGDB_CLIENT_SECRET}
       - HASHEOUS_API_ENABLED=true
+      - RETROACHIEVEMENTS_API_KEY=${RETROACHIEVEMENTS_API_KEY}   # RA metadata + per-user achievement sync (vault: romm.retroachievements_api_key)
+      - HLTB_API_ENABLED=true                                   # HowLongToBeat completion-time provider (no key; unofficial howlongtobeatpy scraper)
     volumes:
       - romm_resources:/romm/resources        # IGDB covers/screenshots
       - romm_redis_data:/redis-data            # bundled redis cache

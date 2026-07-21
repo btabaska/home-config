@@ -277,6 +277,25 @@ checks:
     runbook: wiki/runbooks/docker.md
     enabled: true
 
+  # RetroAchievements integration tripwire (added 2026-07-21). The RA metadata +
+  # per-user achievement sync is gated on RETROACHIEVEMENTS_API_KEY being present
+  # in the env; RomM only flips RA_API_ENABLED:true in its heartbeat when the key
+  # is set. A dropped .env line or an image bump that renames the var would
+  # silently disable RA matching/sync with no container-level symptom — this
+  # asserts the consumer-facing flag stays on.
+  - id: romm-retroachievements
+    name: "RomM reports RetroAchievements enabled (RA_API_ENABLED true in heartbeat)"
+    host: mini
+    cmd: >-
+      curl -sf --max-time 10 http://localhost:8998/api/heartbeat 2>/dev/null
+      | python3 -c "import sys,json; d=json.load(sys.stdin); m=d.get('METADATA_SOURCES') or {}; print('ra=on' if m.get('RA_API_ENABLED') else 'ra=OFF')" 2>/dev/null
+      || echo ra=OFF
+    expect: '^ra=on$'
+    severity: warn
+    task_id: retro-02
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
   # observability hardening (2026-07-14): functional probes for two YouTube-pipeline
   # helpers that had container coverage only. metube's /version proves the aiohttp
   # backend + yt-dlp loaded (the static SPA returns 200 even if the backend is
