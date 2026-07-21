@@ -568,3 +568,17 @@ checks:
     task_id: bmig-06
     runbook: wiki/docs/runbooks/books-metadata.md
     enabled: true
+
+  # Shelfmark (2026-07-21): the new book search→download→ingest frontend. Probes the
+  # consumer end — up AND the seedbox rclone mount is still `rshared` (a NAS reboot
+  # resets it to `private`, silently breaking the MAM→Deluge→ingest copy). Fix:
+  #   sudo mount --make-rshared /volume1/mounts/seedbox-files && docker restart shelfmark
+  - id: shelfmark-mam-path-ready
+    name: "Shelfmark up + seedbox mount rshared (MAM→CWA-ingest path intact)"
+    host: nas
+    cmd: 'h=$(curl -s -o /dev/null -w "%{http_code}" --max-time 8 http://127.0.0.1:8084/api/health); p=$(grep seedbox-files /proc/self/mountinfo 2>/dev/null | grep -oE "shared:[0-9]+" | head -1); if [ "$h" = "200" ] && [ -n "$p" ]; then echo "SHELFMARK_OK health=$h prop=$p"; else echo "SHELFMARK_BAD health=$h prop=$p"; fi'
+    expect: '^SHELFMARK_OK'
+    severity: warn
+    task_id: bmig-06
+    runbook: wiki/docs/runbooks/books-metadata.md
+    enabled: true
