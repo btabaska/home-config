@@ -180,6 +180,12 @@ ai.{$DOMAIN} {
 	reverse_proxy {$RIG_IP}:3000
 }
 
+# ComfyUI — Stable Diffusion (rig; :8188)
+comfyui.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$RIG_IP}:8188
+}
+
 # LiteLLM gateway (OpenAI-compatible API + /ui admin)
 llm.{$DOMAIN} {
 	import local_tls

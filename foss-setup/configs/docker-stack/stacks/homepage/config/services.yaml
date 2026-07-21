@@ -1,8 +1,8 @@
-# Homepage service tiles — one entry per live service, grouped by category.
-# Source of truth: configs/docker-stack/service-catalog.yaml (home-01).
-# hrefs always use the https://<name>.tabaska.us front door; widget/siteMonitor
-# URLs hit the upstream directly. Widget keys use {{HOMEPAGE_VAR_*}} from .env
-# (see .env.example). Docs: https://gethomepage.dev/configs/services/
+# Homepage service tiles — restructured 2026-07-21 to a daily-use layout.
+# Order here IS the on-screen order (no layout: block in settings.yaml).
+# hrefs use https://<name>.tabaska.us; widget/siteMonitor URLs hit upstream directly.
+# Widget keys use {{HOMEPAGE_VAR_*}} from .env (see .env.example).
+# Docs: https://gethomepage.dev/configs/services/
 
 - Media:
     - Plex:
@@ -13,6 +13,36 @@
           type: plex
           url: http://192.168.10.4:32400
           key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
+    - Navidrome:
+        icon: navidrome.png
+        href: https://music.tabaska.us
+        description: Music
+        siteMonitor: http://navidrome:4533
+    - Stash:
+        icon: stash.png
+        href: https://stash.tabaska.us
+        description: Adult
+        siteMonitor: http://192.168.10.4:9999
+
+- Requests:
+    - Seerr:
+        icon: overseerr.png
+        href: https://seerr.tabaska.us
+        description: Movies & TV
+        widget:
+          type: overseerr
+          url: http://seerr:5055
+          key: "{{HOMEPAGE_VAR_SEERR_KEY}}"
+    - MusicSeerr:
+        icon: lidarr.png
+        href: https://musicseerr.tabaska.us
+        description: Music
+        siteMonitor: http://musicseerr:8688
+    - Shelfmark:
+        icon: mdi-bookshelf
+        href: https://shelfmark.tabaska.us
+        description: Books
+        siteMonitor: http://192.168.10.4:8084
     - Pinchflat:
         icon: pinchflat.png
         href: https://pinchflat.tabaska.us
@@ -24,25 +54,92 @@
         description: One-off YouTube downloads
         siteMonitor: http://192.168.10.2:8081
 
-- Requests:
-    - Seerr:
-        icon: overseerr.png
-        href: https://seerr.tabaska.us
-        description: Request movies & TV
+- Photos:
+    - Immich:
+        icon: immich.png
+        href: https://immich.tabaska.us
+        description: Photo library & backup
         widget:
-          type: overseerr
-          url: http://seerr:5055
-          key: "{{HOMEPAGE_VAR_SEERR_KEY}}"
-    - MusicSeerr:
-        icon: lidarr.png
-        href: https://musicseerr.tabaska.us
-        description: Request albums
-        siteMonitor: http://musicseerr:8688
-    - Libreseerr:
-        icon: readarr.png
-        href: https://libreseerr.tabaska.us
-        description: Request books
-        siteMonitor: http://libreseerr:5000
+          type: immich
+          url: http://192.168.10.4:2283
+          key: "{{HOMEPAGE_VAR_IMMICH_KEY}}"
+          version: 2
+
+- Reading:
+    - Calibre-Web:
+        icon: calibre-web.png
+        href: https://books.tabaska.us
+        description: Books
+        siteMonitor: http://192.168.10.4:8083
+    - Wallabag:
+        icon: wallabag.png
+        href: https://wallabag.tabaska.us
+        description: Read-it-later
+        siteMonitor: http://wallabag:80
+    - Miniflux:
+        icon: miniflux.png
+        href: https://rss.tabaska.us
+        description: RSS
+        siteMonitor: http://miniflux:8080
+
+- Home:
+    - Home Assistant:
+        icon: home-assistant.png
+        href: https://ha.tabaska.us
+        description: Smart home automation
+        siteMonitor: http://192.168.10.50:8123
+    - Wiki:
+        icon: mdi-book-open-page-variant
+        href: https://wiki.tabaska.us
+        description: Homelab wiki
+    - Paperless:
+        icon: paperless.png
+        href: https://paperless.tabaska.us
+        description: Document archive & OCR
+        siteMonitor: http://paperless:8000
+    - Mealie:
+        icon: mealie.png
+        href: https://recipes.tabaska.us
+        description: Recipes & meal planning
+        siteMonitor: http://mealie:9000
+    - AdGuard Home:
+        icon: adguard-home.png
+        href: https://dns.tabaska.us
+        description: DNS filtering
+        widget:
+          type: adguard
+          url: http://adguardhome:80
+          username: "{{HOMEPAGE_VAR_ADGUARD_USER}}"
+          password: "{{HOMEPAGE_VAR_ADGUARD_PASS}}"
+    - Vaultwarden:
+        icon: vaultwarden.png
+        href: https://vault.tabaska.us
+        description: Passwords
+        siteMonitor: http://vaultwarden:80
+
+- Games:
+    - RomM:
+        icon: mdi-controller-classic
+        href: https://romm.tabaska.us
+        description: Retro library
+        siteMonitor: http://romm:8080
+    - AMP:
+        icon: mdi-gamepad-variant
+        href: https://amp.tabaska.us
+        description: Game panel
+        siteMonitor: http://192.168.10.12:8080
+
+- AI:
+    - Open WebUI:
+        icon: open-webui.png
+        href: https://ai.tabaska.us
+        description: Chat UI
+        siteMonitor: http://192.168.10.12:3000
+    - ComfyUI:
+        icon: comfyui.png
+        href: https://comfyui.tabaska.us
+        description: Stable Diffusion
+        siteMonitor: http://192.168.10.12:8188
 
 - Media Automation:
     - Sonarr:
@@ -64,21 +161,16 @@
     - Lidarr:
         icon: lidarr.png
         href: https://lidarr.tabaska.us
-        description: Music library
+        description: Music
         widget:
           type: lidarr
           url: http://192.168.10.4:8686
           key: "{{HOMEPAGE_VAR_LIDARR_KEY}}"
-    - Bookshelf:
-        # Readarr fork (books cutover bmig-05); homepage ships no bookshelf icon
-        # and its readarr widget speaks Bookshelf's identical API.
-        icon: readarr.png
-        href: https://bookshelf.tabaska.us
-        description: Books
-        widget:
-          type: readarr
-          url: http://192.168.10.4:8790
-          key: "{{HOMEPAGE_VAR_BOOKSHELF_KEY}}"
+    - Whisparr:
+        icon: whisparr.png
+        href: https://whisparr.tabaska.us
+        description: Adult
+        siteMonitor: http://192.168.10.4:6969
     - Prowlarr:
         icon: prowlarr.png
         href: https://prowlarr.tabaska.us
@@ -90,136 +182,20 @@
     - FlareSolverr:
         icon: flaresolverr.png
         href: https://flaresolverr.tabaska.us
-        description: Cloudflare solver (API)
+        description: Cloudflare solver
         siteMonitor: http://192.168.10.4:8191
-    - Tautulli:
-        icon: tautulli.png
-        href: https://tautulli.tabaska.us
-        description: Plex stats
-        widget:
-          type: tautulli
-          url: http://tautulli:8181
-          key: "{{HOMEPAGE_VAR_TAUTULLI_KEY}}"
     - Deluge:
         icon: deluge.png
         href: https://deluge.tabaska.us
-        description: Off-site torrents (seedbox)
+        description: Torrents
         siteMonitor: http://100.119.134.94:8112
     - slskd:
         icon: slskd.png
         href: https://slskd.tabaska.us
-        description: Soulseek (seedbox)
+        description: Music torrents
         siteMonitor: http://100.119.134.94:5030
 
-- Photos:
-    - Immich:
-        icon: immich.png
-        href: https://immich.tabaska.us
-        description: Photo library & backup
-        widget:
-          type: immich
-          url: http://192.168.10.4:2283
-          key: "{{HOMEPAGE_VAR_IMMICH_KEY}}"
-          version: 2
-
-- Music:
-    - Navidrome:
-        icon: navidrome.png
-        href: https://music.tabaska.us
-        description: Music streaming
-        siteMonitor: http://navidrome:4533
-
-- Reading & Docs:
-    - Calibre-Web:
-        icon: calibre-web.png
-        href: https://books.tabaska.us
-        description: Ebook library
-        siteMonitor: http://192.168.10.4:8083
-    - Paperless:
-        icon: paperless.png
-        href: https://paperless.tabaska.us
-        description: Document archive & OCR
-        siteMonitor: http://paperless:8000
-    - Wallabag:
-        icon: wallabag.png
-        href: https://wallabag.tabaska.us
-        description: Read-it-later
-        siteMonitor: http://wallabag:80
-    - Miniflux:
-        icon: miniflux.png
-        href: https://rss.tabaska.us
-        description: RSS reader
-        siteMonitor: http://miniflux:8080
-
-- Life:
-    - Mealie:
-        icon: mealie.png
-        href: https://recipes.tabaska.us
-        description: Recipes & meal planning
-        siteMonitor: http://mealie:9000
-
-- Smart Home:
-    - Home Assistant:
-        icon: home-assistant.png
-        href: https://ha.tabaska.us
-        description: Automation hub (proxy 400 until run-5 trusted_proxies)
-        siteMonitor: http://192.168.10.50:8123
-
-- AI (rig, always-on):
-    - Open WebUI:
-        icon: open-webui.png
-        href: https://ai.tabaska.us
-        description: Chat UI (rig runs 24/7)
-        siteMonitor: http://192.168.10.12:3000
-    - LiteLLM:
-        icon: si-litellm
-        href: https://llm.tabaska.us
-        description: LLM gateway (rig runs 24/7)
-        siteMonitor: http://192.168.10.12:4000
-    - Lumiverse:
-        icon: mdi-drama-masks
-        href: https://lumiverse.tabaska.us
-        description: Creative/RP chat (cydonia · dolphin-venice · goetia)
-        siteMonitor: http://192.168.10.12:3001
-    - Marinara:
-        icon: mdi-pasta
-        href: https://marinara.tabaska.us
-        description: Creative/RP chat + game engine (Caddy Basic Auth)
-        siteMonitor: http://192.168.10.12:3002
-    - Ollama:
-        icon: ollama.png
-        href: https://ollama.tabaska.us
-        description: Model API (rig runs 24/7)
-        siteMonitor: http://192.168.10.12:11434
-    - mcpo:
-        icon: mdi-tools
-        href: https://mcpo.tabaska.us/docs
-        description: MCP tool bridge (rig runs 24/7)
-
-- Gaming (rig, always-on):
-    - AMP (game panel):
-        icon: mdi-gamepad-variant
-        href: https://amp.tabaska.us
-        description: Game server panel — provision/monitor Minecraft, Palworld, etc.
-        siteMonitor: http://192.168.10.12:8080
-    - Wake rig (recovery):
-        icon: mdi-power
-        href: https://ntfy.tabaska.us/wake-rig
-        description: Publish here only if the rig is off (power outage) — sends Wake-on-LAN
-    - Sunshine:
-        icon: sunshine.png
-        href: https://sunshine.tabaska.us
-        description: Game streaming host (rig runs 24/7)
-        # L25: direct :47990 fails on Apollo's self-signed cert. The Caddy
-        # vhost already does tls_insecure_skip_verify — probe through it.
-        siteMonitor: https://apollo.tabaska.us
-    - RomM (retro library):
-        icon: mdi-controller-classic
-        href: https://romm.tabaska.us
-        description: Self-hosted ROM manager + web player (IGDB metadata); app on the mini, ROMs on the NAS games share
-        siteMonitor: http://romm:8080
-
-- Infrastructure & Ops:
+- Infrastructure:
     - Beszel:
         icon: beszel.png
         href: https://status.tabaska.us
@@ -228,25 +204,8 @@
     - Uptime Kuma:
         icon: uptime-kuma.png
         href: https://uptime.tabaska.us
-        description: Uptime checks & status
+        description: Uptime checks
         siteMonitor: http://uptime-kuma:3001
-    - Healthchecks:
-        icon: healthchecks.png
-        href: https://health.tabaska.us
-        description: Backup dead-man's-switch
-        # L25: port 8000 is uwsgi's http router; Node's http parser rejects
-        # its responses ("Parse Error: Expected HTTP/") even though wget/curl
-        # accept them. Probe through the Caddy front door instead.
-        siteMonitor: https://health.tabaska.us
-    - AdGuard Home:
-        icon: adguard-home.png
-        href: https://dns.tabaska.us
-        description: DNS filtering
-        widget:
-          type: adguard
-          url: http://adguardhome:80
-          username: "{{HOMEPAGE_VAR_ADGUARD_USER}}"
-          password: "{{HOMEPAGE_VAR_ADGUARD_PASS}}"
     - Dockge:
         icon: dockge.png
         href: https://dockge.tabaska.us
@@ -255,41 +214,10 @@
     - Forgejo:
         icon: forgejo.png
         href: https://git.tabaska.us
-        description: Git forge & control repo
+        description: Git forge
         siteMonitor: http://forgejo:3000
     - ntfy:
         icon: ntfy.png
         href: https://ntfy.tabaska.us
-        description: Push notifications
+        description: Notifications
         siteMonitor: http://ntfy:80
-    - Vaultwarden:
-        icon: vaultwarden.png
-        href: https://vault.tabaska.us
-        description: Passwords (Bitwarden server)
-        siteMonitor: http://vaultwarden:80
-
-- Wiki & Docs:
-    - Wiki:
-        icon: mdi-book-open-page-variant
-        href: https://wiki.tabaska.us
-        description: Homelab wiki (build pending)
-    - Uptime status:
-        icon: uptime-kuma.png
-        href: https://uptime.tabaska.us
-        description: Service uptime dashboard
-    - ntfy alerts:
-        icon: ntfy.png
-        href: https://ntfy.tabaska.us
-        description: Notification topics
-
-- Private:
-    - Stash:
-        icon: stash.png
-        href: https://stash.tabaska.us
-        description: Media organizer (LAN/VPN only)
-        siteMonitor: http://192.168.10.4:9999
-    - Whisparr:
-        icon: whisparr.png
-        href: https://whisparr.tabaska.us
-        description: Adult scene automation (LAN/VPN only)
-        siteMonitor: http://192.168.10.4:6969
