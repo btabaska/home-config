@@ -5,7 +5,7 @@
 #
 # NOTE: the seedbox bind mount requires the rclone FUSE mount to be `rshared`:
 #   sudo mount --make-rshared /volume1/mounts/seedbox-files
-# (re-applied at boot by the shelfmark-mount-rshared DSM task).
+# (re-applied at boot by the DSM boot-up task 15.task via boot-rshared.sh).
 services:
   shelfmark:
     image: ghcr.io/calibrain/shelfmark:latest
