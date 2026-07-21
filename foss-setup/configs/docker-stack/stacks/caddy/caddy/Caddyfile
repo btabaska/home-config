@@ -304,6 +304,13 @@ books.{$DOMAIN} {
 	reverse_proxy {$NAS_IP}:8083
 }
 
+# Book search/request/download frontend (Shelfmark — NAS :8084). Additive alongside
+# libreseerr during the cutover; downloads land straight in CWA ingest -> Kobo.
+shelfmark.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:8084
+}
+
 # Cloudflare-challenge solver for Prowlarr indexers (NAS — :8191; API, no real UI)
 flaresolverr.{$DOMAIN} {
 	import local_tls

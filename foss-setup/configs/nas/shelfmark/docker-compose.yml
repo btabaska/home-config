@@ -1,0 +1,21 @@
+# Shelfmark — book search/request/download frontend (replaces libreseerr+Bookshelf+rreading-glasses).
+# Downloads land directly in the CWA ingest folder → CWA converts + syncs to Kobo.
+# Secrets in shelfmark.env (gitignored; see shelfmark.env.example). Deployed on the NAS at
+# /volume1/docker/shelfmark/. Runs alongside the legacy stack; nothing retired yet (2026-07-21).
+#
+# NOTE: the seedbox bind mount requires the rclone FUSE mount to be `rshared`:
+#   sudo mount --make-rshared /volume1/mounts/seedbox-files
+# (re-applied at boot by the shelfmark-mount-rshared DSM task).
+services:
+  shelfmark:
+    image: ghcr.io/calibrain/shelfmark:latest
+    container_name: shelfmark
+    env_file:
+      - shelfmark.env
+    ports:
+      - 8084:8084
+    volumes:
+      - /volume1/docker/shelfmark/config:/config
+      - /volume1/docker/calibre-web-automated/ingest:/books        # direct-to-CWA-ingest
+      - /volume1/mounts/seedbox-files:/home/hd34/btabaska/files:rslave  # read completed MAM torrents (seed-preserving copy to /books)
+    restart: unless-stopped
