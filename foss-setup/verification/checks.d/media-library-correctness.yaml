@@ -72,6 +72,34 @@ checks:
     runbook: wiki/docs/runbooks/media-library-correctness.md
     enabled: true
 
+  # (e) 2026-07-21 whole-library grey-out incident. A stray `.ndignore` landed at
+  # the MUSIC ROOT (/volume1/music/.ndignore) containing the single line `#recycle`.
+  # `.ndignore` uses gitignore syntax where `#` is a COMMENT — so the file had zero
+  # active patterns, which Navidrome treats identically to an EMPTY .ndignore: skip
+  # this folder and everything below it. The next full scan walked numFolders=0 and
+  # flagged all 3418 tracks missing=1 -> every track greyed out / unplayable in the
+  # UI (missing=1 is exactly what greys a row). #recycle was already excluded by its
+  # own empty marker at #recycle/.ndignore, so the root file was pure collateral.
+  # This probes the consumer end: alert if >20% of the library is flagged missing —
+  # catches this .ndignore trap, a broken NAS mount, or any scan that mass-drops the
+  # library, none of which move liveness/health. Reads Navidrome's own DB.
+  - id: navidrome-library-present
+    name: "navidrome: library not mass-flagged missing (whole-library grey-out)"
+    host: mini
+    cmd: >-
+      docker exec navidrome sqlite3 /data/navidrome.db "select case when (select
+      count(*) from media_file)=0 then 'PRESENT_EMPTY' when (select count(*) from
+      media_file where missing=1)*5 <= (select count(*) from media_file) then
+      'PRESENT_OK missing='||(select count(*) from media_file where
+      missing=1)||'/'||(select count(*) from media_file) else 'PRESENT_DEGRADED
+      missing='||(select count(*) from media_file where missing=1)||'/'||(select
+      count(*) from media_file) end;"
+    expect: '^PRESENT_OK'
+    severity: warn
+    task_id: fix-28
+    runbook: wiki/docs/runbooks/media-library-correctness.md
+    enabled: true
+
   # ── fix-45 (L33/L34/L43 class) · library roots not regrowing unmanaged junk ──
   # 45 movies + 25 tv unmapped folders accumulated invisibly (dupes, loose
   # episode dirs, untracked series). After the fix-45 cleanup/adoption the
