@@ -188,7 +188,7 @@
         icon: deluge.png
         href: https://deluge.tabaska.us
         description: Torrents
-        siteMonitor: http://100.119.134.94:8112
+        siteMonitor: http://100.119.134.94:5945
     - slskd:
         icon: slskd.png
         href: https://slskd.tabaska.us
