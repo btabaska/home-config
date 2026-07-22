@@ -25,12 +25,20 @@
         icon: navidrome.png
         href: https://music.tabaska.us
         description: Music
-        siteMonitor: http://navidrome:4533
+        widget:
+          type: navidrome
+          url: http://navidrome:4533
+          user: "{{HOMEPAGE_VAR_NAVIDROME_USER}}"
+          token: "{{HOMEPAGE_VAR_NAVIDROME_TOKEN}}"
+          salt: "{{HOMEPAGE_VAR_NAVIDROME_SALT}}"
     - Stash:
         icon: stash.png
         href: https://stash.tabaska.us
         description: Adult
-        siteMonitor: http://192.168.10.4:9999
+        widget:
+          type: stash
+          url: http://192.168.10.4:9999
+          key: "{{HOMEPAGE_VAR_STASH_KEY}}"
 
 - Requests:
     - Seerr:
@@ -103,7 +111,11 @@
         icon: calibre-web.png
         href: https://books.tabaska.us
         description: Books
-        siteMonitor: http://192.168.10.4:8083
+        widget:
+          type: calibreweb
+          url: http://192.168.10.4:8083
+          username: "{{HOMEPAGE_VAR_CALIBREWEB_USER}}"
+          password: "{{HOMEPAGE_VAR_CALIBREWEB_PASS}}"
     - Wallabag:
         icon: wallabag.png
         href: https://wallabag.tabaska.us
@@ -113,7 +125,10 @@
         icon: miniflux.png
         href: https://rss.tabaska.us
         description: RSS
-        siteMonitor: http://miniflux:8080
+        widget:
+          type: miniflux
+          url: http://miniflux:8080
+          key: "{{HOMEPAGE_VAR_MINIFLUX_KEY}}"
 
 - Home:
     - Home Assistant:
@@ -133,12 +148,19 @@
         icon: paperless.png
         href: https://paperless.tabaska.us
         description: Document archive & OCR
-        siteMonitor: http://paperless:8000
+        widget:
+          type: paperlessngx
+          url: http://paperless:8000
+          key: "{{HOMEPAGE_VAR_PAPERLESS_KEY}}"
     - Mealie:
         icon: mealie.png
         href: https://recipes.tabaska.us
         description: Recipes & meal planning
-        siteMonitor: http://mealie:9000
+        widget:
+          type: mealie
+          url: http://mealie:9000
+          key: "{{HOMEPAGE_VAR_MEALIE_KEY}}"
+          version: 2
     - AdGuard Home:
         icon: adguard-home.png
         href: https://dns.tabaska.us
@@ -256,12 +278,18 @@
         icon: deluge.png
         href: https://deluge.tabaska.us
         description: Torrents
-        siteMonitor: http://100.119.134.94:5945
+        widget:
+          type: deluge
+          url: http://100.119.134.94:5945
+          password: "{{HOMEPAGE_VAR_DELUGE_PASS}}"
     - slskd:
         icon: slskd.png
         href: https://slskd.tabaska.us
         description: Music torrents
-        siteMonitor: http://100.119.134.94:5030
+        widget:
+          type: slskd
+          url: http://100.119.134.94:5030
+          key: "{{HOMEPAGE_VAR_SLSKD_KEY}}"
 
 - Infrastructure:
     - Beszel:
@@ -274,6 +302,14 @@
         href: https://uptime.tabaska.us
         description: Uptime checks
         siteMonitor: http://uptime-kuma:3001
+    - Healthchecks:
+        icon: healthchecks.png
+        href: https://health.tabaska.us
+        description: Backup & cron dead-man's-switch
+        widget:
+          type: healthchecks
+          url: http://healthchecks:8000
+          key: "{{HOMEPAGE_VAR_HEALTHCHECKS_KEY}}"
     - Dockge:
         icon: dockge.png
         href: https://dockge.tabaska.us
@@ -283,7 +319,10 @@
         icon: forgejo.png
         href: https://git.tabaska.us
         description: Git forge
-        siteMonitor: http://forgejo:3000
+        widget:
+          type: gitea
+          url: http://forgejo:3000
+          key: "{{HOMEPAGE_VAR_FORGEJO_KEY}}"
     - ntfy:
         icon: ntfy.png
         href: https://ntfy.tabaska.us

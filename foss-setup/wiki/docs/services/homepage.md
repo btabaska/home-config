@@ -12,7 +12,7 @@ Homepage — the household front door + dashboard/observability layer
 
 ## About
 
-Homepage (gethomepage.dev) is the household's single pane of glass — the "front door" at https://home.tabaska.us that gives the family friendly app tiles (Plex, Immich, Calibre-Web, Seerr) and the operator a live observability view (Beszel, Uptime Kuma, plus the *arr stack). It runs as one container `ghcr.io/gethomepage/homepage:v1.13.2` on `mini` from `foss-setup/configs/docker-stack/stacks/homepage/compose.yaml`, listening on 3000 in-container and published as host port `3010` (deliberately not 3000/3001 to avoid clashing with Forgejo and Uptime-Kuma on the same box), also fronted by Caddy at `home.tabaska.us`. Live service widgets are lit up by `HOMEPAGE_VAR_*` secrets sourced from the vault into `.env` and referenced as `{{HOMEPAGE_VAR_*}}` in `config/services.yaml`; the container uses `dns: 192.168.10.2` (AdGuard) so `*.tabaska.us` rewrites resolve for ping/widgets. Docker socket auto-discovery is intentionally DISABLED (home-03, 2026-07-07) — every tile is defined manually in `config/services.yaml` because the entrypoint drops to `PUID:PGID` and sheds groups, so the socket mount only produced repeating EACCES errors; the `/var/run/docker.sock:ro` mount remains but `config/docker.yaml` has no `local:` block.
+Homepage (gethomepage.dev) is the household's single pane of glass — the "front door" at https://home.tabaska.us that gives the family friendly app tiles (Plex, Immich, Calibre-Web, Seerr) and the operator a live observability view (Beszel, Uptime Kuma, plus the *arr stack). It runs as one container `ghcr.io/gethomepage/homepage:v1.13.2` on `mini` from `foss-setup/configs/docker-stack/stacks/homepage/compose.yaml`, listening on 3000 in-container and published as host port `3010` (deliberately not 3000/3001 to avoid clashing with Forgejo and Uptime-Kuma on the same box), also fronted by Caddy at `home.tabaska.us`. Live service widgets are lit up by `HOMEPAGE_VAR_*` secrets sourced from the vault into `.env` and referenced as `{{HOMEPAGE_VAR_*}}` in `config/services.yaml`; the container uses `dns: 192.168.10.4` (the **NAS** AdGuard — the mini's own AdGuard at .2 times out from inside containers, net-16) so `*.tabaska.us` rewrites resolve for ping/widgets. As of **home-06 (2026-07-22)** the key-needing tiles for already-running services are live-data widgets rather than plain ping tiles: Healthchecks, Paperless-ngx, Mealie (`version: 2`), Miniflux, Calibre-Web, Stash, Deluge, slskd, Forgejo (via the `gitea` widget) and Navidrome. Five creds came straight from the vault (`healthchecks.api_key`, `miniflux.api_key`, `deluge.password`, `soulseek.slskd_api_key`, `calibre-web.*`); four tokens were minted (Paperless `/api/token/`, Mealie `/api/users/api-tokens`, Forgejo `generate-access-token` scoped `read:notification,read:repository,read:issue`, Stash GraphQL `generateAPIKey`) and Navidrome's Subsonic `salt`+`token` (md5(password+salt)) derived — all stashed under vault `homepage_widgets.*`. Docker socket auto-discovery is intentionally DISABLED (home-03, 2026-07-07) — every tile is defined manually in `config/services.yaml` because the entrypoint drops to `PUID:PGID` and sheds groups, so the socket mount only produced repeating EACCES errors; the `/var/run/docker.sock:ro` mount remains but `config/docker.yaml` has no `local:` block.
 
 ## Containers
 
@@ -51,12 +51,27 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `HOMEPAGE_VAR_HA_TOKEN`
 - `HOMEPAGE_VAR_UPTIMEKUMA_SLUG`
 - `HOMEPAGE_VAR_DEPTRACK_KEY`
+- `HOMEPAGE_VAR_PALWORLD_ADMIN`
+- `HOMEPAGE_VAR_HEALTHCHECKS_KEY`
+- `HOMEPAGE_VAR_PAPERLESS_KEY`
+- `HOMEPAGE_VAR_MEALIE_KEY`
+- `HOMEPAGE_VAR_MINIFLUX_KEY`
+- `HOMEPAGE_VAR_CALIBREWEB_USER`
+- `HOMEPAGE_VAR_CALIBREWEB_PASS`
+- `HOMEPAGE_VAR_STASH_KEY`
+- `HOMEPAGE_VAR_DELUGE_PASS`
+- `HOMEPAGE_VAR_SLSKD_KEY`
+- `HOMEPAGE_VAR_FORGEJO_KEY`
+- `HOMEPAGE_VAR_NAVIDROME_USER`
+- `HOMEPAGE_VAR_NAVIDROME_SALT`
+- `HOMEPAGE_VAR_NAVIDROME_TOKEN`
 
 ## Troubleshooting
 
 - **Page won't load with "Host validation failed" after adding a new hostname or port.** — Since v1.0 `HOMEPAGE_ALLOWED_HOSTS` is a required exact-match allowlist. Add the verbatim `host:port` (and the Caddy subdomain) you type in the browser to `HOMEPAGE_ALLOWED_HOSTS` in `.env` on mini, e.g. `home.tabaska.us,192.168.10.2:3010,localhost:3010`, then `ssh mini 'cd /opt/stacks/homepage && docker compose up -d'`.
 - **Logs spam `<httpProxy> Error calling http://maintainerr:6246/ ... getaddrinfo EAI_AGAIN maintainerr` (500).** — A `services.yaml` widget points at the bare container name `maintainerr`, but that container isn't on the `edge` network so Docker/AdGuard DNS can't resolve it. Either put maintainerr on the `edge` network, use its LAN IP/Caddy hostname in the widget href+url, or remove the widget block. Non-fatal — only that one tile's live status is broken.
 - **Widget shows a plain link tile instead of live stats, or shows an auth error.** — The matching `HOMEPAGE_VAR_*_KEY`/`_TOKEN` in `.env` is blank or stale. Fill it from the vault and `docker compose up -d`. Blank values intentionally degrade to a plain link tile rather than erroring.
+- **Backend logs show `<validateWidgetData> Invalid data for widget '<stash|calibreweb|paperlessngx>' endpoint 'undefined'` or `<credentialedProxyHandler> HTTP Error 404 calling http://<miniflux|mealie|healthchecks|slskd>/<base>/` right after a page load.** — Benign — do NOT chase it. Those widget types make one initial call to the API's *base* path (endpoint resolves to `undefined`), which 404s or returns the service's HTML login page, then fetch the real field endpoints successfully; the tile still renders live data (verified in-browser home-06 2026-07-22). The `homepage-widget-errors` check deliberately only alerts on `EAI_AGAIN`/`getaddrinfo` (a genuinely unresolvable dead tile), so this 404 noise never pages.
 - **Wanting Docker container auto-discovery back.** — It is disabled by design — the app runs as PUID:PGID and can't read the socket even with group_add, producing EACCES spam. To re-enable, front the socket with docker-socket-proxy and point `config/docker.yaml` at a `tcp://` endpoint instead of the raw `/var/run/docker.sock`.
 
 ## Operations
