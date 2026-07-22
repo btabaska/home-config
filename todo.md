@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**199/287 done** · **57 open** · **18 deferred** · 13 retired.
+**200/297 done** · **66 open** · **18 deferred** · 13 retired.
 
 ---
 
@@ -40,6 +40,17 @@
 
 ### network
 - [ ] **`net-15`** Edge/verification doc-truth trivia: stale seedbox-SSH claim in verification README; Plex ManualPortMappingMode mismatch _(est 20 min)_
+
+### nextcloud-eval
+- [ ] **`cloud-02`** Nextcloud EVAL DECISION — keep (proceed to cloud-03+) or remove (cloud-10) _(est 1 wk of real use)_
+- [ ] **`cloud-03`** Harden Nextcloud (post-eval) — 2FA, brute-force, security scan A+, trusted config _(est ~half day)_
+- [ ] **`cloud-04`** Nextcloud monitoring + 100% coverage (consumer-end probe, beszel, cron dead-man) _(est 2-3 hr)_
+- [ ] **`cloud-05`** Nextcloud backups — DB dump + data, restic->B2 (Object-Lock immutable) _(est 2-3 hr)_
+- [ ] **`cloud-06`** Nextcloud apps/plugins — Calendar, Contacts, Notes, Deck, office, photos _(est 2-4 hr)_
+- [ ] **`cloud-07`** Nextcloud data/storage strategy — location, quotas, NAS external storage _(est 2-3 hr)_
+- [ ] **`cloud-08`** Nextcloud performance/config polish — cron, APCu+Redis, previews, phone region _(est 2-3 hr)_
+- [ ] **`cloud-09`** Nextcloud client rollout — desktop + mobile sync, CalDAV/CardDAV for both users _(est 1-2 hr)_
+- [ ] **`cloud-10`** Nextcloud DECOMMISSION runbook — minimal-effort teardown if eval fails _(est 20 min)_
 
 ### ops
 - [ ] **`dns-06`** NAS AdGuard: external resolution failing (dns-nas-external crit) _(est 20-40 min)_

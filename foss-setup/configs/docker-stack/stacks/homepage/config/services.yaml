@@ -83,6 +83,11 @@
         siteMonitor: http://miniflux:8080
 
 - Home:
+    - Nextcloud:
+        icon: nextcloud.png
+        href: https://cloud.tabaska.us
+        description: Files, calendar & contacts (eval)
+        siteMonitor: http://192.168.10.12:11000
     - Home Assistant:
         icon: home-assistant.png
         href: https://ha.tabaska.us
