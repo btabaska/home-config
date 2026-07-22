@@ -1,6 +1,6 @@
 # Services
 
-37 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+40 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 
@@ -23,6 +23,13 @@
 | Stack | Host | URL |
 |---|---|---|
 | [paperless-ngx](paperless-ngx.md) | mini | https://paperless.tabaska.us |
+
+## Files & Sync
+
+| Stack | Host | URL |
+|---|---|---|
+| [syncthing](syncthing.md) | nas | http://192.168.10.4:8384 (hub GUI; LAN/Tailscale-only, admin auth) |
+| [syncthing-node](syncthing-node.md) | mini | http://192.168.10.2:8384 (mini node GUI; LAN/Tailscale-only, admin auth) |
 
 ## Infrastructure & Ops
 
@@ -113,6 +120,7 @@
 | Stack | Host | URL |
 |---|---|---|
 | [bgutil-pot](bgutil-pot.md) | mini | — |
+| [shelfmark](shelfmark.md) | nas | https://shelfmark.tabaska.us |
 
 Not compose-managed in this repo (so not listed above): **Plex** (native NAS package), **slskd + Deluge** (seedbox — see [seedbox](../hosts/seedbox.md)), and the **rig AI stack** (litellm, open-webui, mcpo — compose lives in the separate `local-ai-tooling` repo; see [rig](../hosts/rig.md)).
 

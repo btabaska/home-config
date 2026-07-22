@@ -1,0 +1,42 @@
+# Syncthing v2 — local-first file-sync HUB on the NAS (foss-03)
+#
+# ROLE: the always-on hub of the sync mesh. The rig (systemd user service,
+# read-02) and the mini node (/opt/stacks/syncthing) pair to THIS device, so
+# the NAS relays changes even when a peer is offline. Replaces Proton Drive;
+# the shared dependency for game-12 save-sync (rides this hub).
+#
+# NO CLOUD: peers connect over the LAN by static address (tcp://<ip>:22000).
+# Global-discovery/relays stay as harmless fallback — file data never leaves
+# the LAN (verified: connection type "tcp (LAN)").
+#
+# SECURITY: LAN/Tailscale-only. GUI :8384 has admin auth (vault
+# syncthing.gui_user / syncthing.nas_gui_password). No public Caddy vhost.
+#
+# HUB SAFETY NET: the shared folder carries STAGGERED file versioning on this
+# device so a bad sync (or a delete propagated from a peer) never destroys a
+# file — old versions live under .stversions/ for up to 30 days.
+#
+# To upgrade: bump the pinned tag+digest, read release notes, then:
+#   ssh -t nas 'cd /volume1/docker/syncthing && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'
+
+name: syncthing
+
+services:
+  syncthing:
+    image: syncthing/syncthing:2.1.2@sha256:4464f4161dd0251e20d46bb3aec83363db75d80cef1abdd5d5fd4054b04a004d   # v2, protocol-parity with rig 2.1.2; digest-pinned (fix-38/I68), index digest from `docker buildx imagetools inspect`
+    container_name: syncthing
+    hostname: nas-hub          # device name shown to peers
+    environment:
+      # PUID/PGID must match the Synology user that owns /volume1/docker/syncthing.
+      - PUID=1026
+      - PGID=100
+      - TZ=America/New_York
+    volumes:
+      # Whole Syncthing home: config.xml + certs at ./config, synced tree at ./Sync
+      - /volume1/docker/syncthing:/var/syncthing
+    ports:
+      - '8384:8384'        # Web GUI / REST API (LAN/Tailscale only; admin auth)
+      - '22000:22000/tcp'  # sync protocol (BEP)
+      - '22000:22000/udp'  # QUIC sync
+      - '21027:21027/udp'  # local discovery (broadcast)
+    restart: always

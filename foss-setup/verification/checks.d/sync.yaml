@@ -1,0 +1,26 @@
+# Syncthing local-first sync mesh (foss-03). Consumer probe, NOT liveness:
+# asks the always-on NAS hub whether BOTH peers (rig, mini) are connected AND
+# over a DIRECT LAN transport. A peer that drops to a public relay (cloud) —
+# e.g. rig's ufw closes 22000, or relays get re-enabled — still shows the
+# container "up" but breaks foss-03's whole no-cloud premise. This catches it.
+checks:
+  - id: syncthing-hub-mesh-direct
+    tier: fast
+    name: "syncthing NAS hub: rig + mini both connected over direct LAN (no cloud relay)"
+    host: nas
+    cmd: >-
+      API=$(grep -o '<apikey>[^<]*</apikey>' /volume1/docker/syncthing/config/config.xml | sed 's/<[^>]*>//g');
+      curl -s -H "X-API-Key: $API" http://127.0.0.1:8384/rest/system/connections
+      | python3 -c "import json,sys;
+      d=json.load(sys.stdin)[\"connections\"];
+      peers={\"KDLS63N-KNX5Q4U-IAGLHGX-2BW7CS2-VGVQBNL-V7VOZ4R-O2NBHQZ-VMSCAQ7\":\"rig\",\"CCBXYGN-JOUDYOO-A3HIC73-MNTZWI4-6N4ZCVF-GYYSMJ7-OWUYGF4-NM4UWAU\":\"mini\"};
+      r=[(n,d.get(i,{}).get(\"connected\",False),d.get(i,{}).get(\"type\",\"\")) for i,n in peers.items()];
+      good=lambda c,t: c and t.startswith((\"tcp\",\"quic\")) and \"relay\" not in t;
+      ok=[1 for _,c,t in r if good(c,t)];
+      bad=[\"%s(conn=%s,type=%s)\"%(n,c,t or \"none\") for n,c,t in r if not good(c,t)];
+      print(\"syncthing_hub=ok peers_direct=%d/2\"%len(ok) if not bad else \"syncthing_hub=DEGRADED \"+\";\".join(bad))"
+    expect: '^syncthing_hub=ok peers_direct=2/2'
+    severity: warn
+    task_id: foss-03
+    runbook: wiki/docs/services/syncthing.md
+    enabled: true

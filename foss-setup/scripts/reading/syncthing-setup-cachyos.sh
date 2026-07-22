@@ -72,6 +72,20 @@ fi
 log "Starting/ensuring syncthing.service is running"
 systemctl --user start syncthing.service
 
+# 4.5 Open the firewall for Syncthing's sync ports (foss-03).
+#     CachyOS ships ufw active by default. Without an inbound allow for 22000,
+#     the always-on NAS hub cannot dial the rig directly, so the pair silently
+#     falls back to a PUBLIC RELAY (cloud) — defeating the local-first goal.
+#     Scope to the LAN; idempotent (ufw dedupes identical rules).
+if command -v ufw >/dev/null 2>&1 && sudo ufw status 2>/dev/null | grep -q '^Status: active'; then
+  log "Opening ufw for Syncthing (22000/tcp+udp, 21027/udp) from the LAN"
+  sudo ufw allow from 192.168.10.0/24 to any port 22000 proto tcp comment 'syncthing sync (foss-03)'
+  sudo ufw allow from 192.168.10.0/24 to any port 22000 proto udp comment 'syncthing quic (foss-03)'
+  sudo ufw allow from 192.168.10.0/24 to any port 21027 proto udp comment 'syncthing discovery (foss-03)'
+else
+  warn "ufw not active — skipping firewall rules (ensure 22000/tcp+udp reachable on the LAN)."
+fi
+
 # 5. Report status + where to go next.
 sleep 1
 if systemctl --user is-active syncthing.service >/dev/null 2>&1; then

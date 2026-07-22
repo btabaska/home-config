@@ -674,3 +674,19 @@ services:
   - symptom: Docker Compose warns "variable is not set. Defaulting to a blank string" when starting caddy.
     fix: |-
       The bcrypt hash in the caddy `.env` contains `$` which compose interprets as interpolation. Escape every `$` as `$$` on the MARINARA_BASICAUTH_HASH line, then recreate caddy. Confirm the container env holds the full 60-char `$2a$...` hash.
+- name: syncthing
+  about: |-
+    Syncthing is the fleet's local-first, no-cloud file-sync mesh (task foss-03, replacing Proton Drive; the shared hub for game-12 save-sync). It runs a hub-and-spoke topology across three devices, all on Syncthing v2 (2.1.2) for protocol parity. The always-on HUB is a container on the NAS at `/volume1/docker/syncthing` (`syncthing/syncthing:2.1.2`, digest-pinned; PUID 1026/PGID 100), publishing the sync protocol on host `:22000` (tcp+udp) and its Web GUI/REST API on `:8384`. The two spokes are the rig (a systemd *user* service, task read-02, folder `~/Sync`) and a NODE container on the mini at `/opt/stacks/syncthing` (repo mirror dir `syncthing-node`). Both spokes pair only to the NAS hub, so the hub relays changes even when a peer is offline. One shared folder `default` (label "Sync") syncs across all three: `/volume1/docker/syncthing/Sync` on the hub, `~/Sync` on the rig, `/opt/stacks/syncthing/home/Sync` on the mini. NO CLOUD is enforced, not assumed: each device carries the others' STATIC LAN addresses (`tcp://192.168.10.4:22000` etc.), and relays + global discovery are DISABLED fleet-wide, so peers connect only over direct LAN TCP (verify with `/rest/system/connections` — type must be `tcp`/`quic`, never `relay`). HUB SAFETY NET: the shared folder carries STAGGERED file versioning on the NAS copy, so a delete or bad edit propagated from any peer is recoverable from `Sync/.stversions/` for up to 30 days. The GUI on the hub and node is behind admin auth (vault `syncthing.gui_user` / `syncthing.nas_gui_password` / `syncthing.mini_gui_password`); the rig GUI is bound to localhost only. Consumer probe: `syncthing-hub-mesh-direct` (verification, warn) asks the hub whether both spokes are connected over a direct transport.
+  troubleshoot:
+  - symptom: |-
+      A peer shows connected but over a public relay (168.x address, type `relay-*`) instead of the LAN — file data is leaving the LAN, defeating the no-cloud goal. Most often the rig.
+    fix: |-
+      A firewall is blocking inbound `:22000` at the peer, so the hub can only reach it via relay. On the rig (CachyOS ships ufw active), open the LAN: `sudo ufw allow from 192.168.10.0/24 to any port 22000 proto tcp` (and `proto udp`, plus `21027/udp`). This is codified in `scripts/reading/syncthing-setup-cachyos.sh`. Then confirm the pair upgraded to `tcp` in each side's `/rest/system/connections`. Relays and global discovery are disabled in each node's options; do not re-enable them.
+  - symptom: |-
+      A file created on one device never appears on the others.
+    fix: |-
+      Check the pair is connected AND direct (`curl -H "X-API-Key: $API" http://127.0.0.1:8384/rest/system/connections`; API key in each host's `config.xml`). Then confirm the `default` folder is shared to that peer on BOTH ends (`/rest/config/folders/default` devices list must include the peer's ID) and not paused/errored (`/rest/db/status?folder=default` state should be `idle`). The folder path must exist on disk with a `.stfolder` marker.
+  - symptom: |-
+      A file was deleted or overwritten by a bad sync and you need it back.
+    fix: |-
+      On the NAS hub, look under `/volume1/docker/syncthing/Sync/.stversions/` — staggered versioning keeps timestamped copies (`name~YYYYMMDD-HHMMSS.ext`) for up to 30 days. Copy the wanted version back into `Sync/`; it re-propagates to the peers.

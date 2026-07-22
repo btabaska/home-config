@@ -1,0 +1,39 @@
+# Syncthing v2 — mini NODE of the local-first sync mesh (foss-03)
+#
+# Repo mirror dir is `syncthing-node` (the wiki generator keys pages by dir
+# name, mini-tree first — a bare `syncthing` here would shadow the NAS-hub
+# page); the LIVE stack on the mini is /opt/stacks/syncthing.
+#
+# ROLE: a node, NOT the hub. Pairs to the NAS hub (192.168.10.4) which relays
+# to the rig. Mind the mini's memory ceiling — Syncthing idles ~40-80 MB, well
+# within budget, but keep it lean (no large folders here; the hub is on the NAS).
+#
+# NO CLOUD: connects to the NAS hub over the LAN by static address
+# (tcp://192.168.10.4:22000). GUI :8384 has admin auth
+# (vault syncthing.gui_user / syncthing.mini_gui_password).
+#
+# Uses host-published ports (no private bridge net → avoids the mini's
+# exhausted 172.x pool; see romm/compose.yaml note). No Caddy vhost.
+#
+# To upgrade: bump the pinned tag+digest, then:
+#   ssh mini 'cd /opt/stacks/syncthing && docker compose pull && docker compose up -d'
+
+name: syncthing
+
+services:
+  syncthing:
+    image: syncthing/syncthing:2.1.2@sha256:4464f4161dd0251e20d46bb3aec83363db75d80cef1abdd5d5fd4054b04a004d   # v2, protocol-parity with hub/rig 2.1.2; digest-pinned (fix-38/I68), index digest
+    container_name: syncthing
+    hostname: mini-node        # device name shown to peers
+    environment:
+      - PUID=1000              # btabaska on the mini
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - /opt/stacks/syncthing/home:/var/syncthing
+    ports:
+      - '8384:8384'        # Web GUI / REST API (LAN/Tailscale only; admin auth)
+      - '22000:22000/tcp'  # sync protocol (BEP)
+      - '22000:22000/udp'  # QUIC sync
+      - '21027:21027/udp'  # local discovery (broadcast)
+    restart: always

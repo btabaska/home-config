@@ -70,6 +70,9 @@ nav:
           - romm: services/romm.md
       - Documents & Life:
           - paperless-ngx: services/paperless-ngx.md
+      - Files & Sync:
+          - syncthing: services/syncthing.md
+          - syncthing-node: services/syncthing-node.md
       - Infrastructure & Ops:
           - beszel: services/beszel.md
           - caddy: services/caddy.md
@@ -112,6 +115,7 @@ nav:
           - seerr: services/seerr.md
       - Uncategorized:
           - bgutil-pot: services/bgutil-pot.md
+          - shelfmark: services/shelfmark.md
       # END GENERATED SERVICES NAV
   - Runbooks:
       - Troubleshooting index: runbooks/troubleshooting.md

@@ -42,6 +42,7 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `ROMM_AUTH_SECRET_KEY`
 - `IGDB_CLIENT_ID`
 - `IGDB_CLIENT_SECRET`
+- `RETROACHIEVEMENTS_API_KEY`
 
 ## Troubleshooting
 

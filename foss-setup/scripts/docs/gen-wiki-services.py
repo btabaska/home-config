@@ -82,6 +82,8 @@ URL_OVERRIDES = {
     "playit": None,     # tunnel agent
     "bedrock-connect": None,  # UDP 19132 console gateway
     "bgutil-pot": None,  # PO-token sidecar for metube/pinchflat
+    "syncthing": "http://192.168.10.4:8384 (hub GUI; LAN/Tailscale-only, admin auth)",
+    "syncthing-node": "http://192.168.10.2:8384 (mini node GUI; LAN/Tailscale-only, admin auth)",
 }
 
 CATEGORIES = {
@@ -94,6 +96,7 @@ CATEGORIES = {
         "immich", "calibre-web-automated", "miniflux", "wallabag", "navidrome",
     ],
     "Documents & Life": ["paperless-ngx", "mealie"],
+    "Files & Sync": ["syncthing", "syncthing-node"],
     "Monitoring & Ops": [
         "homepage", "uptime-kuma", "beszel", "ntfy", "diun", "healthchecks",
         "dockge", "vaultwarden",
