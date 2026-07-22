@@ -1,0 +1,25 @@
+# Beszel agent (WebSocket mode) — dials the hub on the mini, no inbound port needed.
+# .env (NOT committed) — all values from the vault (beszel.*): BESZEL_HUB_URL (hub_url),
+#   BESZEL_AGENT_TOKEN (agent_token_nas), BESZEL_AGENT_KEY (agent_key = the shared hub public key).
+# Live copy: NAS /volume1/docker/beszel-agent/compose.yaml (anti-drift mirror).
+services:
+  beszel-agent:
+    image: henrygd/beszel-agent:0.18.7
+    container_name: beszel-agent
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./beszel_agent_data:/var/lib/beszel-agent
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # home-07: per-volume disk breakout in the Beszel dashboard. The Docker agent
+      # auto-detects any filesystem mounted under /extra-filesystems (the EXTRA_FILESYSTEMS
+      # env var is the systemd/binary form using device names — NOT the Docker mechanism).
+      # The /volumeN/.beszel marker dirs let the agent statfs each of the 3 Basic volumes.
+      - /volume1/.beszel:/extra-filesystems/volume1:ro
+      - /volume2/.beszel:/extra-filesystems/volume2:ro
+      - /volume3/.beszel:/extra-filesystems/volume3:ro
+    environment:
+      LISTEN: "45876"
+      HUB_URL: ${BESZEL_HUB_URL}
+      TOKEN: ${BESZEL_AGENT_TOKEN}
+      KEY: ${BESZEL_AGENT_KEY}

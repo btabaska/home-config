@@ -245,3 +245,20 @@ checks:
     task_id: fix-35
     runbook: wiki/runbooks/photos.md
     enabled: true
+
+  # home-07: the NAS beszel-agent breaks /volume1,2,3 out per-mount in the Beszel
+  # dashboard via /extra-filesystems bind mounts (volume1 IS the agent's root disk;
+  # volume2 -> dm-7, volume3 -> dm-6 show as extra filesystems — beszel labels
+  # extras by their Synology cachedev device name). A recreate from a stale compose
+  # would silently drop the split; this cred-free tripwire asserts the live compose
+  # still declares all three mounts (the Fleet-tile data itself is browser-verified
+  # + guarded by homepage-dead-tiles / homepage-widget-errors on the mini).
+  - id: nas-beszel-volume-split
+    name: "NAS beszel-agent still mounts all 3 volume extra-filesystems (home-07)"
+    host: nas
+    cmd: grep -c 'extra-filesystems/volume[123]:ro' /volume1/docker/beszel-agent/compose.yaml
+    expect: '^3$'
+    severity: warn
+    task_id: home-07
+    runbook: wiki/docs/runbooks/monitoring-coverage.md
+    enabled: true

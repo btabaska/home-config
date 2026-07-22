@@ -328,3 +328,46 @@
         href: https://ntfy.tabaska.us
         description: Notifications
         siteMonitor: http://ntfy:80
+
+# Fleet — per-HOST vitals (CPU/RAM/disk/network) from the beszel-agent already on
+# every box, reusing the beszel hub on the mini (zero new daemons — the 8 GB mini
+# demands that). systemId = the exact Beszel UI name (mini/rig/nas). The single
+# `disk` field is the host's aggregate; the NAS /volume1,2,3 per-mount split lives
+# in the Beszel dashboard (status.tabaska.us) via the agent's /extra-filesystems mounts.
+- Fleet:
+    - Mini:
+        icon: mdi-server
+        href: https://status.tabaska.us
+        description: Mac mini · Docker host
+        widget:
+          type: beszel
+          url: http://beszel:8090
+          username: "{{HOMEPAGE_VAR_BESZEL_USER}}"
+          password: "{{HOMEPAGE_VAR_BESZEL_PASS}}"
+          version: 2
+          systemId: mini
+          fields: [cpu, memory, disk, network]
+    - Rig:
+        icon: mdi-server
+        href: https://status.tabaska.us
+        description: CachyOS · AI & game servers
+        widget:
+          type: beszel
+          url: http://beszel:8090
+          username: "{{HOMEPAGE_VAR_BESZEL_USER}}"
+          password: "{{HOMEPAGE_VAR_BESZEL_PASS}}"
+          version: 2
+          systemId: rig
+          fields: [cpu, memory, disk, network]
+    - NAS:
+        icon: mdi-nas
+        href: https://status.tabaska.us
+        description: DS920+ · storage & media
+        widget:
+          type: beszel
+          url: http://beszel:8090
+          username: "{{HOMEPAGE_VAR_BESZEL_USER}}"
+          password: "{{HOMEPAGE_VAR_BESZEL_PASS}}"
+          version: 2
+          systemId: nas
+          fields: [cpu, memory, disk, network]
