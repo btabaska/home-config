@@ -54,16 +54,41 @@
         description: One-off YouTube downloads
         siteMonitor: http://192.168.10.2:8081
 
-- Photos:
+- Life Apps:
     - Immich:
         icon: immich.png
         href: https://immich.tabaska.us
-        description: Photo library & backup
+        description: Photo Library
         widget:
           type: immich
           url: http://192.168.10.4:2283
           key: "{{HOMEPAGE_VAR_IMMICH_KEY}}"
           version: 2
+    - ProtonMail:
+        icon: proton-mail.png
+        href: https://mail.proton.me/u/0/inbox
+        description: Email
+        target: _blank
+    - Proton Calendar:
+        icon: proton-calendar.png
+        href: https://calendar.proton.me/u/0/
+        description: Calendar
+        target: _blank
+    - ProtonPass:
+        icon: proton-pass.png
+        href: https://pass.proton.me/u/0/
+        description: Password Manager
+        target: _blank
+    - Proton Drive:
+        icon: proton-drive.png
+        href: https://drive.proton.me/u/0/
+        description: File Sync & Storage
+        target: _blank
+    - Proton Docs:
+        icon: proton-docs.png
+        href: https://docs.proton.me/u/0/
+        description: Document Editor
+        target: _blank
 
 - Reading:
     - Calibre-Web:
