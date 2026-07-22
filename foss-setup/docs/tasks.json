@@ -11993,6 +11993,36 @@
   "verify": "nas-immich-backup-freshness + nas-immich-mobile-paired pass."
  },
  {
+  "id": "nas-32",
+  "track": "ai",
+  "type": "sync",
+  "host": "rig",
+  "estimate": "1 hr",
+  "depends_on": [
+   "nas-08",
+   "ai-01"
+  ],
+  "required": false,
+  "run": 7,
+  "mode": "ai",
+  "source": "user request 2026-07-22 (connect Immich AI to the rig GPU)",
+  "title": "Offload Immich ML (smart search, faces, OCR) to the rig GPU (RTX 3090 Ti, CUDA)",
+  "summary": "Immich ran ML on the NAS's weak J4125 Intel iGPU (OpenVINO). Moved inference to the rig's RTX 3090 Ti: deployed immich-machine-learning:v3.0.3-cuda at /opt/stacks/immich-ml (GPU via CDI), ufw-allowed NAS->rig:3003, and set the server's machineLearning.urls = [rig-primary, NAS-OpenVINO-fallback]. Same models (ViT-B-32__openai, buffalo_l, PP-OCRv5) so NO re-index. Verified end-to-end: the rig serves smart-search embeddings on CUDAExecutionProvider. NOT an LLM hookup -- Immich ML is CLIP/ONNX, cannot use Ollama/LiteLLM.",
+  "steps": [
+   "Deploy /opt/stacks/immich-ml on rig (immich-machine-learning:${IMMICH_VERSION}-cuda, GPU via CDI `devices: nvidia.com/gpu=all`, model-cache volume, published to 192.168.10.12:3003).",
+   "ufw allow from 192.168.10.4 to any port 3003 proto tcp (docker DNAT already bypasses ufw; the rule documents intent).",
+   "Immich Admin > Machine Learning: add the rig URL as primary, keep the NAS local URL as fallback (availabilityChecks handles failover).",
+   "Keep IMMICH_VERSION on the rig ML image IDENTICAL to the NAS immich-server (a mismatch breaks the ML API).",
+   "Verify end-to-end: a smart search returns hits AND the rig ML logs a CUDAExecutionProvider inference."
+  ],
+  "verify": "rig-immich-ml-reachable + rig-immich-ml-configured + rig-immich-ml-version-match green; a smart-search query is served by the rig on CUDA.",
+  "files": [
+   "foss-setup/configs/host/rig/immich-ml/compose.yaml",
+   "foss-setup/verification/checks.d/rig-immich-ml.yaml"
+  ],
+  "docs": []
+ },
+ {
   "type": "sync",
   "depends_on": [],
   "required": false,

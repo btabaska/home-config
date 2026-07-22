@@ -1,0 +1,59 @@
+# Immich remote machine-learning on the rig (nas-32, 2026-07-22).
+#
+# Immich runs on the NAS but its ML inference (CLIP smart search, buffalo_l faces,
+# PP-OCRv5 OCR) is offloaded to the rig's RTX 3090 Ti (immich-machine-learning:*-cuda
+# at /opt/stacks/immich-ml on rig, published to 192.168.10.12:3003). The NAS server
+# routes ML via machineLearning.urls = [rig, nas-local-fallback].
+#
+# These probe the CONSUMER end + the two drift traps, not container liveness:
+#   1. reachable  — the NAS (the real consumer) can actually reach the rig ML endpoint
+#   2. present    — the server config still lists the rig URL (someone clearing it in
+#                   Admin > Settings silently reverts ML to the slow NAS iGPU)
+#   3. version    — the rig -cuda image tag matches the NAS immich-server version
+#                   (a mismatched ML/server version breaks the ML API; the classic
+#                   split-ML drift trap — bump both in the same change)
+# Runbook: wiki/runbooks/photos.md.  Alerts -> ntfy topic `verification`.
+
+checks:
+  - id: rig-immich-ml-reachable
+    tier: fast
+    name: "immich remote ML on rig answers /ping from the NAS (GPU offload path up)"
+    host: mini
+    cmd: ssh -o BatchMode=yes -o ConnectTimeout=10 nas "curl -s -m 8 http://192.168.10.12:3003/ping"
+    expect: 'pong'
+    severity: crit
+    task_id: nas-32
+    runbook: wiki/runbooks/photos.md
+    enabled: true
+
+  - id: rig-immich-ml-configured
+    name: "immich server config still routes ML at the rig (URL not reverted to NAS-only)"
+    host: mini
+    cmd: >-
+      printf '%s\n' "$NAS_SUDO_PASSWORD"
+      | ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "sudo -S -p '' /usr/local/bin/docker exec immich_postgres psql -U postgres -d immich
+      -tAc \"SELECT value FROM system_metadata WHERE key='system-config'\""
+      2>/dev/null
+      | grep -q 'http://192.168.10.12:3003' && echo present || echo MISSING
+    expect: '^present$'
+    severity: warn
+    task_id: nas-32
+    runbook: wiki/runbooks/photos.md
+    enabled: true
+
+  - id: rig-immich-ml-version-match
+    name: "rig immich-ml -cuda image matches NAS immich-server version (no ML/server skew)"
+    host: mini
+    cmd: >-
+      nas=$(curl -sm 8 http://nas:2283/api/server/version
+      | sed -n 's/.*"major":\([0-9]*\),"minor":\([0-9]*\),"patch":\([0-9]*\).*/v\1.\2.\3/p');
+      rig=$(ssh -o BatchMode=yes -o ConnectTimeout=10 rig
+      "docker inspect -f '{{.Config.Image}}' immich_machine_learning" 2>/dev/null
+      | sed 's/.*://; s/-cuda$//');
+      [ -n "$nas" ] && [ "$nas" = "$rig" ] && echo "match=$nas" || echo "SKEW nas=${nas:-?} rig=${rig:-?}"
+    expect: '^match=v'
+    severity: warn
+    task_id: nas-32
+    runbook: wiki/runbooks/photos.md
+    enabled: true

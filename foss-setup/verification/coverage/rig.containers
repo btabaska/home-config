@@ -2,6 +2,7 @@ amp
 beszel-agent
 comfyui
 gpu-arbiter
+immich_machine_learning
 litellm
 litellm-db
 llama-swap
