@@ -4,6 +4,43 @@
 # Widget keys use {{HOMEPAGE_VAR_*}} from .env (see .env.example).
 # Docs: https://gethomepage.dev/configs/services/
 
+# home-08: agenda of upcoming *arr releases (reuses the Sonarr/Radarr/Lidarr
+# service widgets by service_group + service_name — NO new arr secret) merged with
+# personal Proton Calendar events (published .ics; URL = vault
+# homepage_widgets.proton_calendar_ics_url -> HOMEPAGE_VAR_PROTON_CAL_ICS).
+# Placed first as the household's daily-use anchor. The paired UniFi tile is
+# deferred (needs a local read-only Network account) — tracked separately.
+- Calendar:
+    - Agenda:
+        icon: mdi-calendar-month
+        description: Upcoming releases & events
+        widget:
+          type: calendar
+          view: agenda
+          maxEvents: 15
+          showTime: true
+          firstDayInWeek: sunday
+          timezone: America/New_York
+          integrations:
+            - type: sonarr
+              service_group: Media Automation
+              service_name: Sonarr
+              color: teal
+            - type: radarr
+              service_group: Media Automation
+              service_name: Radarr
+              color: amber
+            - type: lidarr
+              service_group: Media Automation
+              service_name: Lidarr
+              color: green
+            - type: ical
+              url: "{{HOMEPAGE_VAR_PROTON_CAL_ICS}}"
+              name: Proton
+              color: purple
+              params:
+                showName: true
+
 - Media:
     - Plex:
         icon: plex.png

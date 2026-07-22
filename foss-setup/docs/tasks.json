@@ -12138,8 +12138,8 @@
  {
   "id": "home-08",
   "track": "home-surface",
-  "title": "Homepage Calendar + UniFi widgets",
-  "summary": "Add the Calendar widget (an agenda of upcoming Sonarr/Radarr/Lidarr releases — reusing the *arr keys already wired — plus personal events from a published Proton Calendar iCal feed) and the UniFi widget (WAN/LAN/WLAN status + client counts from the Dream Wall). The two biggest dashboard-wide daily-use upgrades, using hardware/keys already in place.",
+  "title": "Homepage UniFi widget (Calendar tile shipped 2026-07-22)",
+  "summary": "REMAINING half of the original home-08 Calendar+UniFi pair. The Calendar tile SHIPPED 2026-07-22 — a first-group agenda merging upcoming Sonarr/Radarr/Lidarr releases (reusing the existing *arr widget keys by service_group/service_name, no new secret) with personal Proton Calendar iCal events (published .ics; url = vault homepage_widgets.proton_calendar_ics_url -> HOMEPAGE_VAR_PROTON_CAL_ICS; browser-verified live: teal/green *arr episodes + purple Proton events), guarded by the homepage-calendar-ics-fetch consumer check. This item now tracks ONLY the UniFi widget: WAN/LAN/WLAN status + client counts from the Dream Wall at https://192.168.10.1. Deferred by the operator 2026-07-22 because it needs a dedicated LOCAL read-only UniFi Network account — the existing unifi_protect account returns 403 on the Network login API, so it cannot be reused.",
   "host": "mini",
   "type": "sync",
   "mode": "ai-vault",
@@ -12148,20 +12148,21 @@
   "depends_on": [
    "home-05"
   ],
-  "estimate": "1 hr",
+  "gate": "needs a LOCAL read-only UniFi Network account in the vault (new unifi_network.username/password block) — operator creates it in UniFi (192.168.10.1) -> Settings -> Admins & Users -> Add local user with Network 'View Only' role (NOT the Ubiquiti SSO/cloud login, NOT the Protect-only account which 403s on Network auth).",
+  "estimate": "20 min",
   "files": [
    "configs/docker-stack/stacks/homepage/config/services.yaml",
    "configs/docker-stack/stacks/homepage/config/../.env.example",
    "../.handoff-secrets.yaml"
   ],
   "steps": [
-   "Calendar: add widget type: calendar, view: monthly (or agenda), integrations referencing the EXISTING Sonarr/Radarr/Lidarr service widgets by service_group + service_name (reuses their url/key — no new arr secret), plus an ical integration pointing at a published Proton Calendar .ics URL (handoff: the share URL).",
-   "UniFi: handoff a LOCAL read-only UniFi account (not the SSO/cloud login). Add widget type: unifi, url https://192.168.1.1 (or the controller URL:port), username/password {{HOMEPAGE_VAR_UNIFI_USER/PASS}}, fields [uptime, wan, lan_users, wlan_users]. Store creds in vault+env (merge).",
-   "Mirror to repo, restart Homepage, commit live+repo, publish-deploy.sh.",
-   "If the UniFi widget throws 'API Error' after a cred change, recreate the Homepage container to clear the auth cache."
+   "Handoff (gate): operator creates a LOCAL read-only Network account and adds username/password to the vault under a new unifi_network block (merge, never blind-assign); .env.example gets HOMEPAGE_VAR_UNIFI_USER/PASS names only.",
+   "Add a UniFi tile to services.yaml: widget type: unifi, url https://192.168.10.1 (UniFi OS proxies the Network controller on 443 — no :8443 needed on the Dream Wall), username/password {{HOMEPAGE_VAR_UNIFI_USER/PASS}}, fields [uptime, wan, lan_users, wlan_users] (max 4). Map the vault creds into live .env + .env.example.",
+   "Mirror services.yaml to repo, recreate Homepage (env_file reload needs recreate, not restart), commit live+repo, publish-deploy.sh.",
+   "If the UniFi widget throws 'API Error' after a cred change, recreate the Homepage container to clear the auth cache. Verify in-browser it renders live WAN/LAN/WLAN + client counts (mandate 1: not liveness)."
   ],
-  "verify": "home.tabaska.us shows a Calendar tile listing upcoming *arr releases AND Proton Calendar events, and a UniFi tile with live WAN/LAN/WLAN status + client counts. UniFi creds only in vault+env.",
-  "pitfalls": "Calendar *arr integrations reference an already-defined service widget (service_group/service_name), they don't re-declare a key. UniFi needs a LOCAL read-privilege account. Proton Calendar must be shared/published as an .ics for the ical integration to read it."
+  "verify": "home.tabaska.us shows a UniFi tile with live WAN/LAN/WLAN status + client counts from 192.168.10.1. UniFi creds only in vault+env, not git. (Calendar half already verified + shipped 2026-07-22.)",
+  "pitfalls": "UniFi needs a LOCAL read-privilege account; the SSO/cloud login and the Protect-only account both fail (Protect account 403s on the Network /api/auth/login). Dream Wall serves Network on 443 via UniFi OS proxy. Calendar half is DONE — do not re-add it."
  },
  {
   "id": "media-12",

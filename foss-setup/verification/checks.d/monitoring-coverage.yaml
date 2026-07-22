@@ -36,6 +36,27 @@ checks:
     runbook: wiki/docs/runbooks/monitoring-coverage.md
     enabled: true
 
+  # ── home-08 · Calendar tile's Proton .ics half is fetchable ──────────────
+  # The Calendar tile merges *arr release dates (guarded already by the dead-tile
+  # + widget-error checks above, since they reuse the live arr widgets) with a
+  # PERSONAL Proton Calendar published .ics share link. That link is an external
+  # dependency: if Proton revokes/rotates it or the calendar is unpublished, the
+  # purple Proton events silently vanish while the tile still renders (no dead
+  # tile, no DNS error) — the exact liveness-vs-reality gap. This probes the real
+  # server-side path Homepage uses: the homepage container itself wgets the .ics
+  # (URL read from its own env, so no secret lives in this check) and must get a
+  # valid iCalendar body back.
+  - id: homepage-calendar-ics-fetch
+    name: "homepage container fetches the Proton Calendar .ics (home-08 Calendar consumer end)"
+    host: mini
+    cmd: >-
+      docker exec homepage sh -c 'wget -qO- "$HOMEPAGE_VAR_PROTON_CAL_ICS" 2>/dev/null | head -c 15'
+    expect: '^BEGIN:VCALENDAR$'
+    severity: warn
+    task_id: home-08
+    runbook: wiki/docs/runbooks/monitoring-coverage.md
+    enabled: true
+
   # ── M21 · every Uptime-Kuma monitor has an alert channel ─────────────────
   # bootstrap-nas-monitors.sh used to insert monitors and leave "attach ntfy" as
   # a manual step, so NAS Whisparr (id 56) shipped with no monitor_notification

@@ -32,7 +32,7 @@
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
 
 ### home-surface
-- [ ] **`home-08`** Homepage Calendar + UniFi widgets _(est 1 hr)_
+- [ ] **`home-08`** Homepage UniFi widget (Calendar tile shipped 2026-07-22) _(est 20 min)_ — ⛔ gate: needs a LOCAL read-only UniFi Network account in the vault (new unifi_network.username/password block) — operator creates it in UniFi (192.168.10.1) -> Settings -> Admins & Users -> Add local user with Network 'View Only' role (NOT the Ubiquiti SSO/cloud login, NOT the Protect-only account which 403s on Network auth).
 
 ### media-pipeline
 - [ ] **`media-05`** Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) _(est 1-2 hrs)_

@@ -11,6 +11,6 @@
 | `home-05` | Homepage widgets, wave 1 — the zero-new-secret tiles | ✅ done | 45 min |
 | `home-06` | Homepage widgets, wave 2 — the key-needing existing-service tiles | ✅ done | 1.5 hr |
 | `home-07` | Homepage fleet tiles — per-host CPU/RAM/disk via existing Beszel + NAS volume split | ✅ done | 45 min |
-| `home-08` | Homepage Calendar + UniFi widgets | ⬜ open | 1 hr |
+| `home-08` | Homepage UniFi widget (Calendar tile shipped 2026-07-22) | ⬜ open | 20 min |
 
 [← Roadmap overview](index.md)
