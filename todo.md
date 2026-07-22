@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**199/287 done** · **57 open** · **18 deferred** · 13 retired.
+**199/296 done** · **66 open** · **18 deferred** · 13 retired.
 
 ---
 
@@ -31,18 +31,26 @@
 - [ ] **`retro-06`** RetroAchievements + cheat DB _(est 30 min)_ — ⛔ gate: RetroAchievements account creds in vault
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
 
+### home-surface
+- [ ] **`home-05`** Homepage widgets, wave 1 — the zero-new-secret tiles _(est 45 min)_
+- [ ] **`home-06`** Homepage widgets, wave 2 — the key-needing existing-service tiles _(est 1.5 hr)_
+- [ ] **`home-07`** Homepage fleet tiles — per-host CPU/RAM/disk via existing Beszel + NAS volume split _(est 45 min)_
+- [ ] **`home-08`** Homepage Calendar + UniFi widgets _(est 1 hr)_
+
 ### media-pipeline
 - [ ] **`media-05`** Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) _(est 1-2 hrs)_
 - [ ] **`media-07`** MusicSeerr can still create unmonitored-artist requests (upstream monitor_artist=0 default) — tripwire-covered, close the generator _(est 30-45 min)_
 - [ ] **`media-09`** fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs _(est 1-2 hrs)_
 - [ ] **`media-10`** Seedbox: retire drained readarr label pair from deluge-reaper _(est 10 min)_ — ⛔ gate: not before 2026-08-04
 - [ ] **`media-11`** Lidarr: 'Camera' album monitored under unmonitored artist (orphan flag) _(est 10-20 min)_
+- [ ] **`media-12`** Deploy Bazarr (subtitles) on the NAS + Homepage widget _(est 1.5 hr)_
 
 ### network
 - [ ] **`net-15`** Edge/verification doc-truth trivia: stale seedbox-SSH claim in verification README; Plex ManualPortMappingMode mismatch _(est 20 min)_
 
 ### ops
 - [ ] **`dns-06`** NAS AdGuard: external resolution failing (dns-nas-external crit) _(est 20-40 min)_
+- [ ] **`glue-10`** Deploy Scrutiny (disk SMART health) across the fleet + Homepage widget _(est 1.5 hr)_
 - [ ] **`nas-31`** Immich: backup freshness + mobile pairing checks failing (fix-35 regression) _(est 30-60 min)_
 - [ ] **`net-16`** homepage container DNS: EAI_AGAIN on tabaska.us names (159 errors/2h) _(est 20-40 min)_
 
@@ -57,6 +65,9 @@
 - [ ] **`read-09`** Add RSS/news to KOReader (Miniflux tie-in) _(est 20 min)_
 - [ ] **`read-12`** Install + configure gPodder for podcasts on CachyOS (funnel into Rhythmbox) _(est 20 min)_
 - [ ] **`read-15`** CWA: KOReader sync checksum table missing (book_format_checksums) _(est 15-30 min)_
+- [ ] **`read-16`** Deploy Audiobookshelf (audiobooks + podcasts) on the NAS + Homepage widget _(est 1.5 hr)_
+- [ ] **`read-17`** Deploy Komga (comics + manga reader) on the NAS + Homepage widget _(est 1.5 hr)_
+- [ ] **`read-18`** Deploy Suwayomi (manga server) on the rig, feeding Komga _(est 1.5 hr)_
 
 ### security
 - [ ] **`foss-01`** Bitwarden → Vaultwarden data cutover (point clients at vault.tabaska.us) _(est 1-2 hrs)_

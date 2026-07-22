@@ -12013,5 +12013,274 @@
    "Full reading tier + prowlarr/unpackerr verification green"
   ],
   "verify": "Old key rejected (401); all consumers on the new key; reading tier green."
+ },
+ {
+  "id": "home-05",
+  "track": "home-surface",
+  "title": "Homepage widgets, wave 1 — the zero-new-secret tiles",
+  "summary": "Wire the Homepage widgets that need no new credential: Tautulli, Home Assistant and Uptime Kuma (keys already in .env), RomM (no auth), the keyless Open-Meteo weather info widget, and two GameDig tiles (Palworld on the rig, Minecraft on the mini). Turns six ping-only/absent tiles into live-data tiles with no vault work.",
+  "host": "mini",
+  "type": "sync",
+  "mode": "ai",
+  "run": 2,
+  "required": false,
+  "depends_on": [
+   "docker-15"
+  ],
+  "estimate": "45 min",
+  "files": [
+   "configs/docker-stack/stacks/homepage/config/services.yaml",
+   "configs/docker-stack/stacks/homepage/config/settings.yaml",
+   "configs/docker-stack/stacks/homepage/config/../.env.example"
+  ],
+  "steps": [
+   "Tautulli: add a NEW tile (it's running on the mini but absent from services.yaml). widget type: tautulli, url http://tautulli:8181 (confirm the container port), key {{HOMEPAGE_VAR_TAUTULLI_KEY}} — already present in .env.",
+   "Home Assistant: replace the siteMonitor line with widget type: homeassistant, url http://192.168.10.50:8123, key {{HOMEPAGE_VAR_HA_TOKEN}} (already in .env), fields [people_home, lights_on, switches_on]. Homepage reaches HA over the LAN even though SSH is refused.",
+   "Uptime Kuma: replace siteMonitor with widget type: uptimekuma, url http://uptime-kuma:3001, slug {{HOMEPAGE_VAR_UPTIMEKUMA_SLUG}} (already in .env). PREREQ: publish a status page in Uptime Kuma first and add the monitors — the widget reads a status page, not an API.",
+   "RomM: replace siteMonitor with widget type: romm, url http://romm:8080, fields [platforms, totalRoms, saves, states]. No auth.",
+   "Weather: add an Open-Meteo INFO widget to settings.yaml/widgets.yaml — openmeteo with explicit latitude/longitude (do NOT rely on geolocation), timezone America/New_York, units imperial, cache: 5. Keyless.",
+   "GameDig: add two tiles in the Games group — type: gamedig, serverType: palworld, url udp://192.168.10.12:<query-port> and type: gamedig, serverType: minecraft, url udp://192.168.10.2:<bedrock-query-port>. Confirm the query ports.",
+   "Mirror services.yaml + settings.yaml back to the repo mirror, docker compose up -d homepage (or restart), then commit both live and repo per anti-drift and run publish-deploy.sh."
+  ],
+  "verify": "home.tabaska.us renders live-data tiles for Tautulli (active streams), Home Assistant (entity counts), Uptime Kuma (up/down), RomM (platform/rom counts), Open-Meteo (current temp) and both GameDig servers (player counts) — none showing 'API Error' or blank. No new secret added to git.",
+  "pitfalls": "Uptime Kuma widget needs a PUBLISHED status page + its slug or it stays blank. Open-Meteo geolocation fallback needs HTTPS+browser, so set lat/long explicitly. GameDig url must be udp:// on the QUERY port, not the play port. Confirm Tautulli's container port before pinning it."
+ },
+ {
+  "id": "home-06",
+  "track": "home-surface",
+  "title": "Homepage widgets, wave 2 — the key-needing existing-service tiles",
+  "summary": "Wire the ten Homepage widgets for services already running that need one new credential each: Healthchecks, Paperless-ngx, Mealie, Miniflux, Calibre-Web, Stash, Deluge, slskd, Forgejo (via the gitea widget) and Navidrome. One vault-secret handoff per service; each becomes a live-data tile instead of a ping.",
+  "host": "mini",
+  "type": "sync",
+  "mode": "ai-vault",
+  "run": 2,
+  "required": false,
+  "depends_on": [
+   "home-05"
+  ],
+  "estimate": "1.5 hr",
+  "files": [
+   "configs/docker-stack/stacks/homepage/config/services.yaml",
+   "configs/docker-stack/stacks/homepage/config/../.env.example",
+   "../.handoff-secrets.yaml"
+  ],
+  "steps": [
+   "Collect the ten credentials once (ai-vault handoff) and store each under a HOMEPAGE_VAR_* key in .handoff-secrets.yaml (MERGE the section, never blind-assign) + add to the stack .env.example: Healthchecks read-only API key; Paperless-ngx API token; Mealie API token; Miniflux API key; Calibre-Web username+password; Stash API key (only if the instance is secured); Deluge WebUI password; slskd API key; Forgejo token (notification+repo+issue scopes); Navidrome user+token+salt (Subsonic scheme).",
+   "Healthchecks: type healthchecks, url http://healthchecks:8000 (confirm port), key {{...}} — add a NEW tile (running but absent). Shows up/down/late checks — the backup dead-man's-switch.",
+   "Paperless-ngx: type paperlessngx, url http://paperless:8000, key {{...}}. Mealie: type mealie, url http://mealie:9000, key {{...}}, version: 2 (they run v3 — v1 default hits wrong paths). Miniflux: type miniflux, url http://miniflux:8080, key {{...}}.",
+   "Calibre-Web: type calibreweb, url http://192.168.10.4:8083, username/password {{...}} (verify against CWA login; needs CW>=0.6.21). Stash: type stash, url http://192.168.10.4:9999, key {{...}} if secured.",
+   "Deluge: type deluge, url http://100.119.134.94:5945, password {{...}}. slskd: type slskd, url http://100.119.134.94:5030, key {{...}} — generate with openssl rand -base64 48, add to slskd.yml api_keys with a cidr matching Homepage's subnet.",
+   "Forgejo: type gitea (Forgejo is API-compatible), url http://forgejo:3000, key {{...}}. Navidrome: type navidrome, url http://navidrome:4533, user/token/salt {{...}} (now-playing only — lower value).",
+   "Replace each siteMonitor with its widget block, mirror to repo, restart Homepage, commit live+repo, publish-deploy.sh. Never paste a secret value into chat/commit/docs — vault key paths only."
+  ],
+  "verify": "Each of the ten tiles on home.tabaska.us shows its live stat (checks up/down, doc counts, recipe count, unread count, book count, torrent throughput, repo/issue counts, now-playing) with no 'API Error'; every credential lives only in the vault + stack env, none in git.",
+  "pitfalls": "Mealie REQUIRES version: 2 on v3. slskd api_keys cidr must match Homepage's subnet or auth 401s. Stash key only needed if login is set. Merge the vault section — a blind assign clobbered a cred before (vault-edit hazard)."
+ },
+ {
+  "id": "home-07",
+  "track": "home-surface",
+  "title": "Homepage fleet tiles — per-host CPU/RAM/disk via existing Beszel + NAS volume split",
+  "summary": "Add three Beszel single-system service widgets (mini / rig / nas) so the dashboard shows real per-HOST CPU + RAM + disk + network for all three boxes — reusing the beszel-agent already on every host, so zero new daemons (which the 8 GB mini demands). Set EXTRA_FILESYSTEMS on the NAS agent so /volume1,2,3 break out in the Beszel dashboard. This is the correct answer to 'see all my storage/RAM at a glance' — the resources widget only sees the Homepage container.",
+  "host": "mini",
+  "type": "sync",
+  "mode": "ai-vault",
+  "run": 2,
+  "required": false,
+  "depends_on": [
+   "home-05"
+  ],
+  "estimate": "45 min",
+  "files": [
+   "configs/docker-stack/stacks/homepage/config/services.yaml",
+   "configs/docker-stack/stacks/homepage/config/../.env.example",
+   "../.handoff-secrets.yaml",
+   "configs/nas/beszel/"
+  ],
+  "steps": [
+   "Handoff: a Beszel SUPERUSER login (required for the API). Store HOMEPAGE_VAR_BESZEL_USER / HOMEPAGE_VAR_BESZEL_PASS in the vault + stack env (merge).",
+   "Add a new 'Fleet' group in services.yaml with three tiles, each widget type: beszel, url https://beszel.tabaska.us, username/password {{...}}, version: 2 (Beszel>=0.9.0), fields [cpu, memory, disk, network], systemId set to that host's PocketBase collection id or friendly Beszel name (mini / rig / nas).",
+   "On the NAS beszel-agent (Container Manager), set EXTRA_FILESYSTEMS=/volume1,/volume2,/volume3 so the three Basic volumes break out per-mount in the Beszel dashboard; mirror the NAS agent compose to configs/nas/beszel/ per anti-drift.",
+   "Mirror services.yaml to repo, restart Homepage, commit live+repo (NAS agent compose too), publish-deploy.sh."
+  ],
+  "verify": "home.tabaska.us Fleet group shows three Beszel tiles with live CPU+RAM+disk+network for mini, rig and nas; the Beszel dashboard shows /volume1,2,3 as separate filesystems on the NAS. Beszel creds only in vault+env, not git.",
+  "pitfalls": "Beszel widget needs version: 2 for >=0.9.0 and a SUPERUSER account (not a readonly user). systemId = PocketBase collection id or the exact UI name. The single-system disk field is one aggregate number — the per-volume split lives in the Beszel dashboard via EXTRA_FILESYSTEMS, not on the tile (Glances was deliberately skipped)."
+ },
+ {
+  "id": "home-08",
+  "track": "home-surface",
+  "title": "Homepage Calendar + UniFi widgets",
+  "summary": "Add the Calendar widget (an agenda of upcoming Sonarr/Radarr/Lidarr releases — reusing the *arr keys already wired — plus personal events from a published Proton Calendar iCal feed) and the UniFi widget (WAN/LAN/WLAN status + client counts from the Dream Wall). The two biggest dashboard-wide daily-use upgrades, using hardware/keys already in place.",
+  "host": "mini",
+  "type": "sync",
+  "mode": "ai-vault",
+  "run": 2,
+  "required": false,
+  "depends_on": [
+   "home-05"
+  ],
+  "estimate": "1 hr",
+  "files": [
+   "configs/docker-stack/stacks/homepage/config/services.yaml",
+   "configs/docker-stack/stacks/homepage/config/../.env.example",
+   "../.handoff-secrets.yaml"
+  ],
+  "steps": [
+   "Calendar: add widget type: calendar, view: monthly (or agenda), integrations referencing the EXISTING Sonarr/Radarr/Lidarr service widgets by service_group + service_name (reuses their url/key — no new arr secret), plus an ical integration pointing at a published Proton Calendar .ics URL (handoff: the share URL).",
+   "UniFi: handoff a LOCAL read-only UniFi account (not the SSO/cloud login). Add widget type: unifi, url https://192.168.1.1 (or the controller URL:port), username/password {{HOMEPAGE_VAR_UNIFI_USER/PASS}}, fields [uptime, wan, lan_users, wlan_users]. Store creds in vault+env (merge).",
+   "Mirror to repo, restart Homepage, commit live+repo, publish-deploy.sh.",
+   "If the UniFi widget throws 'API Error' after a cred change, recreate the Homepage container to clear the auth cache."
+  ],
+  "verify": "home.tabaska.us shows a Calendar tile listing upcoming *arr releases AND Proton Calendar events, and a UniFi tile with live WAN/LAN/WLAN status + client counts. UniFi creds only in vault+env.",
+  "pitfalls": "Calendar *arr integrations reference an already-defined service widget (service_group/service_name), they don't re-declare a key. UniFi needs a LOCAL read-privilege account. Proton Calendar must be shared/published as an .ics for the ical integration to read it."
+ },
+ {
+  "id": "media-12",
+  "track": "media-pipeline",
+  "title": "Deploy Bazarr (subtitles) on the NAS + Homepage widget",
+  "summary": "Bazarr is the missing piece of the *arr stack — automatic subtitle fetching for Sonarr/Radarr libraries. Deploy it on the NAS next to the arrs, wire it to Sonarr + Radarr + subtitle providers, front it at bazarr.tabaska.us, and add the Homepage bazarr widget (missing-episode/movie subtitle counts).",
+  "host": "nas",
+  "type": "sync",
+  "mode": "ai-vault",
+  "run": 4,
+  "required": false,
+  "depends_on": [
+   "nas-21",
+   "nas-22"
+  ],
+  "estimate": "1.5 hr",
+  "files": [
+   "configs/nas/bazarr/",
+   "configs/docker-stack/stacks/homepage/config/services.yaml",
+   "verification/checks.d/",
+   "verification/coverage/nas.containers"
+  ],
+  "steps": [
+   "Deploy Bazarr via Container Manager in /volume1/docker/bazarr (pin the image tag, Diun notify-only), mapping the same /tv and /movies library paths the arrs use.",
+   "Wire Bazarr to Sonarr + Radarr (their URLs + API keys) and enable subtitle providers (handoff: OpenSubtitles.com account; add others as desired). Set languages + a sane cutoff score.",
+   "Add a Caddy vhost bazarr.tabaska.us -> {$NAS_IP}:6767 (add-a-service runbook).",
+   "Homepage tile: widget type: bazarr, url http://192.168.10.4:6767, key {{HOMEPAGE_VAR_BAZARR_KEY}} (Settings > General). Store the key in vault+env.",
+   "Add a consumer-end verification check (Bazarr API returns real missing-subs counts, not just 200) to checks.d/, deploy to the mini runner via ssh sudo tee, run green. Add bazarr to verification/coverage/nas.containers.",
+   "Mirror compose to configs/nas/bazarr/, commit, publish-deploy.sh, regenerate the wiki service page (enrichment)."
+  ],
+  "verify": "bazarr.tabaska.us reachable with valid cert; Bazarr shows Sonarr+Radarr series/movies and is fetching subtitles (a recently-grabbed item gains a subtitle); Homepage bazarr widget shows live missing-subs counts; nas.containers + checks.d updated and the check is green.",
+  "pitfalls": "Bazarr must share the SAME library paths as the arrs or it can't match media. Provider rate limits (OpenSubtitles) — set a cutoff score. NAS deploy is manual (no docker socket / no passwordless sudo)."
+ },
+ {
+  "id": "read-16",
+  "track": "reading",
+  "title": "Deploy Audiobookshelf (audiobooks + podcasts) on the NAS + Homepage widget",
+  "summary": "A real self-hosted audiobook + podcast server with iOS/Android apps — replacing the desktop-only gPodder path for podcasts and giving the MAM audiobooks a home. Deploy on the NAS, create audiobook + podcast libraries, front at abs.tabaska.us, add the Homepage audiobookshelf widget (books/podcasts + durations).",
+  "host": "nas",
+  "type": "sync",
+  "mode": "ai-vault",
+  "run": 4,
+  "required": false,
+  "depends_on": [],
+  "estimate": "1.5 hr",
+  "files": [
+   "configs/nas/audiobookshelf/",
+   "configs/docker-stack/stacks/homepage/config/services.yaml",
+   "verification/checks.d/",
+   "verification/coverage/nas.containers"
+  ],
+  "steps": [
+   "Deploy Audiobookshelf via Container Manager in /volume1/docker/audiobookshelf (pin tag), with /audiobooks and /podcasts library mounts + a metadata volume.",
+   "Create the admin user, add an Audiobooks library and a Podcasts library (subscribe to a couple feeds to prove ingest).",
+   "Caddy vhost abs.tabaska.us -> {$NAS_IP}:13378.",
+   "Homepage tile: widget type: audiobookshelf, url http://192.168.10.4:13378, key {{HOMEPAGE_VAR_ABS_KEY}} (admin API token, generated post-deploy under config>users). Store in vault+env.",
+   "Consumer-end verification check (ABS API returns real library item counts) to checks.d/ + deploy to runner; add audiobookshelf to coverage/nas.containers.",
+   "Mirror compose to repo, commit, publish-deploy.sh, wiki enrichment page."
+  ],
+  "verify": "abs.tabaska.us reachable with valid cert; an audiobook plays and a subscribed podcast episode downloads; Homepage audiobookshelf widget shows live book+podcast counts; coverage + a green consumer check in place.",
+  "pitfalls": "The widget key is an admin API token minted AFTER first-run, so wire the widget in a second pass. Point libraries at existing NAS paths; don't let ABS write into the *arr-managed trees."
+ },
+ {
+  "id": "glue-10",
+  "track": "ops",
+  "title": "Deploy Scrutiny (disk SMART health) across the fleet + Homepage widget",
+  "summary": "The one monitoring blind spot Beszel and Uptime Kuma don't cover: per-disk SMART health. Deploy Scrutiny (collector on each host reporting to a hub) so failing/aging drives surface before they die — matters for a many-disk NAS and the 3-2-1 ethos. Add the Homepage scrutiny widget (passed/failed/unknown, no auth).",
+  "host": "all",
+  "type": "sync",
+  "mode": "ai",
+  "run": 4,
+  "required": false,
+  "depends_on": [],
+  "estimate": "1.5 hr",
+  "files": [
+   "configs/docker-stack/stacks/scrutiny/",
+   "configs/nas/scrutiny/",
+   "configs/docker-stack/stacks/homepage/config/services.yaml",
+   "verification/checks.d/",
+   "verification/coverage/mini.containers",
+   "verification/coverage/nas.containers"
+  ],
+  "steps": [
+   "Deploy the Scrutiny hub+influxdb (web) — put the web/hub on the NAS (data-adjacent, most disks) or mini per RAM headroom; pin tags.",
+   "Deploy a Scrutiny collector on each host with SMART access to its drives: NAS (Container Manager, privileged/devices for /dev/sd*), mini (compose with device access), rig (compose or systemd) — collectors report to the hub on a schedule.",
+   "Caddy vhost scrutiny.tabaska.us -> hub. Homepage tile: widget type: scrutiny, url http://<hub>:8080 (no auth).",
+   "Consumer-end verification check (Scrutiny API reports N disks, 0 failed) to checks.d/ + deploy; add scrutiny containers to the relevant coverage manifests.",
+   "Mirror all compose/units to the repo per host ownership, commit, publish-deploy.sh, wiki enrichment."
+  ],
+  "verify": "scrutiny.tabaska.us lists every fleet disk with SMART status; Homepage scrutiny widget shows passed/failed/unknown counts; a check asserts 0 failed drives and is green; coverage manifests updated.",
+  "pitfalls": "Collectors need raw device / SMART access (privileged or --device). Synology drives may need the correct device mapping via Container Manager. Don't alarm-fatigue: start the check at warn."
+ },
+ {
+  "id": "read-17",
+  "track": "reading",
+  "title": "Deploy Komga (comics + manga reader) on the NAS + Homepage widget",
+  "summary": "The reader server for a comics/manga library — Komga chosen over Atsumeru for its maturity, native ComicInfo.xml handling, and huge client ecosystem (OPDS + Mihon/Tachiyomi extension -> Panels, Paperback, KOReader). Deploy on the NAS reading a comics tree, front at komga.tabaska.us, add the Homepage komga widget (libraries/series/books). Comics are acquired manually (IPT/GetComics packs -> existing Deluge label -> drop CBZs here); manga arrives from read-18.",
+  "host": "nas",
+  "type": "sync",
+  "mode": "ai-vault",
+  "run": 4,
+  "required": false,
+  "depends_on": [],
+  "estimate": "1.5 hr",
+  "files": [
+   "configs/nas/komga/",
+   "configs/docker-stack/stacks/homepage/config/services.yaml",
+   "verification/checks.d/",
+   "verification/coverage/nas.containers"
+  ],
+  "steps": [
+   "Create a comics/manga library root on the NAS (e.g. /volume1/Comics with Comics/ and Manga/ subfolders).",
+   "Deploy Komga via Container Manager in /volume1/docker/komga (pin tag; ~512MB-1GB JVM), mounting the library root; create the admin user + a Comics library and a Manga library.",
+   "Seed a few CBZs by hand (IPT/GetComics pack via the existing Deluge label on Betty -> copy to NAS -> drop into the library) to prove the scan + reader.",
+   "Caddy vhost komga.tabaska.us -> {$NAS_IP}:25600. Homepage tile: widget type: komga, url http://192.168.10.4:25600, username/password {{HOMEPAGE_VAR_KOMGA_USER/PASS}} (store in vault+env).",
+   "Consumer-end verification check (Komga OPDS/API returns real series counts) to checks.d/ + deploy; add komga to coverage/nas.containers.",
+   "Mirror compose to repo, commit, publish-deploy.sh, wiki enrichment."
+  ],
+  "verify": "komga.tabaska.us reachable with valid cert; a seeded CBZ series reads in the web reader and over OPDS; Homepage komga widget shows live libraries/series/books; a green series-count check + coverage entry in place.",
+  "pitfalls": "Komga is JVM (heavier idle) — keep it on the 20GB NAS, never the 8GB mini. Enable clean folder structure so series/issues map correctly. The widget uses username/password, not an API key."
+ },
+ {
+  "id": "read-18",
+  "track": "reading",
+  "title": "Deploy Suwayomi (manga server) on the rig, feeding Komga",
+  "summary": "The manga acquisition path Mylar3 can't cover: Suwayomi/Tachidesk runs Tachiyomi/Mihon extensions server-side to pull manga from online sources, outputting volume CBZ into the Komga library root. Deploy on the rig (headroom + 24/7), front at manga.tabaska.us, and surface it on Homepage (suwayomi widget).",
+  "host": "rig",
+  "type": "sync",
+  "mode": "ai",
+  "run": 4,
+  "required": false,
+  "depends_on": [
+   "read-17"
+  ],
+  "estimate": "1.5 hr",
+  "files": [
+   "configs/host/rig/suwayomi/",
+   "configs/docker-stack/stacks/homepage/config/services.yaml",
+   "verification/checks.d/",
+   "verification/coverage/"
+  ],
+  "steps": [
+   "Deploy Suwayomi (Tachidesk) on the rig as a container (or systemd-managed), pinned, with its download/output dir pointing at the NAS-mounted Komga Manga library root (so grabbed volumes land where Komga scans).",
+   "Install manga source extensions in the Suwayomi UI, add a couple series to prove download-to-CBZ.",
+   "Caddy vhost manga.tabaska.us -> rig:4567. Homepage tile: widget type: suwayomi, url http://192.168.10.12:4567 (auth per its config).",
+   "Consumer-end verification check (Suwayomi API responds + reports library size) to checks.d/ + deploy; add to the coverage manifest.",
+   "Mirror compose/unit to configs/host/rig/, commit, publish-deploy.sh, wiki enrichment."
+  ],
+  "verify": "manga.tabaska.us reachable; a subscribed manga downloads volume CBZ into the Komga Manga library and shows up in Komga; Homepage suwayomi tile live; green check + coverage entry.",
+  "pitfalls": "Output dir must be the NAS Komga Manga root over the LAN mount — if the mount is down, downloads have nowhere to land (add a check on the mount). Extension availability shifts; treat manga acquisition as best-effort. Depends on read-17 (Komga) existing."
  }
 ]

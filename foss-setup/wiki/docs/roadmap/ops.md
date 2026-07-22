@@ -1,6 +1,6 @@
 # Roadmap — ops
 
-29 task(s). Status mirrors `docs/progress.json` (the source of truth).
+30 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -26,6 +26,7 @@
 | `glue-06` | Push ALL configs to Git + run the rebuild drill (capstone) | ⏸️ deferred | 1-2 hr |
 | `glue-07` | Fleet maintenance with Ansible (run one command across every box) | ✅ done | 1-1.5 hr |
 | `glue-08` | Self-converging fleet with ansible-pull + roles (the set-and-forget layer) | ✅ done | 2-3 hr |
+| `glue-10` | Deploy Scrutiny (disk SMART health) across the fleet + Homepage widget | ⬜ open | 1.5 hr |
 | `nas-31` | Immich: backup freshness + mobile pairing checks failing (fix-35 regression) | ⬜ open | 30-60 min |
 | `net-16` | homepage container DNS: EAI_AGAIN on tabaska.us names (159 errors/2h) | ⬜ open | 20-40 min |
 | `sbom-01` | Deploy OWASP Dependency-Track v5 (the SBOM / vulnerability dashboard) | 🗑️ retired | 45-60 min |
