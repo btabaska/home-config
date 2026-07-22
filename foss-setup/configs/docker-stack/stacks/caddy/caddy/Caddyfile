@@ -249,14 +249,6 @@ amp.{$DOMAIN} {
 	reverse_proxy {$RIG_IP}:8080
 }
 
-# Nextcloud (EVAL — cloud-01, 2026-07-22; on the rig, plain HTTP :11000). Self-contained
-# eval stack; remove this whole block + reload if the eval is abandoned (cloud-10). Caddy
-# streams uploads with no body limit, so no request_body directive is needed for large files.
-cloud.{$DOMAIN} {
-	import local_tls
-	reverse_proxy {$RIG_IP}:11000
-}
-
 # Backup dead-man's-switch
 health.{$DOMAIN} {
 	import local_tls
