@@ -172,10 +172,22 @@
         icon: mdi-sword-cross
         href: https://amp.tabaska.us
         description: Palworld server (rig)
+        # Palworld's A2S query port (27015) isn't published; its REST API (8212) is.
         widget:
-          type: gamedig
-          serverType: palworld
-          url: udp://192.168.10.12:8211
+          type: customapi
+          url: http://192.168.10.12:8212/v1/api/metrics
+          username: admin
+          password: "{{HOMEPAGE_VAR_PALWORLD_ADMIN}}"
+          mappings:
+            - field: currentplayernum
+              label: Players
+              format: number
+            - field: maxplayernum
+              label: Max
+              format: number
+            - field: serverfps
+              label: FPS
+              format: number
     - Minecraft:
         icon: mdi-minecraft
         href: https://amp.tabaska.us

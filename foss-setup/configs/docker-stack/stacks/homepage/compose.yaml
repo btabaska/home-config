@@ -27,10 +27,13 @@ services:
       - TZ=${TZ:-America/New_York}
       # Comma-separated allow-list of host headers Homepage will serve.
       - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_ALLOWED_HOSTS:-localhost:3010}
-    # Docker's 127.0.0.11 resolver only knows edge-network containers — not AdGuard's
-    # *.tabaska.us rewrites. Point at AdGuard so ping/widgets using tabaska.us resolve.
+    # Docker's 127.0.0.11 resolver handles edge-network container names; external
+    # names (api.open-meteo.com) + *.tabaska.us rewrites forward to these. The mini
+    # AdGuard (192.168.10.2) TIMES OUT from containers (net-16) — use the NAS AdGuard,
+    # with a public fallback so weather/external widgets still resolve if it's down.
     dns:
-      - 192.168.10.2
+      - 192.168.10.4
+      - 9.9.9.9
     volumes:
       - ./config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock:ro # container auto-discovery (read-only)
