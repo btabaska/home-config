@@ -13,6 +13,14 @@
           type: plex
           url: http://192.168.10.4:32400
           key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
+    - Tautulli:
+        icon: tautulli.png
+        href: https://tautulli.tabaska.us
+        description: Plex activity & stats
+        widget:
+          type: tautulli
+          url: http://tautulli:8181
+          key: "{{HOMEPAGE_VAR_TAUTULLI_KEY}}"
     - Navidrome:
         icon: navidrome.png
         href: https://music.tabaska.us
@@ -112,7 +120,11 @@
         icon: home-assistant.png
         href: https://ha.tabaska.us
         description: Smart home automation
-        siteMonitor: http://192.168.10.50:8123
+        widget:
+          type: homeassistant
+          url: http://192.168.10.50:8123
+          key: "{{HOMEPAGE_VAR_HA_TOKEN}}"
+          fields: [people_home, lights_on, switches_on]
     - Wiki:
         icon: mdi-book-open-page-variant
         href: https://wiki.tabaska.us
@@ -147,12 +159,31 @@
         icon: mdi-controller-classic
         href: https://romm.tabaska.us
         description: Retro library
-        siteMonitor: http://romm:8080
+        widget:
+          type: romm
+          url: http://romm:8080
+          fields: [platforms, totalRoms, saves, states]
     - AMP:
         icon: mdi-gamepad-variant
         href: https://amp.tabaska.us
         description: Game panel
         siteMonitor: http://192.168.10.12:8080
+    - Palworld:
+        icon: mdi-sword-cross
+        href: https://amp.tabaska.us
+        description: Palworld server (rig)
+        widget:
+          type: gamedig
+          serverType: palworld
+          url: udp://192.168.10.12:8211
+    - Minecraft:
+        icon: mdi-minecraft
+        href: https://amp.tabaska.us
+        description: Minecraft Java server (rig)
+        widget:
+          type: gamedig
+          serverType: minecraft
+          url: udp://192.168.10.12:25565
 
 - AI:
     - Open WebUI:

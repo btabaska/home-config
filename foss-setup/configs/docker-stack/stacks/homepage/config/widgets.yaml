@@ -18,3 +18,12 @@
       timeStyle: short
       dateStyle: short
       hourCycle: h23
+
+# Keyless Open-Meteo — no API key/vault secret. Coords from HA (home-05).
+- openmeteo:
+    label: Weather
+    latitude: 43.140097
+    longitude: -77.5773271
+    timezone: America/New_York
+    units: imperial
+    cache: 5
