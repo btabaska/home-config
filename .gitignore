@@ -21,3 +21,4 @@ __pycache__/
 # "name 2.md" / "name 3.md" duplicates. Never track them.
 * [0-9].*
 * [0-9][0-9].*
+foss-setup/.handoff_secrets.yaml
