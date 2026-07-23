@@ -1,0 +1,160 @@
+{
+  "name": "journal-analyze",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "journal",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "a1c07f3d-2b6e-4890-9d11-000000000001",
+      "name": "Webhook (memo event)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        260,
+        300
+      ],
+      "webhookId": "d7e4b0a1-6c9f-4b02-8f3a-7e1d5c6b9a44"
+    },
+    {
+      "parameters": {
+        "jsCode": "// journal-03 loop guard + request builder.\n// The webhook fires memos.memo.created AND memos.memo.comment.created; creating a\n// COMMENT (our reflection) re-fires memo.created carrying the *comment* memo. We\n// must analyze ONLY genuine #journal entries and never our own output.\nconst evt = ($input.first().json && $input.first().json.body) || {};\nconst activity = evt.activityType || '';\nconst memo = evt.memo || {};\nconst content = (memo.content || '').toString();\nconst tags = Array.isArray(memo.tags) ? memo.tags : [];\nconst name = memo.name || '';\nconst SENTINEL = '\\u{1F9ED} **Reflection**'; // the header our reflection comment starts with\n\n// 1) only entry-created events (drops memos.memo.comment.created outright)\nif (activity !== 'memos.memo.created') return [];\n// 2) must be a journal entry. #gamelog templates also carry #journal, so this one\n//    tag gates both paths - and our reflection comment has no #journal, so this is\n//    itself a loop guard.\nif (!tags.includes('journal')) return [];\n// 3) never re-analyze our own reflection or an already-analyzed marker\nif (content.includes(SENTINEL) || content.toLowerCase().includes('#analyzed')) return [];\n// 4) need something to comment on and something to analyze\nif (!name || !content.trim()) return [];\n\nconst SYS = \"You are a quiet, warm journaling companion. You receive ONE journal entry. Respond ONLY with valid JSON in exactly this schema:\\n{\\n  \\\"sentiment\\\": \\\"<very negative|negative|neutral|positive|very positive>\\\",\\n  \\\"mood_score\\\": <integer 1-10>,\\n  \\\"emotions\\\": [\\\"<up to 4>\\\"],\\n  \\\"themes\\\": [\\\"<up to 4>\\\"],\\n  \\\"summary\\\": \\\"<one-sentence reflection of what this entry is about>\\\",\\n  \\\"coaching\\\": \\\"<1-2 sentences, gentle and low-pressure. Reflect back one specific thing. At MOST one soft, open-ended question - and only if it genuinely helps. No advice, no cliches, no cheerleading. It is fine to simply witness.>\\\"\\n}\\nBe honest and specific, never saccharine. Stay light - you are a nudge, not a coach. If the entry suggests crisis or self-harm risk, set coaching to gently, briefly encourage reaching out to a trusted person or professional. Never give medical advice.\";\n\nreturn [{ json: {\n  memoName: name,\n  content: content,\n  messages: [\n    { role: 'system', content: SYS },\n    { role: 'user', content: content }\n  ]\n} }];\n"
+      },
+      "id": "a1c07f3d-2b6e-4890-9d11-000000000002",
+      "name": "Guard: loop-safe filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.LLM_BASE_URL || 'http://192.168.10.12:9292/v1') }}/chat/completions",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"model\": ($env.LLM_MODEL || 'dolphin-venice-24b'), \"messages\": $json.messages, \"temperature\": (parseFloat($env.LLM_TEMP) || 0.35), \"max_tokens\": 700, \"stream\": false } }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "a1c07f3d-2b6e-4890-9d11-000000000003",
+      "name": "LLM: rig llama-swap (dolphin-venice-24b)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Tolerant parse of the (possibly chatty/fenced) LLM reply, then format the\n// Markdown reflection. If the model was evicted/OOM'd (VRAM contention on the rig)\n// the HTTP node continues on error with no choices -> we post NOTHING (best-effort;\n// the journal entry itself is already saved). A chatty reply never breaks the loop.\nconst guard = $('Guard: loop-safe filter').first().json;\nconst memoName = guard.memoName;\n\nlet text = null;\ntry {\n  const j = $input.first().json;\n  if (j && j.choices && j.choices[0] && j.choices[0].message) {\n    text = j.choices[0].message.content;\n  }\n} catch (e) { text = null; }\n\nif (!text || !text.toString().trim()) return []; // LLM unavailable -> no comment\n\nfunction extractJSON(raw) {\n  const t = raw.toString().trim();\n  // 1) as-is\n  try { return JSON.parse(t); } catch (e) {}\n  // 2) inside a ```json ... ``` fence\n  const fence = t.match(/```(?:json)?\\s*([\\s\\S]*?)```/i);\n  if (fence) { try { return JSON.parse(fence[1].trim()); } catch (e) {} }\n  // 3) first '{' .. last '}' (chatty prose around a complete object)\n  const a = t.indexOf('{'), b = t.lastIndexOf('}');\n  if (a !== -1 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch (e) {} }\n  // 4) truncation repair: a small model can drop the closing brace / cut a string\n  //    mid-value. Balance an odd trailing quote, then the braces, and retry.\n  if (a !== -1) {\n    let s = t.slice(a).replace(/[\\s,]+$/, '');\n    const quotes = (s.match(/(?<!\\\\)\"/g) || []).length;\n    if (quotes % 2 === 1) s += '\"';\n    const open = (s.match(/{/g) || []).length, close = (s.match(/}/g) || []).length;\n    if (open > close) s += '}'.repeat(open - close);\n    try { return JSON.parse(s); } catch (e) {}\n  }\n  return null;\n}\n\nconst obj = extractJSON(text);\nif (!obj || typeof obj !== 'object') return []; // unparseable -> best-effort skip\n\nconst clampMood = (v) => { const n = parseInt(v, 10); return isNaN(n) ? null : Math.max(1, Math.min(10, n)); };\nconst sentiment = (obj.sentiment || 'neutral').toString().trim();\nconst mood = clampMood(obj.mood_score);\nconst emotions = Array.isArray(obj.emotions) ? obj.emotions.slice(0, 4).map(x => x.toString().trim()).filter(Boolean) : [];\nconst themes = Array.isArray(obj.themes) ? obj.themes.slice(0, 4).map(x => x.toString().trim()).filter(Boolean) : [];\nconst coaching = (obj.coaching || '').toString().trim();\nif (!coaching) return []; // nothing to say -> stay quiet\n\nconst moodStr = mood ? (mood + '/10') : '—';\nconst parts = [];\nif (emotions.length) parts.push('_Emotions:_ ' + emotions.join(', '));\nif (themes.length) parts.push('_Themes:_ ' + themes.join(', '));\n\nlet md = '\\u{1F9ED} **Reflection** · mood ' + moodStr + ' · ' + sentiment;\nif (parts.length) md += '\\n' + parts.join('  ·  ');\nmd += '\\n\\n' + coaching;\n\nreturn [{ json: { memoName: memoName, comment: md } }];\n"
+      },
+      "id": "a1c07f3d-2b6e-4890-9d11-000000000004",
+      "name": "Parse + format reflection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'http://memos:5230/api/v1/' + $json.memoName + '/comments' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.MEMOS_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"content\": $json.comment, \"visibility\": \"PRIVATE\" } }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "a1c07f3d-2b6e-4890-9d11-000000000005",
+      "name": "Post reflection as COMMENT",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook (memo event)": {
+      "main": [
+        [
+          {
+            "node": "Guard: loop-safe filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guard: loop-safe filter": {
+      "main": [
+        [
+          {
+            "node": "LLM: rig llama-swap (dolphin-venice-24b)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: rig llama-swap (dolphin-venice-24b)": {
+      "main": [
+        [
+          {
+            "node": "Parse + format reflection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse + format reflection": {
+      "main": [
+        [
+          {
+            "node": "Post reflection as COMMENT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "saveManualExecutions": true
+  },
+  "active": false,
+  "id": "c4d9a7e1b2f80356",
+  "tags": [],
+  "pinData": {},
+  "staticData": null,
+  "meta": null
+}

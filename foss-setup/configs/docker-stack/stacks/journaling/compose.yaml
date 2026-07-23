@@ -65,6 +65,15 @@ services:
       - N8N_VERSION_NOTIFICATIONS_ENABLED=false
       - N8N_PERSONALIZATION_ENABLED=false
       - N8N_HIRING_BANNER_ENABLED=false
+      # journal-03: the journal-analyze workflow reads these from the container
+      # env via $env in node expressions. Access is allowed explicitly (default is
+      # already false, but pin it so a future n8n default flip can't break the
+      # write-back). Only MEMOS_API_TOKEN is a secret; no other secrets live here.
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - MEMOS_API_TOKEN=${MEMOS_API_TOKEN}   # never-expiring Memos PAT — write-back COMMENTs
+      - LLM_BASE_URL=${LLM_BASE_URL}          # rig llama-swap, OpenAI-compatible base
+      - LLM_MODEL=${LLM_MODEL}                # coach model (one-line swap: deckard-heretic)
+      - LLM_TEMP=${LLM_TEMP}                  # low temp for stable JSON
     volumes:
       - ./n8n:/home/node/.n8n # workflows + sqlite + encryption key — restic-backed
     networks:

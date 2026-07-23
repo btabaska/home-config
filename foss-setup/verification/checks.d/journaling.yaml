@@ -67,3 +67,21 @@ checks:
     task_id: journal-02
     runbook: wiki/docs/services/journaling.md
     enabled: true
+
+  # journal-03 consumer-wiring invariant: the n8n journal-analyze workflow must be
+  # ACTIVE with its POST webhook registered, or memos fires into a void and no entry
+  # is ever reflected on — while all three containers stay green. n8n's webhook router
+  # returns the "...not registered for GET requests" message ONLY when a POST webhook
+  # owns /webhook/journal (armed); a deactivated/unpublished workflow instead yields a
+  # generic "Cannot GET"/unknown-webhook reply. This directly catches the silent
+  # non-registration failure mode (stale webhook_entity row, lost published version).
+  - id: journaling-analyze-armed
+    tier: fast
+    name: "n8n journal-analyze webhook is armed (POST /webhook/journal registered)"
+    host: mini
+    cmd: curl -s -m 8 http://localhost:5678/webhook/journal
+    expect: 'not registered for GET requests'
+    severity: crit
+    task_id: journal-03
+    runbook: wiki/docs/services/journaling.md
+    enabled: true

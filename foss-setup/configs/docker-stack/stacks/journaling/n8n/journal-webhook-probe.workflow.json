@@ -1,8 +1,8 @@
 {
   "id": "b7220e5e19c34aed",
   "name": "journal-webhook-probe",
-  "description": null,
-  "active": true,
+  "description": "journal-02 payload-capture probe. SUPERSEDED by journal-analyze (journal-03), which now owns POST /webhook/journal. Kept inactive as a record of the validated memos.memo.* payload shapes.",
+  "active": false,
   "isArchived": false,
   "nodes": [
     {
