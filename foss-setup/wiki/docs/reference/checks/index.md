@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **268 checks across 28 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **269 checks across 28 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -19,7 +19,7 @@ Every acceptance/regression check the fleet runs — **268 checks across 28 doma
 | [media-library-correctness](media-library-correctness.md) | 7 | 0 | 7 |
 | [media-watchable](media-watchable.md) | 4 | 0 | 4 |
 | [mini-services](mini-services.md) | 27 | 9 | 18 |
-| [monitoring-coverage](monitoring-coverage.md) | 7 | 1 | 6 |
+| [monitoring-coverage](monitoring-coverage.md) | 8 | 1 | 7 |
 | [nas-host](nas-host.md) | 7 | 1 | 6 |
 | [nas-services](nas-services.md) | 18 | 3 | 15 |
 | [network](network.md) | 1 | 0 | 1 |
@@ -33,4 +33,4 @@ Every acceptance/regression check the fleet runs — **268 checks across 28 doma
 | [system](system.md) | 8 | 4 | 4 |
 | [verification-self](verification-self.md) | 5 | 0 | 5 |
 
-_Total: 268 checks._
+_Total: 269 checks._

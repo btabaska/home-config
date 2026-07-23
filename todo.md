@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**211/305 done** · **63 open** · **18 deferred** · 13 retired.
+**212/305 done** · **62 open** · **18 deferred** · 13 retired.
 
 ---
 
@@ -33,9 +33,6 @@
 - [ ] **`retro-05`** Rig: emulation frontend + RomM integration _(est 60 min)_
 - [ ] **`retro-06`** RetroAchievements + cheat DB _(est 30 min)_ — ⛔ gate: RetroAchievements account creds in vault
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
-
-### home-surface
-- [ ] **`home-08`** Homepage UniFi widget (Calendar tile shipped 2026-07-22) _(est 20 min)_ — ⛔ gate: needs a LOCAL read-only UniFi Network account in the vault (new unifi_network.username/password block) — operator creates it in UniFi (192.168.10.1) -> Settings -> Admins & Users -> Add local user with Network 'View Only' role (NOT the Ubiquiti SSO/cloud login, NOT the Protect-only account which 403s on Network auth).
 
 ### media-pipeline
 - [ ] **`media-05`** Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) _(est 1-2 hrs)_

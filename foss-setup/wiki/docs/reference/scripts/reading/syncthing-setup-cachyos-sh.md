@@ -45,7 +45,7 @@ Safe to re-run: skips the pacman install if syncthing is already present and
 
 ## Environment / variables referenced
 
-`USER`
+`CFG`, `GUSER`, `KEY`, `SYNCTHING_GUI_PASSWORD`, `SYNCTHING_GUI_USER`, `USER`
 
 ## See also
 

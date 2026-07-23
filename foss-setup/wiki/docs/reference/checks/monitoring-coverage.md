@@ -1,6 +1,6 @@
 # Checks — monitoring-coverage
 
-`foss-setup/verification/checks.d/monitoring-coverage.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/monitoring-coverage.yaml` — 8 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `homepage-dead-tiles`
 
@@ -33,6 +33,17 @@ homepage container fetches the Proton Calendar .ics (home-08 Calendar consumer e
 
 ```bash
 docker exec homepage sh -c 'wget -qO- "$HOMEPAGE_VAR_PROTON_CAL_ICS" 2>/dev/null | head -c 15'
+```
+
+## `homepage-unifi-tile`
+
+homepage UniFi Network tile returns live gateway health (home-08 consumer end)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `home-08` · **enabled:** True
+- **expects:** `^UNIFI_TILE=OK$`
+
+```bash
+python3 /opt/verification/bin/homepage-unifi-tile.py
 ```
 
 ## `kuma-all-monitors-notified`

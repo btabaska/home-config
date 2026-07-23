@@ -57,6 +57,26 @@ checks:
     runbook: wiki/docs/runbooks/monitoring-coverage.md
     enabled: true
 
+  # ── home-08 · UniFi Network tile renders live gateway health ─────────────
+  # The paired half of home-08 (the Calendar tile above is the other). The UniFi
+  # Network tile (Infrastructure group) is backed by a DEDICATED local read-only
+  # UniFi Network account (vault unifi_network.*). If that account is deleted /
+  # disabled / its password rotated, the `unifi` widget silently blanks to "-" —
+  # no dead tile, no DNS error — so the M17 guards above cannot see it. This drives
+  # the SAME server-side path the browser widget uses (homepage proxies the unifi
+  # stat/sites call, logging in with the injected creds) and requires a real site-
+  # health payload back. It does NOT assert wan == ok, so a genuine internet
+  # outage does not flap it — only a broken credential / widget path fails it.
+  - id: homepage-unifi-tile
+    name: "homepage UniFi Network tile returns live gateway health (home-08 consumer end)"
+    host: mini
+    cmd: python3 /opt/verification/bin/homepage-unifi-tile.py
+    expect: '^UNIFI_TILE=OK$'
+    severity: warn
+    task_id: home-08
+    runbook: wiki/docs/runbooks/monitoring-coverage.md
+    enabled: true
+
   # ── M21 · every Uptime-Kuma monitor has an alert channel ─────────────────
   # bootstrap-nas-monitors.sh used to insert monitors and leave "attach ntfy" as
   # a manual step, so NAS Whisparr (id 56) shipped with no monitor_notification

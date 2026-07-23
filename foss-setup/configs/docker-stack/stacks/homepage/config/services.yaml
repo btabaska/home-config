@@ -8,8 +8,8 @@
 # service widgets by service_group + service_name — NO new arr secret) merged with
 # personal Proton Calendar events (published .ics; URL = vault
 # homepage_widgets.proton_calendar_ics_url -> HOMEPAGE_VAR_PROTON_CAL_ICS).
-# Placed first as the household's daily-use anchor. The paired UniFi tile is
-# deferred (needs a local read-only Network account) — tracked separately.
+# Placed first as the household's daily-use anchor. The paired UniFi tile shipped
+# 2026-07-23 (home-08 complete) — see the UniFi Network tile in the Infrastructure group.
 - Calendar:
     - Agenda:
         icon: mdi-calendar-month
@@ -340,6 +340,21 @@
           key: "{{HOMEPAGE_VAR_SLSKD_KEY}}"
 
 - Infrastructure:
+    # home-08: UniFi Network status from the UDM/Dream Wall gateway (network backbone).
+    # The `unifi` widget authenticates with a DEDICATED local read-only Network account
+    # (View Only role) — the unifi_protect account 403s on the Network login API, so it
+    # cannot be reused. Widget handles the UDM /proxy/network routing + self-signed cert
+    # internally; url is the plain gateway https (port 443), site defaults to "default".
+    - UniFi Network:
+        icon: unifi.png
+        href: https://192.168.10.1
+        description: Dream Wall · WAN/LAN/WLAN
+        widget:
+          type: unifi
+          url: https://192.168.10.1
+          username: "{{HOMEPAGE_VAR_UNIFI_USER}}"
+          password: "{{HOMEPAGE_VAR_UNIFI_PASS}}"
+          fields: [wan, lan_users, wlan_users, uptime]
     - Beszel:
         icon: beszel.png
         href: https://status.tabaska.us
