@@ -109,7 +109,7 @@ is landed consistently and anti-drift holds:
 1. **Verify the widget exists + its exact fields first.** Homepage widgets are versioned —
    check `https://gethomepage.dev/widgets/services/<type>/` (or `/info/<type>/`) before wiring.
    Do NOT invent a `widget.type`. Known no-widget services (keep as `siteMonitor`): whisparr,
-   pinchflat, metube, wallabag, open-webui, comfyui, vaultwarden, flaresolverr, dockge.
+   pinchflat, metube, wallabag, open-webui, comfyui, flaresolverr, dockge.
 2. **Live is the mini's `/opt/stacks/homepage/config/`; the repo mirror is
    `configs/docker-stack/stacks/homepage/config/`.** Edit both the same session — a live-only
    tile reverts on the next redeploy. Secrets go in the stack `.env` as `HOMEPAGE_VAR_*` and in

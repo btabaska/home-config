@@ -207,11 +207,6 @@
           url: http://adguardhome:80
           username: "{{HOMEPAGE_VAR_ADGUARD_USER}}"
           password: "{{HOMEPAGE_VAR_ADGUARD_PASS}}"
-    - Vaultwarden:
-        icon: vaultwarden.png
-        href: https://vault.tabaska.us
-        description: Passwords
-        siteMonitor: http://vaultwarden:80
 
 - Games:
     - RomM:

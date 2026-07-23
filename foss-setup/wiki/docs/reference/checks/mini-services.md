@@ -233,17 +233,6 @@ dockge answers on :5001
 curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:5001/
 ```
 
-## `mini-vaultwarden`
-
-vaultwarden web vault answers at https://vault.tabaska.us
-
-- **host:** `mini` · **severity:** `crit` · **guards task:** `docker-14` · **enabled:** True
-- **expects:** `^200$`
-
-```bash
-curl -sk -o /dev/null -m 8 -w '%{http_code}' --resolve vault.tabaska.us:443:127.0.0.1 https://vault.tabaska.us/
-```
-
 ## `romm-serving`
 
 RomM answers its heartbeat with a version (functional, not just container-up)
@@ -253,6 +242,17 @@ RomM answers its heartbeat with a version (functional, not just container-up)
 
 ```bash
 curl -sf --max-time 10 http://localhost:8998/api/heartbeat 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); s=d.get('SYSTEM') or {}; v=s.get('VERSION') or ''; print('romm=ok:'+v if v else 'romm=BAD')" 2>/dev/null || echo romm=BAD
+```
+
+## `romm-retroachievements`
+
+RomM reports RetroAchievements enabled (RA_API_ENABLED true in heartbeat)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `retro-02` · **enabled:** True
+- **expects:** `^ra=on$`
+
+```bash
+curl -sf --max-time 10 http://localhost:8998/api/heartbeat 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); m=d.get('METADATA_SOURCES') or {}; print('ra=on' if m.get('RA_API_ENABLED') else 'ra=OFF')" 2>/dev/null || echo ra=OFF
 ```
 
 ## `metube-serving`

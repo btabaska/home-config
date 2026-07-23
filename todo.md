@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**203/298 done** · **64 open** · **18 deferred** · 13 retired.
+**204/298 done** · **63 open** · **18 deferred** · 13 retired.
 
 ---
 
@@ -70,11 +70,10 @@
 - [ ] **`read-18`** Deploy Suwayomi (manga server) on the rig, feeding Komga _(est 1.5 hr)_
 
 ### security
-- [ ] **`foss-01`** Bitwarden → Vaultwarden data cutover (point clients at vault.tabaska.us) _(est 1-2 hrs)_
 - [ ] **`foss-04`** Ente Auth adoption + YubiKey enrollment (Authy migration) _(est 1-2 hrs)_
 - [ ] **`sec-01`** Turn on MFA/2FA everywhere (hardware key on the crown jewels) _(est 1-2 hrs)_
 - [ ] **`sec-04`** Harden exposed surfaces (CrowdSec + forward-auth on the seedbox/public ports) _(est 1 hr)_ — ⛔ gate: Tailscale SSH ACL for operator → seedbox (currently blocked)
-- [ ] **`sec-06`** B2 master key custody: regenerate in console, store offline (Bitwarden/paper); optionally scope HB's key _(est 15-30 min)_
+- [ ] **`sec-06`** B2 master key custody: regenerate in console, store offline (Proton Pass/paper); optionally scope HB's key _(est 15-30 min)_
 - [ ] **`sec-07`** ntfy least-privilege: per-publisher users/tokens instead of everything on admin _(est 1-2 hrs)_
 - [ ] **`sec-08`** Rotate credentials that left the fleet: Plex token (iCloud snapshot) + secrets printed in the committed audit doc; purge iCloud Recently Deleted _(est 1-2 hrs)_ — ⛔ gate: plex-token-rotation-signs-out-devices
 - [ ] **`sec-09`** Cloudflare token least-privilege: read-only DNS token for verification; keep the write token vault-only _(est 30-45 min)_

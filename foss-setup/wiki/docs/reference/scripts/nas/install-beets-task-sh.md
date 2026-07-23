@@ -19,6 +19,7 @@ _No header documentation in the script._
 - [`ensure-navidrome-music-ignore.sh`](ensure-navidrome-music-ignore-sh.md)
 - [`immich-db-dump.sh`](immich-db-dump-sh.md)
 - [`immich-pg-dump.sh`](immich-pg-dump-sh.md)
+- [`import-seedbox-roms.sh`](import-seedbox-roms-sh.md)
 - [`install-immich-dump-task.sh`](install-immich-dump-task-sh.md)
 - [`install-nas-docker-health-task.sh`](install-nas-docker-health-task-sh.md)
 - [`install-recycle-empty-task.sh`](install-recycle-empty-task-sh.md)

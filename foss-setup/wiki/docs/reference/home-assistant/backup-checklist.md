@@ -29,7 +29,7 @@ archive on the NAS:
 |---|---|
 | Automatic backups | **Configured**, daily at **04:45** |
 | Backup agents | `hassio.local` (on-appliance eMMC) **and** `hassio.nas_backups` (off-eMMC) |
-| Encryption | **On** — key in vault `hosts.ha.backup_password` (also Bitwarden) |
+| Encryption | **On** — key in vault `hosts.ha.backup_password` (also Proton Pass) |
 | Contents | Full: config + database + all add-ons |
 | Retention | **3** copies per agent |
 | Off-eMMC target | Supervisor CIFS mount `nas_backups` → `//192.168.10.4/backups` |
@@ -42,7 +42,7 @@ empty/stale NAS location fails loudly rather than passing vacuously.
 
 !!! warning "The key is the backup"
     The archives are useless without `hosts.ha.backup_password`. It must live
-    OUTSIDE HA (vault + Bitwarden) — a key sitting only on HA is no help if HA dies.
+    OUTSIDE HA (vault + Proton Pass) — a key sitting only on HA is no help if HA dies.
 
 ---
 

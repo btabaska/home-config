@@ -71,7 +71,7 @@ single local rollback snapshot (`pre-homekit-bridge-claude`, id `bdcf6693`,
 
 Target (still pending): Settings → System → Backups → scheduled full backups
 to the **NAS** with an encryption key. **The backup encryption key must live
-in Bitwarden — a backup without its key is not a backup.** Also put `/config`
+in Proton Pass — a backup without its key is not a backup.** Also put `/config`
 YAML under git via the Git add-on, and separately back up the Midea token
 files once Midea is added.
 

@@ -1,6 +1,6 @@
 # Checks — nas-services
 
-`foss-setup/verification/checks.d/nas-services.yaml` — 17 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/nas-services.yaml` — 18 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `nas-ssh`
 
@@ -24,15 +24,15 @@ flaresolverr Cloudflare solver healthy (Prowlarr/arr search dependency)
 curl -sm 8 http://localhost:8191/health
 ```
 
-## `nas-rreading-glasses`
+## `nas-rreading-glasses-hc`
 
-rreading-glasses metadata provider serving on :8788 (readarr/libreseerr)
+rreading-glasses-hc hardcover metadata provider serving on :8789 (bookshelf)
 
-- **host:** `nas` · **severity:** `warn` · **guards task:** `nas-01` · **enabled:** True
+- **host:** `nas` · **severity:** `warn` · **guards task:** `bmig-01` · **enabled:** True
 - **expects:** `^200$`
 
 ```bash
-curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8788/
+curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8789/
 ```
 
 ## `nas-immich`
@@ -112,15 +112,15 @@ prowlarr answers on nas:9696
 curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:9696/
 ```
 
-## `nas-readarr`
+## `nas-bookshelf`
 
-readarr answers on nas:8787
+bookshelf answers on nas:8790
 
-- **host:** `mini` · **severity:** `warn` · **guards task:** `ebook-02` · **enabled:** True
+- **host:** `mini` · **severity:** `warn` · **guards task:** `bmig-02` · **enabled:** True
 - **expects:** `^302$`
 
 ```bash
-curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:8787/
+curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:8790/
 ```
 
 ## `stash-serving`
@@ -187,6 +187,17 @@ immich has at least one mobile (iOS/Android) session paired
 
 ```bash
 n=$(printf '%s\n' "$NAS_SUDO_PASSWORD" | ssh -o BatchMode=yes -o ConnectTimeout=10 nas "sudo -S -p '' /usr/local/bin/docker exec immich_postgres psql -U postgres -d immich -tAc \"SELECT count(*) FROM session WHERE \\\"deviceOS\\\" ILIKE '%ios%' OR \\\"deviceOS\\\" ILIKE '%android%'\"" 2>/dev/null); [ -n "$n" ] && [ "$n" -gt 0 ] && echo paired=yes || echo "paired=NO mobile_sessions=${n:-query_failed}"
+```
+
+## `nas-beszel-volume-split`
+
+NAS beszel-agent still mounts all 3 volume extra-filesystems (home-07)
+
+- **host:** `nas` · **severity:** `warn` · **guards task:** `home-07` · **enabled:** True
+- **expects:** `^3$`
+
+```bash
+grep -c 'extra-filesystems/volume[123]:ro' /volume1/docker/beszel-agent/compose.yaml
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

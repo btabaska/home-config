@@ -123,11 +123,9 @@ Most run as one small container each.
 
 - **Paperless-ngx** — OCRs every page, auto-tags/classifies, full-text search. The document half of leaving Apple that nothing else here covers. Feed from a watched "consume" folder. Five containers: webserver + Postgres + Redis + **Gotenberg** + **Tika**. *Host on the NAS* — its data is **Tier 1**. **Status: planned, not yet deployed** (no Paperless containers on the NAS as of 2026-07-14).
 
-## Passwords (Bitwarden — keep what you have)
+## Passwords (Proton Pass — consolidated)
 
-**Decision: stay on Bitwarden.** Open-source, audited (Cure53), zero-knowledge, great iOS/browser autofill, TOTP, self-hostable later. It holds the **backup encryption keys, the HA backup key, and the SOPS/age key** (with a printed off-machine copy).
-
-- *Optional self-host:* **Vaultwarden** (~256 MB RAM) if owning the vault outright is the goal. Back it up as Tier 1.
+**Decision: consolidate on Proton Pass** (included with Proton Family). Open-source clients, end-to-end encrypted, passkeys + TOTP, great autofill. It holds the **backup encryption keys, the HA backup key, and the SOPS/age key** (with a printed off-machine copy).
 
 ## Recipes
 

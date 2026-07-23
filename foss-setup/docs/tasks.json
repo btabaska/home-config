@@ -1476,7 +1476,7 @@
   "depends_on": [],
   "estimate": "1 hr + provisioning",
   "steps": [
-   "Sign up at bytesized-hosting.com for **Stream +3** (3000 GB, 6–10 TB/mo upload cap, €16/mo, EU). Record SFTP username, home path (/home/hd34/btabaska), and shared IP **185.162.184.38** in Bitwarden.",
+   "Sign up at bytesized-hosting.com for **Stream +3** (3000 GB, 6–10 TB/mo upload cap, €16/mo, EU). Record SFTP username, home path (/home/hd34/btabaska), and shared IP **185.162.184.38** in Proton Pass.",
    "Architecture lock-in: Betty runs **Deluge** (torrents) and **slskd** (Soulseek, added in seed-09) — both P2P, both off-site. Do **NOT** install Sonarr, Radarr, Prowlarr, Lidarr, Readarr, qBittorrent, Bazarr, Soularr, beets, Unpackerr, or sync agents on Betty — the *arr stack + Soularr live on the NAS.",
    "Install Deluge from the Bytesized panel (Deluge only — skip the *arr one-click catalog). Set ratio/seed-time limits so torrents age out and the box self-prunes under 3 TB.",
    "Record Deluge daemon port + password (needed by nas-22). Continue to **betty-01** for label folders."
@@ -1548,7 +1548,7 @@
    {
     "h": "Prerequisites",
     "sub": [
-     "**seed-01 complete** — Stream +3 active, Deluge installed, Web UI reachable, credentials in Bitwarden.",
+     "**seed-01 complete** — Stream +3 active, Deluge installed, Web UI reachable, credentials in Proton Pass.",
      "Decide nothing else runs on Betty (Deluge-only)."
     ]
    },
@@ -3651,7 +3651,7 @@
     "sub": [
      "**ha-02 complete.** Use a **personal @gmail.com** account that owns the Nest devices — Workspace and Advanced-Protection accounts CANNOT use SDM.",
      "Nest devices already working in the Google Home app; confirm yours is SDM-supported before paying the $5.",
-     "HA reachable over HTTPS, or use the My Home Assistant redirect `https://my.home-assistant.io/redirect/oauth`. Bitwarden open for the IDs."
+     "HA reachable over HTTPS, or use the My Home Assistant redirect `https://my.home-assistant.io/redirect/oauth`. Proton Pass open for the IDs."
     ]
    },
    {
@@ -3675,7 +3675,7 @@
    {
     "h": "Step 4 — Back up the tokens",
     "body": [
-     "Store the Cloud Project ID, OAuth Client ID/Secret, Device Access Project ID, and Pub/Sub topic name in Bitwarden."
+     "Store the Cloud Project ID, OAuth Client ID/Secret, Device Access Project ID, and Pub/Sub topic name in Proton Pass."
     ]
    },
    {
@@ -3705,7 +3705,7 @@
    "Prerequisite: ha-04 (HACS) complete. Follow configs/homeassistant/midea-local-setup.md Path A.",
    "HACS → install **midea_ac_lan** → restart HA.",
    "Static DHCP on IoT VLAN for each Midea unit. Add integration → one-time cloud handshake for V3 token/key.",
-   "**Immediately back up** `/config/.storage/midea_ac_lan/*.json` to NAS + Bitwarden — Midea is closing token APIs.",
+   "**Immediately back up** `/config/.storage/midea_ac_lan/*.json` to NAS + Proton Pass — Midea is closing token APIs.",
    "Test local control with Midea cloud blocked on IoT VLAN (after token captured)."
   ],
   "commands": [],
@@ -3966,7 +3966,7 @@
    "Prerequisite: ha-02 complete.",
    "Install Samba Backup or HA backup to NAS share backups/ha/",
    "Schedule nightly 04:00",
-   "Copy encryption key to Bitwarden + paper — loss = unrecoverable backups",
+   "Copy encryption key to Proton Pass + paper — loss = unrecoverable backups",
    "Test restore on spare VM or second instance"
   ],
   "commands": [],
@@ -3997,7 +3997,7 @@
    {
     "h": "Step 1 — Set up backups + DOWNLOAD the emergency kit",
     "body": [
-     "Settings → System → **Backups → Set up backups**. During setup, **download the backup emergency kit** (it contains the encryption key) and **save the key in Bitwarden** plus an offline copy (paper / second vault). Store it **outside** HA — a key only on HA is useless if HA dies."
+     "Settings → System → **Backups → Set up backups**. During setup, **download the backup emergency kit** (it contains the encryption key) and **save the key in Proton Pass** plus an offline copy (paper / second vault). Store it **outside** HA — a key only on HA is useless if HA dies."
     ]
    },
    {
@@ -4014,7 +4014,7 @@
    }
   ],
   "pitfalls": [
-   "Storing the encryption key only on HA — if HA dies you can’t decrypt the backups. Put it in Bitwarden + offline.",
+   "Storing the encryption key only on HA — if HA dies you can’t decrypt the backups. Put it in Proton Pass + offline.",
    "Never testing a restore — an untested backup is a hope, not a backup.",
    "Backing up only locally — push a copy to the NAS so a dead HA Green isn’t a total loss."
   ],
@@ -4907,7 +4907,7 @@
   "estimate": "1 h",
   "steps": [
    "HUMAN — install \"Advanced SSH & Web Terminal\" add-on (Settings → Add-ons), key-auth with the fleet break-glass pubkey (configs/ansible/files/id_ed25519.pub), disable password auth. (Moved here from ha-02.)",
-   "AI — /config under git (HA Git pull add-on or commit job) → forgejo home/ha-config; backup encryption key → vault + Vaultwarden (ha-11 pairs with this).",
+   "AI — /config under git (HA Git pull add-on or commit job) → forgejo home/ha-config; backup encryption key → vault + Proton Pass (ha-11 pairs with this).",
    "AI — verification: deploy foss-setup/verification/checks.d/ha.yaml (added 2026-07-08: HTTP 200 + authed API check via token) to mini /opt/verification; confirm in the daily sweep.",
    "AI — Homepage: HA widget with entity counts (vault key already available); confirm ha.tabaska.us vhost still green.",
    "Decide tailnet membership for HA (currently LAN-only): join if remote HA access wanted without HomeKit relay; otherwise document as deliberate."
@@ -6956,7 +6956,7 @@
    "Prerequisite: nas-01 complete. Backblaze: create **private** B2 bucket + application key; enable **Object Lock** (immutable tier).",
    "DSM → Hyper Backup → Cloud → S3 Compatible → Backblaze B2.",
    "Select **Tier 1 shares on Volume 1:** photo, docs, appdata, backups, vault, home — add Immich dump folder after nas-08.",
-   "Enable **client-side encryption**; export .pem to Bitwarden + paper offline.",
+   "Enable **client-side encryption**; export .pem to Proton Pass + paper offline.",
    "Schedule daily 03:00. Scope B2 key to this bucket only.",
    "**Tier 2 media (vol2/vol3/vol1 music/books) does NOT go to B2** — see nas-03 for rotated HDD."
   ],
@@ -7160,7 +7160,7 @@
   "estimate": "45 min",
   "steps": [
    "Prerequisite: nas-02, nas-04, nas-06 complete.",
-   "Confirm all encryption keys in Bitwarden + paper",
+   "Confirm all encryption keys in Proton Pass + paper",
    "MacBook: `ENV_FILE=/etc/restic/b2.env ssh mini '~/Documents/Home/foss-setup/scripts/backup/restore-test.sh restic'`",
    "borgmatic restore test on mini",
    "DSM Hyper Backup: restore sample from B2",
@@ -8203,18 +8203,14 @@
   "depends_on": [],
   "estimate": "1-2 hrs",
   "steps": [
-   "Hardware key (WebAuthn) on crown jewels: Bitwarden, Proton, DSM admin, Tailscale admin, Forgejo admin.",
+   "Hardware key (WebAuthn) on crown jewels: Proton, DSM admin, Tailscale admin, Forgejo admin.",
    "TOTP on: Immich, Plex, Seerr, HA, Bytesized seedbox panel.",
    "Store backup codes offline (paper in fireproof box).",
-   "Bitwarden holds: backup encryption keys, HA backup key, SOPS/age key, B2 keys (reference only)."
+   "Proton Pass holds: backup encryption keys, HA backup key, SOPS/age key, B2 keys (reference only)."
   ],
   "commands": [],
   "files": [],
   "docs": [
-   {
-    "title": "Bitwarden two-step login",
-    "url": "https://bitwarden.com/help/setup-two-step-login-authenticator/"
-   },
    {
     "title": "Synology secure sign-in / 2FA",
     "url": "https://kb.synology.com/en-us/DSM/help/DSM/SecApp/secure_signin"
@@ -8386,7 +8382,7 @@
  },
  {
   "id": "sec-06",
-  "title": "B2 master key custody: regenerate in console, store offline (Bitwarden/paper); optionally scope HB's key",
+  "title": "B2 master key custody: regenerate in console, store offline (Proton Pass/paper); optionally scope HB's key",
   "host": "backblaze-b2",
   "type": "sync",
   "depends_on": [],
@@ -8396,10 +8392,10 @@
   "run": 5,
   "mode": "human",
   "gate": "",
-  "summary": "Follow-through on fix-22 (2026-07-17): the B2 master application key was retired from the vault and its value now exists nowhere locally. In the B2 web console: regenerate the master application key (invalidates the old exposed value) and store the new one OFFLINE (Bitwarden + printed copy) — never back into .handoff-secrets.yaml. Verified safe: Hyper Backup uses application key 'tabaskakey' (0056e2...0001), NOT the master, so regeneration breaks nothing. Optional hardening while in the console: restrict/recreate tabaskakey scoped to bucket-hyper-backup only (it needs write+delete there for Smart Recycle; today its scope is broader, though bucket-restic is shielded by GOVERNANCE retention regardless). Bucket admin afterwards = scripts/backup/b2-apply-bucket-policy.py with B2_MASTER_KEY_ID/B2_MASTER_KEY passed via env.",
+  "summary": "Follow-through on fix-22 (2026-07-17): the B2 master application key was retired from the vault and its value now exists nowhere locally. In the B2 web console: regenerate the master application key (invalidates the old exposed value) and store the new one OFFLINE (Proton Pass + printed copy) — never back into .handoff-secrets.yaml. Verified safe: Hyper Backup uses application key 'tabaskakey' (0056e2...0001), NOT the master, so regeneration breaks nothing. Optional hardening while in the console: restrict/recreate tabaskakey scoped to bucket-hyper-backup only (it needs write+delete there for Smart Recycle; today its scope is broader, though bucket-restic is shielded by GOVERNANCE retention regardless). Bucket admin afterwards = scripts/backup/b2-apply-bucket-policy.py with B2_MASTER_KEY_ID/B2_MASTER_KEY passed via env.",
   "steps": [
    "B2 console -> Account -> Application Keys -> regenerate master application key",
-   "Store new value in Bitwarden + printed copy; do NOT put it in the vault file",
+   "Store new value in Proton Pass + printed copy; do NOT put it in the vault file",
    "Optional: recreate 'tabaskakey' restricted to bucket-hyper-backup, update the key in DSM Hyper Backup task",
    "Confirm daily checks stay green: b2-restic-immutable, b2-bucket-policy, nas-hyperbackup-b2-fresh"
   ],
@@ -10412,27 +10408,21 @@
  },
  {
   "id": "foss-01",
-  "title": "Bitwarden → Vaultwarden data cutover (point clients at vault.tabaska.us)",
+  "title": "Password + secrets consolidation → Proton Pass (Vaultwarden retired)",
   "host": "all",
   "type": "sync",
-  "depends_on": [
-   "docker-08"
-  ],
+  "depends_on": [],
   "estimate": "1-2 hrs",
   "steps": [
-   "Vaultwarden server is LIVE (vault.tabaska.us); this is the DATA migration (was an untracked phantom 'Task 06').",
-   "Export Bitwarden vault, import into Vaultwarden; point official Bitwarden desktop/extension/iOS at the self-hosted URL.",
-   "Add rbw (Rust CLI) on the rig for shell access."
+   "Decision (2026-07-22): consolidate all passwords + secrets on Proton Pass (Proton Family already paid); Vaultwarden dropped from the stack — it added no value over Proton Pass.",
+   "Export the Vaultwarden vault and import into Proton Pass; verify entries.",
+   "Retire Vaultwarden: remove the container + /opt/stacks/vaultwarden, the vault.tabaska.us Caddy vhost, the Homepage tile, the Uptime-Kuma monitor, and the mini-vaultwarden verification check (data archived to /opt/stacks/backups/vaultwarden-retired-2026-07-22.tar.gz).",
+   "Proton Pass becomes the human source-of-truth for .handoff-secrets.yaml; the operational file itself stays on disk (all automation reads it)."
   ],
   "commands": [],
   "files": [],
-  "docs": [
-   {
-    "title": "research integration",
-    "url": "docs/research-integration.md"
-   }
-  ],
-  "verify": "All clients read/write the self-hosted Vaultwarden; Bitwarden cloud emptied.",
+  "docs": [],
+  "verify": "Passwords live in Proton Pass; Vaultwarden fully removed from the live stack and the repo; no vault.tabaska.us vhost.",
   "track": "security",
   "required": false,
   "run": 6,

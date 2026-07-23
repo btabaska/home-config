@@ -56,7 +56,7 @@ foss-setup/
 Each service lives in its own directory with its `compose.yaml` and a `.env.example`. That mirrors the **Dockge** convention (`/opt/stacks/<name>/`) so the manager discovers each stack, and it means any one service can be understood, backed up, or moved on its own.
 
 !!! note "Validated against live mini (2026-07-14)"
-    `ls /opt/stacks/` on the mini shows one directory per service, Dockge-style: `adguard backups bedrock-connect beszel bgutil-pot caddy dependency-track diun dockge forgejo frigate healthchecks homepage kometa libreseerr litellm maintainerr mealie metube miniflux musicseerr navidrome ntfy paperless-ngx pinchflat recyclarr romm seerr tautulli tdarr unbound uptime-kuma vaultwarden wallabag wiki`.
+    `ls /opt/stacks/` on the mini shows one directory per service, Dockge-style: `adguard backups bedrock-connect beszel bgutil-pot caddy dependency-track diun dockge forgejo frigate healthchecks homepage kometa libreseerr litellm maintainerr mealie metube miniflux musicseerr navidrome ntfy paperless-ngx pinchflat recyclarr romm seerr tautulli tdarr unbound uptime-kuma wallabag wiki`.
 
 ---
 

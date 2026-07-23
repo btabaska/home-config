@@ -18,7 +18,7 @@ Tier 2 (re-acquirable media) gets local redundancy only.
     the earlier "pending" was stale; the task was then **re-created with
     client-side encryption ON** ("S3 Backup enc" → `TabaskaNAS_2.hbk`,
     `enable_data_encrypt=true`, first full encrypted backup completed
-    2026-07-13 13:45; key in vault `hosts.nas.hyperbackup_password` + Bitwarden).
+    2026-07-13 13:45; key in vault `hosts.nas.hyperbackup_password` + Proton Pass).
     The old unencrypted `S3 Backup 1` / `TabaskaNAS_1.hbk` was deleted 2026-07-13.
     nas-06 (optional Hetzner 2nd off-site) was **retired** in the 2026-07-13
     roadmap prune — one off-site (B2) is the accepted design.
@@ -33,9 +33,9 @@ Tier 2 (re-acquirable media) gets local redundancy only.
 | Dotfiles | chezmoi | Live |
 | mini → B2 | restic daily timer: `/opt/stacks /etc ~/.ssh ~/.config ~/.docker` (env `/etc/restic/env`) | **Live**, dead-manned |
 | rig → B2 | restic daily timer: `/etc /home/btabaska` + Palworld saves + the AMP `MinecraftCross01` instance (gap closed — was missing until 2026-07-09) | **Live**, dead-manned |
-| NAS Tier 1 → B2 | Hyper Backup task "S3 Backup enc" → S3-compat `s3.us-east-005.backblazeb2.com` / `bucket-hyper-backup` / `TabaskaNAS_2.hbk`; selects `/backups /docker /docs /homes /photo` (covers all shares with real data — `vault`/`appdata` are empty 28K shells superseded by `/docker`); smart-recycle rotation; notify on | **Live + client-side ENCRYPTED** (nas-02; re-created encrypted 2026-07-13, first full backup 13:45; `enable_data_encrypt=true` + TLS in transit; key in vault `hosts.nas.hyperbackup_password` + Bitwarden), dead-manned (`nas-hyperbackup-b2-fresh`, crit, 50h). Old unencrypted `TabaskaNAS_1.hbk` deleted 2026-07-13 — only the encrypted task remains. |
+| NAS Tier 1 → B2 | Hyper Backup task "S3 Backup enc" → S3-compat `s3.us-east-005.backblazeb2.com` / `bucket-hyper-backup` / `TabaskaNAS_2.hbk`; selects `/backups /docker /docs /homes /photo` (covers all shares with real data — `vault`/`appdata` are empty 28K shells superseded by `/docker`); smart-recycle rotation; notify on | **Live + client-side ENCRYPTED** (nas-02; re-created encrypted 2026-07-13, first full backup 13:45; `enable_data_encrypt=true` + TLS in transit; key in vault `hosts.nas.hyperbackup_password` + Proton Pass), dead-manned (`nas-hyperbackup-b2-fresh`, crit, 50h). Old unencrypted `TabaskaNAS_1.hbk` deleted 2026-07-13 — only the encrypted task remains. |
 | 2nd off-site → Hetzner | borgmatic (optional) | pending: nas-06 |
-| HA full backups → NAS | HA Settings → Backups (key in Bitwarden) | pending: ha track |
+| HA full backups → NAS | HA Settings → Backups (key in Proton Pass) | pending: ha track |
 | NAS snapshots | Btrfs Snapshot Replication on Tier 1 shares | DSM |
 | Tier 2 media | NAS volumes + rotated external HDD | manual |
 

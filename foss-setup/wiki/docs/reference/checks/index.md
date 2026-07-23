@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **238 checks across 25 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **256 checks across 27 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -15,19 +15,21 @@ Every acceptance/regression check the fleet runs — **238 checks across 25 doma
 | [host-hygiene](host-hygiene.md) | 7 | 0 | 7 |
 | [media](media.md) | 18 | 7 | 11 |
 | [media-aux](media-aux.md) | 6 | 1 | 5 |
-| [media-library-correctness](media-library-correctness.md) | 6 | 0 | 6 |
+| [media-library-correctness](media-library-correctness.md) | 7 | 0 | 7 |
 | [media-watchable](media-watchable.md) | 4 | 0 | 4 |
-| [mini-services](mini-services.md) | 27 | 10 | 17 |
-| [monitoring-coverage](monitoring-coverage.md) | 6 | 1 | 5 |
+| [mini-services](mini-services.md) | 27 | 9 | 18 |
+| [monitoring-coverage](monitoring-coverage.md) | 7 | 1 | 6 |
 | [nas-host](nas-host.md) | 7 | 1 | 6 |
-| [nas-services](nas-services.md) | 17 | 3 | 14 |
+| [nas-services](nas-services.md) | 18 | 3 | 15 |
 | [network](network.md) | 1 | 0 | 1 |
 | [power-journal](power-journal.md) | 3 | 0 | 3 |
-| [reading](reading.md) | 11 | 0 | 11 |
+| [reading](reading.md) | 21 | 0 | 21 |
 | [rig](rig.md) | 31 | 2 | 29 |
+| [rig-immich-ml](rig-immich-ml.md) | 4 | 2 | 2 |
 | [secrets](secrets.md) | 4 | 3 | 1 |
 | [seedbox](seedbox.md) | 8 | 4 | 4 |
+| [sync](sync.md) | 1 | 0 | 1 |
 | [system](system.md) | 8 | 4 | 4 |
 | [verification-self](verification-self.md) | 5 | 0 | 5 |
 
-_Total: 238 checks._
+_Total: 256 checks._

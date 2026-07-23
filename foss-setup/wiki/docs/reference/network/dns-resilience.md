@@ -70,7 +70,7 @@ This means the original **dns-02** rollout (deploy the NAS secondary + mirror re
 - **Upstream:** public DoT (e.g. `tls://1.1.1.1`, `tls://9.9.9.9`) — **not** mini Unbound.
   The secondary must resolve names when the mini is offline.
 - **DNS rewrites:** mirror every `*.tabaska.us → 192.168.10.2` rule from mini AdGuard
-  (confirmed live: `192.168.10.4` returns `192.168.10.2` for `vault.tabaska.us`).
+  (confirmed live: `192.168.10.4` returns `192.168.10.2` for `home.tabaska.us`).
 - Keep it in sync: export mini AdGuard config periodically (Settings → Export) or automate
   via API; import blocklists/rewrites to the NAS instance.
 

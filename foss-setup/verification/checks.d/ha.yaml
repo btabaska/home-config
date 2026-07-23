@@ -171,7 +171,7 @@ checks:
   # encrypted archive on disk = the outcome, not liveness). Fails loudly if the
   # NAS is unreachable (empty -> STALE), never a vacuous pass. crit: no fresh
   # off-eMMC backup = one eMMC failure from total loss. Restore/runbook: the
-  # encryption key is vault hosts.ha.backup_password (also Bitwarden) — a backup
+  # encryption key is vault hosts.ha.backup_password (also Proton Pass) — a backup
   # without its key is not a backup.
   - id: ha-backup-offsite-fresh
     name: "HA has an off-eMMC (NAS) backup < 48h old (dead-man)"

@@ -99,7 +99,7 @@ The safe default (mirrors Section 7's "no blind updates"): run pull in **`--chec
 
 ## Secrets — reuse SOPS + age, don't add ansible-vault
 
-The `community.sops` collection reads your existing SOPS+age files directly via `age_keyfile`, so the **age key already in Bitwarden + printed** is the *only* secret store:
+The `community.sops` collection reads your existing SOPS+age files directly via `age_keyfile`, so the **age key already in Proton Pass + printed** is the *only* secret store:
 
 ```yaml
 # group_vars/all.yml

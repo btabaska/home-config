@@ -73,7 +73,6 @@ URL_OVERRIDES = {
     "calibre-web-automated": "http://192.168.10.4:8083 (deliberately LAN/VPN-only)",
     "libreseerr": "https://libreseerr.tabaska.us (LAN: http://192.168.10.2:8789)",
     "media-automation": None,  # multi-app stack; per-service ports below
-    "vaultwarden": "https://vault.tabaska.us",
     "forgejo": "https://git.tabaska.us",
     "beszel": "https://status.tabaska.us",
     "healthchecks": "https://health.tabaska.us",
@@ -99,7 +98,7 @@ CATEGORIES = {
     "Files & Sync": ["syncthing", "syncthing-node"],
     "Monitoring & Ops": [
         "homepage", "uptime-kuma", "beszel", "ntfy", "diun", "healthchecks",
-        "dockge", "vaultwarden",
+        "dockge",
     ],
     "AI & Cameras": ["frigate"],
 }

@@ -57,7 +57,7 @@ checks:
   # Photos under /photo, docs, homes, and the HA off-eMMC backups under /backups
   # are all included). Both TLS-in-transit (trans_encrypt=true) AND client-side
   # DATA-AT-REST encryption ON (enable_data_encrypt=true; re-created 2026-07-13,
-  # key in vault hosts.nas.hyperbackup_password + Bitwarden). The old unencrypted
+  # key in vault hosts.nas.hyperbackup_password + Proton Pass). The old unencrypted
   # "S3 Backup 1" / TabaskaNAS_1.hbk is being retired now that this completed.
   # NB the check globs ClientCache_cloud_image_aws_s3.* so it tracks whichever
   # task's cache is freshest — task-agnostic across re-creations.

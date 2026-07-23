@@ -62,7 +62,6 @@
 | `redis:7-alpine` | /opt/stacks |
 | `rommapp/romm:4.9.2` | /opt/stacks |
 | `strausmann/minecraft-bedrock-connect:latest` | /opt/stacks |
-| `vaultwarden/server:1.36.0` | /opt/stacks |
 | `wallabag/wallabag:2.6.14` | /opt/stacks |
 
 ---

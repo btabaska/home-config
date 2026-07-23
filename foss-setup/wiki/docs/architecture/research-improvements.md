@@ -7,7 +7,7 @@ _Source: `research.md` · migrated + validated 2026-07-14._
 **Status:** Research + planning, **integrated into the roadmap 2026-07-14** (operator decisions). Where each area landed is recorded in `foss-setup/docs/research-integration.md`; the live tracker (`foss-setup/docs/index.html` `taskData` + `foss-setup/docs/progress.json`) is the task source of truth. Summary of the integration:
 
 - **§1 Caddy hosting → `docker-14` CLOSED as delivered** (static + dynamic + NAS-by-IP + auto-Tailscale all live; the optional **Coolify PaaS half was DROPPED** — non-starter on the 8 GB mini). Stale `maintainerr`/`deptrack` vhosts cleaned + the runbook `import` fixed, all live.
-- **§2 FOSS suite → 4 tracked tasks to build later** — `foss-01` Vaultwarden data cutover, `foss-02` suite packaging, `foss-03` Syncthing hub, `foss-04` Ente Auth + YubiKey.
+- **§2 FOSS suite → 4 tracked tasks to build later** — `foss-01` password/secrets consolidation on Proton Pass, `foss-02` suite packaging, `foss-03` Syncthing hub, `foss-04` Ente Auth + YubiKey.
 - **§3 Retro → hygiene done live** (RomM pinned + functional health probe) **+ tracked build** — `retro-08` RetroAchievements dashboard, `game-12` save-sync (un-deferred).
 - **§4 Trackers → FULL path chosen** — `seed-11` public indexers, `seed-12` Bitmagnet, `seed-13` Whisparr — **pending per-tracker liveness spot-check**.
 
@@ -135,11 +135,11 @@ Static: ~15 min. Dynamic on mini or NAS: ~30–60 min. Tailscale exposure: 0 (au
 
 - **Rig = CachyOS (Arch), i7-12700K / RTX 3090 Ti / 64 GB, on 24/7** — daily-driver + gaming + local LLM stack (separate `local-ai-tooling` repo) + game servers. Installs via `pacman` + AUR (`paru`) + Flatpak + chezmoi dotfiles. `ansible-pull` runs for *maintenance* but does **not** install desktop apps.
 - Only desktop installer today: `foss-setup/scripts/setup/cachyos-desktop-baseline.sh` = browser (Firefox / optional LibreWolf / Zen) + LibreOffice + sets Kagi default. Everything else is scattered per-task `pacman -S`. **No unified suite, no macOS Brewfile.**
-- **Already LIVE:** Vaultwarden on mini (`vault.tabaska.us`, v1.36.0); Immich on NAS (**v2.7.5** — corrected 2026-07-14; the earlier "v3.x" was drift, Immich is on the 2.x line).
+- **Already LIVE:** Immich on NAS (**v2.7.5** — corrected 2026-07-14; the earlier "v3.x" was drift, Immich is on the 2.x line).
 - **Already decided in research (not yet done):** 2FA = **Ente Auth + YubiKey** (tracked `foss-04`, relates to broad-2FA `sec-01`); local-first files = **Syncthing v2 hub on NAS** (+ mini node, iOS = Synctrain), tracked `foss-03`. **Nextcloud was considered and RETIRED**; Seafile not adopted.
 - **Kept (deliberate):** Protonmail, Kagi, iOS, iMessage (no FOSS fix), Obsidian + paid Sync.
-- **Pending cutovers:** Bitwarden data → Vaultwarden (tracked `foss-01`; the old "Task 06" was an untracked phantom — server is LIVE, only the data migration remains); Authy → Ente Auth (`foss-04`, Authy has no export → manual re-enroll); Proton Drive → Syncthing hub (`foss-03`).
-- `foss-setup-plan-2.md` is partly stale (still says "stay on Bitwarden," still lists Nextcloud) — trust the research docs + wiki over it.
+- **Pending cutovers:** Authy → Ente Auth (`foss-04`, Authy has no export → manual re-enroll); Proton Drive → Syncthing hub (`foss-03`). Passwords are done: consolidated on Proton Pass (`foss-01`), Vaultwarden retired 2026-07-22.
+- `foss-setup-plan-2.md` is partly stale (still says "stay on Bitwarden" — now superseded by Proton Pass; still lists Nextcloud) — trust the research docs + wiki over it.
 
 ### Locked-in list, reconciled
 
@@ -149,7 +149,7 @@ Static: ~15 min. Dynamic on mini or NAS: ~30–60 min. Tailscale exposure: 0 (au
 | Kagi | Keep | **Kagi browser extension** to lock default; **Orion** (by Kagi) best iOS browser (iOS forces WebKit). |
 | iOS / iMessage | Keep (stuck) | No FOSS iMessage fix. **Signal** for non-Apple contacts; optional SimpleX / Matrix (Element). |
 | Obsidian + Sync | Keep | **Quartz v5** to publish the vault as a static site (host behind Caddy per §1). Logseq can read the same vault as a pure-FOSS escape hatch. |
-| Bitwarden → **Vaultwarden** | Server LIVE | **PENDING data cutover (`foss-01`).** Point official Bitwarden desktop/extension/iOS at the self-hosted URL; add `rbw` (Rust CLI) on rig. |
+| Passwords → **Proton Pass** | Done | Consolidated on Proton Pass (Proton Family); Vaultwarden retired 2026-07-22 (`foss-01`). |
 | Authy → **Ente Auth** | Decided, not done | **PENDING (`foss-04`).** Manual re-enroll (no Authy export). Register a **YubiKey** as the FIDO2 factor on the Ente account + crown-jewel logins. |
 | Immich | LIVE on NAS (v2.7.5) | Desktop tooling: `immich-go` (import), `immich-cli` (scripted upload). One-time iCloud backfill: `icloudpd` → `immich-go`. |
 | Proton Drive → local-first | Syncthing decided | **PENDING (`foss-03`).** Syncthing v2 hub on NAS + mini node + **Synctrain** on iOS. Add **PicoShare** (share links, the one thing Syncthing lacks) + **LocalSend** (AirDrop gap). |
@@ -164,8 +164,8 @@ Deliverable (`foss-02`): a new `cachyos-desktop-suite.sh` (extending the baselin
 # --- Browsers (Gecko trio + one Chromium for the ~5% that break) ---
 paru -S librewolf-bin zen-browser-bin brave-bin        # AUR hygiene: -bin only (lookalike RAT pkgs were pulled from AUR in 2025)
 sudo pacman -S firefox                                  # compat baseline; only one in the official repo
-# --- Passwords / 2FA (point at live Vaultwarden) ---
-sudo pacman -S bitwarden rbw; paru -S ente-auth-bin
+# --- Passwords / 2FA (Proton Pass + Ente Auth) ---
+paru -S proton-pass-bin ente-auth-bin
 flatpak install flathub com.yubico.yubioath; sudo pacman -S pcsclite yubikey-manager; sudo systemctl enable --now pcscd
 # --- Mail / messaging ---
 sudo pacman -S thunderbird protonmail-bridge signal-desktop
@@ -191,7 +191,7 @@ paru -S vscodium-bin                                     # or: sudo pacman -S co
 
 ```ruby
 cask "librewolf"; cask "zen"; cask "brave-browser"; cask "orion"
-cask "bitwarden"; cask "ente-auth"; cask "yubico-authenticator"; brew "rbw"
+cask "proton-pass"; cask "ente-auth"; cask "yubico-authenticator"
 cask "thunderbird"; cask "proton-mail-bridge"; cask "signal"; cask "simplex"; cask "element"
 cask "syncthing-app"; cask "localsend"
 brew "mpv"; cask "iina"; cask "vlc"; cask "calibre"; brew "immich-go"; brew "icloudpd"
@@ -231,7 +231,6 @@ brew "zellij", "neovim", "lazygit", "lazydocker", "starship", "ripgrep", "fd", "
 - Immich has no native desktop client (web/PWA only) — desktop tooling is CLI/import only.
 - `decky`-style launchers: Ueli (cross-platform) vs KRunner (KDE-native, already on the rig).
 - JMP (Jellyfin Media Player) repo was archived March 2026 — fine but unmaintained; prefer mpv-based clients.
-- Goldwarden (GTK Bitwarden client) development is paused — do NOT adopt; use official clients + `rbw`.
 
 ---
 
@@ -379,7 +378,7 @@ Shadow libraries (Anna's Archive / Libgen / Z-Library) are direct-download, NOT 
 ## 5. Cross-cutting suggested sequencing
 
 1. **Free wins first:** RomM image-pin + health probe (§3) **— DONE live**; RomM `./assets` backup **— already covered**; add the no-solver public indexers TPB/EZTV/Nyaa (§4, `seed-11`).
-2. **Finish the already-decided FOSS cutovers:** `foss-01` (Vaultwarden data), `foss-04` (Ente Auth), `foss-03` Syncthing hub (§2) — the Syncthing hub also unlocks the retro Layer-2 save-sync (`game-12`).
+2. **Finish the already-decided FOSS cutovers:** `foss-04` (Ente Auth), `foss-03` Syncthing hub (§2) — the Syncthing hub also unlocks the retro Layer-2 save-sync (`game-12`).
 3. **Package the suite:** `cachyos-desktop-suite.sh` + `Brewfile` (§2, `foss-02`).
 4. **Bigger builds:** Steam Deck RetroDECK path (§3, gated on `retro-07`); Whisparr pipeline (`seed-13`) + Bitmagnet (`seed-12`) (§4); self-host adds (Stirling-PDF, LibreTranslate, PicoShare, self-hosted Firefox Sync).
 

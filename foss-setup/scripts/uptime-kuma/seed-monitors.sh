@@ -122,7 +122,6 @@ main() {
 
   # ---- full-chain (DNS + Caddy + TLS + service); also gives cert-expiry alerts ----
   add_http "Edge Homepage (vhost)"    "https://home.tabaska.us"  "$A_OK"
-  add_http "Edge Vaultwarden (vhost)" "https://vault.tabaska.us" "$A_OK"
   add_http "Edge Books/CWA (vhost)"   "https://books.tabaska.us" "$A_3XX"
 
   # ---- DNS resolution ----

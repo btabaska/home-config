@@ -245,19 +245,6 @@ checks:
     runbook: wiki/runbooks/docker.md
     enabled: true
 
-  # vaultwarden publishes no host port (edge-network only), so probe the
-  # Caddy vhost with --resolve; -k tolerated; certs are real Lets Encrypt as of 2026-07-08 (DNS-01).
-  - id: mini-vaultwarden
-    tier: fast
-    name: "vaultwarden web vault answers at https://vault.tabaska.us"
-    host: mini
-    cmd: curl -sk -o /dev/null -m 8 -w '%{http_code}' --resolve vault.tabaska.us:443:127.0.0.1 https://vault.tabaska.us/
-    expect: '^200$'
-    severity: crit
-    task_id: docker-14
-    runbook: wiki/runbooks/docker.md
-    enabled: true
-
   # RomM FUNCTIONAL probe (added 2026-07-14, research.md §3 hygiene). Container
   # presence was already in coverage/mini.containers, but nothing confirmed RomM
   # actually SERVES — the app can be Up while its DB handshake / library scan is

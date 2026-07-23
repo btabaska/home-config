@@ -78,7 +78,7 @@ These are the compose-pinned image tags under `/opt/stacks` at snapshot time. Ta
 | `wallabag/wallabag:2.6.14` | /opt/stacks |
 
 !!! note "Validated against live mini (2026-07-14)"
-    Spot-checked running images on the mini against the snapshot: `adguard/adguardhome:v0.107.77`, `codeberg.org/forgejo/forgejo:15.0.1`, `deluan/navidrome:0.62.0`, `ghcr.io/gethomepage/homepage:v1.13.2`, `ghcr.io/paperless-ngx/paperless-ngx:2.20.11` all match the pinned tags above. `ls /opt/stacks` on the live host now lists 36 stack directories including some not represented as distinct pinned images in this snapshot (e.g. `bedrock-connect`, `bgutil-pot`, `caddy`, `metube`, `romm`, `vaultwarden`, `wiki`) — expected drift since the 2026-07-06 export.
+    Spot-checked running images on the mini against the snapshot: `adguard/adguardhome:v0.107.77`, `codeberg.org/forgejo/forgejo:15.0.1`, `deluan/navidrome:0.62.0`, `ghcr.io/gethomepage/homepage:v1.13.2`, `ghcr.io/paperless-ngx/paperless-ngx:2.20.11` all match the pinned tags above. `ls /opt/stacks` on the live host now lists 36 stack directories including some not represented as distinct pinned images in this snapshot (e.g. `bedrock-connect`, `bgutil-pot`, `caddy`, `metube`, `romm`, `wiki`) — expected drift since the 2026-07-06 export.
 
 ## Raw manifests and restore
 

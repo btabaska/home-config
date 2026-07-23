@@ -1,6 +1,6 @@
 # Checks — media-library-correctness
 
-`foss-setup/verification/checks.d/media-library-correctness.yaml` — 6 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/media-library-correctness.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `plex-unmatched-items`
 
@@ -44,6 +44,17 @@ navidrome: 0 library rows under #recycle (deleted-content leak)
 
 ```bash
 python3 /opt/verification/bin/navidrome-recycle-rows.py
+```
+
+## `navidrome-library-present`
+
+navidrome: library not mass-flagged missing (whole-library grey-out)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-28` · **enabled:** True
+- **expects:** `^PRESENT_OK`
+
+```bash
+docker exec navidrome sqlite3 /data/navidrome.db "select case when (select count(*) from media_file)=0 then 'PRESENT_EMPTY' when (select count(*) from media_file where missing=1)*5 <= (select count(*) from media_file) then 'PRESENT_OK missing='||(select count(*) from media_file where missing=1)||'/'||(select count(*) from media_file) else 'PRESENT_DEGRADED missing='||(select count(*) from media_file where missing=1)||'/'||(select count(*) from media_file) end;"
 ```
 
 ## `arr-unmapped-folders-growth`

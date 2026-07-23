@@ -23,7 +23,7 @@ This page records how the four areas of the root-level research doc (`research.m
 
 | ID | Title | Track | Effort | Notes |
 |---|---|---|---|---|
-| `foss-01` | Bitwarden → Vaultwarden **data cutover** (point clients at `vault.tabaska.us`) | security | 1–2 h | Server is LIVE (`vault.tabaska.us`, v1.36.0 — confirmed 200); the data migration was an untracked phantom ("Task 06"). Add `rbw` CLI on rig. |
+| `foss-01` | Passwords consolidated on **Proton Pass** — Vaultwarden retired 2026-07-22 | security | done | All passwords + secrets migrated to Proton Pass (Proton Family, the human source-of-truth); the Vaultwarden server + `/opt/stacks/vaultwarden` container were removed from the mini stack. |
 | `foss-02` | Package the FOSS desktop suite — `cachyos-desktop-suite.sh` + macOS `Brewfile` (chezmoi-tracked) | desktop | ~½ day | Extends `glue-02`; the app list in `research.md` §2 (confirm before codifying; rig runs proprietary VS Code → swap to VSCodium or accept exception). |
 | `foss-03` | Syncthing v2 hub on NAS + mini node (local-first file sync) | desktop | ~½ day | Replaces Proton Drive; the shared dependency for `game-12` retro save-sync. Mind the mini's ~350 MB-free ceiling — the **hub belongs on the NAS**. |
 | `foss-04` | Ente Auth adoption + YubiKey enrollment (Authy migration) | security | 1–2 h | Relates to `sec-01` (broad 2FA); Authy has no export → manual re-enroll. |

@@ -84,7 +84,6 @@ nav:
           - ntfy: services/ntfy.md
           - unbound: services/unbound.md
           - uptime-kuma: services/uptime-kuma.md
-          - vaultwarden: services/vaultwarden.md
       - Life:
           - mealie: services/mealie.md
       - Media:
@@ -258,8 +257,10 @@ nav:
       - power-journal: reference/checks/power-journal.md
       - reading: reference/checks/reading.md
       - rig: reference/checks/rig.md
+      - rig-immich-ml: reference/checks/rig-immich-ml.md
       - secrets: reference/checks/secrets.md
       - seedbox: reference/checks/seedbox.md
+      - sync: reference/checks/sync.md
       - system: reference/checks/system.md
       - verification-self: reference/checks/verification-self.md
       # END GENERATED CHECKS NAV
@@ -334,6 +335,7 @@ nav:
           - ensure-navidrome-music-ignore.sh: reference/scripts/nas/ensure-navidrome-music-ignore-sh.md
           - immich-db-dump.sh: reference/scripts/nas/immich-db-dump-sh.md
           - immich-pg-dump.sh: reference/scripts/nas/immich-pg-dump-sh.md
+          - import-seedbox-roms.sh: reference/scripts/nas/import-seedbox-roms-sh.md
           - install-beets-task.sh: reference/scripts/nas/install-beets-task-sh.md
           - install-immich-dump-task.sh: reference/scripts/nas/install-immich-dump-task-sh.md
           - install-nas-docker-health-task.sh: reference/scripts/nas/install-nas-docker-health-task-sh.md

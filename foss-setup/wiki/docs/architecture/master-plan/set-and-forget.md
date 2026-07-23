@@ -87,8 +87,8 @@ Maintenance is `ssh nas` / `ssh mini` / `ssh rig`. **Live:** these aliases work 
 ## Security hardening (do these once)
 
 - **MFA / 2FA everywhere:**
-  - **Crown jewels (hardware key / passkey):** Bitwarden, Proton, the **Synology DSM** admin account, email, and the Tailscale/GitHub/Forgejo accounts. DSM: Control Panel → User → Advanced → enforce 2-step verification (WebAuthn/passkeys).
-  - **App-level TOTP:** **Immich**, **Plex**, **Seerr**, **Home Assistant**, the **seedbox** panel, **Forgejo**, **Paperless-ngx** (when deployed), **Vaultwarden** (if used).
+  - **Crown jewels (hardware key / passkey):** Proton, the **Synology DSM** admin account, email, and the Tailscale/GitHub/Forgejo accounts. DSM: Control Panel → User → Advanced → enforce 2-step verification (WebAuthn/passkeys).
+  - **App-level TOTP:** **Immich**, **Plex**, **Seerr**, **Home Assistant**, the **seedbox** panel, **Forgejo**, **Paperless-ngx** (when deployed).
   - **Reverse-proxy MFA for the rest:** a forward-auth layer.
 - **Exposed-service hardening (only what's reachable).** The Tailscale-first design means the home stack isn't exposed — so this targets the **seedbox** and any **public game-server port-forwards** (now via playit): **CrowdSec** or **fail2ban**, patched, SSH keys-only. For anything published via Caddy, add a forward-auth gate — **Pocket-ID** / **tinyauth** (simple), or **Authelia/Authentik** (full SSO).
 - **Docker log rotation (silent disk-fill killer).** Set global caps in `/etc/docker/daemon.json` (`json-file`, `max-size=10m`, `max-file=3`) and restart the daemon.

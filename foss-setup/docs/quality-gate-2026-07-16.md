@@ -3292,6 +3292,8 @@ The 5-container stack (paperless 2.20.11, tika 3.2.1, gotenberg 8.21, postgres 1
 
 ### I29. Vaultwarden clean: signups disabled (verified live), admin panel token-gated and reachable, zero failed logins, no icon-fetch spam
 
+> **RETIRED 2026-07-22 (historical):** Vaultwarden was removed from the stack; passwords migrated to Proton Pass (`foss-01`). This finding reflects the 2026-07-16 state and no longer describes a live service.
+
 **Host:** mini · **Component:** vaultwarden · **Auditor:** svc:docs-life
 
 
@@ -3651,6 +3653,8 @@ The adguard-nas compose comment says port 3000 is 'wizard / break-glass admin un
 The 01:30 UTC nightly created snapshot 2ac7c049 but then looped on 'Delete: b2_delete_file_version: 401' trying to remove its lock (old apt restic 0.12 hard-deletes; append-only key forbids), left a stale repo lock, and the unit exited 1/FAILURE — no healthcheck ping. Operator installed /usr/local/bin/restic 0.19.1 (mtime Jul 15 12:57) and re-ran: backup, forget, and 'restic check' all passed at 12:57:48, healthcheck pinged. This matches the known restic-0.12-on-mini issue recorded as fixed 2026-07-15. Current live state verified healthy: latest snapshot 2d054dce 2026-07-15 12:57:29 (857.954 MiB, paths /opt/stacks /etc /home dotfiles), check 'no errors were found', restic-backup-mini healthcheck status up. Nightly cadence otherwise intact (dailies 07-11..07-15 in journal).
 
 ### I79. Vaultwarden IS backed up: /opt/stacks/vaultwarden (incl. data/ and db) verified inside the latest mini snapshot, plus a fresh vaultwarden.sqlite.sql.gz pre-backup dump
+
+> **RETIRED 2026-07-22 (historical):** Vaultwarden was removed from the stack; passwords migrated to Proton Pass (`foss-01`). The final vault data was archived to `/opt/stacks/backups/vaultwarden-retired-2026-07-22.tar.gz`. This finding reflects the 2026-07-16 state.
 
 **Host:** mini · **Component:** restic include set / vaultwarden · **Auditor:** flow:backups
 

@@ -183,7 +183,7 @@ Domain is `tabaska.us`. The `host` column is **internal metadata for the maintai
 | litellm | LiteLLM | admin | llm | **rig** | Local AI gateway | ⚠️ host = **rig, not mini**; AI stack is rig-only |
 | frigate | Frigate | admin | frigate | — | Camera AI | ❌ **not deployed** (Caddy block commented out; future plan) |
 
-> Treat this table as a starting draft only. Before generating, diff it against the live `Caddyfile` (subdomain truth) and `homepage/config/services.yaml` (icons/captions). The `host` column is maintainer-reference only — never render it. `admin` services are real but should sit visually *below* the household ones, behind a "Show technical tools" toggle on Home. Extra live services not in this draft (e.g. `stash`, `deluge`, `slskd`, `prowlarr`, `readarr`, `flaresolverr`, `romm`, `amp`, `metube`, `vault`/Vaultwarden, `wiki`) should be reconciled from the Homepage config at generation time.
+> Treat this table as a starting draft only. Before generating, diff it against the live `Caddyfile` (subdomain truth) and `homepage/config/services.yaml` (icons/captions). The `host` column is maintainer-reference only — never render it. `admin` services are real but should sit visually *below* the household ones, behind a "Show technical tools" toggle on Home. Extra live services not in this draft (e.g. `stash`, `deluge`, `slskd`, `prowlarr`, `readarr`, `flaresolverr`, `romm`, `amp`, `metube`, `wiki`) should be reconciled from the Homepage config at generation time.
 
 ## 5. Design system — Apple.com, 2012
 

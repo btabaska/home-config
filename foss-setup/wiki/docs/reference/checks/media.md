@@ -101,15 +101,15 @@ nas: Plex service user can traverse the youtube share (ACL invariant)
 r=$(printf '%s\n' "$NAS_SUDO_PASSWORD" | ssh -o BatchMode=yes -o ConnectTimeout=10 nas "sudo -S -p '' sudo -u PlexMediaServer test -x /volume1/youtube && echo yes" 2>/dev/null); [ "$r" = "yes" ] && echo plexacl=ok || echo plexacl=BAD
 ```
 
-## `readarr-cwa-copy-drops`
+## `bookshelf-cwa-copy-drops`
 
-readarr->cwa copy script dropped no books (no path-resolution errors)
+bookshelf->cwa copy script dropped no books (no path-resolution errors)
 
 - **host:** `mini` · **severity:** `crit` · **guards task:** `verify-06` · **enabled:** True
 - **expects:** `^drops=0$`
 
 ```bash
-c=$(printf '%s\n' "$NAS_SUDO_PASSWORD" | ssh -o BatchMode=yes -o ConnectTimeout=10 nas "sudo -S -p '' grep -cE 'ERROR - (Not a file|.*no name match)' /volume1/docker/readarr/config/logs/readarr-copy-to-cwa-ingest.log 2>/dev/null" 2>/dev/null); [ "${c:-0}" = "0" ] && echo drops=0 || echo drops=$c
+c=$(printf '%s\n' "$NAS_SUDO_PASSWORD" | ssh -o BatchMode=yes -o ConnectTimeout=10 nas "sudo -S -p '' grep -cE 'ERROR - (Not a file|.*no name match)' /volume1/docker/bookshelf/config/logs/readarr-copy-to-cwa-ingest.log 2>/dev/null" 2>/dev/null); [ "${c:-0}" = "0" ] && echo drops=0 || echo drops=$c
 ```
 
 ## `cwa-ingest-not-stuck`
@@ -191,7 +191,7 @@ python3 /opt/verification/bin/request-layer-audit.py seerr
 
 ## `libreseerr-request-rot`
 
-libreseerr: stored request statuses match readarr truth (H15/M36 class)
+libreseerr: stored request statuses match bookshelf truth (H15/M36 class)
 
 - **host:** `mini` · **severity:** `warn` · **guards task:** `fix-26` · **enabled:** True
 - **expects:** `^LIBRESEERR_OK`

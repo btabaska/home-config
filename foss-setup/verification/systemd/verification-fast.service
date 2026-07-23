@@ -8,7 +8,7 @@ Type=oneshot
 User=btabaska
 EnvironmentFile=-/etc/verification/env
 # --tier fast runs ONLY the checks tagged `tier: fast` (the ~17 crit user-facing
-# liveness/outcome probes: palworld, plex, dns, ha, caddy/adguard/ntfy/vaultwarden,
+# liveness/outcome probes: palworld, plex, dns, ha, caddy/adguard/ntfy,
 # the *-in-plex outcome checks, seedbox mount, game public paths). Whole set <4s.
 # --notify pages on state transitions, keyed off its OWN results-tier-fast.json
 # side file (never clobbers the daily results.json or the quick tier's per-domain

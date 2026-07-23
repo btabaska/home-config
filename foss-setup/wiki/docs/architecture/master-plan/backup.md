@@ -61,7 +61,7 @@ The NAS Tier-1 Hyper Backup → B2 task is **alive, encrypted, and succeeding** 
 - Task **"S3 Backup enc"** → `TabaskaNAS_2.hbk`, **client-side encryption ON** (`enable_data_encrypt=true`) + TLS in transit; target `s3.us-east-005.backblazeb2.com` / `bucket-hyper-backup`.
 - Selects `/backups /docker /docs /homes /photo` = **all shares that hold real data** (`vault` + `appdata` are empty shells superseded by `/docker`). Smart-recycle rotation, notify on.
 - The old **unencrypted** `S3 Backup 1` / `TabaskaNAS_1.hbk` was **deleted 2026-07-13** — only the encrypted task remains.
-- Encryption key in vault `hosts.nas.hyperbackup_password` (+ Bitwarden).
+- Encryption key in vault `hosts.nas.hyperbackup_password` (+ Proton Pass).
 - A negative-tested dead-man check `nas-hyperbackup-b2-fresh` (crit, 50 h) tracks the encrypted task's completion.
 
 ## Database dumps (so a "backup" isn't a corrupt file)
@@ -74,7 +74,7 @@ File-copying a *live* DB directory can capture a half-written, unrestorable DB. 
 ## Don't forget
 
 - **Test a restore** at least once. An untested backup is a hope.
-- **Store encryption keys/passphrases off the machine** (Bitwarden + a printed copy).
+- **Store encryption keys/passphrases off the machine** (Proton Pass + a printed copy).
 - **Back up Docker volumes** and HA's backup archive, not just visible files.
 - **Monitor that backups actually ran** — a dead-man's-switch (self-hosted **Healthchecks.io**, pinged by each job, alerting via ntfy when a ping *doesn't* arrive) catches the silent "the timer's been off for a month" failure. **Live** on the mini.
 

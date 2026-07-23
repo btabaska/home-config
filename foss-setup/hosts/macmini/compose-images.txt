@@ -31,5 +31,4 @@ postgres:17-alpine
 redis:7-alpine
 rommapp/romm:4.9.2
 strausmann/minecraft-bedrock-connect:latest
-vaultwarden/server:1.36.0
 wallabag/wallabag:2.6.14

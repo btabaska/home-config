@@ -24,7 +24,7 @@ The whole build in one table, mapping each Apple/iOS task to its FOSS replacemen
 | Automated music acquisition | **MusicSeerr** + **Lidarr** + **Soularr** + **slskd** (Betty) + **beets** | Mac mini + NAS + seedbox |
 | Documents (scan/OCR/search) | **Paperless-ngx** *(planned, not yet deployed)* | NAS |
 | Recipes & meal planning | **Mealie** | Mac mini |
-| Passwords | **Bitwarden** (Vaultwarden if self-hosting) | cloud / optional self-host |
+| Passwords | **Proton Pass** (Proton Family) | cloud (Proton) |
 | iCloud Drive/Contacts/Calendar | **Proton** or **Nextcloud** or **Syncthing + Baikal** | cloud/NAS |
 | Safari | **Firefox / LibreWolf / Zen** + Kagi | CachyOS |
 | Siri / smart home (Hue, Nest, Midea) | **Home Assistant** + local voice (Whisper/Piper + **rig Ollama**) | HA Green |

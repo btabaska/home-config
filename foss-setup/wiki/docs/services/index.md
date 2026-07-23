@@ -1,6 +1,6 @@
 # Services
 
-40 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+39 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 
@@ -45,7 +45,6 @@
 | [ntfy](ntfy.md) | mini | https://ntfy.tabaska.us |
 | [unbound](unbound.md) | mini | — |
 | [uptime-kuma](uptime-kuma.md) | mini | https://uptime.tabaska.us |
-| [vaultwarden](vaultwarden.md) | mini | https://vault.tabaska.us |
 
 ## Life
 

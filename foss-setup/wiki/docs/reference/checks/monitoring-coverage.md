@@ -1,6 +1,6 @@
 # Checks — monitoring-coverage
 
-`foss-setup/verification/checks.d/monitoring-coverage.yaml` — 6 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/monitoring-coverage.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `homepage-dead-tiles`
 
@@ -22,6 +22,17 @@ homepage renders 0 dead-tile DNS errors in the last 2h (M17 consumer end)
 
 ```bash
 echo "errors=$(docker logs homepage --since 2h 2>&1 | grep -icE 'EAI_AGAIN|getaddrinfo')"
+```
+
+## `homepage-calendar-ics-fetch`
+
+homepage container fetches the Proton Calendar .ics (home-08 Calendar consumer end)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `home-08` · **enabled:** True
+- **expects:** `^BEGIN:VCALENDAR$`
+
+```bash
+docker exec homepage sh -c 'wget -qO- "$HOMEPAGE_VAR_PROTON_CAL_ICS" 2>/dev/null | head -c 15'
 ```
 
 ## `kuma-all-monitors-notified`
