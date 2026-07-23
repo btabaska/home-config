@@ -219,6 +219,142 @@
         2020,
         300
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// journal-07 (Phase 2, OPTIONAL) - IGDB game-metadata enrichment for #gamelog.\n// FULLY ISOLATED branch: it taps the same webhook as the core loop but shares NO\n// node with it. If disabled or creds are missing this returns [] and the branch\n// stops here, so the core reflection loop is entirely unaffected (graceful degrade).\nconst evt = ($input.first().json && $input.first().json.body) || {};\nconst activity = evt.activityType || '';\nconst memo = evt.memo || {};\nconst content = (memo.content || '').toString();\nconst tags = Array.isArray(memo.tags) ? memo.tags : [];\nconst name = memo.name || '';\n\n// Master toggle (env). Absent/empty => enabled (this branch only exists post opt-in);\n// set IGDB_ENABLED=false to disable Phase 2 WITHOUT touching the core loop.\nconst flag = ($env.IGDB_ENABLED || 'true').toString().trim().toLowerCase();\nif (['0', 'false', 'off', 'no', 'disabled'].includes(flag)) return [];\n\n// Graceful degradation: no creds => skip silently (the core analysis still runs).\nconst clientId = ($env.IGDB_CLIENT_ID || '').toString().trim();\nconst clientSecret = ($env.IGDB_CLIENT_SECRET || '').toString().trim();\nif (!clientId || !clientSecret) return [];\n\n// Loop-safe: only genuine new #gamelog entries. Our own metadata/reflection comments\n// fire memos.memo.comment.created and never carry #gamelog, so they are dropped twice\n// over (activity gate + tag gate); the sentinel is a third belt-and-suspenders guard.\nconst SENTINEL = '\\u{1F3AE} **'; // the header our metadata comment starts with\nif (activity !== 'memos.memo.created') return [];\nif (!tags.includes('gamelog')) return [];\nif (!name) return [];\nif (content.includes(SENTINEL)) return [];\n\n// Parse the game title. The #gamelog template puts it on a \"**Game:** <title>\" line;\n// fall back to the first meaningful (non-tag / non-scaffold) line for free-form entries.\nfunction parseTitle(body) {\n  const lines = body.split(/\\r?\\n/);\n  for (const raw of lines) {\n    const m = raw.match(/\\*\\*\\s*Game\\s*:?\\s*\\*\\*\\s*:?\\s*(.+)$/i) || raw.match(/^\\s*Game\\s*:\\s*(.+)$/i);\n    if (m && m[1]) {\n      const t = m[1].replace(/#[\\w-]+/g, '').replace(/[*_`>#]/g, '').trim();\n      if (t) return t;\n    }\n  }\n  for (const raw of lines) {\n    let t = raw.replace(/#[\\w-]+/g, '').trim();           // strip hashtags anywhere\n    if (!t) continue;\n    if (/^\\*\\*[^*]+:\\*\\*\\s*$/.test(t)) continue;           // empty \"**Field:**\" scaffold\n    if (/^#{1,6}\\s/.test(t)) continue;                     // \"## What I did\"\n    if (/^[-*]\\s*$/.test(t)) continue;                     // empty bullet\n    if (/^_+\\/?\\d*_*$/.test(t)) continue;                  // \"_/10_\"\n    t = t.replace(/[*_`>]/g, '').trim();\n    if (t) return t;\n  }\n  return '';\n}\nconst gameTitle = parseTitle(content);\nif (!gameTitle) return [];\n\nreturn [{ json: { memoName: name, gameTitle, clientId, clientSecret } }];\n"
+      },
+      "id": "a1c07f3d-2b6e-4890-9d11-000000000010",
+      "name": "IGDB Guard: gamelog filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://id.twitch.tv/oauth2/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "client_id",
+              "value": "={{ $json.clientId }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $json.clientSecret }}"
+            },
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "a1c07f3d-2b6e-4890-9d11-000000000011",
+      "name": "IGDB: Twitch OAuth token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        560
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.igdb.com/v4/games",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Client-ID",
+              "value": "={{ $('IGDB Guard: gamelog filter').first().json.clientId }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{ 'search \"' + $('IGDB Guard: gamelog filter').first().json.gameTitle.replace(/[\"\\n\\r]/g, ' ') + '\"; fields name,first_release_date,genres.name,cover.image_id,involved_companies.company.name,involved_companies.developer,category,url; limit 10;' }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "a1c07f3d-2b6e-4890-9d11-000000000012",
+      "name": "IGDB: search game",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        560
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "// journal-07: pick the best IGDB match and render a tidy, loop-safe metadata COMMENT\n// (cover thumbnail + canonical facts). No match / OAuth or IGDB unreachable => return\n// [] so nothing is posted and the core reflection (a separate branch) is untouched.\nconst guard = $('IGDB Guard: gamelog filter').first().json;\nconst memoName = guard.memoName;\nconst title = (guard.gameTitle || '').toString();\n\n// Collect result games whether or not the HTTP node split the JSON array into items.\nlet games = [];\nconst all = $input.all().map(i => i.json);\nif (all.length === 1 && Array.isArray(all[0])) games = all[0];\nelse games = all;\ngames = (games || []).filter(g => g && typeof g === 'object' && g.name);\nif (!games.length) return []; // no match / OAuth or search failed -> stay silent\n\nconst norm = s => (s || '').toString().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();\nconst nt = norm(title);\nconst hasDev = g => Array.isArray(g.involved_companies) && g.involved_companies.some(c => c && c.developer);\n// category is often omitted for main games (default 0) and is being phased out by IGDB;\n// treat missing as \"main\", never as a reason to exclude.\nconst isMain = g => { const t = g.category; return t === undefined || t === null || t === 0; };\n\nconst exact = games.filter(g => norm(g.name) === nt);\nlet pool = exact.length ? exact : games;\nconst mains = pool.filter(isMain);\nif (mains.length) pool = mains;\npool.sort((a, b) => {\n  const da = hasDev(a) ? 0 : 1, db = hasDev(b) ? 0 : 1;\n  if (da !== db) return da - db;                    // prefer an entry with a known developer\n  const ra = a.first_release_date || Infinity, rb = b.first_release_date || Infinity;\n  return ra - rb;                                   // then the earliest (original) release\n});\nconst g = pool[0];\n\nconst canonical = (g.name || title).toString().trim();\nlet releaseStr = '';\nif (g.first_release_date) {\n  const d = new Date(g.first_release_date * 1000);\n  if (!isNaN(d.getTime())) releaseStr = d.toISOString().slice(0, 10);\n}\nconst genres = Array.isArray(g.genres) ? g.genres.map(x => x && x.name).filter(Boolean) : [];\nconst devs = Array.isArray(g.involved_companies)\n  ? g.involved_companies.filter(c => c && c.developer && c.company).map(c => c.company.name).filter(Boolean)\n  : [];\nconst cover = g.cover && g.cover.image_id\n  ? ('https://images.igdb.com/igdb/image/upload/t_cover_big/' + g.cover.image_id + '.jpg')\n  : '';\nconst igdbUrl = g.url || '';\n\nlet md = '\\u{1F3AE} **' + canonical + '**';\nif (releaseStr) md += ' · ' + releaseStr.slice(0, 4);\nmd += '\\n';\nconst facts = [];\nif (releaseStr) facts.push('_Released:_ ' + releaseStr);\nif (genres.length) facts.push('_Genres:_ ' + genres.join(', '));\nif (devs.length) facts.push('_Developer:_ ' + devs.join(', '));\nif (facts.length) md += facts.join('  ·  ') + '\\n';\nif (cover) md += '\\n![cover](' + cover + ')\\n';\nif (igdbUrl) md += '\\n[View on IGDB](' + igdbUrl + ')';\nmd += '\\n\\n_via IGDB — auto-matched from your #gamelog title._';\n\nreturn [{ json: { memoName, comment: md } }];\n"
+      },
+      "id": "a1c07f3d-2b6e-4890-9d11-000000000013",
+      "name": "Format IGDB metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'http://memos:5230/api/v1/' + $json.memoName + '/comments' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.MEMOS_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"content\": $json.comment, \"visibility\": \"PRIVATE\" } }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "a1c07f3d-2b6e-4890-9d11-000000000014",
+      "name": "Post IGDB metadata COMMENT",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1360,
+        560
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     }
   ],
   "connections": {
@@ -227,6 +363,11 @@
         [
           {
             "node": "Guard: loop-safe filter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IGDB Guard: gamelog filter",
             "type": "main",
             "index": 0
           }
@@ -311,6 +452,50 @@
         [
           {
             "node": "Post reflection as COMMENT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IGDB Guard: gamelog filter": {
+      "main": [
+        [
+          {
+            "node": "IGDB: Twitch OAuth token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IGDB: Twitch OAuth token": {
+      "main": [
+        [
+          {
+            "node": "IGDB: search game",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IGDB: search game": {
+      "main": [
+        [
+          {
+            "node": "Format IGDB metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format IGDB metadata": {
+      "main": [
+        [
+          {
+            "node": "Post IGDB metadata COMMENT",
             "type": "main",
             "index": 0
           }

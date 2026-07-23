@@ -80,6 +80,16 @@ services:
       # so they are a one-line model/endpoint swap, never a hard dependency.
       - WHISPER_BASE_URL=${WHISPER_BASE_URL}  # http://faster-whisper:8000/v1
       - WHISPER_MODEL=${WHISPER_MODEL}        # Systran/faster-whisper-small (CPU)
+      # journal-07 (Phase 2, OPTIONAL): IGDB game-metadata enrichment for #gamelog.
+      # A FULLY ISOLATED branch in journal-analyze reads these via $env; if IGDB_ENABLED
+      # is false OR the creds are unset the branch skips silently and the core reflection
+      # loop is entirely unaffected (graceful degradation). This is the ONLY part of the
+      # stack that makes outbound calls (id.twitch.tv OAuth + api.igdb.com), and only for
+      # #gamelog entries. Creds are a Twitch dev-app (vault journaling.igdb.*); the client
+      # secret is a secret, so keep .env chmod 600. Disable Phase 2 with IGDB_ENABLED=false.
+      - IGDB_ENABLED=${IGDB_ENABLED:-true}
+      - IGDB_CLIENT_ID=${IGDB_CLIENT_ID}
+      - IGDB_CLIENT_SECRET=${IGDB_CLIENT_SECRET}
     volumes:
       - ./n8n:/home/node/.n8n # workflows + sqlite + encryption key — restic-backed
     networks:

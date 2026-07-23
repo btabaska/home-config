@@ -164,3 +164,27 @@ checks:
     runbook: wiki/docs/services/journaling.md
     enabled: true
     timeout: 300
+
+  # journal-07 consumer-end probe for the OPTIONAL IGDB #gamelog enrichment branch. The
+  # branch does Twitch OAuth (client_credentials) -> IGDB games search to append cover art +
+  # canonical facts as a loop-safe comment. Its single silent-failure mode is the external
+  # dependency going bad: the Twitch dev-app secret gets rotated/revoked (the workflow fetches
+  # a fresh token per event, so a dead secret = no enrichment, no error), the container loses
+  # egress/DNS to id.twitch.tv/api.igdb.com, or IGDB changes its API — all while every
+  # container stays green and the CORE reflection loop keeps working. The helper runs the exact
+  # OAuth+search from INSIDE the n8n container using that container's own IGDB creds (so it also
+  # proves the env is wired) and asserts a known title (Celeste) resolves with cover art. It
+  # posts NO memo and does NOT wake the coach GPU. IGDB_SKIP_DISABLED (operator set
+  # IGDB_ENABLED=false) counts as pass — enrichment is opt-in/best-effort. warn + daily: an
+  # external dependency, gentle on the IGDB rate limit, and degradation must never page.
+  - id: journaling-igdb-enrich
+    tier: daily
+    name: "IGDB #gamelog enrichment reaches Twitch OAuth + IGDB from the n8n container"
+    host: mini
+    cmd: python3 /opt/verification/bin/journaling-igdb-enrich.py
+    expect: '^IGDB_(ENRICH_OK|SKIP_DISABLED)$'
+    severity: warn
+    task_id: journal-07
+    runbook: wiki/docs/services/journaling.md
+    enabled: true
+    timeout: 90

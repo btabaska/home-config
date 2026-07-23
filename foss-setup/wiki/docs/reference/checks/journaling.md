@@ -1,6 +1,6 @@
 # Checks — journaling
 
-`foss-setup/verification/checks.d/journaling.yaml` — 10 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/journaling.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `journaling-memos-ready`
 
@@ -110,6 +110,17 @@ journal loop end-to-end: one #journal memo -> exactly one reflection comment
 
 ```bash
 python3 /opt/verification/bin/journaling-e2e.py
+```
+
+## `journaling-igdb-enrich`
+
+IGDB #gamelog enrichment reaches Twitch OAuth + IGDB from the n8n container
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `journal-07` · **enabled:** True
+- **expects:** `^IGDB_(ENRICH_OK|SKIP_DISABLED)$`
+
+```bash
+python3 /opt/verification/bin/journaling-igdb-enrich.py
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
