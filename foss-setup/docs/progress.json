@@ -247,6 +247,7 @@
   "fut-04": "2026-07-14 roadmap walk (user): DEFERRED — Meshtastic LoRa mesh; 2-5yr hobbyist (on shopping list).",
   "fut-05": "2026-07-14 roadmap walk (user): DEFERRED — sump-pump smart monitoring; 2-5yr future (on shopping list).",
   "fut-06": "2026-07-14 roadmap walk (user): DEFERRED — grow tent local-first; 2-5yr future (on shopping list).",
-  "ha-12": "2026-07-14 (user): DEFERRED — the Zigbee backbone (Mosquitto + Zigbee2MQTT + USB coordinator) is only needed for the ha-30 sensor rollout; every Zigbee device is to-be-purchased and the 45+ Hue lights run through their own Hue Bridge. Buy the ~$20 coordinator with the ha-30 sensors."
+  "ha-12": "2026-07-14 (user): DEFERRED — the Zigbee backbone (Mosquitto + Zigbee2MQTT + USB coordinator) is only needed for the ha-30 sensor rollout; every Zigbee device is to-be-purchased and the 45+ Hue lights run through their own Hue Bridge. Buy the ~$20 coordinator with the ha-30 sensors.",
+  "journal-07": "2026-07-22: Phase-2 IGDB game-metadata enrichment for #gamelog — DEFERRED per the prompt appendix; build only on explicit opt-in (needs a Twitch dev-app Client ID/Secret). Kept isolated so it can be enabled without touching the core journaling loop."
  }
 }

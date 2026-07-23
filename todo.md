@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**204/298 done** · **63 open** · **18 deferred** · 13 retired.
+**204/305 done** · **69 open** · **19 deferred** · 13 retired.
 
 ---
 
@@ -36,6 +36,14 @@
 
 ### home-surface
 - [ ] **`home-08`** Homepage UniFi widget (Calendar tile shipped 2026-07-22) _(est 20 min)_ — ⛔ gate: needs a LOCAL read-only UniFi Network account in the vault (new unifi_network.username/password block) — operator creates it in UniFi (192.168.10.1) -> Settings -> Admins & Users -> Add local user with Network 'View Only' role (NOT the Ubiquiti SSO/cloud login, NOT the Protect-only account which 403s on Network auth).
+
+### journaling
+- [ ] **`journal-01`** Scaffold the journaling stack (Memos + n8n + faster-whisper) on the mini and bring it up _(est 2 hr)_
+- [ ] **`journal-02`** Create the Memos account + API token, wire the memo.created webhook to n8n, confirm events arrive _(est 1 hr)_ — ⛔ gate: User provides the Memos account password they want to use (their daily journaling login); store at vault journaling.memos.password. The API token is minted by the agent from that account.
+- [ ] **`journal-03`** Build + test the journal-analyze n8n workflow (LLM coaching + loop-safe comment write-back) _(est 3 hr)_
+- [ ] **`journal-04`** Wire the optional faster-whisper server-side transcription branch _(est 2 hr)_
+- [ ] **`journal-05`** Add the Open WebUI Journaling Coach preset + Save-to-Journal function _(est 2 hr)_
+- [ ] **`journal-06`** Journaling stack closeout: README, backup/export, end-to-end monitoring, wiki, coverage _(est 2 hr)_
 
 ### media-pipeline
 - [ ] **`media-05`** Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) _(est 1-2 hrs)_
@@ -119,6 +127,7 @@
 - **`ha-20`** Level Lock+ ×2: Apple Home now; trial HA pairing via BLE proxy after sensors arrive — _DEFERRED — Level Lock+ into HA; locks work in Apple Home now, HA path is hardware-gated on ha-30 ESP32 BLE proxies._
 - **`ha-24`** LG ThinQ range + microwave (cloud — status/alerts only, optional) — _DEFERRED — LG ThinQ range/microwave; optional low-value cloud status only._
 - **`ha-30`** Sensor rollout wave 1: Zigbee sensors, plugs, buttons (shopping list) — _DEFERRED — sensor rollout wave 1 (~$505-865 hardware); buy in stages (budget). On the hardware shopping list._
+- **`journal-07`** Phase 2 (deferred): IGDB game-metadata enrichment for #gamelog entries — _Phase-2 IGDB game-metadata enrichment for #gamelog — DEFERRED per the prompt appendix; build only on explicit opt-in (ne_
 - **`retro-07`** Retro handheld onboarding (e.g. AYN Thor Max) — _DEFERRED — retro handheld onboarding; hardware-gated (no handheld owned yet)._
 - **`sbom-05`** Write per-host restore runbooks and run a whole-host rebuild drill — _DEFERRED — per-host restore runbooks + rebuild drill; twin of glue-06, deferred together._
 

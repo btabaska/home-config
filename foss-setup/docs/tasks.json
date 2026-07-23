@@ -12327,5 +12327,266 @@
   ],
   "verify": "manga.tabaska.us reachable; a subscribed manga downloads volume CBZ into the Komga Manga library and shows up in Komga; Homepage suwayomi tile live; green check + coverage entry.",
   "pitfalls": "Output dir must be the NAS Komga Manga root over the LAN mount — if the mount is down, downloads have nowhere to land (add a check on the mount). Extension availability shifts; treat manga acquisition as best-effort. Depends on read-17 (Komga) existing."
+ },
+ {
+  "id": "journal-01",
+  "host": "mini",
+  "mode": "ai",
+  "depends_on": [
+   "ai-01"
+  ],
+  "estimate": "2 hr",
+  "title": "Scaffold the journaling stack (Memos + n8n + faster-whisper) on the mini and bring it up",
+  "summary": "Prompt steps 1-2. Stand up ONE new `journaling` stack at mini /opt/stacks/journaling (memos:0.29.1 :5230, n8n:2.32.2 :5678, speaches:0.8.3-cpu :8010 — :8000/:8080 taken), bind-mounted volumes, digest-pinned. Caddy vhosts memos.tabaska.us + n8n.tabaska.us (whisper stays internal). Homepage tiles. scripts/healthcheck.sh curls all three + rig llama-swap. LAN/tailnet only, no public exposure, no external calls. Coverage manifest += 3 containers. Read journaling-stack-plan.md first.",
+  "steps": [
+   "Read foss-setup/docs/journaling-stack-plan.md in full (locked decisions, pinned images, layout, risks).",
+   "Create /opt/stacks/journaling/compose.yaml (memos+n8n+faster-whisper CPU; GPU block commented) + .env (from .env.example, key NAMES only in the example). Digest-pin each image; note provenance.",
+   "Bind-mount all state under the stack dir (memos db, n8n data) so restic can back it up.",
+   "docker compose up -d; confirm all three healthy. From INSIDE the n8n container curl rig :9292/v1/models AND :3000 (open-webui) — both must respond.",
+   "Add Caddy vhosts memos.tabaska.us + n8n.tabaska.us (edit caddy stack live + repo mirror). faster-whisper NO vhost.",
+   "Add Homepage tiles for Memos + n8n (live /opt/stacks/homepage/config + repo mirror; siteMonitor unless a real widget exists).",
+   "Write scripts/healthcheck.sh (curls Memos :5230, n8n :5678, whisper :8010, rig :9292) and run it.",
+   "Mirror the whole stack dir to foss-setup/configs/docker-stack/stacks/journaling/; add all 3 to verification/coverage/mini.containers."
+  ],
+  "files": [
+   "foss-setup/configs/docker-stack/stacks/journaling/compose.yaml",
+   "foss-setup/configs/docker-stack/stacks/journaling/.env.example",
+   "foss-setup/configs/docker-stack/stacks/journaling/scripts/healthcheck.sh",
+   "foss-setup/configs/docker-stack/stacks/caddy/Caddyfile",
+   "foss-setup/configs/docker-stack/stacks/homepage/config/services.yaml",
+   "foss-setup/verification/coverage/mini.containers"
+  ],
+  "verify": "healthcheck.sh all green; from inside the n8n container rig :9292/v1/models AND :3000 both return; memos.tabaska.us + n8n.tabaska.us load over tailnet; Homepage tiles render; mini.containers lists all 3.",
+  "pitfalls": [
+   "faster-whisper must bind :8010 (:8000/:8080 already taken on mini).",
+   "Homepage container DNS must be NAS AdGuard .4, not mini .2 (times out from containers).",
+   "No public exposure — LAN/tailnet only; fail loudly if any config points off-LAN."
+  ],
+  "track": "journaling",
+  "type": "sync",
+  "required": true,
+  "run": 8,
+  "source": "user request 2026-07-22 (self-hosted AI journaling stack — 8-step build order)",
+  "docs": [
+   "foss-setup/docs/journaling-stack-plan.md"
+  ]
+ },
+ {
+  "id": "journal-02",
+  "host": "mini",
+  "mode": "ai-vault",
+  "depends_on": [
+   "journal-01"
+  ],
+  "estimate": "1 hr",
+  "gate": "User provides the Memos account password they want to use (their daily journaling login); store at vault journaling.memos.password. The API token is minted by the agent from that account.",
+  "title": "Create the Memos account + API token, wire the memo.created webhook to n8n, confirm events arrive",
+  "summary": "Prompt step 3. Create the first Memos user (host) with the user's chosen password (vault journaling.memos.password), mint an API token (vault journaling.memos.api_token, merge never blind-assign). Configure a Memos webhook -> n8n on memo.created with --allow-private-webhooks (fallback: target the Caddy hostname so it is not a private-IP literal). Add an n8n Webhook node that logs the RAW payload; confirm creating a memo delivers an event. Validate risk 1 (0.29 payload + comment API shapes).",
+  "steps": [
+   "Create the first Memos user with the user-provided password; store creds at vault journaling.memos.* (merge).",
+   "Mint a Memos API token; store at vault journaling.memos.api_token; put the key NAME in .env.example, value in live .env (600).",
+   "Enable webhook delivery: run Memos with --allow-private-webhooks (or MEMOS_ equivalent for 0.29). If the flag is not honored, point the webhook at https://n8n.tabaska.us/... via Caddy.",
+   "In n8n add a Webhook node (path e.g. /journal), set it to log the raw incoming body; activate.",
+   "Create a Memos webhook pointing at the n8n webhook URL; fire a test memo; capture the raw payload and record the exact activityType + memo/comment field shapes in the workflow notes."
+  ],
+  "files": [
+   "foss-setup/configs/docker-stack/stacks/journaling/compose.yaml",
+   "foss-setup/configs/docker-stack/stacks/journaling/.env.example"
+  ],
+  "verify": "Creating a memo delivers a webhook event to n8n and the raw payload is captured; the 0.29 activityType + comment endpoint shapes are recorded for journal-03.",
+  "pitfalls": [
+   "Memos blocks private-IP webhook targets by default — --allow-private-webhooks or route via Caddy hostname.",
+   "Never paste the token/password into chat/commits — vault key paths only; merge the vault section."
+  ],
+  "track": "journaling",
+  "type": "sync",
+  "required": true,
+  "run": 8,
+  "source": "user request 2026-07-22 (self-hosted AI journaling stack — 8-step build order)",
+  "docs": [
+   "foss-setup/docs/journaling-stack-plan.md"
+  ]
+ },
+ {
+  "id": "journal-03",
+  "host": "mini",
+  "mode": "ai",
+  "depends_on": [
+   "journal-02",
+   "ai-01"
+  ],
+  "estimate": "3 hr",
+  "title": "Build + test the journal-analyze n8n workflow (LLM coaching + loop-safe comment write-back)",
+  "summary": "Prompt steps 4-5. Build journal-analyze: filter (only memo.created; SKIP comment events + already-analyzed memos) -> LLM POST rig :9292/v1/chat/completions model=dolphin-venice-24b temp~0.35 with the gentle-nudge system prompt (strict JSON) -> tolerant JSON parse/repair -> format Markdown -> create a COMMENT on the source memo (never edit the body). Ship templates/{daily,gamelog}.md. Export the workflow to n8n/journal-analyze.workflow.json. Test END-TO-END: one #journal memo -> exactly ONE comment, no re-trigger; then one #gamelog memo through the same path.",
+  "steps": [
+   "Import/build the workflow; add the filter guard (memo.created only; skip comment-created; skip memos already carrying an analysis comment / #analyzed).",
+   "LLM node -> rig :9292/v1/chat/completions, model dolphin-venice-24b, temp 0.35, generous timeout + retry (llama-swap cold-load/gaming-evict is best-effort), gentle-nudge system prompt from the plan doc.",
+   "Add a tolerant JSON extract/repair step (strip fences, grab first {...}) so a chatty response never breaks the loop.",
+   "Format the JSON into the Markdown reflection block; write it back as a COMMENT via the Memos comment API (never PATCH the memo body).",
+   "Add templates/daily.md + templates/gamelog.md; export the workflow to n8n/journal-analyze.workflow.json (version-controlled).",
+   "TEST: create a #journal memo -> confirm exactly ONE analysis comment and that the comment does NOT re-trigger. Then a #gamelog memo -> analyzed via the same path."
+  ],
+  "files": [
+   "foss-setup/configs/docker-stack/stacks/journaling/n8n/journal-analyze.workflow.json",
+   "foss-setup/configs/docker-stack/stacks/journaling/templates/daily.md",
+   "foss-setup/configs/docker-stack/stacks/journaling/templates/gamelog.md"
+  ],
+  "verify": "One #journal memo yields exactly ONE analysis comment and does NOT re-trigger the webhook; a #gamelog memo is analyzed via the same path. Evidence: the comment text + n8n execution log showing the loop guard skipping the comment event.",
+  "pitfalls": [
+   "Write-back is a COMMENT, not a body edit — editing the body re-fires the webhook.",
+   "Loop guard must skip BOTH comment-created events AND already-analyzed memos.",
+   "dolphin-venice can be chatty — the JSON repair step is mandatory.",
+   "Model swap/gaming-evict on the rig makes the LLM call best-effort; the entry is saved regardless."
+  ],
+  "track": "journaling",
+  "type": "sync",
+  "required": true,
+  "run": 8,
+  "source": "user request 2026-07-22 (self-hosted AI journaling stack — 8-step build order)",
+  "docs": [
+   "foss-setup/docs/journaling-stack-plan.md"
+  ]
+ },
+ {
+  "id": "journal-04",
+  "host": "mini",
+  "mode": "ai",
+  "depends_on": [
+   "journal-03"
+  ],
+  "estimate": "2 hr",
+  "title": "Wire the optional faster-whisper server-side transcription branch",
+  "summary": "Prompt step 6. Add the secondary dictation path: if a memo arrives with an attached audio resource, n8n pulls the resource, POSTs it to faster-whisper /v1/audio/transcriptions (:8010, CPU), and merges the transcript into the entry text BEFORE the LLM analysis. Test with a sample audio file. The primary client-side text path must be completely unaffected when no audio is present.",
+  "steps": [
+   "Add a branch in journal-analyze: detect an audio resource on the memo; if present, fetch it via the Memos API.",
+   "POST the audio to http://faster-whisper:8010/v1/audio/transcriptions; merge the returned text into the entry before the LLM node.",
+   "Test: create a memo with a sample audio resource -> transcript merged + analyzed. Test a text-only memo -> branch skipped, unchanged behavior.",
+   "Re-export the updated workflow JSON to the repo."
+  ],
+  "files": [
+   "foss-setup/configs/docker-stack/stacks/journaling/n8n/journal-analyze.workflow.json"
+  ],
+  "verify": "A memo with a sample audio resource is transcribed by faster-whisper and analyzed; a text-only memo is unaffected (branch skipped). Evidence: the transcript appears in the analysis input + n8n execution log.",
+  "pitfalls": [
+   "Keep faster-whisper on CPU — GPU competes with the rig's single 24GB 3090 Ti.",
+   "This is the SECONDARY path; do not let it regress the primary client-side text flow."
+  ],
+  "track": "journaling",
+  "type": "sync",
+  "required": true,
+  "run": 8,
+  "source": "user request 2026-07-22 (self-hosted AI journaling stack — 8-step build order)",
+  "docs": [
+   "foss-setup/docs/journaling-stack-plan.md"
+  ]
+ },
+ {
+  "id": "journal-05",
+  "host": "rig",
+  "mode": "ai",
+  "depends_on": [
+   "journal-03"
+  ],
+  "estimate": "2 hr",
+  "title": "Add the Open WebUI Journaling Coach preset + Save-to-Journal function",
+  "summary": "Prompt step 7. On the rig open-webui: (a) a 'Journaling Coach' model preset/system prompt for free-form reflective conversation; (b) a 'Save to Journal' Function (Action/Tool) that POSTs the current conversation into Memos as a #journal entry via the Memos API + token (vault journaling.memos.api_token). Saving this way intentionally re-enters the n8n analysis loop. Ship save_to_journal_function.py + journaling-coach-preset.md.",
+  "steps": [
+   "Author openwebui/journaling-coach-preset.md (coaching system prompt + exact setup steps in OWUI).",
+   "Author openwebui/save_to_journal_function.py (posts the conversation to Memos /api/v1/memos as #journal; Memos base URL + token from env/vault).",
+   "Install the preset + function on the rig open-webui (reuse an OWUI admin token from vault ai_stack if present; else ask).",
+   "Test: run a coaching chat, hit Save to Journal -> the entry appears in Memos as #journal AND gets an analysis comment from n8n."
+  ],
+  "files": [
+   "foss-setup/configs/docker-stack/stacks/journaling/openwebui/save_to_journal_function.py",
+   "foss-setup/configs/docker-stack/stacks/journaling/openwebui/journaling-coach-preset.md"
+  ],
+  "verify": "A saved Open WebUI coaching conversation appears in Memos as a #journal memo and receives exactly one n8n analysis comment. Evidence: the saved memo + its comment.",
+  "pitfalls": [
+   "Memos token + base URL come from vault/env, never hardcoded.",
+   "OWUI admin install may need an admin token — check vault ai_stack before asking the user."
+  ],
+  "track": "journaling",
+  "type": "sync",
+  "required": true,
+  "run": 8,
+  "source": "user request 2026-07-22 (self-hosted AI journaling stack — 8-step build order)",
+  "docs": [
+   "foss-setup/docs/journaling-stack-plan.md"
+  ]
+ },
+ {
+  "id": "journal-06",
+  "host": "mini",
+  "mode": "ai",
+  "depends_on": [
+   "journal-03",
+   "journal-04",
+   "journal-05"
+  ],
+  "estimate": "2 hr",
+  "title": "Journaling stack closeout: README, backup/export, end-to-end monitoring, wiki, coverage",
+  "summary": "Prompt step 8 + full-homelab-wiring closeout. Write the stack README (setup, Memos/n8n token walkthrough, --allow-private-webhooks, the loop guard, the Whisper GPU toggle, backup/export). Add a CONSUMER-END verification check that proves the loop works (a test memo -> exactly one analysis comment) deployed to the mini runner + ntfy verification. Uptime-Kuma monitors for Memos + n8n. Wiki service page via service-enrichment.yaml (never hand-edit generated pages), build --strict. Confirm 100% coverage.",
+  "steps": [
+   "Write README.md in the stack dir: first-run, how to get Memos + n8n tokens, wiring the webhook, enabling the workflow, testing, troubleshooting (private-webhooks, loop guard, GPU toggle), backup/export (Memos export + restic paths).",
+   "Add a consumer-end check to verification/checks.d (e.g. journaling.yaml): post a marked test memo, assert exactly one analysis comment appears within a timeout, then clean up. cmd/task_id/runbook each. Deploy via ssh sudo tee to mini /opt/verification (scp fails silently); run and show green.",
+   "Add Uptime-Kuma monitors for Memos + n8n.",
+   "Add wiki prose to configs/docker-stack/service-enrichment.yaml for memos/n8n/faster-whisper; run the wiki generators; build-wiki.sh --strict.",
+   "Confirm verification/coverage/mini.containers still lists all 3 journaling containers (100% tripwire)."
+  ],
+  "files": [
+   "foss-setup/configs/docker-stack/stacks/journaling/README.md",
+   "foss-setup/verification/checks.d/journaling.yaml",
+   "foss-setup/configs/docker-stack/service-enrichment.yaml",
+   "foss-setup/verification/coverage/mini.containers"
+  ],
+  "verify": "The end-to-end check (test memo -> exactly one comment) runs green on the mini runner; wiki builds --strict with the journaling service page; Kuma monitors green; mini.containers at 100%. Backup/export documented AND a Memos export tested once.",
+  "pitfalls": [
+   "Consumer-end, not liveness — the check must prove the analysis comment appears, not just that containers are up.",
+   "Never hand-edit generated wiki/docs/services/*.md — edit service-enrichment.yaml + regenerate."
+  ],
+  "track": "journaling",
+  "type": "sync",
+  "required": true,
+  "run": 8,
+  "source": "user request 2026-07-22 (self-hosted AI journaling stack — 8-step build order)",
+  "docs": [
+   "foss-setup/docs/journaling-stack-plan.md"
+  ]
+ },
+ {
+  "id": "journal-07",
+  "host": "mini",
+  "mode": "ai-vault",
+  "depends_on": [
+   "journal-03"
+  ],
+  "estimate": "3 hr",
+  "required": false,
+  "run": 9,
+  "gate": "User opts in AND provides a Twitch developer app Client ID + Secret (IGDB OAuth); store at vault journaling.igdb.* (merge). DO NOT build until the user explicitly enables Phase 2.",
+  "title": "Phase 2 (deferred): IGDB game-metadata enrichment for #gamelog entries",
+  "summary": "Appendix / Phase 2 — DEFERRED, build only on explicit opt-in. Isolated n8n branch (or 2nd workflow): on a #gamelog memo, parse the title, query IGDB (Twitch OAuth, token refresh handled in n8n) for the best match, pull cover art + canonical name + release date + genres + developer, and append it as a loop-safe COMMENT (never edit the body). Graceful degradation: if creds missing or IGDB unreachable, skip silently and let the normal sentiment/coaching analysis proceed unchanged. Respect rate limits + cache lookups. Must be toggleable without touching the core loop.",
+  "steps": [
+   "Add Twitch/IGDB creds to .env.example as clearly-OPTIONAL vars (names only); document registering the Twitch app + token refresh.",
+   "New isolated branch/workflow: parse #gamelog title -> IGDB OAuth (refresh in n8n) -> best-match lookup -> cover/name/date/genres/developer.",
+   "Append a tidy metadata comment (thumbnail + facts) with the same loop-safe pattern; if multiple candidates, pick top match or post top 2-3 to disambiguate (propose which).",
+   "Graceful-degrade: missing creds or IGDB down -> skip silently; the core analysis still runs. Cache lookups; respect rate limits."
+  ],
+  "files": [
+   "foss-setup/configs/docker-stack/stacks/journaling/n8n/journal-analyze.workflow.json",
+   "foss-setup/configs/docker-stack/stacks/journaling/.env.example"
+  ],
+  "verify": "A #gamelog memo gets an IGDB metadata comment (cover + canonical facts); with creds removed, the same memo still gets normal analysis and no IGDB errors surface. Core loop unchanged when the branch is disabled.",
+  "pitfalls": [
+   "Keep fully isolated — enabling/disabling must not touch the core journaling loop.",
+   "Twitch OAuth token expires — handle refresh in n8n.",
+   "Loop-safe: metadata is a COMMENT, never a body edit."
+  ],
+  "track": "journaling",
+  "type": "sync",
+  "source": "user request 2026-07-22 (self-hosted AI journaling stack — 8-step build order)",
+  "docs": [
+   "foss-setup/docs/journaling-stack-plan.md"
+  ]
  }
 ]
