@@ -85,3 +85,24 @@ checks:
     task_id: journal-03
     runbook: wiki/docs/services/journaling.md
     enabled: true
+
+  # journal-04 consumer probe: the optional server-side dictation branch POSTs a
+  # memo's audio attachment to faster-whisper /v1/audio/transcriptions and merges the
+  # transcript into the LLM input BEFORE analysis. `journaling-whisper-ready` only
+  # proves /health (the container is up); this proves the endpoint actually
+  # TRANSCRIBES with the cached model — the real runtime dependency of the audio
+  # branch. If the whisper-cache volume is wiped or the model evicted, /health stays
+  # green but a real transcription 500s/stalls and voice entries silently lose their
+  # transcript. Real CPU inference (~15 s), so tier: daily (the 07:15 full sweep), not
+  # the 10-min fast tier. Uses a bundled 1 s probe WAV on the runner (source of truth
+  # foss-setup/verification/assets/whisper-probe.wav, deployed to /opt/verification/assets/).
+  - id: journaling-whisper-transcribes
+    tier: daily
+    name: "faster-whisper transcribes a probe clip (model loaded, not just /health)"
+    host: mini
+    cmd: curl -s -m 90 -X POST http://localhost:8010/v1/audio/transcriptions -F file=@/opt/verification/assets/whisper-probe.wav -F model=Systran/faster-whisper-small -F response_format=json | python3 -c 'import sys,json;t=json.load(sys.stdin).get("text","").strip();print("WHISPER_TRANSCRIBES_OK" if t else "WHISPER_EMPTY")'
+    expect: '^WHISPER_TRANSCRIBES_OK$'
+    severity: warn
+    task_id: journal-04
+    runbook: wiki/docs/services/journaling.md
+    enabled: true

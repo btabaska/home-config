@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**207/305 done** · **66 open** · **19 deferred** · 13 retired.
+**208/305 done** · **65 open** · **19 deferred** · 13 retired.
 
 ---
 
@@ -38,7 +38,6 @@
 - [ ] **`home-08`** Homepage UniFi widget (Calendar tile shipped 2026-07-22) _(est 20 min)_ — ⛔ gate: needs a LOCAL read-only UniFi Network account in the vault (new unifi_network.username/password block) — operator creates it in UniFi (192.168.10.1) -> Settings -> Admins & Users -> Add local user with Network 'View Only' role (NOT the Ubiquiti SSO/cloud login, NOT the Protect-only account which 403s on Network auth).
 
 ### journaling
-- [ ] **`journal-04`** Wire the optional faster-whisper server-side transcription branch _(est 2 hr)_
 - [ ] **`journal-05`** Add the Open WebUI Journaling Coach preset + Save-to-Journal function _(est 2 hr)_
 - [ ] **`journal-06`** Journaling stack closeout: README, backup/export, end-to-end monitoring, wiki, coverage _(est 2 hr)_
 

@@ -74,6 +74,12 @@ services:
       - LLM_BASE_URL=${LLM_BASE_URL}          # rig llama-swap, OpenAI-compatible base
       - LLM_MODEL=${LLM_MODEL}                # coach model (one-line swap: deckard-heretic)
       - LLM_TEMP=${LLM_TEMP}                  # low temp for stable JSON
+      # journal-04: optional server-side dictation. The audio branch reaches
+      # faster-whisper by container name on the journaling net; port 8000 is the
+      # CONTAINER port (host-published as 8010). Both have node-expression defaults,
+      # so they are a one-line model/endpoint swap, never a hard dependency.
+      - WHISPER_BASE_URL=${WHISPER_BASE_URL}  # http://faster-whisper:8000/v1
+      - WHISPER_MODEL=${WHISPER_MODEL}        # Systran/faster-whisper-small (CPU)
     volumes:
       - ./n8n:/home/node/.n8n # workflows + sqlite + encryption key — restic-backed
     networks:

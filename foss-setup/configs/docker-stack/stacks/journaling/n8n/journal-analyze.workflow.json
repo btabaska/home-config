@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// journal-03 loop guard + request builder.\n// The webhook fires memos.memo.created AND memos.memo.comment.created; creating a\n// COMMENT (our reflection) re-fires memo.created carrying the *comment* memo. We\n// must analyze ONLY genuine #journal entries and never our own output.\nconst evt = ($input.first().json && $input.first().json.body) || {};\nconst activity = evt.activityType || '';\nconst memo = evt.memo || {};\nconst content = (memo.content || '').toString();\nconst tags = Array.isArray(memo.tags) ? memo.tags : [];\nconst name = memo.name || '';\nconst SENTINEL = '\\u{1F9ED} **Reflection**'; // the header our reflection comment starts with\n\n// 1) only entry-created events (drops memos.memo.comment.created outright)\nif (activity !== 'memos.memo.created') return [];\n// 2) must be a journal entry. #gamelog templates also carry #journal, so this one\n//    tag gates both paths - and our reflection comment has no #journal, so this is\n//    itself a loop guard.\nif (!tags.includes('journal')) return [];\n// 3) never re-analyze our own reflection or an already-analyzed marker\nif (content.includes(SENTINEL) || content.toLowerCase().includes('#analyzed')) return [];\n// 4) need something to comment on and something to analyze\nif (!name || !content.trim()) return [];\n\nconst SYS = \"You are a quiet, warm journaling companion. You receive ONE journal entry. Respond ONLY with valid JSON in exactly this schema:\\n{\\n  \\\"sentiment\\\": \\\"<very negative|negative|neutral|positive|very positive>\\\",\\n  \\\"mood_score\\\": <integer 1-10>,\\n  \\\"emotions\\\": [\\\"<up to 4>\\\"],\\n  \\\"themes\\\": [\\\"<up to 4>\\\"],\\n  \\\"summary\\\": \\\"<one-sentence reflection of what this entry is about>\\\",\\n  \\\"coaching\\\": \\\"<1-2 sentences, gentle and low-pressure. Reflect back one specific thing. At MOST one soft, open-ended question - and only if it genuinely helps. No advice, no cliches, no cheerleading. It is fine to simply witness.>\\\"\\n}\\nBe honest and specific, never saccharine. Stay light - you are a nudge, not a coach. If the entry suggests crisis or self-harm risk, set coaching to gently, briefly encourage reaching out to a trusted person or professional. Never give medical advice.\";\n\nreturn [{ json: {\n  memoName: name,\n  content: content,\n  messages: [\n    { role: 'system', content: SYS },\n    { role: 'user', content: content }\n  ]\n} }];\n"
+        "jsCode": "// journal-04 loop guard + audio detect + request builder.\n// The webhook fires memos.memo.created AND memos.memo.comment.created; creating a\n// COMMENT (our reflection) re-fires memo.created carrying the *comment* memo. We\n// must analyze ONLY genuine #journal entries and never our own output.\nconst evt = ($input.first().json && $input.first().json.body) || {};\nconst activity = evt.activityType || '';\nconst memo = evt.memo || {};\nconst content = (memo.content || '').toString();\nconst tags = Array.isArray(memo.tags) ? memo.tags : [];\nconst name = memo.name || '';\nconst SENTINEL = '\\u{1F9ED} **Reflection**'; // header our reflection comment starts with\n\n// journal-04: detect an audio attachment. The memo.created webhook carries\n// memo.attachments[] inline: {name:\"attachments/..\", filename, type:\"audio/..\",\n// size, memo}. Pick the FIRST audio attachment as the voice note - no memo\n// re-fetch, so the text-only path pays nothing.\nconst atts = Array.isArray(memo.attachments) ? memo.attachments : [];\nconst audio = atts.find(a => a && typeof a.type === 'string' && a.type.toLowerCase().startsWith('audio/')) || null;\nconst hasAudio = !!(audio && audio.name && audio.filename);\n\n// 1) only entry-created events (drops memos.memo.comment.created outright)\nif (activity !== 'memos.memo.created') return [];\n// 2) must be a journal entry. #gamelog templates also carry #journal; our\n//    reflection comment has no #journal, so this tag gate is itself a loop guard.\nif (!tags.includes('journal')) return [];\n// 3) never re-analyze our own reflection or an already-analyzed marker\nif (content.includes(SENTINEL) || content.toLowerCase().includes('#analyzed')) return [];\n// 4) need a target, and something to analyze: text OR a voice note (a voice-only\n//    entry may carry only the #journal tag as text - allow it through when audio exists)\nif (!name) return [];\nif (!content.trim() && !hasAudio) return [];\n\nconst SYS = \"You are a quiet, warm journaling companion. You receive ONE journal entry. Respond ONLY with valid JSON in exactly this schema:\\n{\\n  \\\"sentiment\\\": \\\"<very negative|negative|neutral|positive|very positive>\\\",\\n  \\\"mood_score\\\": <integer 1-10>,\\n  \\\"emotions\\\": [\\\"<up to 4>\\\"],\\n  \\\"themes\\\": [\\\"<up to 4>\\\"],\\n  \\\"summary\\\": \\\"<one-sentence reflection of what this entry is about>\\\",\\n  \\\"coaching\\\": \\\"<1-2 sentences, gentle and low-pressure. Reflect back one specific thing. At MOST one soft, open-ended question - and only if it genuinely helps. No advice, no cliches, no cheerleading. It is fine to simply witness.>\\\"\\n}\\nBe honest and specific, never saccharine. Stay light - you are a nudge, not a coach. If the entry suggests crisis or self-harm risk, set coaching to gently, briefly encourage reaching out to a trusted person or professional. Never give medical advice.\";\n\n// Default (text-only) messages - UNCHANGED behavior when no audio is present. The\n// audio branch rebuilds messages after merging the transcript; both reuse SYS.\nreturn [{ json: {\n  memoName: name,\n  content: content,\n  hasAudio: hasAudio,\n  audioName: hasAudio ? audio.name : '',\n  audioFilename: hasAudio ? audio.filename : '',\n  sys: SYS,\n  messages: [\n    { role: 'system', content: SYS },\n    { role: 'user', content: content }\n  ]\n} }];\n"
       },
       "id": "a1c07f3d-2b6e-4890-9d11-000000000002",
       "name": "Guard: loop-safe filter",
@@ -29,6 +29,128 @@
       "position": [
         480,
         300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-has-audio",
+              "leftValue": "={{ $json.hasAudio }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1c07f3d-2b6e-4890-9d11-000000000006",
+      "name": "IF: audio attached?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ 'http://memos:5230/file/' + $json.audioName + '/' + $json.audioFilename }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.MEMOS_API_TOKEN }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "id": "a1c07f3d-2b6e-4890-9d11-000000000007",
+      "name": "Fetch audio (Memos file)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        160
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($env.WHISPER_BASE_URL || 'http://faster-whisper:8000/v1') }}/audio/transcriptions",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "={{ $env.WHISPER_MODEL || 'Systran/faster-whisper-small' }}"
+            },
+            {
+              "name": "response_format",
+              "value": "json"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "a1c07f3d-2b6e-4890-9d11-000000000008",
+      "name": "Transcribe (faster-whisper)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1140,
+        160
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// journal-04: merge the whisper transcript into the entry, then rebuild the LLM\n// messages so the transcript is analyzed. Fail-safe: if transcription produced\n// nothing (whisper down/evicted, or a mis-route), fall back to the text-only\n// messages the Guard already built - the primary text path never regresses.\nconst guard = $('Guard: loop-safe filter').first().json;\nlet transcript = '';\ntry {\n  const j = $input.first().json;\n  if (j && typeof j.text === 'string') transcript = j.text.trim();\n} catch (e) { transcript = ''; }\n\nif (!transcript) {\n  return [{ json: { memoName: guard.memoName, content: guard.content, messages: guard.messages } }];\n}\n\nconst base = (guard.content || '').trim();\nconst merged = base ? (base + '\\n\\n[Voice note transcript]\\n' + transcript)\n                    : ('[Voice note transcript]\\n' + transcript);\nreturn [{ json: {\n  memoName: guard.memoName,\n  content: merged,\n  messages: [\n    { role: 'system', content: guard.sys },\n    { role: 'user', content: merged }\n  ]\n} }];\n"
+      },
+      "id": "a1c07f3d-2b6e-4890-9d11-000000000009",
+      "name": "Merge transcript -> messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        160
       ]
     },
     {
@@ -47,7 +169,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        720,
+        1580,
         300
       ],
       "retryOnFail": true,
@@ -65,7 +187,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        960,
+        1800,
         300
       ]
     },
@@ -94,7 +216,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1200,
+        2020,
         300
       ]
     }
@@ -112,6 +234,57 @@
       ]
     },
     "Guard: loop-safe filter": {
+      "main": [
+        [
+          {
+            "node": "IF: audio attached?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: audio attached?": {
+      "main": [
+        [
+          {
+            "node": "Fetch audio (Memos file)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "LLM: rig llama-swap (dolphin-venice-24b)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch audio (Memos file)": {
+      "main": [
+        [
+          {
+            "node": "Transcribe (faster-whisper)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe (faster-whisper)": {
+      "main": [
+        [
+          {
+            "node": "Merge transcript -> messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge transcript -> messages": {
       "main": [
         [
           {
