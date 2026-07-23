@@ -248,6 +248,28 @@ immich.{$DOMAIN} {
 	reverse_proxy {$NAS_IP}:2283
 }
 
+# ---------------------------------------------------------------------------
+# Syncthing — no-cloud sync mesh (foss-03). LAN/Tailscale only; the GUI has
+# admin auth. `header_up Host localhost` satisfies Syncthing's anti-DNS-rebind
+# host check under a proxied hostname (docs.syncthing.net/users/reverseproxy).
+# ---------------------------------------------------------------------------
+
+# Hub (NAS, always-on) — its GUI shows every device in the mesh.
+syncthing.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:8384 {
+		header_up Host localhost
+	}
+}
+
+# Rig node GUI (rebound off localhost 2026-07-22; LAN + ufw + admin auth).
+syncthing-rig.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$RIG_IP}:8384 {
+		header_up Host localhost
+	}
+}
+
 # Local camera AI (authenticated UI on 8971 — NAS)
 # 2026-07-07 disabled pending fix-18 decision: Frigate not running on NAS (:8971 unreachable)
 # frigate.{$DOMAIN} {

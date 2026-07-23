@@ -360,6 +360,30 @@
         href: https://ntfy.tabaska.us
         description: Notifications
         siteMonitor: http://ntfy:80
+    # Syncthing (foss-03): the hub sees the whole mesh, so ONE tile pointed at the
+    # always-on NAS hub reflects every device. Widget hits the hub REST API by raw
+    # IP (X-API-Key auth); click-through opens the hub GUI at syncthing.tabaska.us,
+    # which lists all peers (mini/rig/macbook). needTotalItems 0 == fully in sync.
+    - Syncthing:
+        icon: syncthing.png
+        href: https://syncthing.tabaska.us
+        description: No-cloud sync mesh (foss-03)
+        widget:
+          type: customapi
+          url: http://192.168.10.4:8384/rest/db/status?folder=default
+          refreshInterval: 10000
+          headers:
+            X-API-Key: "{{HOMEPAGE_VAR_SYNCTHING_HUB_KEY}}"
+          mappings:
+            - field: state
+              label: Folder
+              format: text
+            - field: needTotalItems
+              label: Pending
+              format: number
+            - field: globalBytes
+              label: Size
+              format: bytes
 
 # Fleet — per-HOST vitals (CPU/RAM/disk/network) from the beszel-agent already on
 # every box, reusing the beszel hub on the mini (zero new daemons — the 8 GB mini

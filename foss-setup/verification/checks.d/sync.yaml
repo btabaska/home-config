@@ -24,3 +24,25 @@ checks:
     task_id: foss-03
     runbook: wiki/docs/services/syncthing.md
     enabled: true
+
+  # Consumer probe of the new reverse-proxy URLs (foss-03 Homepage/URL work,
+  # 2026-07-22): the hub GUI (syncthing.tabaska.us) + rig GUI (syncthing-rig,
+  # rebound off localhost) must serve through the mini Caddy. /rest/noauth/health
+  # is a Syncthing-only endpoint, so a 200 confirms Caddy reaches real Syncthing
+  # (not a Caddy error page / wrong upstream). Guards the tile's click-through.
+  - id: syncthing-gui-urls
+    tier: fast
+    name: "syncthing GUI reverse-proxy URLs (hub + rig) serve via Caddy"
+    host: mini
+    cmd: >-
+      out="";
+      for h in syncthing.tabaska.us syncthing-rig.tabaska.us; do
+      c=$(curl -sk -m 10 -o /dev/null -w '%{http_code}' --resolve "$h:443:127.0.0.1" "https://$h/rest/noauth/health");
+      [ "$c" = "200" ] && out="$out $h=ok" || out="$out $h=FAIL($c)";
+      done;
+      echo "syncthing_urls$out"
+    expect: '^syncthing_urls syncthing.tabaska.us=ok syncthing-rig.tabaska.us=ok$'
+    severity: warn
+    task_id: foss-03
+    runbook: wiki/docs/services/syncthing.md
+    enabled: true

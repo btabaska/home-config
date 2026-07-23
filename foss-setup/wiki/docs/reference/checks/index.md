@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **256 checks across 27 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **257 checks across 27 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -28,8 +28,8 @@ Every acceptance/regression check the fleet runs — **256 checks across 27 doma
 | [rig-immich-ml](rig-immich-ml.md) | 4 | 2 | 2 |
 | [secrets](secrets.md) | 4 | 3 | 1 |
 | [seedbox](seedbox.md) | 8 | 4 | 4 |
-| [sync](sync.md) | 1 | 0 | 1 |
+| [sync](sync.md) | 2 | 0 | 2 |
 | [system](system.md) | 8 | 4 | 4 |
 | [verification-self](verification-self.md) | 5 | 0 | 5 |
 
-_Total: 256 checks._
+_Total: 257 checks._

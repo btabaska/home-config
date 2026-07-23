@@ -86,6 +86,44 @@ else
   warn "ufw not active — skipping firewall rules (ensure 22000/tcp+udp reachable on the LAN)."
 fi
 
+# 4.6 OPTIONAL: expose the Web GUI to the LAN so it can be reverse-proxied at
+#     syncthing-rig.tabaska.us (mini Caddy) and surfaced on Homepage (foss-03).
+#     GUARDED by SYNCTHING_GUI_PASSWORD so we NEVER expose an unauthenticated
+#     admin panel: with no password set, the GUI stays localhost-only. The
+#     password lives in the control-host vault (.handoff-secrets.yaml ->
+#     syncthing.rig_gui_password); pass it in from there, e.g.:
+#       SYNCTHING_GUI_PASSWORD=... SYNCTHING_GUI_USER=admin ./syncthing-setup-cachyos.sh
+#     Applies live via the REST API (Syncthing v2 persists it to config.xml and
+#     bcrypt-hashes the plaintext password on save).
+if [ -n "${SYNCTHING_GUI_PASSWORD:-}" ]; then
+  GUSER="${SYNCTHING_GUI_USER:-admin}"
+  CFG="$HOME/.local/state/syncthing/config.xml"
+  KEY=$(grep -oPm1 '(?<=<apikey>)[^<]+' "$CFG" 2>/dev/null || true)
+  if [ -n "$KEY" ]; then
+    log "Binding GUI to 0.0.0.0:8384 with admin auth (user '$GUSER') + opening ufw :8384 (LAN)"
+    cur=$(curl -sf -H "X-API-Key: $KEY" http://127.0.0.1:8384/rest/config/gui 2>/dev/null || true)
+    if [ -n "$cur" ]; then
+      new=$(GUSER="$GUSER" GPW="$SYNCTHING_GUI_PASSWORD" python3 -c \
+        'import sys,json,os; g=json.load(sys.stdin); g["address"]="0.0.0.0:8384"; g["user"]=os.environ["GUSER"]; g["password"]=os.environ["GPW"]; json.dump(g,sys.stdout)' <<<"$cur")
+      if curl -sf -o /dev/null -X PUT -H "X-API-Key: $KEY" -H 'Content-Type: application/json' \
+           -d "$new" http://127.0.0.1:8384/rest/config/gui; then
+        log "GUI rebound to LAN with auth."
+      else
+        warn "GUI rebind PUT failed — check the REST API."
+      fi
+      if command -v ufw >/dev/null 2>&1 && sudo ufw status 2>/dev/null | grep -q '^Status: active'; then
+        sudo ufw allow from 192.168.10.0/24 to any port 8384 proto tcp comment 'syncthing gui (foss-03)'
+      fi
+    else
+      warn "Could not read current GUI config via REST — skipping LAN rebind."
+    fi
+  else
+    warn "No API key found in $CFG — skipping LAN rebind."
+  fi
+else
+  log "SYNCTHING_GUI_PASSWORD unset — leaving GUI on localhost (no LAN exposure)."
+fi
+
 # 5. Report status + where to go next.
 sleep 1
 if systemctl --user is-active syncthing.service >/dev/null 2>&1; then
@@ -113,9 +151,12 @@ Reading-stack tips:
     (For live cross-device progress, prefer CWA's built-in KOSync; Syncthing is
     the file-level belt-and-suspenders.)
 
-Headless/remote GUI: to reach the GUI from another LAN host, set
-  GUI Listen Address to 0.0.0.0:8384 in Settings (only do this behind your
-  trusted VLAN / Tailscale, and after setting a GUI password).
+Headless/remote GUI: this rig's GUI is reverse-proxied at
+  https://syncthing-rig.tabaska.us (mini Caddy, LAN/Tailscale only) and its
+  status shows on Homepage via the always-on NAS hub tile. To (re)apply the LAN
+  bind + admin auth non-interactively, re-run this script with
+  SYNCTHING_GUI_PASSWORD set (see section 4.6 / vault syncthing.rig_gui_password).
+  Never bind 0.0.0.0 without a GUI password.
 EOF
 
 log "Done."
