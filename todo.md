@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**214/305 done** · **59 open** · **18 deferred** · 14 retired.
+**215/305 done** · **58 open** · **18 deferred** · 14 retired.
 
 ---
 
@@ -59,7 +59,6 @@
 - [ ] **`read-09`** Add RSS/news to KOReader (Miniflux tie-in) _(est 20 min)_
 - [ ] **`read-12`** Install + configure gPodder for podcasts on CachyOS (funnel into Rhythmbox) _(est 20 min)_
 - [ ] **`read-15`** CWA: KOReader sync checksum table missing (book_format_checksums) _(est 15-30 min)_
-- [ ] **`read-16`** Deploy Audiobookshelf (audiobooks + podcasts) on the NAS + Homepage widget _(est 1.5 hr)_
 - [ ] **`read-17`** Deploy Komga (comics + manga reader) on the NAS + Homepage widget _(est 1.5 hr)_
 - [ ] **`read-18`** Deploy Suwayomi (manga server) on the rig, feeding Komga _(est 1.5 hr)_
 

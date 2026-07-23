@@ -23,7 +23,7 @@
 | `read-13` | Enable official Obsidian Sync (E2E encrypted) on CachyOS | ✅ done | 20 min |
 | `read-14` | Deploy Pinchflat — archive YouTube channels into Plex (and as podcast RSS) | ✅ done | 30 min |
 | `read-15` | CWA: KOReader sync checksum table missing (book_format_checksums) | ⬜ open | 15-30 min |
-| `read-16` | Deploy Audiobookshelf (audiobooks + podcasts) on the NAS + Homepage widget | ⬜ open | 1.5 hr |
+| `read-16` | Deploy Audiobookshelf (audiobooks + podcasts) on the NAS + Homepage widget | ✅ done | 1.5 hr |
 | `read-17` | Deploy Komga (comics + manga reader) on the NAS + Homepage widget | ⬜ open | 1.5 hr |
 | `read-18` | Deploy Suwayomi (manga server) on the rig, feeding Komga | ⬜ open | 1.5 hr |
 

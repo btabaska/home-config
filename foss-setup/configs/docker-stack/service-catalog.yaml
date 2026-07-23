@@ -214,6 +214,13 @@ services:
     url: https://books.tabaska.us
     on_demand: false
     notes: Ebook library (CWA).
+  - name: audiobookshelf
+    category: Reading & Docs
+    host: nas
+    port: 13378
+    url: https://abs.tabaska.us
+    on_demand: false
+    notes: Audiobooks + podcasts server (read-16). Non-root; internal PORT=13378. Widget uses an API key.
   - name: paperless
     category: Reading & Docs
     host: mini

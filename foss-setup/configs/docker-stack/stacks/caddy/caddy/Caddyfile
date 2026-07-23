@@ -313,6 +313,12 @@ jellyfin.{$DOMAIN} {
 	reverse_proxy {$NAS_IP}:8096
 }
 
+# Audiobookshelf — audiobooks + podcasts server (read-16). Host port 13378 -> :80.
+abs.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:13378
+}
+
 sonarr.{$DOMAIN} {
 	import local_tls
 	reverse_proxy {$NAS_IP}:8989

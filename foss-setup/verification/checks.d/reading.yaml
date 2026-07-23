@@ -582,3 +582,30 @@ checks:
     task_id: bmig-06
     runbook: wiki/docs/runbooks/books-metadata.md
     enabled: true
+
+  # Audiobookshelf (read-16, 2026-07-23): audiobook + podcast server on the NAS.
+  # CONSUMER end, not liveness: authenticate with the SAME long-lived API key the
+  # Homepage tile + mobile apps use (vault homepage_widgets.audiobookshelf_key ->
+  # AUDIOBOOKSHELF_API_KEY in /etc/verification/env) and assert /api/libraries
+  # returns BOTH a book-type and podcast-type library AND that the Audiobooks
+  # library actually holds >=1 item. Catches: key revoked/expired (401), container
+  # down, a library deleted, or the whole thing emptied — none of which a /status
+  # 200 would notice. urllib (not curl) so the bearer token never touches argv.
+  - id: audiobookshelf-libraries-consumer
+    name: "Audiobookshelf: API key authorizes + Audiobooks/Podcasts libraries return real item counts (read-16 consumer end)"
+    host: mini
+    cmd: |-
+      python3 -c '
+      import json, os, urllib.request
+      base = "http://192.168.10.4:13378"
+      hdr = {"Authorization": "Bearer " + os.environ["AUDIOBOOKSHELF_API_KEY"]}
+      get = lambda p: json.load(urllib.request.urlopen(urllib.request.Request(base + p, headers=hdr), timeout=25))
+      by = {l["mediaType"]: l["id"] for l in get("/api/libraries")["libraries"]}
+      total = lambda mt: get("/api/libraries/" + by[mt] + "/items?limit=0").get("total", 0) if mt in by else -1
+      b, p = total("book"), total("podcast")
+      print("ABS_OK books=%d podcasts=%d" % (b, p) if (b >= 1 and p >= 0) else "ABS_FAIL books=%d podcasts=%d types=%s" % (b, p, sorted(by)))'
+    expect: '^ABS_OK books=[1-9]'
+    severity: warn
+    task_id: read-16
+    runbook: wiki/docs/runbooks/audiobookshelf.md
+    enabled: true

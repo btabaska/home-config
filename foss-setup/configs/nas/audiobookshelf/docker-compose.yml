@@ -1,0 +1,44 @@
+# Audiobookshelf — self-hosted audiobook + podcast server on the Synology DS920+ (read-16).
+# Docs: https://www.audiobookshelf.org/docs
+#
+# WHY: gives the MAM audiobooks a real home with iOS/Android apps + progress sync, and
+# replaces the desktop-only gPodder path for podcasts (ABS subscribes to feeds and
+# auto-downloads episodes server-side). Fronted at abs.tabaska.us; Homepage tile shows
+# live book+podcast counts.
+#
+# LIBRARIES POINT AT DEDICATED TREES, NOT THE *arr/calibre TREES (pitfall):
+#   /volume1/audiobooks  — audiobook library (MAM drops land here; ABS reads/organizes)
+#   /volume1/podcasts    — ABS-managed podcast downloads
+# /volume1/books is calibre-web-automated's ebook library (metadata.db) — ABS never touches it.
+#
+# Runs NON-ROOT as 1026:100 (btabaska:users) — same uid the rest of the NAS stack uses, so
+# SMB-dropped audiobook files and ABS-written files stay co-owned. The four mounts are all
+# chown'd 1026:100; the official image runs `node` directly (no PUID/PGID entrypoint) so a
+# plain user: works as long as those dirs are writable.
+#
+# Port: 13378:13378. ABS's image defaults to internal :80, but a NON-ROOT user cannot bind
+# a privileged port (<1024) — it crashes with `listen EACCES`. So PORT=13378 moves ABS's
+# internal listener to an unprivileged port the 1026:100 user can bind, and the host maps
+# it 1:1. abs.tabaska.us / the Homepage widget still hit host :13378 unchanged.
+#
+# To upgrade: bump the tag+digest below, read release notes, then:
+#   ssh -t nas 'cd /volume1/docker/audiobookshelf && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'
+
+name: audiobookshelf
+
+services:
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:2.35.1@sha256:1eef6716183c52abafe5405e7d6be8390248ecd59c7488c44af871757ac8fc4d   # digest-pinned (fix-38/I68 supply-chain posture); pulled on the NAS 2026-07-23
+    container_name: audiobookshelf
+    user: "1026:100"                    # btabaska:users — matches NAS volume ownership, non-root
+    environment:
+      - TZ=America/New_York
+      - PORT=13378                       # non-root can't bind :80 (default) -> listen on 13378
+    volumes:
+      - /volume1/docker/audiobookshelf/config:/config
+      - /volume1/docker/audiobookshelf/metadata:/metadata
+      - /volume1/audiobooks:/audiobooks
+      - /volume1/podcasts:/podcasts
+    ports:
+      - '13378:13378'
+    restart: always

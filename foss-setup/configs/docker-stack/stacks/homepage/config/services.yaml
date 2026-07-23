@@ -179,6 +179,14 @@
           url: http://192.168.10.4:8083
           username: "{{HOMEPAGE_VAR_CALIBREWEB_USER}}"
           password: "{{HOMEPAGE_VAR_CALIBREWEB_PASS}}"
+    - Audiobookshelf:
+        icon: audiobookshelf.png
+        href: https://abs.tabaska.us
+        description: Audiobooks & podcasts
+        widget:
+          type: audiobookshelf
+          url: http://192.168.10.4:13378
+          key: "{{HOMEPAGE_VAR_ABS_KEY}}"
     - Wallabag:
         icon: wallabag.png
         href: https://wallabag.tabaska.us
