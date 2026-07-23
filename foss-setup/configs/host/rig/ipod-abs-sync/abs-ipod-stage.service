@@ -1,0 +1,15 @@
+[Unit]
+Description=Stage Audiobookshelf audiobooks+podcasts as iPod-ready media (~/Audiobooks .m4b, ~/Podcasts)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=btabaska
+Nice=10
+IOSchedulingClass=idle
+ExecStart=/home/btabaska/bin/abs-ipod-stage.py
+# Dead-man ping: ExecStartPost only runs when ExecStart exits 0. The stage script
+# exits nonzero on its empty-source safety abort, so a dead NAS mount correctly
+# withholds the ping and Healthchecks alerts.
+ExecStartPost=/usr/bin/curl -fsS -m 10 --retry 3 -o /dev/null https://health.tabaska.us/ping/99fe0318-9345-4edb-bcae-3ed24c7bbc74

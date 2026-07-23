@@ -12329,6 +12329,37 @@
   "pitfalls": "Output dir must be the NAS Komga Manga root over the LAN mount — if the mount is down, downloads have nowhere to land (add a check on the mount). Extension availability shifts; treat manga acquisition as best-effort. Depends on read-17 (Komga) existing."
  },
  {
+  "id": "read-19",
+  "track": "reading",
+  "title": "Sync Audiobookshelf audiobooks + podcasts to the iPod Classic (alongside music)",
+  "summary": "Make the iPod Classic on the rig carry ABS audiobooks + podcasts in its NATIVE Audiobooks + Podcasts menus (with resume-position memory), not just music. Parallels the music flow (NAS music share -> rig ~/Music ALAC -> Rhythmbox): promote /volume1/audiobooks + /volume1/podcasts to read-only SMB shares, RO CIFS mounts on the rig, a nightly staging step (audiobooks -> chaptered .m4b, podcasts copied), and a manual libgpod push. Placement is set by libgpod's mediatype field, which Rhythmbox cannot write, so a small vendored+extended libgpod ctypes tool does the device write.",
+  "host": "rig",
+  "type": "sync",
+  "mode": "ai-vault",
+  "run": 4,
+  "required": false,
+  "depends_on": [
+   "read-16",
+   "read-11"
+  ],
+  "estimate": "3 hr",
+  "files": [
+   "configs/host/rig/ipod-abs-sync/",
+   "verification/checks.d/ipod-abs-sync.yaml",
+   "wiki/docs/guides/ipod-sync.md"
+  ],
+  "steps": [
+   "Promote /volume1/audiobooks + /volume1/podcasts to read-only Synology SMB shares (DSM won't share an existing populated folder -> move content aside, synoshare --add, restore, chown 1026:100, restart ABS). Grant the rig's SMB user RO.",
+   "Add two RO CIFS automounts on the rig (/mnt/nas-{audiobooks,podcasts}-ro) cloned from the music mount.",
+   "Stage on the rig (abs-ipod-stage.py + daily timer): concat each audiobook's chapter MP3s into ONE chaptered AAC .m4b in ~/Audiobooks; copy podcast episodes to ~/Podcasts/<show>; write ~/.ipod-abs-manifest.json; empty-source safety abort.",
+   "Push tool (abs-ipod-push.py on vendored libgpod_abs.py): audiobooks -> mediatype=AUDIOBOOK in the MPL (Music>Audiobooks); podcasts -> mediatype=PODCAST in the Podcasts playlist ONLY (not MPL); lazily create the Podcasts playlist; idempotent; --dry-run/--list/--eject.",
+   "Seed podcast back-catalog via ABS POST /api/podcasts/:id/download-episodes (auto-download only gets future episodes); skip the Chapo items that share one combined Patreon feed.",
+   "Monitoring: Healthchecks dead-man ping on the staging service + a consumer-end host:rig check (best-effort, passes when the iPod is unplugged). Mirror tools+units to the repo, wiki guide section, publish-deploy.sh."
+  ],
+  "verify": "On the iPod: Music>Audiobooks shows each book as one chaptered entry that resumes where you left off; the Podcasts menu shows each show + episodes (and those don't also show under Music); music is untouched and shuffle skips audiobooks/podcasts. abs-ipod-push.py --list matches the menus; the staging timer + healthcheck are green and the consumer check passes.",
+  "pitfalls": "Rhythmbox can't set mediatype (would dump everything under Music) -> use libgpod directly. iPod that never held podcasts has NO Podcasts playlist (itdb_playlist_podcasts returns NULL) -> must itdb_playlist_new + set_podcasts. Podcasts must be kept OUT of the Master Playlist to show only under Podcasts. .m4b (AAC) is the reliable audiobook container (firmware-guaranteed resume). NAS master is the source of truth; the iPod is a reproducible copy. Never run the push concurrently with a Rhythmbox sync."
+ },
+ {
   "id": "journal-01",
   "host": "mini",
   "mode": "ai",

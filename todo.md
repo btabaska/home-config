@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**216/305 done** · **57 open** · **18 deferred** · 14 retired.
+**217/306 done** · **57 open** · **18 deferred** · 14 retired.
 
 ---
 

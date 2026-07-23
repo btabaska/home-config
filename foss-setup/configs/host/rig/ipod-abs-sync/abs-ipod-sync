@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# One command: refresh the local stage from the NAS, then push audiobooks +
+# podcasts to a mounted iPod. Music stays owned by Rhythmbox — do NOT run this
+# during a Rhythmbox iPod sync. Plug in the iPod, run this, then eject.
+#   abs-ipod-sync            # stage + push (auto-detect the mounted iPod)
+#   abs-ipod-sync --dry-run  # stage + preview, write nothing
+#   abs-ipod-sync --eject    # stage + push + sync/unmount for safe unplug
+set -euo pipefail
+BIN="$(cd "$(dirname "$0")" && pwd)"
+echo "[abs-ipod-sync] staging from NAS -> ~/Audiobooks (.m4b) + ~/Podcasts ..."
+python3 "$BIN/abs-ipod-stage.py"
+echo "[abs-ipod-sync] pushing to iPod ..."
+exec python3 "$BIN/abs-ipod-push.py" "$@"

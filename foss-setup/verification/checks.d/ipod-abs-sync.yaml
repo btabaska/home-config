@@ -1,0 +1,28 @@
+# iPod ABS sync (read-19) — Audiobookshelf audiobooks + podcasts synced onto the physical
+# iPod Classic on the rig, into the iPod's native Audiobooks + Podcasts menus (placement is
+# driven by libgpod's mediatype field, which Rhythmbox cannot set). Pipeline: NAS RO SMB
+# shares -> rig RO CIFS mounts -> nightly staging (~/Audiobooks/*.m4b + ~/Podcasts/<show>/)
+# -> a MANUAL libgpod push when the iPod is plugged in. Music stays owned by Rhythmbox.
+#
+# Two monitoring surfaces:
+#   1. abs-ipod-stage-rig  — a Healthchecks dead-man ping from the daily staging service's
+#      ExecStartPost (fires only on a successful stage; the empty-source safety abort exits
+#      nonzero and withholds the ping). Covers the PRODUCER timer being alive.
+#   2. this check           — a consumer-end probe on the rig. Producer side (hard-fail): the
+#      staging manifest exists, is non-empty, and every staged file it references is on disk
+#      (catches a silently-broken stage even with no iPod attached). Consumer side
+#      (best-effort): when an iPod is actually mounted, the iTunesDB holds the staged tracks.
+#      A plugged-in-but-not-yet-pushed iPod is a normal state and PASSES — the push is manual,
+#      so this must never page on transient device state. warn + daily accordingly.
+checks:
+  - id: ipod-abs-stage-fresh
+    tier: daily
+    name: "iPod ABS stage healthy (manifest + staged files present); iPod DB in sync when mounted"
+    host: rig
+    cmd: python3 /home/btabaska/bin/abs-ipod-verify.py
+    expect: '^IPOD_(SYNC_OK|MOUNTED_UNSYNCED|ABSENT)'
+    severity: warn
+    task_id: read-19
+    runbook: wiki/docs/guides/ipod-sync.md
+    enabled: true
+    timeout: 60

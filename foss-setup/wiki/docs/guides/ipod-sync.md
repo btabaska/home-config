@@ -153,6 +153,98 @@ Because the master is on the NAS, recovery is cheap:
 
 ---
 
+## Audiobooks & podcasts (Audiobookshelf → iPod, automated)
+
+> Everything above syncs **music** by hand through Rhythmbox. This section covers the **automated** pipeline that lands Audiobookshelf (ABS) audiobooks and podcasts into the iPod's own **Audiobooks** and **Podcasts** menus — with firmware resume-position memory — alongside that music. Music stays owned by Rhythmbox; this pipeline never touches it.
+
+### How it's wired
+
+The flow parallels the music mirror (NAS `music` → rig `~/Music` ALAC → Rhythmbox → iPod):
+
+```
+NAS SMB shares                 rig staging              iPod menus
+/volume1/audiobooks  ─(RO CIFS)→ ~/Audiobooks/*.m4b ─┐
+/volume1/podcasts    ─(RO CIFS)→ ~/Podcasts/<show>/ ─┴→ libgpod → Audiobooks / Podcasts
+```
+
+- **NAS side.** `/volume1/audiobooks` and `/volume1/podcasts` are read-only Synology SMB shares. ABS's hourly auto-download only pulls **future** podcast episodes; back-catalog is fetched on demand (see below).
+- **Rig mounts.** Two read-only CIFS automounts, cloned from the music mount: `/mnt/nas-audiobooks-ro` and `/mnt/nas-podcasts-ro`.
+- **Rig tools** live in `~/bin` (mirrored to the repo at `foss-setup/configs/host/rig/ipod-abs-sync/`):
+  - `abs-ipod-stage.py` — mirrors the RO mounts into `~/Audiobooks/` and `~/Podcasts/`. Incremental, prunes orphans, and **aborts before pruning** if the source mounts look empty (NAS-blip safety). Writes `~/.ipod-abs-manifest.json`.
+  - `libgpod_abs.py` — vendored + extended libgpod ctypes bindings that add audiobook/podcast media types (Rhythmbox can't set these — see rationale).
+  - `abs-ipod-push.py` — the **only** step that writes to the iPod's iTunesDB. Idempotent (skips tracks already on the device by mediatype + album + title).
+  - `abs-ipod-sync` — one-command wrapper (stage, then push).
+  - `abs-ipod-verify.py` — monitoring helper (`IPOD_SYNC_OK` / `IPOD_ABSENT`).
+
+### Daily staging (automatic)
+
+A systemd timer stages the content every morning so a sync is fast when you plug in:
+
+```bash
+systemctl status abs-ipod-stage.timer       # fires daily at 05:30
+journalctl -u abs-ipod-stage.service -n 40   # last staging run
+sudo systemctl start abs-ipod-stage.service  # stage now, on demand
+```
+
+Staging turns each audiobook's chapter MP3s into **one** chaptered AAC `.m4b` in `~/Audiobooks/` (ffmpeg concat) — a single Audiobooks entry with chapters inside. Podcast episodes are copied verbatim into `~/Podcasts/<show>/`.
+
+### One-command sync (plug in → run → eject)
+
+Normal use:
+
+```bash
+# 1. plug in the iPod (the desktop auto-mounts it)
+abs-ipod-sync           # stages, then pushes to the iPod
+abs-ipod-sync --eject   # ...or push and unmount in one shot when it finishes
+```
+
+Useful flags on `abs-ipod-push.py`:
+
+```bash
+abs-ipod-push.py --list      # show what's already on the iPod, by mediatype
+abs-ipod-push.py --dry-run   # print what would be written, write nothing
+abs-ipod-push.py --mount /run/media/$USER/<label>   # explicit mount point
+abs-ipod-push.py --eject     # flush the iTunesDB + unmount when done
+```
+
+> **Never run `abs-ipod-sync` concurrently with a Rhythmbox music sync.** Both write the same iTunesDB. Do one, eject, then the other.
+
+### Why libgpod mediatype, not Rhythmbox
+
+Placement on the iPod is driven **purely by libgpod's `mediatype` field** — not genre, folder, or filename. Rhythmbox can copy files but **cannot tag mediatype**, so anything it pushes lands under Music. `libgpod_abs.py` sets:
+
+- **Audiobooks** → `mediatype = AUDIOBOOK`, added to the Master Playlist → shows under **Music ▸ Audiobooks**. `.m4b` (AAC) is the reliable container: the firmware always remembers position and skips the file when shuffling.
+- **Podcasts** → `mediatype = PODCAST`, added to the **Podcasts playlist only** and **kept out of the Master Playlist** → shows under **Podcasts** only. Episodes stay MP3 (episodic content tolerates it). The module lazily creates the Podcasts playlist if the iPod never had one, and `reconcile_podcasts()` self-heals membership.
+
+### Podcast back-catalog
+
+ABS's hourly auto-download only fetches **future** episodes. To pull older episodes so they stage to the iPod, call the ABS API against the show:
+
+```bash
+curl -X POST "$ABS_URL/api/podcasts/<podcast-id>/download-episodes" \
+     -H "Authorization: Bearer $ABS_TOKEN" -H 'Content-Type: application/json' \
+     -d '<episode-array-from /api/podcasts/feed>'
+```
+
+Once downloaded, they appear on the RO mount and the next staging run picks them up.
+
+> **Patreon-shared-feed caveat.** The 6 "Chapo Trap House" ABS podcasts all point at one combined Patreon RSS feed (a setup quirk), so backfilling them would multiply-download the same episodes. Only the distinct single-creator feeds (MinnMax, Kit & Krysta) were backfilled.
+
+### Verify on the iPod
+
+- [ ] **Audiobooks menu** lists each book as one entry; opening it shows chapters.
+- [ ] Pausing an audiobook, playing something else, then reopening **resumes at the same spot**.
+- [ ] Shuffling music does **not** pull audiobook/podcast tracks into the mix.
+- [ ] **Podcasts menu** lists each show and its episodes — and those episodes do **not** also show under Music.
+- [ ] Content survives an **eject + unplug + replug** (proves the iTunesDB wrote).
+- [ ] `abs-ipod-push.py --list` matches what the menus show.
+
+### Recovery
+
+The NAS is the master; the iPod is a reproducible copy. If the iTunesDB gets confused, **wipe and re-sync** — restage (`abs-ipod-stage.service`) and re-push rather than hand-repairing the DB.
+
+---
+
 ## Fallback: Rockbox (only if car/USB control stops mattering)
 
 If you ever decide Apple-firmware integration no longer matters, Rockbox turns the iPod into a plain drag-and-drop USB drive (native FLAC/Opus, custom EQ), removing the iTunesDB entirely. Modern install uses the freemyipod bootloader. This **loses** Apple's car/USB-control integration, so it's strictly the fallback. Docs: <https://www.rockbox.org/wiki/IpodClassic>
