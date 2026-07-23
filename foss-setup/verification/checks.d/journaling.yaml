@@ -106,3 +106,32 @@ checks:
     task_id: journal-04
     runbook: wiki/docs/services/journaling.md
     enabled: true
+
+  # journal-05 drift guard: the "Save to Journal" Action function + "Journaling Coach"
+  # model preset live ONLY in the rig Open WebUI database (no compose file owns them),
+  # so an OWUI redeploy/volume-wipe silently erases the save button + coach persona while
+  # every container stays green. These probe the rig OWUI admin API from the mini
+  # (OWUI_URL/OWUI_API_KEY already in the runner env) to confirm the DB-only artifacts are
+  # still installed & active. warn, not crit: the core memos->n8n->reflection pipeline still
+  # works for hand-tagged #journal entries; only the OWUI coaching front-end degrades.
+  - id: journaling-owui-save-fn-installed
+    tier: fast
+    name: "rig Open WebUI holds the Save-to-Journal action (installed + active)"
+    host: mini
+    cmd: curl -s -m 8 -H "Authorization:Bearer $OWUI_API_KEY" "$OWUI_URL/api/v1/functions/id/save_to_journal" | python3 -c 'import sys,json;f=json.load(sys.stdin);print("OWUI_SAVE_FN_OK" if (f.get("is_active") and f.get("type")=="action") else "OWUI_SAVE_FN_DRIFT "+json.dumps({"active":f.get("is_active"),"type":f.get("type")}))'
+    expect: '^OWUI_SAVE_FN_OK$'
+    severity: warn
+    task_id: journal-05
+    runbook: wiki/docs/services/journaling.md
+    enabled: true
+
+  - id: journaling-owui-coach-preset
+    tier: fast
+    name: "rig Open WebUI holds the Journaling Coach preset (base dolphin-venice, active)"
+    host: mini
+    cmd: curl -s -m 8 -H "Authorization:Bearer $OWUI_API_KEY" "$OWUI_URL/api/v1/models/model?id=journaling-coach" | python3 -c 'import sys,json;m=json.load(sys.stdin);print("OWUI_COACH_PRESET_OK" if (m.get("base_model_id")=="dolphin-venice" and m.get("is_active")) else "OWUI_COACH_PRESET_DRIFT "+json.dumps({"base":m.get("base_model_id"),"active":m.get("is_active")}))'
+    expect: '^OWUI_COACH_PRESET_OK$'
+    severity: warn
+    task_id: journal-05
+    runbook: wiki/docs/services/journaling.md
+    enabled: true
