@@ -1,0 +1,67 @@
+{
+  "id": "b7220e5e19c34aed",
+  "name": "journal-webhook-probe",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "journal",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "16110e6d-05c5-4179-9d96-3b227d36f64c",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ],
+      "webhookId": "61e3b664-1f9c-4dfa-ace2-3fdf4ac4d032"
+    },
+    {
+      "parameters": {},
+      "id": "noop-journal-0001",
+      "name": "Captured (raw payload)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Captured (raw payload)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "activeVersionId": "87f0e8b2-07dd-4aa5-968a-9a3e755513ea",
+  "versionCounter": 2,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

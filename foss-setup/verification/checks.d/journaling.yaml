@@ -51,3 +51,19 @@ checks:
     task_id: journal-01
     runbook: wiki/docs/services/journaling.md
     enabled: true
+
+  # journal-02 wiring invariant: memos must still hold the memo.created webhook
+  # pointing at the n8n container URL. If it's deleted or repointed, every entry
+  # stops being analyzed even though all containers stay green. Auth via the
+  # PAT in /etc/verification/env (vault journaling.memos.api_token). Producer-side
+  # probe; the deep "memo -> exactly one comment" end-to-end is journal-06.
+  - id: journaling-memos-webhook-wired
+    tier: fast
+    name: "memos holds the memo.created webhook -> http://n8n:5678/webhook/journal"
+    host: mini
+    cmd: curl -s -m 8 -H "Authorization:Bearer $MEMOS_API_TOKEN" http://localhost:5230/api/v1/users/btabaska/webhooks | python3 -c 'import sys,json;w=json.load(sys.stdin).get("webhooks",[]);print("WEBHOOK_OK" if any(x.get("url")=="http://n8n:5678/webhook/journal" for x in w) else "WEBHOOK_MISSING "+json.dumps(w)[:160])'
+    expect: '^WEBHOOK_OK'
+    severity: warn
+    task_id: journal-02
+    runbook: wiki/docs/services/journaling.md
+    enabled: true

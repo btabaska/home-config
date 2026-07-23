@@ -14,6 +14,12 @@ services:
     image: neosmemo/memos:0.29.1@sha256:3e1253477066eb2aefa91145f7f9038bb931ed88c8a3ee05310a933594cdba7d
     container_name: memos
     restart: unless-stopped
+    # journal-02: allow the memo.created webhook to POST to n8n by its private
+    # container name (http://n8n:5678). Memos blocks private/reserved-IP webhook
+    # targets by default; this flag (verified present in 0.29.1 `memos --help`)
+    # is passed through entrypoint.sh's `exec "$@"`. Keeps delivery fully local
+    # (no DNS/TLS round-trip through Caddy). MEMOS_MODE/PORT still come from env.
+    command: ["--allow-private-webhooks"]
     ports:
       - "5230:5230" # direct LAN access; also fronted by Caddy (memos.tabaska.us)
     environment:

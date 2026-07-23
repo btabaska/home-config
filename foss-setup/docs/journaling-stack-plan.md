@@ -135,3 +135,58 @@ journaling/
 Secrets (Memos API token, OWUI admin if needed) → vault `journaling.*`, **merge never blind-assign**;
 `.env.example` carries key names only. README lives in the stack dir; wiki prose via
 `service-enrichment.yaml`.
+
+## Risk 1 — VALIDATED on memos 0.29.1 (journal-02, 2026-07-22)
+
+journal-02 created the host account, minted the token, wired the webhook, and captured live
+payloads. These are **facts from this pinned build** — journal-03 builds the filter/loop-guard
+against them, do not re-derive.
+
+**Memos 0.29 API is ConnectRPC (not the old REST), all under `/api/v1`:**
+- Auth: `POST /api/v1/auth/signin` body `{"passwordCredentials":{"username","password"},"neverExpire":true}`
+  → returns `{"user":{…},"accessToken":"<JWT, ~15min>"}` **in the body** (no cookie for the access
+  token; a `memos_refresh` HttpOnly cookie is set via a `Grpc-Metadata-Set-Cookie` header). Use
+  `accessToken` as `Authorization: Bearer …`.
+- **Personal Access Token** (the long-lived n8n credential): `POST /api/v1/users/{username}/personalAccessTokens`
+  body `{"description":"…"}` (flat). The raw token is returned **only once**, at the **top level** as
+  `.token` (`memos_pat_<32>`, opaque, sha256-hashed in `user_setting.PERSONAL_ACCESS_TOKENS`,
+  `expiresAt:null` = never expires). It is **revocable** by DELETE (verified: deleted token → 401
+  on auth-required endpoints). Note `GET /api/v1/users/{username}` is **public** (200 with any/no
+  token) — never use it as an auth probe; list PATs instead.
+- **Webhook**: `POST /api/v1/users/{username}/webhooks` body `{"displayName","url"}` (flat; **no**
+  `webhook:` wrapper, **no** activityType filter — one webhook receives ALL memo events, n8n filters).
+- **Comment**: `POST /api/v1/memos/{name}/comments` body `{"content","visibility"}`. A comment **is a
+  memo** linked by a COMMENT relation to the parent.
+- Resource name = `users/{username}` and `memos/{uid}` (not numeric ids).
+
+**Webhook delivery** works via `--allow-private-webhooks` (compose `command: ["--allow-private-webhooks"]`,
+passed through memos' `entrypoint.sh` `exec "$@"`) → target is the **container name**
+`http://n8n:5678/webhook/journal` (fully local; no DNS/Caddy/TLS hop). Verified from inside the memos
+container and end-to-end via a real memo.
+
+**Captured payload shapes** (n8n Webhook node `body`) — note these differ from the REST API JSON:
+fields are **snake_case**, timestamps are `{"seconds":<unix>}` (not RFC3339), enums are **ints**
+(`state:1`=NORMAL, `visibility:1`=PRIVATE), and `tags` is a parsed array of hashtags.
+
+```jsonc
+// memos.memo.created  (a top-level entry)
+{ "activityType": "memos.memo.created", "creator": "users/btabaska",
+  "memo": { "name":"memos/XXXX", "creator":"users/btabaska", "content":"… #journal",
+            "tags":["journal"], "state":1, "visibility":1, "snippet":"…",
+            "create_time":{"seconds":1784774650}, "update_time":{…}, "property":{} } }
+```
+
+**⚠ Loop guard (critical for journal-03):** creating a **comment** fires **TWO** webhook events —
+first `memos.memo.created`, then `memos.memo.comment.created` — and **both carry the *comment* memo**
+in `.memo` (the parent is not in the payload). So filtering on `activityType == memos.memo.created`
+alone is **not enough**: the reflection comment n8n writes back would re-trigger analysis → infinite
+loop. The workflow must, on `memos.memo.created`, **skip memos that are comments** (fetch the memo /
+check for a parent relation, or skip any memo whose content carries the analysis marker /
+`#analyzed`) and **ignore `memos.memo.comment.created` entirely**.
+
+**Security note:** memos ships with public user registration **on** — journal-02 set
+`instance/settings/GENERAL.disallowUserRegistration=true` (PATCH `/api/v1/instance/settings/GENERAL`;
+"workspace" was renamed **InstanceService** in 0.29). Verified: unauth `POST /api/v1/users` → 403.
+
+Secrets: `journaling.memos.{username,password,api_token,webhook_url}` in the vault; the token is also
+in the live stack `.env` as `MEMOS_API_TOKEN` (600) for n8n to consume in journal-03.
