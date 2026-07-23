@@ -225,6 +225,7 @@
  },
  "reopened": {},
  "retired": {
+  "media-12": "2026-07-23 (user decision): RETIRED — Bazarr / automatic subtitle fetching declined. Operator gets adequate subtitles bundled in torrent releases and does not want to add an OpenSubtitles.com account/dependency (aside for the record: OpenSubtitles.com actually has a FREE daily-capped tier — paid VIP only lifts the cap — but the decision stands regardless of cost). No container was deployed: net-zero on the fleet, Sonarr/Radarr/NAS untouched, no coverage/Caddy/Homepage/vault change. Reversible — the full spec (own stack at /volume1/docker/bazarr, repo mirror configs/nas/bazarr/, wire to Sonarr+Radarr by NAS IP:port, Homepage bazarr widget) is preserved in tasks.json if ever revisited.",
   "sbom-01": "2026-07-09 (user decision): SBOM/Dependency-Track feature retired — overkill for a home network and syft was OOM'ing the 8GB mini nightly (Jul 04-08). Syft/Grype install left in place but the nightly pipeline is disabled. Left in done as completed setup work.",
   "sbom-02": "2026-07-09 (user decision): RETIRED — the nightly-SBOM->Dependency-Track objective is abandoned. sbom-nightly timers disabled on mini+rig; the `sbom` ansible role removed from site.yml so convergence won't redeploy it. Was failing on both hosts anyway (mini OOM, rig missing env file).",
   "sbom-04": "2026-07-09 (user decision): part of the retired SBOM feature (per-OS package manifest for syft). Left in done as completed work; no longer feeding an active pipeline.",

@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**214/305 done** · **60 open** · **18 deferred** · 13 retired.
+**214/305 done** · **59 open** · **18 deferred** · 14 retired.
 
 ---
 
@@ -39,7 +39,6 @@
 - [ ] **`media-09`** fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs _(est 1-2 hrs)_
 - [ ] **`media-10`** Seedbox: retire drained readarr label pair from deluge-reaper _(est 10 min)_ — ⛔ gate: not before 2026-08-04
 - [ ] **`media-11`** Lidarr: 'Camera' album monitored under unmonitored artist (orphan flag) _(est 10-20 min)_
-- [ ] **`media-12`** Deploy Bazarr (subtitles) on the NAS + Homepage widget _(est 1.5 hr)_
 
 ### network
 - [ ] **`net-15`** Edge/verification doc-truth trivia: stale seedbox-SSH claim in verification README; Plex ManualPortMappingMode mismatch _(est 20 min)_

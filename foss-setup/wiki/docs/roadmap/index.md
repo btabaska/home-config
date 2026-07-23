@@ -18,7 +18,7 @@ The full task tracker, mirrored from `docs/tasks.json` + `docs/progress.json` (*
 | [gaming](gaming.md) | 23 | 12 | 7 | 2 | 2 |
 | [home-surface](home-surface.md) | 8 | 8 | 0 | 0 | 0 |
 | [journaling](journaling.md) | 7 | 7 | 0 | 0 | 0 |
-| [media-pipeline](media-pipeline.md) | 37 | 31 | 5 | 0 | 1 |
+| [media-pipeline](media-pipeline.md) | 37 | 31 | 4 | 0 | 2 |
 | [media-polish](media-polish.md) | 6 | 4 | 0 | 0 | 2 |
 | [nas-foundation](nas-foundation.md) | 10 | 9 | 0 | 1 | 0 |
 | [network](network.md) | 17 | 16 | 1 | 0 | 0 |
