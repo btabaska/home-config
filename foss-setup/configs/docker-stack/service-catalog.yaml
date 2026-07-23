@@ -22,6 +22,13 @@ services:
     url: https://plex.tabaska.us
     on_demand: false
     notes: Movies & TV. Widget uses Plex token.
+  - name: jellyfin
+    category: Media
+    host: nas
+    port: 8096
+    url: https://jellyfin.tabaska.us
+    on_demand: false
+    notes: FOSS fully-local media server (parallel to Plex, no plex.tv dependency). Widget uses API key.
   - name: metube
     category: Media
     host: mini

@@ -9,6 +9,7 @@ immich_machine_learning
 immich_postgres
 immich_redis
 immich_server
+jellyfin
 lidarr
 prowlarr
 radarr

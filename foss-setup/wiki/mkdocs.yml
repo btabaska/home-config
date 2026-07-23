@@ -90,6 +90,7 @@ nav:
           - journaling: services/journaling.md
           - mealie: services/mealie.md
       - Media:
+          - jellyfin: services/jellyfin.md
           - kometa: services/kometa.md
           - metube: services/metube.md
           - pinchflat: services/pinchflat.md

@@ -1,6 +1,6 @@
 # Checks — system
 
-`foss-setup/verification/checks.d/system.yaml` — 8 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/system.yaml` — 9 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `sys-ansible-pull`
 
@@ -88,6 +88,17 @@ no docker network overlaps 192.168.0.0/16 (LAN/VLAN space)
 
 ```bash
 docker network ls -q | xargs -n1 docker network inspect --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}' 2>/dev/null | grep -c '^192\.168\.' || true
+```
+
+## `sys-disk-smart-health`
+
+Scrutiny reports all 7 fleet disks present with 0 failed SMART status
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `glue-10` · **enabled:** True
+- **expects:** `^smart_ok drives=[0-9]+$`
+
+```bash
+curl -sm 10 http://nas:8080/api/summary | python3 -c 'import sys,json;d=json.load(sys.stdin);s=d.get("data",{}).get("summary",{});bad=[k for k,v in s.items() if v.get("device",{}).get("device_status",0)];print("smart_ok drives=%d" % len(s)) if (d.get("success") and len(s)>=7 and not bad) else print("smart_FAIL drives=%d failed=%d" % (len(s),len(bad)))' || echo smart_ERR
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

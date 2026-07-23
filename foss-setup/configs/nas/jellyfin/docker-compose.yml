@@ -1,0 +1,43 @@
+# Jellyfin — fully-local FOSS media server on Synology DS920+ (media-05)
+# Docs: https://jellyfin.org/docs/
+#
+# WHY: Plex is cloud-tethered — auth + server discovery route through plex.tv, so a
+# plex.tv outage locks out even LAN clients (hit 2026-07-14). Jellyfin is FOSS and
+# FULLY LOCAL: local accounts, LAN discovery, zero external dependency ever. Runs in
+# PARALLEL to Plex (own port 8096) — it does not touch or replace the Plex package.
+#
+# MEDIA IS MOUNTED READ-ONLY (:ro) — Jellyfin only reads; the *arr stack owns writes.
+# Same libraries Plex serves: /volume2/movies, /volume3/tv, /volume1/music, /volume1/youtube.
+#
+# HW TRANSCODE: the DS920+ Celeron J4125 has Intel Quick Sync. /dev/dri is passed and
+# the container is added to the render group (gid 937 = owner of /dev/dri/renderD128 on
+# this host) so VA-API can init. If VA-API ever fails, Jellyfin falls back to direct-play
+# / SW transcode with no config change — playback is unaffected.
+#
+# To upgrade: bump the tag+digest below, read release notes, then:
+#   ssh -t nas 'cd /volume1/docker/jellyfin && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'
+
+name: jellyfin
+
+services:
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:10.11.11@sha256:bb8d372e35d5c4a6cb61d830a06f5b5846528315b97cf5d38b80eea1e430efa7   # digest-pinned (fix-38/I68 supply-chain posture); LSIO honors PUID/PGID/TZ like the arr stack
+    container_name: jellyfin
+    environment:
+      # PUID/PGID must match the Synology user that owns the volume paths (id btabaska = 1026/100).
+      - PUID=1026
+      - PGID=100
+      - TZ=America/New_York
+    group_add:
+      - "937"                         # render group (owner of /dev/dri/renderD128) — enables Quick Sync VA-API
+    devices:
+      - /dev/dri:/dev/dri             # Intel Quick Sync iGPU for HW transcode
+    volumes:
+      - /volume1/docker/jellyfin/config:/config
+      - /volume2/movies:/movies:ro
+      - /volume3/tv:/tv:ro
+      - /volume1/music:/music:ro
+      - /volume1/youtube:/youtube:ro
+    ports:
+      - '8096:8096'
+    restart: always

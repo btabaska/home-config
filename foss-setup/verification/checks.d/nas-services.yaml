@@ -262,3 +262,21 @@ checks:
     task_id: home-07
     runbook: wiki/docs/runbooks/monitoring-coverage.md
     enabled: true
+
+  # Jellyfin fully-local media server (media-05, parallel to Plex on :8096).
+  # CONSUMER probe, not liveness: authenticates with an API key, asserts the
+  # Movies + TV libraries actually contain items, AND range-GETs one movie's
+  # stream (HTTP 206) to prove a real title is readable and served end-to-end.
+  # A green /health says nothing about whether a title plays; this catches an
+  # empty/broken scan or a lost media mount. warn (not crit): Jellyfin is the
+  # plex.tv-independent parallel server; Plex keeps the crit media-path checks.
+  # Runs from mini; JELLYFIN_API_KEY (dedicated 'verification' key) in runner env.
+  - id: nas-jellyfin-serves
+    name: "Jellyfin serves populated Movies+TV libraries AND streams a title (media-05)"
+    host: mini
+    cmd: python3 /opt/verification/bin/jellyfin-serves.py --key "$JELLYFIN_API_KEY"
+    expect: '^JELLYFIN_OK'
+    severity: warn
+    task_id: media-05
+    runbook: wiki/runbooks/nas.md
+    enabled: true

@@ -1,6 +1,6 @@
 # Services
 
-42 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+43 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 
@@ -59,6 +59,7 @@
 
 | Stack | Host | URL |
 |---|---|---|
+| [jellyfin](jellyfin.md) | nas | https://jellyfin.tabaska.us |
 | [kometa](kometa.md) | mini | — |
 | [metube](metube.md) | mini | https://metube.tabaska.us |
 | [pinchflat](pinchflat.md) | mini | https://pinchflat.tabaska.us |

@@ -50,6 +50,16 @@
           type: plex
           url: http://192.168.10.4:32400
           key: "{{HOMEPAGE_VAR_PLEX_TOKEN}}"
+    - Jellyfin:
+        icon: jellyfin.png
+        href: https://jellyfin.tabaska.us
+        description: Movies & TV (fully local)
+        widget:
+          type: jellyfin
+          url: http://192.168.10.4:8096
+          key: "{{HOMEPAGE_VAR_JELLYFIN_KEY}}"
+          enableBlocks: true
+          enableNowPlaying: true
     - Tautulli:
         icon: tautulli.png
         href: https://tautulli.tabaska.us

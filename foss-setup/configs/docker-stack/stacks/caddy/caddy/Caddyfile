@@ -308,6 +308,11 @@ plex.{$DOMAIN} {
 	}
 }
 
+jellyfin.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:8096
+}
+
 sonarr.{$DOMAIN} {
 	import local_tls
 	reverse_proxy {$NAS_IP}:8989

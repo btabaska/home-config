@@ -10,7 +10,7 @@
 | `fix-25` | Fix the silent "grabbed → never imported" class (download-client import + reaper label coverage) | ✅ done | 1-3 hrs |
 | `fix-26` | Reconcile stuck request-layer states (seerr/libreseerr/musicseerr dangling & unmonitored) | ✅ done | 1-3 hrs |
 | `fix-27` | Remediate "green but not watchable": sample-file imports + unextracted RARs | ✅ done | 1-3 hrs |
-| `media-05` | Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) | ⬜ open | 1-2 hrs |
+| `media-05` | Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) | ✅ done | 1-2 hrs |
 | `media-06` | Resolve the rig ~/Music mirror conflict (05:00 ALAC transcode vs 05:30 rsync --delete-after) | ✅ done | 30 min |
 | `media-07` | MusicSeerr can still create unmonitored-artist requests (upstream monitor_artist=0 default) — tripwire-covered, close the generator | ⬜ open | 30-45 min |
 | `media-08` | CWA duplicate ingest on Readarr re-import — connect script has no dedupe, add a books-dup tripwire | ✅ done | 30-60 min |

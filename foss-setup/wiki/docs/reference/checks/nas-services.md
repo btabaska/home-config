@@ -1,6 +1,6 @@
 # Checks — nas-services
 
-`foss-setup/verification/checks.d/nas-services.yaml` — 18 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/nas-services.yaml` — 19 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `nas-ssh`
 
@@ -198,6 +198,17 @@ NAS beszel-agent still mounts all 3 volume extra-filesystems (home-07)
 
 ```bash
 grep -c 'extra-filesystems/volume[123]:ro' /volume1/docker/beszel-agent/compose.yaml
+```
+
+## `nas-jellyfin-serves`
+
+Jellyfin serves populated Movies+TV libraries AND streams a title (media-05)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `media-05` · **enabled:** True
+- **expects:** `^JELLYFIN_OK`
+
+```bash
+python3 /opt/verification/bin/jellyfin-serves.py --key "$JELLYFIN_API_KEY"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

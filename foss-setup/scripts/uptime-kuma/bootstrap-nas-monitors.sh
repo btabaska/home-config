@@ -33,6 +33,8 @@ MONITORS=(
   "NAS Whisparr|http://${NAS_IP}:6969|${ACCEPT_ARR}"
   "NAS Calibre Web|http://${NAS_IP}:8083|${ACCEPT_ARR}"
   "NAS Plex|http://${NAS_IP}:32400|${ACCEPT_PLEX}"
+  # media-05: Jellyfin fully-local media server (parallel to Plex). /health -> "Healthy" 200.
+  "NAS Jellyfin|http://${NAS_IP}:8096/health|${ACCEPT_OK}"
   # fix-29 / L94: unpackerr was invisible to every external monitor (metrics port
   # unpublished). The port is now published; probe its [webserver] /metrics.
   "NAS Unpackerr|http://${NAS_IP}:5656/metrics|${ACCEPT_OK}"
