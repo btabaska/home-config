@@ -221,6 +221,13 @@ services:
     url: https://abs.tabaska.us
     on_demand: false
     notes: Audiobooks + podcasts server (read-16). Non-root; internal PORT=13378. Widget uses an API key.
+  - name: komga
+    category: Reading & Docs
+    host: nas
+    port: 25600
+    url: https://komga.tabaska.us
+    on_demand: false
+    notes: Comics + manga reader (read-17). JVM app; non-root 1026:100; libraries Comics + Manga under /volume1/comics. Widget uses username/password. Manga arrives from read-18 (Suwayomi).
   - name: paperless
     category: Reading & Docs
     host: mini

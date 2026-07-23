@@ -609,3 +609,19 @@ checks:
     task_id: read-16
     runbook: wiki/docs/runbooks/audiobookshelf.md
     enabled: true
+
+  # Komga (read-17) consumer end: authenticate with the admin username/password (same creds
+  # the Homepage widget uses, KOMGA_USER/KOMGA_PASS from /etc/verification/env) and assert BOTH
+  # the Comics and Manga libraries exist, >=1 series is indexed, a real page STREAMS (HTTP 200
+  # image bytes) and the OPDS catalog responds. Catches: creds revoked/changed (401), container
+  # down, a library deleted, an empty/broken scan, or page-streaming broken — none of which an
+  # /actuator/health 200 would notice. Helper uses env (not argv) so the password never hits ps.
+  - id: komga-libraries-consumer
+    name: "Komga: admin creds authorize + Comics/Manga libraries exist, a series is indexed, a page streams, OPDS responds (read-17 consumer end)"
+    host: mini
+    cmd: python3 /opt/verification/bin/komga-serves.py
+    expect: '^KOMGA_OK'
+    severity: warn
+    task_id: read-17
+    runbook: wiki/docs/runbooks/komga.md
+    enabled: true

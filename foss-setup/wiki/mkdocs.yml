@@ -111,6 +111,7 @@ nav:
       - Reading & Docs:
           - audiobookshelf: services/audiobookshelf.md
           - calibre-web-automated: services/calibre-web-automated.md
+          - komga: services/komga.md
           - miniflux: services/miniflux.md
           - wallabag: services/wallabag.md
       - Requests:
@@ -146,6 +147,7 @@ nav:
       - Media-aux (navidrome backup / kometa / POT / romm): runbooks/media-aux.md
       - Reading / CWA (Kobo sync, fork image, library hygiene): runbooks/reading-cwa.md
       - Audiobookshelf (audiobooks + podcasts, non-root port trap): runbooks/audiobookshelf.md
+      - Komga (comics + manga reader, JVM / OPDS / page-stream): runbooks/komga.md
       - Books — language & edition correctness (foreign records / grab guard / pinning): runbooks/books-language.md
       - Books — import completion & file↔record correctness (cross-wired packs / dead-ends / EPUB-first): runbooks/books-imports.md
       - Books — request-path robustness (Libreseerr errors / retries / ntfy): runbooks/books-requests.md

@@ -319,6 +319,12 @@ abs.{$DOMAIN} {
 	reverse_proxy {$NAS_IP}:13378
 }
 
+# Komga — comics + manga reader (read-17). JVM app on the NAS, default port 25600.
+komga.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:25600
+}
+
 sonarr.{$DOMAIN} {
 	import local_tls
 	reverse_proxy {$NAS_IP}:8989

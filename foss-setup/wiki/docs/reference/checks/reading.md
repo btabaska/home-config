@@ -1,6 +1,6 @@
 # Checks — reading
 
-`foss-setup/verification/checks.d/reading.yaml` — 21 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/reading.yaml` — 23 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `cwa-kobo-sync-consumer`
 
@@ -389,6 +389,36 @@ Shelfmark up + seedbox mount rshared (MAM→CWA-ingest path intact)
 
 ```bash
 h=$(curl -s -o /dev/null -w "%{http_code}" --max-time 8 http://127.0.0.1:8084/api/health); p=$(grep seedbox-files /proc/self/mountinfo 2>/dev/null | grep -oE "shared:[0-9]+" | head -1); if [ "$h" = "200" ] && [ -n "$p" ]; then echo "SHELFMARK_OK health=$h prop=$p"; else echo "SHELFMARK_BAD health=$h prop=$p"; fi
+```
+
+## `audiobookshelf-libraries-consumer`
+
+Audiobookshelf: API key authorizes + Audiobooks/Podcasts libraries return real item counts (read-16 consumer end)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `read-16` · **enabled:** True
+- **expects:** `^ABS_OK books=[1-9]`
+
+```bash
+python3 -c '
+import json, os, urllib.request
+base = "http://192.168.10.4:13378"
+hdr = {"Authorization": "Bearer " + os.environ["AUDIOBOOKSHELF_API_KEY"]}
+get = lambda p: json.load(urllib.request.urlopen(urllib.request.Request(base + p, headers=hdr), timeout=25))
+by = {l["mediaType"]: l["id"] for l in get("/api/libraries")["libraries"]}
+total = lambda mt: get("/api/libraries/" + by[mt] + "/items?limit=0").get("total", 0) if mt in by else -1
+b, p = total("book"), total("podcast")
+print("ABS_OK books=%d podcasts=%d" % (b, p) if (b >= 1 and p >= 0) else "ABS_FAIL books=%d podcasts=%d types=%s" % (b, p, sorted(by)))'
+```
+
+## `komga-libraries-consumer`
+
+Komga: admin creds authorize + Comics/Manga libraries exist, a series is indexed, a page streams, OPDS responds (read-17 consumer end)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `read-17` · **enabled:** True
+- **expects:** `^KOMGA_OK`
+
+```bash
+python3 /opt/verification/bin/komga-serves.py
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

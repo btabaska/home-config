@@ -1,6 +1,6 @@
 # Services
 
-44 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+45 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 
@@ -108,6 +108,7 @@
 |---|---|---|
 | [audiobookshelf](audiobookshelf.md) | nas | https://abs.tabaska.us |
 | [calibre-web-automated](calibre-web-automated.md) | nas | https://books.tabaska.us |
+| [komga](komga.md) | nas | https://komga.tabaska.us |
 | [miniflux](miniflux.md) | mini | https://rss.tabaska.us |
 | [wallabag](wallabag.md) | mini | https://wallabag.tabaska.us |
 

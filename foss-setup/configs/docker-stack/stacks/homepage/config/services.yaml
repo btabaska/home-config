@@ -187,6 +187,15 @@
           type: audiobookshelf
           url: http://192.168.10.4:13378
           key: "{{HOMEPAGE_VAR_ABS_KEY}}"
+    - Komga:
+        icon: komga.png
+        href: https://komga.tabaska.us
+        description: Comics & manga
+        widget:
+          type: komga
+          url: http://192.168.10.4:25600
+          username: "{{HOMEPAGE_VAR_KOMGA_USER}}"
+          password: "{{HOMEPAGE_VAR_KOMGA_PASS}}"
     - Wallabag:
         icon: wallabag.png
         href: https://wallabag.tabaska.us
