@@ -690,3 +690,19 @@ services:
       A file was deleted or overwritten by a bad sync and you need it back.
     fix: |-
       On the NAS hub, look under `/volume1/docker/syncthing/Sync/.stversions/` — staggered versioning keeps timestamped copies (`name~YYYYMMDD-HHMMSS.ext`) for up to 30 days. Copy the wanted version back into `Sync/`; it re-propagates to the peers.
+- name: journaling
+  about: |-
+    A fully LAN-local AI journaling stack on `mini` at `/opt/stacks/journaling/` (mirrored to `foss-setup/configs/docker-stack/stacks/journaling/`), stood up by task `journal-01`. Three digest-pinned containers: **Memos** (`neosmemo/memos:0.29.1`, host `:5230`, fronted by Caddy at https://memos.tabaska.us) is the journal front-end; **n8n** (`n8nio/n8n:2.32.2`, host `:5678`, https://n8n.tabaska.us) is the automation layer that will react to each new entry; and **faster-whisper** via Speaches (`ghcr.io/speaches-ai/speaches:0.8.3-cpu`, host `:8010`) is the internal-only server-side dictation endpoint — deliberately given NO Caddy vhost. Inference is NOT local to this stack: n8n calls the rig's llama-swap at `http://192.168.10.12:9292/v1/chat/completions` with model `dolphin-venice-24b` (temp ~0.35, an uncensored-but-steerable coach), because the mini has no GPU and the capable models live behind llama-swap, not the small-model Ollama `:11434`. faster-whisper runs on CPU for the same reason (the fleet's only GPU, the rig 3090 Ti, is pinned to LLM + Immich ML). All state (Memos sqlite/uploads, n8n workflows/encryption-key) is bind-mounted under the stack dir so restic backs it up. Ports 5230/5678/8010 were chosen because `:8000`/`:8080` are already taken on the mini. Whole stack is LAN/tailnet only, no public exposure and no cloud/telemetry (n8n diagnostics + version checks disabled); the single outbound call is faster-whisper's one-time model pull from HuggingFace. As of `journal-01` this is the scaffold: all three containers are up and reachable and the rig coach model is registered — the Memos API token + webhook (`journal-02`), the `journal-analyze` workflow with its loop guard (`journal-03`), the transcription branch (`journal-04`), the Open WebUI coach preset (`journal-05`) and the README + end-to-end monitoring closeout (`journal-06`) are wired by the follow-on tasks.
+  troubleshoot:
+  - symptom: |-
+      Journal entries save fine but no reflection comment ever appears.
+    fix: |-
+      Reflections depend on the rig, which is a separate host. Confirm the coach model is reachable and registered: `curl -s http://192.168.10.12:9292/v1/models | grep dolphin-venice-24b` (the `journaling-coach-model-reachable` verification check does this). llama-swap loads the ~17 GB model on first call and a rig "gaming force-unload" hook can evict it, so analysis is best-effort — the entry is always saved regardless. The analyze workflow itself is built in `journal-03`; until then, no comments are expected.
+  - symptom: |-
+      memos.tabaska.us or n8n.tabaska.us returns a TLS/connection error right after a deploy.
+    fix: |-
+      Both are new Caddy vhosts on the mini `edge` network. Confirm Caddy reloaded after the Caddyfile edit (`docker exec caddy caddy reload --config /etc/caddy/Caddyfile`) and that both containers are on the `edge` network (`docker inspect memos --format '{{json .NetworkSettings.Networks}}'`). A cold first request can 000 while the cert warms; retry once.
+  - symptom: |-
+      One of the three containers is unhealthy or the healthcheck.sh reports DEGRADED.
+    fix: |-
+      Run the stack healthcheck from the mini: `ssh mini 'cd /opt/stacks/journaling && ./scripts/healthcheck.sh'` — it probes Memos `:5230/healthz`, n8n `:5678/healthz`, faster-whisper `:8010/health` and rig `:9292/v1/models`. For a stuck container, `cd /opt/stacks/journaling && docker compose logs --tail 50 <service>` then `docker compose up -d`. n8n and whisper bind-mount dirs must stay owned by uid 1000.

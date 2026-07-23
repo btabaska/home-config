@@ -85,6 +85,7 @@ nav:
           - unbound: services/unbound.md
           - uptime-kuma: services/uptime-kuma.md
       - Life:
+          - journaling: services/journaling.md
           - mealie: services/mealie.md
       - Media:
           - kometa: services/kometa.md

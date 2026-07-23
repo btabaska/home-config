@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**204/305 done** · **69 open** · **19 deferred** · 13 retired.
+**205/305 done** · **68 open** · **19 deferred** · 13 retired.
 
 ---
 
@@ -38,7 +38,6 @@
 - [ ] **`home-08`** Homepage UniFi widget (Calendar tile shipped 2026-07-22) _(est 20 min)_ — ⛔ gate: needs a LOCAL read-only UniFi Network account in the vault (new unifi_network.username/password block) — operator creates it in UniFi (192.168.10.1) -> Settings -> Admins & Users -> Add local user with Network 'View Only' role (NOT the Ubiquiti SSO/cloud login, NOT the Protect-only account which 403s on Network auth).
 
 ### journaling
-- [ ] **`journal-01`** Scaffold the journaling stack (Memos + n8n + faster-whisper) on the mini and bring it up _(est 2 hr)_
 - [ ] **`journal-02`** Create the Memos account + API token, wire the memo.created webhook to n8n, confirm events arrive _(est 1 hr)_ — ⛔ gate: User provides the Memos account password they want to use (their daily journaling login); store at vault journaling.memos.password. The API token is minted by the agent from that account.
 - [ ] **`journal-03`** Build + test the journal-analyze n8n workflow (LLM coaching + loop-safe comment write-back) _(est 3 hr)_
 - [ ] **`journal-04`** Wire the optional faster-whisper server-side transcription branch _(est 2 hr)_

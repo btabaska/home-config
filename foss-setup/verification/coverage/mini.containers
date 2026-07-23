@@ -6,6 +6,7 @@ bgutil-pot
 caddy
 diun
 dockge
+faster-whisper
 forgejo
 forgejo_db
 healthchecks
@@ -14,10 +15,12 @@ homepage
 kometa
 libreseerr
 mealie
+memos
 metube
 miniflux
 miniflux_db
 musicseerr
+n8n
 navidrome
 ntfy
 paperless

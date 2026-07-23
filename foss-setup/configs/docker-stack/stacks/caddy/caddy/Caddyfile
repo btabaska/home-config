@@ -148,6 +148,19 @@ wallabag.{$DOMAIN} {
 	reverse_proxy wallabag:80
 }
 
+# Journaling stack (journal-01). Memos front-end + n8n automation, both on the
+# edge network (reached by container name). faster-whisper (:8010) is internal
+# only — deliberately NO vhost (server-side dictation stays off the edge).
+memos.{$DOMAIN} {
+	import local_tls
+	reverse_proxy memos:5230
+}
+
+n8n.{$DOMAIN} {
+	import local_tls
+	reverse_proxy n8n:5678
+}
+
 # ---------------------------------------------------------------------------
 # Platform / ops
 # ---------------------------------------------------------------------------

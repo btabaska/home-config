@@ -1,6 +1,6 @@
 # Services
 
-39 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+40 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 
@@ -50,6 +50,7 @@
 
 | Stack | Host | URL |
 |---|---|---|
+| [journaling](journaling.md) | mini | https://memos.tabaska.us |
 | [mealie](mealie.md) | mini | https://recipes.tabaska.us |
 
 ## Media

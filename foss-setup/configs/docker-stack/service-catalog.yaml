@@ -238,6 +238,14 @@ services:
     on_demand: false
     notes: Recipes & meal planning. (Healthcheck flap seen 2026-07-07 resolved — healthy as of 2026-07-09.)
 
+  - name: journaling
+    category: Life
+    host: mini
+    port: 5230
+    url: https://memos.tabaska.us
+    on_demand: false
+    notes: "Self-hosted AI journaling stack (journal-01): Memos front-end (:5230, memos.tabaska.us) + n8n automation (:5678, n8n.tabaska.us) + faster-whisper/speaches (:8010, internal only). Reflections come from rig llama-swap model dolphin-venice-24b. LAN/tailnet only, no cloud. Analyze workflow + tokens wired in journal-02..06."
+
   # --- Smart Home -----------------------------------------------------------------
   - name: home-assistant
     category: Smart Home

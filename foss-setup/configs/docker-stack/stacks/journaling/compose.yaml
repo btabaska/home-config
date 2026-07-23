@@ -1,0 +1,119 @@
+# Self-hosted AI journaling stack (journal-01) — LAN/tailnet only, no cloud.
+# Memos (journal front-end) + n8n (automation) + faster-whisper/speaches (server-side
+# dictation, internal only). Inference stays on the rig: n8n calls llama-swap
+# http://192.168.10.12:9292 (model dolphin-venice-24b) — see docs/journaling-stack-plan.md.
+#
+# Ports: memos 5230, n8n 5678, whisper 8010 (host :8000/:8080 are already taken on the mini).
+# Images are digest-pinned (fix-38 / supply-chain posture); index digests resolved on the
+# mini 2026-07-22 via `docker buildx imagetools inspect <img>` (multi-arch — the mini is arm64).
+# The journal-analyze workflow, Memos token/webhook and the transcription branch are wired by
+# journal-02..04; this stack file only scaffolds the three services and brings them up.
+
+services:
+  memos:
+    image: neosmemo/memos:0.29.1@sha256:3e1253477066eb2aefa91145f7f9038bb931ed88c8a3ee05310a933594cdba7d
+    container_name: memos
+    restart: unless-stopped
+    ports:
+      - "5230:5230" # direct LAN access; also fronted by Caddy (memos.tabaska.us)
+    environment:
+      - MEMOS_MODE=prod
+      - MEMOS_PORT=5230
+      - TZ=${TZ}
+    volumes:
+      - ./memos:/var/opt/memos # sqlite db + uploads — restic-backed via the stack dir
+    networks:
+      - edge
+      - journaling
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5230/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  n8n:
+    image: n8nio/n8n:2.32.2@sha256:119afa425cc1ac3e62823c65aae16fcee409ef4c94555ebab3a9dff6eccb9073
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678" # direct LAN access; also fronted by Caddy (n8n.tabaska.us)
+    # mini containers must resolve via NAS AdGuard .4 — mini .2 times out from
+    # containers (net-16). Docker's embedded 127.0.0.11 still resolves container
+    # names on the user-defined network; this only sets the upstream forwarder.
+    dns:
+      - 192.168.10.4
+    environment:
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=${N8N_WEBHOOK_URL}
+      - N8N_EDITOR_BASE_URL=${N8N_WEBHOOK_URL}
+      - N8N_PROXY_HOPS=1 # single reverse proxy (Caddy) in front
+      - GENERIC_TIMEZONE=${TZ}
+      - TZ=${TZ}
+      - N8N_RUNNERS_ENABLED=true # 2.x task runners (silences deprecation warning)
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      # LAN-only ethos: no telemetry, no phone-home, no personalization nags.
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_VERSION_NOTIFICATIONS_ENABLED=false
+      - N8N_PERSONALIZATION_ENABLED=false
+      - N8N_HIRING_BANNER_ENABLED=false
+    volumes:
+      - ./n8n:/home/node/.n8n # workflows + sqlite + encryption key — restic-backed
+    networks:
+      - edge
+      - journaling
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # faster-whisper via Speaches (maintained successor to fedirz/faster-whisper-server).
+  # Internal only — NO Caddy vhost. CPU by default; the mini has no NVIDIA GPU and the
+  # only GPU in the fleet (rig's single 24 GB 3090 Ti) is reserved for LLM + Immich ML,
+  # so there is no GPU to give this. Models lazy-load on first /v1/audio/transcriptions
+  # call (journal-04) and cache under the mounted HF dir; that one-time model pull is the
+  # only outbound call this stack makes.
+  faster-whisper:
+    image: ghcr.io/speaches-ai/speaches:0.8.3-cpu@sha256:21e3df06d842fb7802ab470dd77c25f0e8c0d22950e8d8c6ae886e851af53ef8
+    container_name: faster-whisper
+    restart: unless-stopped
+    ports:
+      - "8010:8000" # :8000/:8080 already taken on the mini (pitfall)
+    dns:
+      - 192.168.10.4 # so the one-time HF model pull can resolve (net-16)
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - ./whisper-cache:/home/ubuntu/.cache/huggingface # persist downloaded models
+    networks:
+      - journaling
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # GPU variant (intentionally NOT used — documented per the plan). The mini has
+  # no NVIDIA GPU; the rig's single 3090 Ti is pinned to LLM inference + Immich ML
+  # (rig-gpu-vram-contention). If a GPU host ever runs this, swap the CPU image for
+  # ghcr.io/speaches-ai/speaches:0.8.3-cuda and add:
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]
+  # ---------------------------------------------------------------------------
+
+networks:
+  edge:
+    external: true # shared reverse-proxy network (Caddy reaches memos/n8n by name)
+  journaling:
+    driver: bridge # private: n8n <-> faster-whisper <-> memos

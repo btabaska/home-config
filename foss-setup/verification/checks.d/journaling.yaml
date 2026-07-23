@@ -1,0 +1,53 @@
+# Journaling stack (journal-01) — Memos + n8n + faster-whisper on the mini, with
+# inference on the rig (llama-swap). These are scaffold/readiness probes that hit
+# each service's real app surface (not a bare `docker inspect running`); the deep
+# "one memo -> exactly one reflection comment, no re-trigger" end-to-end check is
+# journal-06's closeout. All run from mini; the coach-model probe is the highest
+# value here — it confirms the exact inference dependency the analyze workflow calls.
+checks:
+  - id: journaling-memos-ready
+    tier: fast
+    name: "memos journal front-end is ready on :5230"
+    host: mini
+    cmd: curl -s -m 8 http://localhost:5230/healthz
+    expect: 'Service ready'
+    severity: crit
+    task_id: journal-01
+    runbook: wiki/docs/services/journaling.md
+    enabled: true
+
+  - id: journaling-n8n-app
+    tier: fast
+    name: "n8n serves its app API on :5678 (/rest/settings 200)"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:5678/rest/settings
+    expect: '^200$'
+    severity: crit
+    task_id: journal-01
+    runbook: wiki/docs/services/journaling.md
+    enabled: true
+
+  - id: journaling-whisper-ready
+    tier: fast
+    name: "faster-whisper (speaches) answers /health on :8010"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8010/health
+    expect: '^200$'
+    severity: warn
+    task_id: journal-01
+    runbook: wiki/docs/services/journaling.md
+    enabled: true
+
+  # Consumer-dependency probe: the journal-analyze workflow POSTs to rig llama-swap
+  # with model=dolphin-venice-24b. If the rig is down or that model is unregistered,
+  # reflections silently stop even though all three mini containers stay green.
+  - id: journaling-coach-model-reachable
+    tier: fast
+    name: "rig llama-swap :9292 is reachable and registers dolphin-venice-24b"
+    host: mini
+    cmd: curl -s -m 10 http://192.168.10.12:9292/v1/models
+    expect: 'dolphin-venice-24b'
+    severity: warn
+    task_id: journal-01
+    runbook: wiki/docs/services/journaling.md
+    enabled: true

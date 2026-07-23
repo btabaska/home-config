@@ -143,6 +143,22 @@
         description: Document Editor
         target: _blank
 
+# Journaling stack (journal-01). Memos front-end + n8n automation; neither has a
+# real Homepage widget (verified gethomepage.dev/widgets), so both are siteMonitor
+# reachability tiles. siteMonitor URLs hit the containers by name on the edge net.
+# faster-whisper (:8010) is internal-only — no tile.
+- Journaling:
+    - Memos:
+        icon: memos.png
+        href: https://memos.tabaska.us
+        description: Journal & notes
+        siteMonitor: http://memos:5230
+    - n8n:
+        icon: n8n.png
+        href: https://n8n.tabaska.us
+        description: Journal automation
+        siteMonitor: http://n8n:5678
+
 - Reading:
     - Calibre-Web:
         icon: calibre-web.png
