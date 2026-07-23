@@ -102,6 +102,12 @@ main() {
   add_http "Mini Miniflux"     "http://${MINI}:8082"  "$A_OK"
   add_http "Mini Mealie"       "http://${MINI}:9000"  "$A_OK"
   add_http "Mini Homepage"     "http://${MINI}:3010"  "$A_OK"
+  # journaling stack (journal-06). Health endpoints return a clean 200 (memos
+  # "Service ready"; n8n {"status":"ok"}) — no auth redirect. Liveness tiles for the
+  # dashboard; the deep "memo -> exactly one reflection comment" consumer proof lives
+  # in the verification runner (checks.d/journaling.yaml → journaling-loop-e2e).
+  add_http "Mini Memos"        "http://${MINI}:5230/healthz" "$A_OK"
+  add_http "Mini n8n"          "http://${MINI}:5678/healthz" "$A_OK"
   add_http "Mini Healthchecks" "http://${MINI}:8001"  "$A_3XX"
   add_http "Mini Dockge"       "http://${MINI}:5001"  "$A_OK"
   add_http "Mini Forgejo"      "http://${MINI}:3030"  "$A_OK"

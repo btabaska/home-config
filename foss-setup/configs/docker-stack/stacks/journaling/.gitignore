@@ -1,0 +1,14 @@
+# journaling stack — commit the mirrored SOURCE only (compose.yaml, .env.example, the
+# n8n *.workflow.json, templates/, scripts/, openwebui/). NEVER the live bind-mount
+# state or secrets: memos/ holds the sqlite DB + uploads, whisper-cache/ the HF models,
+# n8n/ (except the workflow JSONs) holds the n8n sqlite + the ENCRYPTION KEY, and .env
+# carries the Memos PAT. restic backs the live copies up on the mini; the repo carries
+# source only (anti-drift — see CLAUDE.md file-ownership map).
+.env
+memos/
+whisper-cache/
+n8n/*
+!n8n/*.workflow.json
+# portable exports produced by scripts/export-journal.sh
+journal-export-*.json
+exports/

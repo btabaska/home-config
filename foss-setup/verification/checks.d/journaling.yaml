@@ -1,9 +1,9 @@
 # Journaling stack (journal-01) — Memos + n8n + faster-whisper on the mini, with
-# inference on the rig (llama-swap). These are scaffold/readiness probes that hit
-# each service's real app surface (not a bare `docker inspect running`); the deep
-# "one memo -> exactly one reflection comment, no re-trigger" end-to-end check is
-# journal-06's closeout. All run from mini; the coach-model probe is the highest
-# value here — it confirms the exact inference dependency the analyze workflow calls.
+# inference on the rig (llama-swap). Most of these are scaffold/readiness probes that
+# hit each service's real app surface (not a bare `docker inspect running`). The deep
+# "one #journal memo -> exactly one reflection comment, no re-trigger" end-to-end check
+# is `journaling-loop-e2e` (journal-06's closeout, at the bottom). All run from mini;
+# the coach-model probe confirms the exact inference dependency the analyze workflow calls.
 checks:
   - id: journaling-memos-ready
     tier: fast
@@ -135,3 +135,32 @@ checks:
     task_id: journal-05
     runbook: wiki/docs/services/journaling.md
     enabled: true
+
+  # journal-06 CONSUMER-END closeout — the deep end-to-end proof. It POSTs a marked
+  # #journal test memo and asserts the journal-analyze loop writes back EXACTLY ONE
+  # reflection comment, then deletes the probe. This is the only check that proves the
+  # whole pipeline actually WORKS (Memos webhook -> n8n Guard -> rig coach LLM -> comment
+  # write-back) AND that the loop guard holds (writing that comment fires two more webhook
+  # events, neither of which may add a second comment) — not just that containers are up
+  # (mandate 1). The reflection is best-effort: the ~24 GB-tier coach shares the rig's single
+  # 3090 Ti with Immich ML and OOMs ("exited prematurely") when the card is tight
+  # (rig-gpu-vram-contention; docs/journaling-stack-plan.md risk 2). So the helper FIRST
+  # checks the coach can load and SKIPs — posting nothing — if it can't; that's an expected,
+  # separately-monitored condition (journaling-coach-model-reachable), NOT a loop failure. A
+  # real FAIL (E2E_NO_COMMENT / E2E_LOOP_MULTICOMMENT / E2E_ERROR) means the coach WAS loadable
+  # but the loop produced 0 or >1 reflections — the webhook/workflow/guard is broken. warn +
+  # daily (07:15 sweep only): it posts a memo and drives the LLM, too heavy for the 10-min fast
+  # tier, and best-effort means it must never page on GPU contention. Helper (bin-refs guarded):
+  # /opt/verification/bin/journaling-e2e.py — reads the Memos PAT from /etc/verification/env and
+  # the live coach model/endpoint from the stack .env, self-cleans the probe memo in a finally.
+  - id: journaling-loop-e2e
+    tier: daily
+    name: "journal loop end-to-end: one #journal memo -> exactly one reflection comment"
+    host: mini
+    cmd: python3 /opt/verification/bin/journaling-e2e.py
+    expect: '^E2E_(OK|SKIP_COACH_UNAVAILABLE)$'
+    severity: warn
+    task_id: journal-06
+    runbook: wiki/docs/services/journaling.md
+    enabled: true
+    timeout: 300
