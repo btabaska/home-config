@@ -82,6 +82,8 @@ nav:
           - healthchecks: services/healthchecks.md
           - homepage: services/homepage.md
           - ntfy: services/ntfy.md
+          - scrutiny: services/scrutiny.md
+          - scrutiny-collector: services/scrutiny-collector.md
           - unbound: services/unbound.md
           - uptime-kuma: services/uptime-kuma.md
       - Life:

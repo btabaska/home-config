@@ -91,6 +91,13 @@ ntfy.{$DOMAIN} {
 	reverse_proxy ntfy:80
 }
 
+# Disk SMART health (glue-10). Hub is the omnibus on the NAS (:8080); collectors
+# on mini + rig POST here. No auth on the web UI — LAN/Tailscale only.
+scrutiny.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:8080
+}
+
 # AdGuard Home admin UI (DNS itself is served directly on port 53, not via Caddy)
 dns.{$DOMAIN} {
 	import local_tls

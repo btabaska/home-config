@@ -1,0 +1,16 @@
+version: 1
+
+# NAS (omnibus) collector config. Synology exposes drives as /dev/sataN and `smartctl --scan`
+# does NOT enumerate them, so each disk is declared explicitly with `type: sat` (SCSI->ATA
+# translation). Verified 2026-07-23: `smartctl -d sat -i /dev/sataN` returns full ATA SMART on
+# all three bays (WD Red 12TB / WD Red 16TB / Seagate Exos 18TB).
+host:
+  id: nas
+
+devices:
+  - device: /dev/sata1
+    type: 'sat'
+  - device: /dev/sata2
+    type: 'sat'
+  - device: /dev/sata3
+    type: 'sat'

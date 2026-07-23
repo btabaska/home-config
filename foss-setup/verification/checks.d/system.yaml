@@ -83,3 +83,23 @@ checks:
     task_id: ha-19
     runbook: wiki/runbooks/docker.md
     enabled: true
+
+  # glue-10 — per-disk SMART health, the blind spot Beszel/Kuma don't cover.
+  # CONSUMER-end: asks the Scrutiny hub (omnibus on the NAS) for its rollup and
+  # asserts every fleet disk (7: 1 mini SSD + 3 NAS SATA + 3 rig NVMe) is present
+  # AND has device_status 0 (SMART pass). A failing/aging drive flips device_status
+  # non-zero -> smart_FAIL; a wiped hub or dead collectors drop the count -> also
+  # FAIL. Data persists in Scrutiny's registry across restarts, so the >=7 floor is
+  # stable. warn per the pitfall (don't page on a slow-degrading drive at 3am).
+  - id: sys-disk-smart-health
+    name: "Scrutiny reports all 7 fleet disks present with 0 failed SMART status"
+    host: mini
+    cmd: >-
+      curl -sm 10 http://nas:8080/api/summary
+      | python3 -c 'import sys,json;d=json.load(sys.stdin);s=d.get("data",{}).get("summary",{});bad=[k for k,v in s.items() if v.get("device",{}).get("device_status",0)];print("smart_ok drives=%d" % len(s)) if (d.get("success") and len(s)>=7 and not bad) else print("smart_FAIL drives=%d failed=%d" % (len(s),len(bad)))'
+      || echo smart_ERR
+    expect: '^smart_ok drives=[0-9]+$'
+    severity: warn
+    task_id: glue-10
+    runbook: wiki/runbooks/fleet-hygiene.md
+    enabled: true

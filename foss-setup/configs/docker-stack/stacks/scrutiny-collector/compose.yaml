@@ -1,0 +1,22 @@
+name: scrutiny-collector
+
+# Scrutiny SMART collector (mini). Collector-only: reads the local disk's SMART data and POSTs
+# it to the fleet hub on the NAS (http://192.168.10.4:8080). No web UI here — the hub/dashboard
+# is the `scrutiny` service on the NAS. glue-10.
+# Uses the NAS IP directly (not a hostname) so it is immune to the container-DNS quirk (net-16).
+# Image: analogj/scrutiny master-collector, digest-pinned 2026-07-23.
+services:
+  scrutiny-collector:
+    image: ghcr.io/analogj/scrutiny@sha256:e0d55d2742017c7025e491e05eb516bc71758c575f7e0bfefe34f9ce13aced89  # master-collector, pinned 2026-07-23
+    container_name: scrutiny-collector
+    restart: unless-stopped
+    cap_add:
+      - SYS_RAWIO
+    volumes:
+      - /run/udev:/run/udev:ro
+    devices:
+      - /dev/sda:/dev/sda  # Samsung SSD 870 (only disk on the mini)
+    environment:
+      - COLLECTOR_API_ENDPOINT=http://192.168.10.4:8080
+      - COLLECTOR_HOST_ID=mini
+      - COLLECTOR_CRON_SCHEDULE=0 6 * * *  # daily 06:00 SMART sweep

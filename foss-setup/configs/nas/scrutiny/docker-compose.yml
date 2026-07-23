@@ -1,0 +1,34 @@
+name: scrutiny
+
+# Scrutiny — disk SMART health, the one blind spot Beszel + Uptime-Kuma don't cover (glue-10).
+# This NAS container is the OMNIBUS: web UI + bundled InfluxDB + the local NAS collector, all
+# in one image. It is the fleet hub — the mini and rig run collector-only containers that POST
+# their SMART data here (http://192.168.10.4:8080).
+#
+# Image: analogj/scrutiny master-omnibus, digest-pinned 2026-07-23. Provenance: the last tagged
+# release (0.8.1) is from 2023 and predates years of SMART/collector fixes; master is the
+# community-recommended channel. Re-pin via `docker buildx imagetools inspect
+# ghcr.io/analogj/scrutiny:master-omnibus`.
+#
+# Synology drives are exposed as /dev/sataN and `smartctl --scan` does NOT enumerate them, so
+# each bay is declared with `type: sat` in config/collector.yaml (verified 2026-07-23:
+# `smartctl -d sat -i /dev/sataN` returns full ATA SMART on all three bays).
+services:
+  scrutiny:
+    image: ghcr.io/analogj/scrutiny@sha256:18689773150d6b8b53c94a435f40f7b6e946fd4a6d40b44c64fa2154a5b38941  # master-omnibus, pinned 2026-07-23
+    container_name: scrutiny
+    restart: always
+    cap_add:
+      - SYS_RAWIO
+    ports:
+      - "8080:8080"
+    volumes:
+      - /run/udev:/run/udev:ro
+      - ${DOCKER_ROOT:-/volume1/docker}/scrutiny/config:/opt/scrutiny/config
+      - ${DOCKER_ROOT:-/volume1/docker}/scrutiny/influxdb:/opt/scrutiny/influxdb
+    devices:
+      - /dev/sata1:/dev/sata1
+      - /dev/sata2:/dev/sata2
+      - /dev/sata3:/dev/sata3
+    environment:
+      - COLLECTOR_CRON_SCHEDULE=0 6 * * *  # daily 06:00 local SMART sweep

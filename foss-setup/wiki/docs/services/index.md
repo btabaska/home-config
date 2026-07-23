@@ -1,6 +1,6 @@
 # Services
 
-40 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+42 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 
@@ -43,6 +43,8 @@
 | [healthchecks](healthchecks.md) | mini | https://health.tabaska.us |
 | [homepage](homepage.md) | mini | https://home.tabaska.us |
 | [ntfy](ntfy.md) | mini | https://ntfy.tabaska.us |
+| [scrutiny](scrutiny.md) | nas | https://scrutiny.tabaska.us |
+| [scrutiny-collector](scrutiny-collector.md) | mini | https://scrutiny-collector.tabaska.us |
 | [unbound](unbound.md) | mini | — |
 | [uptime-kuma](uptime-kuma.md) | mini | https://uptime.tabaska.us |
 

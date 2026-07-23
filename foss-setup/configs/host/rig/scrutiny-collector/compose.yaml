@@ -1,0 +1,26 @@
+name: scrutiny-collector
+
+# Scrutiny SMART collector (rig). Collector-only: reads local NVMe SMART and POSTs to the fleet
+# hub on the NAS (http://192.168.10.4:8080). glue-10.
+# NVMe requires SYS_ADMIN in addition to SYS_RAWIO, and the NVMe *controller* nodes
+# (/dev/nvmeN, NOT the nvmeNn1 namespaces) must be passed for smartctl to read them.
+# The iPod at /dev/sda is deliberately NOT monitored.
+# Image: analogj/scrutiny master-collector, digest-pinned 2026-07-23.
+services:
+  scrutiny-collector:
+    image: ghcr.io/analogj/scrutiny@sha256:e0d55d2742017c7025e491e05eb516bc71758c575f7e0bfefe34f9ce13aced89  # master-collector, pinned 2026-07-23
+    container_name: scrutiny-collector
+    restart: unless-stopped
+    cap_add:
+      - SYS_RAWIO
+      - SYS_ADMIN
+    volumes:
+      - /run/udev:/run/udev:ro
+    devices:
+      - /dev/nvme0:/dev/nvme0  # WDS200T1XHE 2TB
+      - /dev/nvme1:/dev/nvme1  # Corsair MP600 PRO LPX 1TB
+      - /dev/nvme2:/dev/nvme2  # WDS200T3X0C 2TB
+    environment:
+      - COLLECTOR_API_ENDPOINT=http://192.168.10.4:8080
+      - COLLECTOR_HOST_ID=rig
+      - COLLECTOR_CRON_SCHEDULE=0 6 * * *  # daily 06:00 SMART sweep

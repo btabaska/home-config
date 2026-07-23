@@ -726,3 +726,31 @@ services:
       You need to restore the journal, migrate it to another Memos, or confirm the backup actually captures it.
     fix: |-
       The complete, automatic **backup** is restic → Backblaze B2 (nightly `restic-backup.timer` on the mini; `BACKUP_PATHS` includes `/opt/stacks`). Confirm the stack is in the latest snapshot: `sudo bash -c '. /etc/restic/env; restic ls latest /opt/stacks/journaling'` — it should list `memos/` (sqlite + uploads), `n8n/` (workflows + encryption key), and `whisper-cache/`. Restore one path: `sudo bash -c '. /etc/restic/env; restic restore latest --target /restore --include /opt/stacks/journaling'`. The n8n **encryption key** (`n8n/config`) rides in the backup but is gitignored out of the repo (source-only mirror) — without it n8n cannot decrypt saved credentials. For a portable, human/other-Memos-readable copy use the **export** instead of a DB dump: `cd /opt/stacks/journaling && ./scripts/export-journal.sh` writes `journal-export-YYYY-MM-DD.json` with every entry **and** its reflection comments (the Memos list API returns entries only, so the script fetches each entry's `/comments`).
+- name: scrutiny
+  about: |-
+    Scrutiny is the fleet's per-disk **S.M.A.R.T. health** monitor — the one hardware blind spot Beszel (host/container metrics) and Uptime-Kuma (service liveness) do not cover, so a failing or aging drive surfaces before it dies (glue-10). This NAS container is the **omnibus** (`ghcr.io/analogj/scrutiny` master-omnibus, digest-pinned) from `foss-setup/configs/nas/scrutiny/docker-compose.yml`: web UI + bundled InfluxDB + the local NAS collector in one image, published on host `:8080` and fronted by Caddy at https://scrutiny.tabaska.us (no auth — LAN/Tailscale only). It is the hub for the whole fleet: the `mini` and `rig` hosts run collector-only `scrutiny-collector` agents that POST their SMART data here. Synology exposes drives as `/dev/sataN` and `smartctl --scan` does NOT enumerate them, so each bay is declared explicitly with `type: sat` in `config/collector.yaml` (verified: `smartctl -d sat -i /dev/sataN` returns full ATA SMART on all three NAS bays). Collectors sweep daily at 06:00 (`COLLECTOR_CRON_SCHEDULE`); the consumer-end check `sys-disk-smart-health` asserts all 7 fleet disks are present with 0 failed status. The Homepage Infrastructure tile uses the native `scrutiny` widget (passed/failed/unknown) pointed at the NAS IP.
+  troubleshoot:
+  - symptom: |-
+      Dashboard is empty, or one host's disks are missing right after deploy.
+    fix: |-
+      Collectors only run on the daily 06:00 cron, so a freshly-started collector has not posted yet. Force one immediately: on the hub run `sudo /usr/local/bin/docker exec scrutiny /opt/scrutiny/bin/scrutiny-collector-metrics run` (NAS disks); on a spoke run `docker exec scrutiny-collector /opt/scrutiny/bin/scrutiny-collector-metrics run` (mini/rig). Then re-check `curl -s http://192.168.10.4:8080/api/summary`.
+  - symptom: |-
+      NAS drives are absent or show no SMART attributes even though the collector ran.
+    fix: |-
+      Synology `/dev/sataN` devices are not found by `smartctl --scan`, so they must be listed explicitly in `/volume1/docker/scrutiny/config/collector.yaml` with `type: 'sat'` under `devices:`. Confirm a device reads with `sudo /usr/local/bin/docker exec scrutiny smartctl -d sat -i /dev/sata1`; if you add a 4th bay, add its `/dev/sataN` to both `devices:` in collector.yaml and the `devices:` list in docker-compose.yml, then `docker compose up -d`.
+  - symptom: |-
+      The sys-disk-smart-health check reports smart_FAIL or the drive count dropped below 7.
+    fix: |-
+      Open https://scrutiny.tabaska.us and find the drive whose status is not "Passed". A real SMART fail (device_status non-zero) means a degrading/failing disk — plan a replacement and check the drive's attributes (reallocated sectors, pending sectors, wear). If instead the count dropped, a collector is down: verify the `scrutiny-collector` container is running on the affected host (`docker ps`) and that it can reach the hub at `192.168.10.4:8080`.
+- name: scrutiny-collector
+  about: |-
+    scrutiny-collector is the collector-only half of the Scrutiny SMART-health stack (glue-10) — it runs on both `mini` (`foss-setup/configs/docker-stack/stacks/scrutiny-collector/compose.yaml`) and `rig` (`foss-setup/configs/host/rig/scrutiny-collector/compose.yaml`), reads the local disks' SMART data with a bundled `smartctl`, and POSTs it to the Scrutiny hub (the `scrutiny` omnibus on the NAS at `http://192.168.10.4:8080`). It has **no web UI** — the dashboard is the hub. The image is `ghcr.io/analogj/scrutiny` master-collector (digest-pinned). It needs `cap_add: SYS_RAWIO` plus a `/run/udev` mount and the raw disk devices passed in. On the mini that is the single SATA SSD (`/dev/sda`); on the rig NVMe drives additionally require `cap_add: SYS_ADMIN` and the **controller** nodes (`/dev/nvme0`, not the `nvme0n1` namespace), and the iPod at `/dev/sda` is deliberately excluded. The endpoint is the NAS **IP** (not a hostname) to dodge the container-DNS quirk (net-16). It sweeps daily at 06:00 (`COLLECTOR_CRON_SCHEDULE`); `COLLECTOR_HOST_ID` tags the host so the hub groups disks by machine.
+  troubleshoot:
+  - symptom: |-
+      On the rig, NVMe drives are not detected by the collector.
+    fix: |-
+      NVMe needs both `SYS_RAWIO` and `SYS_ADMIN`, and you must pass the controller node `/dev/nvmeN` (e.g. `/dev/nvme0`), NOT the `/dev/nvme0n1` namespace. Verify inside the container: `docker exec scrutiny-collector smartctl --scan` should list each `/dev/nvmeN -d nvme`. Fix the `cap_add`/`devices` in the rig `compose.yaml` and `docker compose up -d`.
+  - symptom: |-
+      The collector runs but nothing shows up on the hub dashboard for this host.
+    fix: |-
+      The collector cannot reach the hub. It POSTs to `COLLECTOR_API_ENDPOINT=http://192.168.10.4:8080` — confirm reachability from the container's host (`curl -s http://192.168.10.4:8080/api/health`) and that the NAS `scrutiny` container is up. Then force a run: `docker exec scrutiny-collector /opt/scrutiny/bin/scrutiny-collector-metrics run`.

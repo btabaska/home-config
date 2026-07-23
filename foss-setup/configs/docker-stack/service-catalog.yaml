@@ -374,6 +374,19 @@ services:
     url: https://status.tabaska.us
     on_demand: false
     notes: Host/container metrics hub (beszel-agent on mini feeds it; agent has no UI).
+  - name: scrutiny
+    category: Infrastructure & Ops
+    host: nas
+    port: 8080
+    url: https://scrutiny.tabaska.us
+    on_demand: false
+    notes: Disk SMART-health hub (glue-10; omnibus = web UI + InfluxDB + NAS collector). mini & rig run scrutiny-collector agents that POST here. No auth (LAN/Tailscale only).
+  - name: scrutiny-collector
+    category: Infrastructure & Ops
+    host: mini
+    ui: false
+    on_demand: false
+    notes: SMART collector agent (glue-10; runs on mini AND rig) — reads local disk SMART and POSTs to the scrutiny hub on the NAS. No web UI.
   - name: uptime-kuma
     category: Infrastructure & Ops
     host: mini

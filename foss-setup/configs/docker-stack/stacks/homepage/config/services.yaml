@@ -360,6 +360,15 @@
         href: https://status.tabaska.us
         description: Host & container monitoring
         siteMonitor: http://beszel:8090
+    # glue-10: per-disk SMART health across the fleet. Hub is the omnibus on the NAS;
+    # the widget hits it by IP (Homepage reaches NAS directly). passed/failed/unknown.
+    - Scrutiny:
+        icon: scrutiny.png
+        href: https://scrutiny.tabaska.us
+        description: Disk SMART health
+        widget:
+          type: scrutiny
+          url: http://192.168.10.4:8080
     - Uptime Kuma:
         icon: uptime-kuma.png
         href: https://uptime.tabaska.us
