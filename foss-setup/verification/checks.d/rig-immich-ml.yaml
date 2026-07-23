@@ -5,13 +5,18 @@
 # at /opt/stacks/immich-ml on rig, published to 192.168.10.12:3003). The NAS server
 # routes ML via machineLearning.urls = [rig, nas-local-fallback].
 #
-# These probe the CONSUMER end + the two drift traps, not container liveness:
-#   1. reachable  — the NAS (the real consumer) can actually reach the rig ML endpoint
-#   2. present    — the server config still lists the rig URL (someone clearing it in
-#                   Admin > Settings silently reverts ML to the slow NAS iGPU)
-#   3. version    — the rig -cuda image tag matches the NAS immich-server version
-#                   (a mismatched ML/server version breaks the ML API; the classic
-#                   split-ML drift trap — bump both in the same change)
+# These probe the CONSUMER end + the drift traps, not container liveness:
+#   1. reachable    — the NAS (the real consumer) can reach the rig ML /ping endpoint
+#   2. text-encode  — the rig actually ENCODES TEXT on the GPU. /ping (liveness) is NOT
+#                     enough: the -cuda image once had an ascii locale that broke the
+#                     SigLIP2 TEXTUAL model on every query (UnicodeDecodeError) while the
+#                     visual model + /ping stayed green and text silently fell back to the
+#                     NAS CPU. This exercises the real text pipeline so that can't recur.
+#   3. present      — the server config still lists the rig URL (someone clearing it in
+#                     Admin > Settings silently reverts ML to the slow NAS iGPU)
+#   4. version      — the rig -cuda image tag matches the NAS immich-server version
+#                     (a mismatched ML/server version breaks the ML API; the classic
+#                     split-ML drift trap — bump both in the same change)
 # Runbook: wiki/runbooks/photos.md.  Alerts -> ntfy topic `verification`.
 
 checks:
@@ -26,7 +31,27 @@ checks:
     runbook: wiki/runbooks/photos.md
     enabled: true
 
+  # Real consumer probe: POST a text encode to the rig ML and require a genuine CLIP
+  # embedding back. A 500 (e.g. the ascii-locale UnicodeDecodeError) has no '"clip":"['
+  # so it fails — catching the green-but-broken textual state that /ping alone misses.
+  # Canary model = the deployed CLIP model; if you change it, update this string too.
+  - id: rig-immich-ml-text-encode
+    tier: fast
+    name: "immich ML on rig encodes TEXT on the GPU (SigLIP2 textual model works, not just /ping)"
+    host: mini
+    cmd: >-
+      resp=$(curl -s -m 25 -X POST http://192.168.10.12:3003/predict
+      -F 'entries={"clip":{"textual":{"modelName":"ViT-B-16-SigLIP2__webli"}}}'
+      -F 'text=verification canary');
+      printf '%s' "$resp" | grep -q '"clip":"\[' && echo text-encode-ok || echo text-encode-FAIL
+    expect: '^text-encode-ok$'
+    severity: crit
+    task_id: nas-32
+    runbook: wiki/runbooks/photos.md
+    enabled: true
+
   - id: rig-immich-ml-configured
+    tier: fast
     name: "immich server config still routes ML at the rig (URL not reverted to NAS-only)"
     host: mini
     cmd: >-
@@ -43,6 +68,7 @@ checks:
     enabled: true
 
   - id: rig-immich-ml-version-match
+    tier: fast
     name: "rig immich-ml -cuda image matches NAS immich-server version (no ML/server skew)"
     host: mini
     cmd: >-

@@ -12023,6 +12023,30 @@
   "docs": []
  },
  {
+  "id": "nas-33",
+  "track": "ai",
+  "type": "sync",
+  "host": "nas",
+  "estimate": "20-30 min",
+  "depends_on": [
+   "nas-32"
+  ],
+  "required": false,
+  "run": 7,
+  "mode": "ai",
+  "source": "nas-32 close-out audit 2026-07-22",
+  "title": "Re-tune Immich duplicate-detection maxDistance for the SigLIP2 embeddings",
+  "summary": "The smart-search CLIP model changed ViT-B-32__openai(512-dim)->ViT-B-16-SigLIP2__webli(768-dim) under nas-32. Duplicate detection reuses these CLIP embeddings, so prior dup results are stale and machineLearning.duplicateDetection.maxDistance (still the 0.01 default) is model-specific — the SigLIP2 vector geometry likely wants a different threshold. Do this AFTER the current bulk import finishes and smart-search coverage reaches ~100%.",
+  "steps": [
+   "Wait until smart_search rowcount ~= library asset count (import + storageTemplateMigration drained).",
+   "Re-run Duplicate Detection (Admin > Jobs, All) so it recomputes on the SigLIP2 embeddings.",
+   "Review a sample of dup groups; tune machineLearning.duplicateDetection.maxDistance (start from Immich's SigLIP-recommended value) via PUT /api/system-config (read-modify-write) until groups look sane."
+  ],
+  "verify": "Duplicate groups look correct on a spot-check; maxDistance documented in the immich enrichment.",
+  "files": [],
+  "docs": []
+ },
+ {
   "type": "sync",
   "depends_on": [],
   "required": false,

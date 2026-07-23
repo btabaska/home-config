@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**203/297 done** · **63 open** · **18 deferred** · 13 retired.
+**203/298 done** · **64 open** · **18 deferred** · 13 retired.
 
 ---
 
@@ -10,6 +10,9 @@
 
 ### agent-handoff
 - [ ] **`handoff-12`** Post-sprint cleanup — delete vault and rotate keys _(est 10 min)_
+
+### ai
+- [ ] **`nas-33`** Re-tune Immich duplicate-detection maxDistance for the SigLIP2 embeddings _(est 20-30 min)_
 
 ### books-cutover
 - [ ] **`books-hc-upstream-swap`** Swap rreading-glasses-hc off the temporary local image once upstream fixes Hardcover batch limit (#574) _(est 15-30 min)_
