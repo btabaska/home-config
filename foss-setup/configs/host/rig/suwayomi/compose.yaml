@@ -1,0 +1,61 @@
+# Suwayomi-Server (Tachidesk) — manga acquisition server (read-18).
+#
+# WHY: Komga (NAS) is the reader; it needs a feed for manga that Mylar3 can't cover.
+# Suwayomi runs Tachiyomi/Mihon extensions server-side to pull manga from online
+# sources and writes per-chapter CBZ. Those CBZ land on the NAS "manga" DSM shared
+# folder (/volume1/manga), which Komga scans as its Manga library — so a subscribed
+# series flows Suwayomi -> NAS -> Komga automatically.
+#
+# HOST: the rig (CachyOS, 192.168.10.12) — headroom + 24/7 (suspend masked). Managed by
+# `docker compose` (btabaska is in the docker group, no sudo). Live at /opt/stacks/suwayomi/;
+# this dir is the anti-drift mirror. restart=unless-stopped survives rig reboots.
+#
+# ── STORAGE / THE NAS MOUNT (critical) ───────────────────────────────────────
+# Suwayomi's data (SQLite DB, installed extensions, server.conf, thumbnails) lives on
+# the rig at ./data. Only the *downloads* subdir is redirected to the NAS: the CIFS
+# mount /mnt/nas-manga (//192.168.10.4/manga, RW) is bind-mounted onto the container's
+# default downloads path. Suwayomi writes CBZ there; Komga (uid 1026 = btabaska) reads them.
+#   fstab (rig, persistent — NOT autofs, so the container's bind survives NAS-reboot
+#   CIFS reconnects in place):
+#     //192.168.10.4/manga /mnt/nas-manga cifs credentials=/etc/samba/cred-nas,rw,\
+#       uid=1000,gid=1000,file_mode=0664,dir_mode=0775,iocharset=utf8,vers=3.0,\
+#       _netdev,nofail,soft,x-systemd.mount-timeout=30 0 0
+#   docker.service drop-in /etc/systemd/system/docker.service.d/10-remote-fs.conf adds
+#   After=remote-fs.target so the mount is up before containers start.
+# If the mount is DOWN, downloads have nowhere to land — the sys-manga-suwayomi check
+# probes the consumer end (Suwayomi API + a write that round-trips to Komga). Recovery:
+#   sudo mount /mnt/nas-manga && docker restart suwayomi
+#
+# ── ACCESS ───────────────────────────────────────────────────────────────────
+# Published on the rig's LAN IP only (192.168.10.12:4567), like immich-ml. HTTPS
+# terminates on the Mac mini Caddy at manga.tabaska.us -> {$RIG_IP}:4567. No app auth
+# (matches the rig's ollama/llama-swap/comfyui LAN posture); the Homepage suwayomi
+# widget hits :4567 directly and needs no credentials.
+name: suwayomi
+
+services:
+  suwayomi:
+    image: ghcr.io/suwayomi/tachidesk:v2.3.2243@sha256:e59f212ccf91b26de8676a063a2db90256c148c6261535c7c477d47a43d9751b   # digest-pinned (fix-38/I68 supply-chain posture); pulled on the rig 2026-07-23
+    container_name: suwayomi
+    environment:
+      - TZ=America/New_York
+      - WEB_UI_ENABLED=true
+      - WEB_UI_FLAVOR=WebUI
+      - WEB_UI_CHANNEL=stable
+      - DOWNLOAD_AS_CBZ=true            # write CBZ (Komga reads CBZ natively) instead of loose image folders
+      - AUTO_DOWNLOAD_CHAPTERS=true     # auto-grab new chapters for library series -> they appear in Komga without manual pulls
+      # Extension repo: v2.3 ships the Keiyoushi repo (the maintained successor to the
+      # defunct Tachiyomi repo) as the built-in default extensionRepos, so no override is
+      # needed here — verified 1367 extensions load out of the box (read-18).
+    volumes:
+      - ./data:/home/suwayomi/.local/share/Tachidesk                      # rig-local: DB, extensions, server.conf, thumbnails
+      - /mnt/nas-manga:/home/suwayomi/.local/share/Tachidesk/downloads    # NAS "manga" share: CBZ output -> Komga Manga library
+    ports:
+      - '192.168.10.12:4567:4567'       # LAN IP only; Caddy (mini) + Homepage reach it here
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:4567/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s

@@ -625,3 +625,20 @@ checks:
     task_id: read-17
     runbook: wiki/docs/runbooks/komga.md
     enabled: true
+
+  # Suwayomi manga acquisition (read-18) consumer end: walk the whole chain, not liveness.
+  # Asserts (1) Suwayomi's GraphQL API answers on the rig, (2) the rig's NAS output mount
+  # /mnt/nas-manga is a live mountpoint and WRITABLE (probed via ssh rig touch/rm — the task
+  # pitfall: a dead CIFS mount leaves downloads nowhere to land while both servers look green),
+  # and (3) Komga's Manga library is available with >=1 indexed series (a manga that flowed
+  # Suwayomi -> NAS -> Komga). Best-effort acquisition => warn, not crit. Helper reuses the
+  # KOMGA_USER/KOMGA_PASS runner env (never argv).
+  - id: suwayomi-feeds-komga
+    name: "Suwayomi: API up + NAS output mount writable + Komga Manga library indexes a series (read-18 pipeline consumer end)"
+    host: mini
+    cmd: python3 /opt/verification/bin/suwayomi-feeds-komga.py
+    expect: '^SUWAYOMI_OK'
+    severity: warn
+    task_id: read-18
+    runbook: wiki/docs/runbooks/komga.md
+    enabled: true

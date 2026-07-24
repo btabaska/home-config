@@ -196,6 +196,13 @@
           url: http://192.168.10.4:25600
           username: "{{HOMEPAGE_VAR_KOMGA_USER}}"
           password: "{{HOMEPAGE_VAR_KOMGA_PASS}}"
+    - Suwayomi:
+        icon: suwayomi.png
+        href: https://manga.tabaska.us
+        description: Manga acquisition
+        widget:
+          type: suwayomi
+          url: http://192.168.10.12:4567
     - Wallabag:
         icon: wallabag.png
         href: https://wallabag.tabaska.us

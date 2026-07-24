@@ -75,3 +75,34 @@ ssh -t nas 'cd /volume1/docker/komga && sudo /usr/local/bin/docker compose pull 
 
 Then bump the tag+digest in `foss-setup/configs/nas/komga/docker-compose.yml` to match what was
 pulled and commit (repo↔live anti-drift).
+
+## Suwayomi — manga acquisition pipeline (read-18)
+
+Komga's **Manga** library is fed by **Suwayomi** (Tachidesk) on the rig (stack
+`configs/host/rig/suwayomi/`, `manga.tabaska.us`; like the other rig services it has no
+generated service page — its detailed docs live in the compose header + service-enrichment).
+The chain is:
+
+```
+Suwayomi (rig :4567)  ->  CBZ to /mnt/nas-manga (CIFS, rw)  ->  NAS /volume1/manga  ->  Komga /manga
+```
+
+The `suwayomi-feeds-komga` verification check (`warn`) walks this whole chain: Suwayomi's API
+answers, the rig mount is writable, and Komga's Manga library has ≥1 indexed series.
+
+**Manga library moved off `/volume1/comics`.** `/volume1/comics` is a plain directory DSM won't
+export over SMB, so the rig can't write to it. read-18 created a dedicated **`manga` DSM shared
+folder** (`/volume1/manga`) and re-homed Komga's Manga library onto `/manga` (compose bind
+`- /volume1/manga:/manga`). Comics stays on `/volume1/comics`.
+
+**If manga stop flowing** (check FAILs / new chapters don't appear):
+
+1. Mount down? On the rig: `sudo mount /mnt/nas-manga && docker restart suwayomi`
+   (persistent `_netdev,nofail` fstab entry; a boot-skipped `nofail` mount won't auto-retry).
+   Verify: `ssh rig 'mountpoint -q /mnt/nas-manga && touch /mnt/nas-manga/.t && rm /mnt/nas-manga/.t && echo OK'`.
+2. NAS ACL: `btabaska` needs full control on the share — `synoacltool -get /volume1/manga`
+   should list `user:btabaska:allow:rwx…`.
+3. CBZ on NAS but not in Komga? Force a scan: `POST /api/v1/libraries/<manga-lib-id>/scan`.
+
+Full API recipes (install source, search, add, download) are in the Suwayomi compose header
+(`configs/host/rig/suwayomi/compose.yaml`) and its `service-enrichment.yaml` troubleshoot entries.

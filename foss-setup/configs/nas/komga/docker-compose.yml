@@ -4,8 +4,11 @@
 # Docs : https://komga.org/docs/  •  https://github.com/gotson/komga
 # WHY  : gives the manually-acquired comics (IPT/GetComics CBZ packs) a real reader with
 #        cross-device progress + OPDS; the Manga/ subtree is the drop target read-18 (Suwayomi) fills.
-# Libraries (created via API on first-run): Comics -> /data/Comics, Manga -> /data/Manga
-#        where /data = /volume1/comics.  Config + SQLite DB live in /volume1/docker/komga/config.
+# Libraries (created via API): Comics -> /data/Comics (/data = /volume1/comics),
+#        Manga -> /manga (/manga = the dedicated DSM shared folder /volume1/manga).
+#        The Manga tree is its OWN DSM shared folder (read-18) so the rig's Suwayomi can
+#        CIFS-mount it RW and drop grabbed CBZ where Komga scans; /volume1/comics is a plain
+#        (non-SMB) dir, hence the split. Config + SQLite DB live in /volume1/docker/komga/config.
 # To upgrade: bump the tag+digest below, then
 #        ssh -t nas 'cd /volume1/docker/komga && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'
 name: komga
@@ -19,7 +22,8 @@ services:
       - JAVA_TOOL_OPTIONS=-Xmx1g         # cap the JVM heap ~1G on the shared 19G NAS (task pitfall); bump if the library grows large
     volumes:
       - /volume1/docker/komga/config:/config   # Komga SQLite DB + generated thumbnails
-      - /volume1/comics:/data                  # library root: Comics/ + Manga/ subfolders
+      - /volume1/comics:/data                  # Comics library root (manual CBZ packs)
+      - /volume1/manga:/manga                  # Manga library root — dedicated DSM share, Suwayomi (rig, read-18) writes here over SMB
     ports:
       - '25600:25600'
     restart: always

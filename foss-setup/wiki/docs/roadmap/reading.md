@@ -25,7 +25,7 @@
 | `read-15` | CWA: KOReader sync checksum table missing (book_format_checksums) | ⬜ open | 15-30 min |
 | `read-16` | Deploy Audiobookshelf (audiobooks + podcasts) on the NAS + Homepage widget | ✅ done | 1.5 hr |
 | `read-17` | Deploy Komga (comics + manga reader) on the NAS + Homepage widget | ✅ done | 1.5 hr |
-| `read-18` | Deploy Suwayomi (manga server) on the rig, feeding Komga | ⬜ open | 1.5 hr |
+| `read-18` | Deploy Suwayomi (manga server) on the rig, feeding Komga | ✅ done | 1.5 hr |
 | `read-19` | Sync Audiobookshelf audiobooks + podcasts to the iPod Classic (alongside music) | ✅ done | 3 hr |
 
 [← Roadmap overview](index.md)

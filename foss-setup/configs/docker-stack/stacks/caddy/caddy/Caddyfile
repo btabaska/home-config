@@ -256,6 +256,14 @@ amp.{$DOMAIN} {
 	reverse_proxy {$RIG_IP}:8080
 }
 
+# Suwayomi — manga acquisition server (rig; read-18). Pulls manga via Tachiyomi/Mihon
+# extensions and writes CBZ to the NAS "manga" share -> Komga's Manga library. No app
+# auth (LAN posture like ollama/comfyui); reachable on the rig LAN IP :4567.
+manga.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$RIG_IP}:4567
+}
+
 # Backup dead-man's-switch
 health.{$DOMAIN} {
 	import local_tls

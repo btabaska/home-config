@@ -227,7 +227,14 @@ services:
     port: 25600
     url: https://komga.tabaska.us
     on_demand: false
-    notes: Comics + manga reader (read-17). JVM app; non-root 1026:100; libraries Comics + Manga under /volume1/comics. Widget uses username/password. Manga arrives from read-18 (Suwayomi).
+    notes: Comics + manga reader (read-17). JVM app; non-root 1026:100; Comics library under /volume1/comics, Manga library under /volume1/manga (its own DSM share so read-18 Suwayomi can write to it over SMB). Widget uses username/password.
+  - name: suwayomi
+    category: Reading & Docs
+    host: rig
+    port: 4567
+    url: https://manga.tabaska.us
+    on_demand: false
+    notes: Manga acquisition server (read-18). Tachidesk; runs Tachiyomi/Mihon extensions server-side and writes per-chapter CBZ to the NAS "manga" DSM share (/mnt/nas-manga -> /volume1/manga) which Komga's Manga library scans. No app auth (LAN posture like ollama/comfyui).
   - name: paperless
     category: Reading & Docs
     host: mini
