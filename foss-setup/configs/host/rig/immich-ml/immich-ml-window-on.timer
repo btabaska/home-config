@@ -1,0 +1,12 @@
+[Unit]
+Description=Start Immich ML on the rig GPU at 01:00 EDT (night crunch window)
+
+[Timer]
+# Rig TZ is America/New_York — OnCalendar is local (EDT). Persistent catches up a
+# start missed while the host was down (rig is 24/7, suspend-masked, so rare).
+OnCalendar=*-*-* 01:00:00
+Persistent=true
+Unit=immich-ml-window@on.service
+
+[Install]
+WantedBy=timers.target

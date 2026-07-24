@@ -1,0 +1,11 @@
+[Unit]
+Description=Stop Immich ML on the rig GPU at 07:00 EDT (free the GPU for chat/coding/ComfyUI)
+
+[Timer]
+# Rig TZ is America/New_York — OnCalendar is local (EDT).
+OnCalendar=*-*-* 07:00:00
+Persistent=true
+Unit=immich-ml-window@off.service
+
+[Install]
+WantedBy=timers.target

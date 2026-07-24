@@ -25,6 +25,9 @@ the map.
 | `export-manifests.service` (rig variant) | `configs/host/rig/export-manifests.service` | foss-setup | ✅ `unit-file-drift` |
 | `gpu-power-tune.service` | `scripts/gaming/gpu-power-tune.service` | foss-setup | ✅ `unit-file-drift` |
 | `export-manifests.timer` | `scripts/inventory/export-manifests.timer` | foss-setup (host-agnostic; shared w/ mini) | ✅ `unit-file-drift` |
+| `immich-ml-window@.service` | `configs/host/rig/immich-ml/immich-ml-window@.service` | foss-setup (glue-14) | ✅ `unit-file-drift` |
+| `immich-ml-window-on.timer` / `-off.timer` | `configs/host/rig/immich-ml/immich-ml-window-{on,off}.timer` | foss-setup (glue-14) | ✅ `unit-file-drift` |
+| `immich-ml-window.sh` (`/usr/local/bin/`) | `configs/host/rig/immich-ml/immich-ml-window.sh` | foss-setup (glue-14) | ✅ `unit-file-drift` |
 | `ansible-pull.service` / `.timer` | `configs/ansible/ansible-pull.{service,timer}` | foss-setup | ✅ `unit-file-drift` |
 | `ansible-pull.service.d/healthchecks.conf` | `configs/ansible/ansible-pull-healthchecks.conf.example` | foss-setup (secret UUID → `.example` only) | — |
 | `restic-backup.service` / `.timer` / `.service.d/healthchecks.conf` | `configs/ansible/roles/backup/` | foss-setup — **ansible-managed** (converged daily by ansible-pull; templated, not byte-checked) | — |

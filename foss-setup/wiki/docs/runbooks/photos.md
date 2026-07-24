@@ -30,11 +30,18 @@ This is the flagship instance of the audit's monitoring-vs-reality class: see
   kaelyn92@icloud.com) — M58 reviewed and accepted 2026-07-18. Both still carry
   `shouldChangePassword=true`; Immich forces a password change at each account's next
   login, which is the intended path.
-- **Monitoring API key**: `verification-monitor`, scoped to `server.statistics` only,
-  owned by the brandon account. Secret at vault `immich.verify_api_key`, deployed as
-  `IMMICH_API_KEY` (+ `IMMICH_URL`) in `/etc/verification/env` on mini. Rotate by
-  deleting the `api_key` row named `verification-monitor` and re-inserting
-  `sha256(new_secret)` (the `key` column is the raw 32-byte digest, bytea).
+- **Monitoring API key**: `verification-monitor`, scoped to `server.statistics` **+
+  `asset.read`** (the latter added 2026-07-24/glue-14 so the `immich-smart-search-consumer`
+  check can POST `/api/search/smart`), owned by the brandon account. Secret at vault
+  `immich.verify_api_key`, deployed as `IMMICH_API_KEY` (+ `IMMICH_URL`) in
+  `/etc/verification/env` on mini. Rotate by deleting the `api_key` row named
+  `verification-monitor` and re-inserting `sha256(new_secret)` (the `key` column is the
+  raw 32-byte digest, bytea).
+- **ML window key**: `rig-ml-window (glue-14)`, scoped to `job.create` + `job.read` only
+  (NOT admin), owned by the brandon account. Secret at vault
+  `immich.rig_ml_window_api_key`, deployed as `IMMICH_API_KEY` in
+  `/etc/immich-ml-window.env` on the **rig** — used only to pause/resume the ML job
+  queues around the night window (below).
 
 ## Pairing a phone (the missing step)
 
@@ -71,6 +78,61 @@ completed setup).
 3. Check disk truth: `find /volume1/photo/upload -type f -mtime -7 | head` — if files
    land but the API count doesn't move, the DB and disk disagree → treat as an Immich
    bug, check the job queue and the postgres container health.
+
+## Machine-learning GPU contention — night-only rig window (glue-14)
+
+Immich ML (CLIP smart search, `buffalo_l` faces, PP-OCRv5 OCR) is offloaded to the rig's
+RTX 3090 Ti (`immich_machine_learning` `-cuda`, `192.168.10.12:3003`). **Problem:** a 24B
+chat/coding model needs ~22 GB of the 24 GB card and Immich ML needs ~13 GB, so they
+**cannot coexist** — whichever loads second OOMs (`llama-swap: upstream command exited
+prematurely` → LiteLLM 500 in OpenWebUI, or Immich `ONNXRuntimeError … Failed to allocate`).
+The Immich job queue can read **0 active / 0 waiting while ~13 GB is still pinned**: models
+stay resident for the model TTL after the last job, and interactive searches hit ML
+directly without ever becoming queue jobs. So "empty queue but GPU busy" is expected, not a
+bug.
+
+**Policy (2026-07-24): photos are the lowest-priority GPU tenant.** The rig ML container is
+time-gated to a **night window, 01:00–07:00 EDT**, by two systemd timers on the rig
+(`immich-ml-window-on/off.timer` → `immich-ml-window.sh`, source
+`configs/host/rig/immich-ml/`):
+
+| Time | Action | Effect |
+|---|---|---|
+| **07:00** off | pause `smartSearch`/`faceDetection`/`ocr`, **stop** the rig container | GPU 100 % free for chat/coding/ComfyUI; Immich falls back to the **NAS iGPU** (OpenVINO) |
+| **01:00** on | **start** the container, wait for `/ping`, resume the queues | new-photo backlog crunches fast on the 3090 Ti while nobody's using it |
+
+**Daytime search experience (NAS iGPU):** identical results (same SigLIP2 model/embeddings),
+~225 ms warm text-encode vs ~3 ms on the GPU — imperceptible, since a smart search is
+already 0.7–2.5 s (DB vector search + network dominated). The NAS `.env` preloads the CLIP
+**text** tower (`MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL`) + `MODEL_TTL=86400` so search
+stays warm and never hits the ~27 s cold-load. New-photo **indexing** is much slower on the
+iGPU, so its queues are paused by day — new photos become searchable after that night's rig
+run. Interactive text search is a live call (not a queue job), so it keeps working by day.
+
+**Monitoring** (`checks.d/rig-immich-ml.yaml`, window-aware):
+
+- `immich-smart-search-consumer` (crit) — smart search returns results end-to-end via
+  **whichever** backend is active. The real user-facing signal.
+- `rig-immich-ml-window` (warn) — rig ML **up + encoding** at night, **down** by day. A
+  `DAY_UNEXPECTED_UP` means the 07:00 off-timer failed and VRAM contention with chat is back.
+
+`docker-fleet.yaml`'s `containers-manifest-rig` **excludes** `immich_machine_learning` (it's
+intentionally absent by day) — so it is removed from `verification/coverage/rig.containers`.
+
+### Operating it
+
+- **Force the GPU free now** (e.g. mid-day, need the whole card):
+  `sudo systemctl start immich-ml-window@off.service` on the rig.
+- **Bring ML back early**: `sudo systemctl start immich-ml-window@on.service`.
+- **Change the window**: edit the two timers under `configs/host/rig/immich-ml/`, redeploy,
+  `systemctl daemon-reload`. Keep the `rig-immich-ml-window` check's `01`/`07` hour test and
+  the runbook table in sync.
+- **`DAY_UNEXPECTED_UP` alert**: the off-timer didn't stop the container. Check
+  `journalctl -u immich-ml-window@off.service` and `systemctl list-timers immich-ml-window-*`.
+- **Known edge case**: if you are actively running a 24B model at **01:00** when the on-timer
+  starts Immich ML, that one request can OOM (num_retries then surface a 500). Rare (photos
+  run "when offline"); if it bites, escalate to event-driven preemption (Immich yields to any
+  LLM/ComfyUI load, not just a fixed clock).
 
 ## Version bumps
 

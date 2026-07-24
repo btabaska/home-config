@@ -1,51 +1,79 @@
-# Immich remote machine-learning on the rig (nas-32, 2026-07-22).
+# Immich remote machine-learning on the rig (nas-32, 2026-07-22; glue-14 2026-07-24).
 #
 # Immich runs on the NAS but its ML inference (CLIP smart search, buffalo_l faces,
 # PP-OCRv5 OCR) is offloaded to the rig's RTX 3090 Ti (immich-machine-learning:*-cuda
 # at /opt/stacks/immich-ml on rig, published to 192.168.10.12:3003). The NAS server
 # routes ML via machineLearning.urls = [rig, nas-local-fallback].
 #
-# These probe the CONSUMER end + the drift traps, not container liveness:
-#   1. reachable    — the NAS (the real consumer) can reach the rig ML /ping endpoint
-#   2. text-encode  — the rig actually ENCODES TEXT on the GPU. /ping (liveness) is NOT
-#                     enough: the -cuda image once had an ascii locale that broke the
-#                     SigLIP2 TEXTUAL model on every query (UnicodeDecodeError) while the
-#                     visual model + /ping stayed green and text silently fell back to the
-#                     NAS CPU. This exercises the real text pipeline so that can't recur.
-#   3. present      — the server config still lists the rig URL (someone clearing it in
-#                     Admin > Settings silently reverts ML to the slow NAS iGPU)
-#   4. version      — the rig -cuda image tag matches the NAS immich-server version
-#                     (a mismatched ML/server version breaks the ML API; the classic
-#                     split-ML drift trap — bump both in the same change)
+# ── glue-14: photos are the LOWEST-priority GPU tenant ───────────────────────
+# A 24B chat/coding model needs ~22G of the 24G card; Immich ML needs ~13G — they
+# CANNOT coexist. Policy (2026-07-24): the rig ML container is time-gated to a
+# NIGHT window only (01:00–07:00 EDT, systemd immich-ml-window on the rig). By day
+# it is STOPPED and Immich falls back to the NAS iGPU (OpenVINO) — slower batch
+# indexing, but interactive search stays ~225ms warm and the rig GPU is 100% free
+# for chat/coding/ComfyUI. So "rig ML down by day" is now NORMAL, not an incident.
+#
+# These probe the CONSUMER end + the policy, not container liveness:
+#   1. smart-search-consumer — the REAL user signal (crit): Immich smart search
+#      returns results end-to-end, whichever ML backend is active. Catches a broken
+#      text encode / vector search that /ping can't see. Always-on.
+#   2. window            — the rig ML is UP+encoding during the night window and
+#      DOWN (not stealing VRAM) by day. Catches a stuck-on container (VRAM
+#      contention recurs) or a failed night start. warn (photos still work via NAS).
+#   3. configured        — the server config still lists the rig URL (someone
+#      clearing it in Admin > Settings silently reverts ML to NAS-only permanently).
+#   4. version           — the rig -cuda image tag matches the NAS immich-server
+#      version (a mismatched ML/server version breaks the ML API).
 # Runbook: wiki/runbooks/photos.md.  Alerts -> ntfy topic `verification`.
+#
+# Requires in the runner env (/etc/verification/env): NAS_SUDO_PASSWORD (vault
+# sudo.nas_password) + IMMICH_API_KEY (vault immich.verify_api_key).
 
 checks:
-  - id: rig-immich-ml-reachable
+  # ── (1) CONSUMER end — the real "photos work" signal, backend-agnostic ──────
+  # POST a smart-search text query to the Immich API and require real asset hits
+  # back. This exercises the full user pipeline: text-encode on the CURRENTLY
+  # ACTIVE ML (rig at night, NAS iGPU by day) -> vector search -> results. A broken
+  # encode (500) or a reverted ML config returns no assets and fails. This replaces
+  # the old rig-only /ping+encode crits as the user-facing guardian, so taking the
+  # rig ML offline by day no longer pages — only a real search outage does.
+  - id: immich-smart-search-consumer
     tier: fast
-    name: "immich remote ML on rig answers /ping from the NAS (GPU offload path up)"
+    name: "immich smart search returns results end-to-end (text-encode + vector search, any ML backend)"
     host: mini
-    cmd: ssh -o BatchMode=yes -o ConnectTimeout=10 nas "curl -s -m 8 http://192.168.10.12:3003/ping"
-    expect: 'pong'
+    cmd: >-
+      resp=$(curl -s -m 30 -X POST https://immich.tabaska.us/api/search/smart
+      -H "x-api-key: $IMMICH_API_KEY" -H 'Content-Type: application/json'
+      -d '{"query":"a photo of people outdoors"}' 2>/dev/null);
+      printf '%s' "$resp" | grep -q '"id":' && echo SEARCH_OK || echo SEARCH_FAIL
+    expect: '^SEARCH_OK$'
     severity: crit
     task_id: nas-32
     runbook: wiki/runbooks/photos.md
     enabled: true
 
-  # Real consumer probe: POST a text encode to the rig ML and require a genuine CLIP
-  # embedding back. A 500 (e.g. the ascii-locale UnicodeDecodeError) has no '"clip":"['
-  # so it fails — catching the green-but-broken textual state that /ping alone misses.
-  # Canary model = the deployed CLIP model; if you change it, update this string too.
-  - id: rig-immich-ml-text-encode
+  # ── (2) POLICY — rig ML on the GPU only at night, off (no VRAM theft) by day ─
+  # Night (01:00–07:00 EDT): the rig ML must be UP and actually encode text on the
+  # GPU (preserves the old SigLIP2-textual regression guard — the ascii-locale bug
+  # kept /ping green while text encodes 500'd). Day: the rig ML must be DOWN; a
+  # still-running container by day means the off-timer failed and VRAM contention
+  # with chat/coding has returned (DAY_UNEXPECTED_UP). Probed NAS->rig, the real
+  # offload path. warn, not crit: photos still work via the NAS fallback either way.
+  - id: rig-immich-ml-window
     tier: fast
-    name: "immich ML on rig encodes TEXT on the GPU (SigLIP2 textual model works, not just /ping)"
+    name: "rig immich-ml honors the night-only GPU window (up+encoding 01-07 EDT, off by day)"
     host: mini
     cmd: >-
-      resp=$(curl -s -m 25 -X POST http://192.168.10.12:3003/predict
-      -F 'entries={"clip":{"textual":{"modelName":"ViT-B-16-SigLIP2__webli"}}}'
-      -F 'text=verification canary');
-      printf '%s' "$resp" | grep -q '"clip":"\[' && echo text-encode-ok || echo text-encode-FAIL
-    expect: '^text-encode-ok$'
-    severity: crit
+      H=$(TZ=America/New_York date +%H);
+      ping=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas "curl -s -m 8 http://192.168.10.12:3003/ping" 2>/dev/null);
+      if [ "$H" -ge 1 ] && [ "$H" -lt 7 ]; then
+      enc=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas "curl -s -m 30 -X POST http://192.168.10.12:3003/predict -F 'entries={\"clip\":{\"textual\":{\"modelName\":\"ViT-B-16-SigLIP2__webli\"}}}' -F 'text=verification canary'" 2>/dev/null);
+      printf '%s' "$enc" | grep -q '"clip":"\[' && echo NIGHT_ENCODE_OK || echo NIGHT_BROKEN;
+      else
+      printf '%s' "$ping" | grep -q pong && echo DAY_UNEXPECTED_UP || echo DAY_OFF_OK;
+      fi
+    expect: '^(NIGHT_ENCODE_OK|DAY_OFF_OK)$'
+    severity: warn
     task_id: nas-32
     runbook: wiki/runbooks/photos.md
     enabled: true

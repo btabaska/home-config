@@ -1,0 +1,12 @@
+[Unit]
+# glue-14: drive immich-ml-window.sh on|off from the two timers below.
+# Instance %i is "on" (01:00 EDT) or "off" (07:00 EDT).
+Description=Immich ML rig-GPU night window (%i)
+After=docker.service
+Wants=docker.service
+ConditionPathExists=/etc/immich-ml-window.env
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/immich-ml-window.env
+ExecStart=/usr/local/bin/immich-ml-window.sh %i

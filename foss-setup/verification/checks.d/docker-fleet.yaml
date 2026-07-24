@@ -73,12 +73,17 @@ checks:
     runbook: wiki/runbooks/verification.md
     enabled: true
 
+  # glue-14: immich_machine_learning is time-gated OFF by day (night-only GPU
+  # window, 01-07 EDT) so it is INTENTIONALLY absent from `docker ps` most of the
+  # day — excluded here (like the -run- one-offs) so it flaps neither "missing"
+  # (day) nor "extra" (night). It is NOT unmonitored: the dedicated window-aware
+  # rig-immich-ml-window + immich-smart-search-consumer checks cover it.
   - id: containers-manifest-rig
     name: "rig: running containers match coverage manifest"
     host: mini
     cmd: >-
       ssh -o BatchMode=yes -o ConnectTimeout=10 rig
-      "docker ps --format '{{.Names}}'" | grep -v -- '-run-' | LC_ALL=C sort
+      "docker ps --format '{{.Names}}'" | grep -vE -- '(-run-|^immich_machine_learning$)' | LC_ALL=C sort
       | diff /opt/verification/coverage/rig.containers - && echo COVERAGE_OK
     expect: COVERAGE_OK
     severity: warn
@@ -86,12 +91,18 @@ checks:
     runbook: wiki/runbooks/verification.md
     enabled: true
 
+  # glue-14: exclude immich_machine_learning — it is time-gated OFF by day, and a
+  # cleanly-stopped (SIGTERM/exit 143) container still matches `--filter
+  # health=unhealthy` on `docker ps -a` (stale last-health state), which would
+  # falsely trip this every day. Its real health at night is covered by the
+  # rig-immich-ml-window check. Any GENUINE unhealthy/restarting sibling still fails.
   - id: containers-health-rig
     name: "rig: no unhealthy or restart-looping containers"
     host: rig
     cmd: >-
-      bad=$(docker ps -a --filter health=unhealthy --format '{{.Names}}';
-      docker ps -a --filter status=restarting --format '{{.Names}}');
+      bad=$({ docker ps -a --filter health=unhealthy --format '{{.Names}}';
+      docker ps -a --filter status=restarting --format '{{.Names}}'; }
+      | grep -vx immich_machine_learning || true);
       if [ -z "$bad" ]; then echo HEALTH_OK; else echo "BAD: $bad"; fi
     expect: HEALTH_OK
     severity: warn

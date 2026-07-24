@@ -39,4 +39,11 @@ check_rig   /etc/systemd/system/gpu-power-tune.service   foss-setup/scripts/gami
 check_rig   /etc/systemd/system/export-manifests.service foss-setup/configs/host/rig/export-manifests.service
 check_rig   /etc/systemd/system/export-manifests.timer   foss-setup/scripts/inventory/export-manifests.timer
 
+# glue-14: the rig Immich-ML night-window units + driver script (foss-setup static
+# mirror under configs/host/rig/immich-ml/). Nothing converges these — see the README.
+check_rig   /usr/local/bin/immich-ml-window.sh              foss-setup/configs/host/rig/immich-ml/immich-ml-window.sh
+check_rig   /etc/systemd/system/immich-ml-window@.service   foss-setup/configs/host/rig/immich-ml/immich-ml-window@.service
+check_rig   /etc/systemd/system/immich-ml-window-on.timer   foss-setup/configs/host/rig/immich-ml/immich-ml-window-on.timer
+check_rig   /etc/systemd/system/immich-ml-window-off.timer  foss-setup/configs/host/rig/immich-ml/immich-ml-window-off.timer
+
 [ "$fail" -eq 0 ] && echo UNIT-DRIFT-OK || exit 1

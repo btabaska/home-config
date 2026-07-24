@@ -12863,5 +12863,36 @@
   "docs": [
    "foss-setup/docs/journaling-stack-plan.md"
   ]
- }
+ },
+  {
+    "id": "glue-14",
+    "track": "ops",
+    "title": "Immich-ML GPU yield policy: night-only rig window + NAS-iGPU daytime fallback (photos = lowest-priority tenant)",
+    "summary": "A 24B chat/coding model (~22G of the 24G 3090 Ti) and Immich remote ML (~13G) cannot coexist, so an OpenWebUI request would OOM the 24B (llama-swap 'upstream command exited prematurely' -> LiteLLM 500) whenever Immich held VRAM. The Immich job queue reads 0 active/0 waiting while ~13G is still pinned (model TTL residency + interactive searches that never become queue jobs), which masked the cause. Fix (operator: photos are the lowest-priority GPU tenant, fine to run only at night): time-gate the rig ML container to a 01:00-07:00 EDT window via two systemd timers on the rig (immich-ml-window.sh on/off) that stop the container + pause the smartSearch/faceDetection/ocr queues by day and start it + resume them at night. By day Immich falls back to the NAS iGPU (OpenVINO); preload the CLIP text tower + MODEL_TTL=86400 on the NAS so interactive search stays ~225ms warm (no 27s cold load). Least-privilege Immich key (job.create+job.read) for queue control. Reconcile monitoring: window-aware rig-immich-ml checks (crit consumer smart-search + warn day-off/night-encode) and exclude the scheduled container from the docker-fleet manifest.",
+    "host": "rig",
+    "type": "fix",
+    "mode": "ai",
+    "run": 6,
+    "required": false,
+    "depends_on": [
+      "nas-32",
+      "ai-01"
+    ],
+    "estimate": "2-3 h",
+    "files": [
+      "configs/host/rig/immich-ml/",
+      "configs/nas/immich/.env.example",
+      "verification/checks.d/rig-immich-ml.yaml",
+      "verification/checks.d/docker-fleet.yaml"
+    ],
+    "steps": [
+      "Reconcile monitoring first (avoid false pages): make rig-immich-ml checks window-aware + add a backend-agnostic smart-search consumer crit; exclude immich_machine_learning from containers-manifest-rig + coverage/rig.containers.",
+      "Build immich-ml-window.sh (on=start+resume queues, off=pause queues+stop) + templated oneshot service + on/off timers under configs/host/rig/immich-ml/; deploy to the rig, arm the timers, run 'off' now for immediate GPU relief.",
+      "NAS keep-warm: add MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL + MODEL_TTL=86400 to the NAS immich .env (live + repo), recreate immich_machine_learning.",
+      "Mint a least-privilege Immich key (job.create+job.read) -> vault immich.rig_ml_window_api_key -> /etc/immich-ml-window.env on the rig.",
+      "Anti-drift: rig README unit index + unit-drift-check.sh; wiki photos runbook; tasks/progress; publish-deploy.sh."
+    ],
+    "verify": "By day: rig immich_machine_learning stopped, GPU ~free, cydonia 24B completes via OpenWebUI's LiteLLM key, smart search returns results on the NAS iGPU (~sub-second warm). Timers scheduled 01:00/07:00 EDT. rig-immich-ml checks 4/4 green (DAY_OFF_OK).",
+    "pitfalls": "The Immich queue dashboard is NOT wrong: 0 jobs + pinned VRAM = model TTL residency + non-queued interactive searches. Deploy the window-aware checks BEFORE stopping the container or the crit /ping checks page. Exact-diff container manifest flags a scheduled-off container both ways (exclude it). Queue control needs job.create (not admin). LiteLLM num_retries:2 already retries the 500 (3 attempts in the logs) \u2014 retries can't beat a persistent VRAM block; the time-gate is the fix."
+  }
 ]

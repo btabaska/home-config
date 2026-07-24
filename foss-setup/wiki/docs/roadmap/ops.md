@@ -1,6 +1,6 @@
 # Roadmap — ops
 
-33 task(s). Status mirrors `docs/progress.json` (the source of truth).
+34 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -30,6 +30,7 @@
 | `glue-11` | Capture the rig fstab NAS mounts + Docker service drop-in in the repo (anti-drift) | ✅ done | 20-30 min |
 | `glue-12` | Reconcile the uncommitted /opt/stacks drift on the mini + protect backup blobs from git (docker-stacks hygiene) | ✅ done | 30-45 min |
 | `glue-13` | Audit + codify (or document external ownership of) the remaining live-only rig host units | ✅ done | 30-45 min |
+| `glue-14` | Immich-ML GPU yield policy: night-only rig window + NAS-iGPU daytime fallback (photos = lowest-priority tenant) | ✅ done | 2-3 h |
 | `nas-31` | Immich: backup freshness + mobile pairing checks failing (fix-35 regression) | ⬜ open | 30-60 min |
 | `net-16` | homepage container DNS: EAI_AGAIN on tabaska.us names (159 errors/2h) | ⬜ open | 20-40 min |
 | `sbom-01` | Deploy OWASP Dependency-Track v5 (the SBOM / vulnerability dashboard) | 🗑️ retired | 45-60 min |
