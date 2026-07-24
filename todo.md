@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**221/309 done** · **56 open** · **18 deferred** · 14 retired.
+**221/315 done** · **62 open** · **18 deferred** · 14 retired.
 
 ---
 
@@ -59,6 +59,12 @@
 - [ ] **`read-09`** Add RSS/news to KOReader (Miniflux tie-in) _(est 20 min)_
 - [ ] **`read-12`** Install + configure gPodder for podcasts on CachyOS (funnel into Rhythmbox) _(est 20 min)_
 - [ ] **`read-15`** CWA: KOReader sync checksum table missing (book_format_checksums) _(est 15-30 min)_
+- [ ] **`read-20`** Provision the ComicVine API key for Mylar3 into the vault _(est 15 min)_ — ⛔ gate: operator: register a free ComicVine account + generate an API key at comicvine.gamespot.com/api
+- [ ] **`read-21`** Deploy the Mylar3 container on the NAS (base install + first-run config) _(est 45 min)_ — ⛔ gate: read-20 must have landed the ComicVine key in the vault
+- [ ] **`read-22`** Enable Mylar3 GetComics (DDL) acquisition + prove one comic end-to-end into Komga _(est 1 hr)_
+- [ ] **`read-23`** Wire Mylar3's fallback acquisition: Prowlarr app-sync + seedbox Deluge (best-effort) _(est 1 hr)_
+- [ ] **`read-24`** Add a consumer-end monitoring check + coverage for Mylar3 _(est 30 min)_
+- [ ] **`read-25`** Document Mylar3: service catalog + wiki page + Homepage tile _(est 45 min)_
 
 ### security
 - [ ] **`foss-04`** Ente Auth adoption + YubiKey enrollment (Authy migration) _(est 1-2 hrs)_

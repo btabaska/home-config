@@ -12435,6 +12435,175 @@
   "pitfalls": "Rhythmbox can't set mediatype (would dump everything under Music) -> use libgpod directly. iPod that never held podcasts has NO Podcasts playlist (itdb_playlist_podcasts returns NULL) -> must itdb_playlist_new + set_podcasts. Podcasts must be kept OUT of the Master Playlist to show only under Podcasts. .m4b (AAC) is the reliable audiobook container (firmware-guaranteed resume). NAS master is the source of truth; the iPod is a reproducible copy. Never run the push concurrently with a Rhythmbox sync."
  },
  {
+  "id": "read-20",
+  "track": "reading",
+  "title": "Provision the ComicVine API key for Mylar3 into the vault",
+  "summary": "Kick off the Mylar3 western-comics automation initiative (read-20..read-25) — the automated feed for Komga's Comics library, the piece Suwayomi (read-18, manga only) deliberately does not cover. This first small step provisions the one external dependency: Mylar3 requires a free ComicVine API key (comicvine.gamespot.com/api) as its metadata authority (ComicVine is to Mylar3 what TheTVDB is to Sonarr — identity/catalog only, it hosts no files). Operator registers the account + generates the key; store it in the vault so read-21 can wire it in. No containers touched.",
+  "host": "device",
+  "type": "sync",
+  "mode": "ai-vault",
+  "run": 5,
+  "required": false,
+  "gate": "operator: register a free ComicVine account + generate an API key at comicvine.gamespot.com/api",
+  "depends_on": [
+   "read-17"
+  ],
+  "estimate": "15 min",
+  "files": [
+   "foss-setup/.handoff-secrets.yaml (gitignored — by path only; add mylar3.comicvine_api_key)"
+  ],
+  "steps": [
+   "OPERATOR: register a free account at comicvine.gamespot.com, then generate a personal API key at comicvine.gamespot.com/api. Hand it to the agent (do NOT commit it anywhere).",
+   "Store the key in the vault under a new mylar3.comicvine_api_key path — MERGE into .handoff-secrets.yaml without clobbering other sections (safe_dump strips comments; use the merge + vault-lint pattern, never a blind section assign).",
+   "Verify: python3 + yaml reads mylar3.comicvine_api_key back non-empty; confirm the vault file is git-ignored (git check-ignore) and the value appears nowhere in git.",
+   "Record the key NAME only (no value) in the read-21 .env.example scaffolding."
+  ],
+  "verify": "The vault returns a non-empty mylar3.comicvine_api_key by key path; the value is absent from git (check-ignore confirms the vault is ignored) and from chat/commits; other vault sections are byte-unchanged.",
+  "pitfalls": "ComicVine key is user-gated — the agent cannot register the account, so this task BLOCKS on the operator handing over the key. NEVER paste the key value into chat, commits, or docs. Don't blind-assign the vault section (clobber hazard — see the fix-23 precedent) — merge + vault-lint. ComicVine enforces ~200 req/hr; that pacing matters at read-22 runtime, not here."
+ },
+ {
+  "id": "read-21",
+  "track": "reading",
+  "title": "Deploy the Mylar3 container on the NAS (base install + first-run config)",
+  "summary": "Stand up Mylar3 (the comics-native *arr — monitor + grabber + filer, Sonarr's role for western comics) on the NAS media-automation stack. It MUST run on the NAS: its output folder /volume1/comics is a plain non-SMB dir (unlike the read-18 manga share), so the mini/rig can't cleanly mount it as a write target. LSIO image DIGEST-pinned (fix-38 posture), PUID/PGID 1026:100 (match Komga so files stay readable), TZ, /config + /volume1/comics binds. Wire the ComicVine key from the vault (read-20). Front at mylar.tabaska.us. Just infra + the first-run wizard here — acquisition config is read-22.",
+  "host": "nas",
+  "type": "sync",
+  "mode": "ai-vault",
+  "run": 5,
+  "required": false,
+  "depends_on": [
+   "read-20"
+  ],
+  "estimate": "45 min",
+  "files": [
+   "configs/nas/mylar3/",
+   "configs/docker-stack/stacks/caddy/Caddyfile"
+  ],
+  "steps": [
+   "Create configs/nas/mylar3/docker-compose.yml: lscr.io/linuxserver/mylar3 DIGEST-pinned, PUID=1026/PGID=100, TZ=America/New_York, volumes /volume1/docker/mylar3/config:/config + /volume1/comics:/comics, port 8090, restart unless-stopped. .env(.example) carries the ComicVine key NAME only.",
+   "Deploy on the NAS (operator sudo docker — the NAS SSH user has no docker socket; sudo needs the vault password piped to sudo -S + the full /usr/local/bin/docker path). Bring it up; confirm the container runs as 1026:100.",
+   "Complete the first-run wizard in the Mylar3 WebUI (http://192.168.10.4:8090): enter the ComicVine API key (vault mylar3.comicvine_api_key), set Comic Location to /comics/Comics (= Komga's Comics library root), save + restart.",
+   "Add Caddy vhost mylar.tabaska.us -> {$NAS_IP}:8090 (live caddy stack + repo mirror); validate + reload; confirm 200 + valid TLS.",
+   "Mirror the compose + a README to configs/nas/mylar3/ (document the DDL-first design + the ComicVine-key + NAS-only rationale). No monitoring/wiki yet (read-24/read-25)."
+  ],
+  "verify": "mylar.tabaska.us reachable with valid cert; the Mylar3 container is up as 1026:100; the WebUI loads and the ComicVine connection test succeeds (metadata lookups return results); Comic Location is /comics/Comics.",
+  "pitfalls": "Must run on the NAS (/volume1/comics is a plain non-SMB dir). Files MUST be written 1026:100 or Komga (same uid) + NAS ACLs break. NAS SSH user has no docker socket + no passwordless sudo — pipe the vault password to sudo -S, full /usr/local/bin/docker path. DS920+ RAM is tight (arrs+Plex+Immich+Komga+CWA) — Mylar3 is light but budget for it. Digest-pin the image (fix-38). Watch for a NAS docker pull deadlock at extraction (concurrent pulls).",
+  "gate": "read-20 must have landed the ComicVine key in the vault"
+ },
+ {
+  "id": "read-22",
+  "track": "reading",
+  "title": "Enable Mylar3 GetComics (DDL) acquisition + prove one comic end-to-end into Komga",
+  "summary": "Turn on Mylar3's PRIMARY acquisition path: the built-in GetComics DDL provider (plain HTTPS from the NAS — no indexer, no download client, no seedbox). Set filing/metadata prefs so output is Komga-ready, then prove the whole chain with one real issue: add a ComicVine-matched series, grab an issue via DDL, confirm the CBZ lands in /volume1/comics/Comics/<Series>/ owned 1026:100, and that Komga scans it into a readable book. This is the 'it works' milestone.",
+  "host": "nas",
+  "type": "sync",
+  "mode": "ai",
+  "run": 5,
+  "required": false,
+  "depends_on": [
+   "read-21"
+  ],
+  "estimate": "1 hr",
+  "files": [
+   "configs/nas/mylar3/"
+  ],
+  "steps": [
+   "In Mylar3 settings: enable the GetComics DDL provider; enable ComicInfo.xml tagging (bundled ComicTagger) + CBR->CBZ conversion; set a clean folder/file naming format (Series / 'Series (Year)' / 'Series ### (Year).cbz') that Komga parses.",
+   "Add one real, mainstream series (ComicVine-matched) that GetComics is known to carry; mark one issue Wanted.",
+   "Trigger the DDL grab; watch the CBZ download + post-process into /volume1/comics/Comics/<Series>/; confirm on-disk ownership 1026:100 and a valid CBZ.",
+   "In Komga, scan the Comics library; confirm the series/issue appears, media status READY, and page 1 STREAMS HTTP 200 (real consumer probe, not liveness).",
+   "Mirror any settings notes to configs/nas/mylar3/README. (The monitoring check is read-24.)"
+  ],
+  "verify": "A real issue added in Mylar3 downloads via GetComics DDL, files as a 1026:100-owned CBZ under /volume1/comics/Comics/<Series>/, and reads in Komga (Comics series count increments, page-1 streams 200). No torrent client or seedbox involved.",
+  "pitfalls": "ComicVine ~200 req/hr limit — pace series adds/refreshes (same discipline as Hardcover/rreading-glasses); don't mass-import. GetComics is a single upstream — expect occasional misses (that's what the read-23 fallback covers). CBR->CBZ needs unrar/7z (the LSIO image bundles it). Komga only sees new files on its next scan (every 6h) — trigger a manual scan to verify promptly."
+ },
+ {
+  "id": "read-23",
+  "track": "reading",
+  "title": "Wire Mylar3's fallback acquisition: Prowlarr app-sync + seedbox Deluge (best-effort)",
+  "summary": "Add the SAFETY-NET channel for titles GetComics (read-22) doesn't carry, reusing existing infra — no new indexers. Register Mylar3 as a Prowlarr Application (Full Sync) so Prowlarr auto-pushes ONLY comics-category (Torznab 7030) indexers into it (category-gated exactly like Whisparr's XXX gating); of the 7 live indexers, IPTorrents/MyAnonamouse/RetroToon carry comics (MyAnonamouse is the clean English one). Point Mylar3's torrent client at the off-site Betty Deluge over Tailscale with a dedicated category. Torrent is the fallback, so this is best-effort.",
+  "host": "nas",
+  "type": "sync",
+  "mode": "ai-vault",
+  "run": 5,
+  "required": false,
+  "depends_on": [
+   "read-22"
+  ],
+  "estimate": "1 hr",
+  "files": [
+   "configs/nas/mylar3/"
+  ],
+  "steps": [
+   "In Prowlarr, add Mylar3 to Applications (Full Sync; API key + URL, key from vault arr_api_keys.prowlarr); sync and confirm ONLY the comics-capable indexers (IPTorrents/MyAnonamouse/RetroToon) appear in Mylar3 as Torznab providers — no per-indexer setup inside Mylar3.",
+   "Configure Mylar3's Deluge download client -> Betty over the tailnet (vault deluge.host / daemon_port / password) with a dedicated category (e.g. mylar / mylar-imported); extend the seedbox relabel/reaper scripts for the new category if needed.",
+   "Set Mylar3's provider order so DDL/GetComics is tried FIRST and Torznab is the fallback.",
+   "Best-effort proof: a Torznab search from Mylar3 returns comics results and the Deluge client test is green. A full torrent -> post-process -> Komga grab is nice-to-have, NOT required (Mylar3 lacks the arrs' Remote Path Mapping — see pitfalls).",
+   "Mirror settings notes to configs/nas/mylar3/README."
+  ],
+  "verify": "Prowlarr shows Mylar3 at Full Sync with >=1 comics indexer synced; Mylar3's Deluge client test succeeds; a Torznab search returns comic results; DDL remains the primary provider with Torznab as fallback.",
+  "pitfalls": "Mylar3 has NO first-class Remote Path Mapping (unlike Sonarr/Radarr), so its remote-Deluge post-processing across the rclone SFTP FUSE mount is fragile — keep this best-effort, not the primary path. IPTorrents comics skew heavily FRENCH (TONER scene) — prefer MyAnonamouse for English. Reuse the existing /seedbox mount + a NEW category; don't disturb the other arrs' categories. Deluge creds are in the vault — read by path, never echo."
+ },
+ {
+  "id": "read-24",
+  "track": "reading",
+  "title": "Add a consumer-end monitoring check + coverage for Mylar3",
+  "summary": "Bring Mylar3 to 100% monitoring per the standing tripwire — a CONSUMER-END check that proves the feature, not just liveness. Assert Mylar3's API is up AND at least one CBZ exists under /volume1/comics/Comics AND Komga's Comics library reports >= the baseline series count (i.e. the read-22 grab is really readable). Register it in the mini verification runner + coverage manifest + Uptime-Kuma.",
+  "host": "mini",
+  "type": "sync",
+  "mode": "ai",
+  "run": 5,
+  "required": false,
+  "depends_on": [
+   "read-22"
+  ],
+  "estimate": "30 min",
+  "files": [
+   "verification/checks.d/reading.yaml",
+   "verification/bin/",
+   "verification/coverage/nas.containers"
+  ],
+  "steps": [
+   "Write a helper (verification/bin/mylar3-feeds-komga.py) that emits MYLAR3_OK when: the Mylar3 API responds, a CBZ is present under /volume1/comics/Comics, AND Komga's Comics library series count >= baseline. Add it to checks.d/reading.yaml with cmd / task_id (read-24) / runbook. Lint the cmd for the YAML-folded-newline + python-compile hazards.",
+   "Deploy the check to the mini runner (ssh sudo tee to /opt/verification/checks.d + bin/ — scp fails silently on the root-owned dir) and run it green through bin/run-checks.sh.",
+   "Add mylar3 to verification/coverage/nas.containers (keep the coverage tripwire at 100%).",
+   "Add an 'NAS Mylar3' Uptime-Kuma monitor (seed script + live MariaDB insert + restart) pointing at the Mylar3 API.",
+   "Commit + publish-deploy.sh."
+  ],
+  "verify": "The consumer-end check returns MYLAR3_OK (API up + CBZ on disk + Komga Comics series >= baseline) green through the mini runner; mylar3 is in nas.containers; the Uptime-Kuma monitor is up; coverage stays 100%.",
+  "pitfalls": "Liveness ('container up') is NOT enough — probe the consumer end (Komga actually serving a Mylar3-delivered comic). Verification deploy: scp to /opt/verification silently fails (root-owned) -> ssh sudo tee + verify ids. checks.d cmd hazards: folded scalars keep newlines (IndentationError) -> lint + compile. Best-effort framing: if the comics library is legitimately empty, mirror the suwayomi-feeds-komga warn posture (warn, not hard fail)."
+ },
+ {
+  "id": "read-25",
+  "track": "reading",
+  "title": "Document Mylar3: service catalog + wiki page + Homepage tile",
+  "summary": "Close out the Mylar3 initiative with docs + surfacing. Add the service-catalog + enrichment entries (URL/category come from service-catalog.yaml, NOT enrichment — the ABS lesson, or the generated page renders wrong), a Homepage tile, and build the wiki --strict. Makes Mylar3 a first-class documented service alongside Suwayomi/Komga and completes the comics/manga row of the media model (Mylar3 = western-comics acquisition, Suwayomi = manga acquisition, Komga = the shared reader).",
+  "host": "mini",
+  "type": "sync",
+  "mode": "ai",
+  "run": 5,
+  "required": false,
+  "depends_on": [
+   "read-23",
+   "read-24"
+  ],
+  "estimate": "45 min",
+  "files": [
+   "configs/docker-stack/service-catalog.yaml",
+   "configs/docker-stack/service-enrichment.yaml",
+   "configs/docker-stack/stacks/homepage/config/services.yaml"
+  ],
+  "steps": [
+   "Add mylar3 to service-catalog.yaml (URL mylar.tabaska.us + category — these drive the generated wiki page; missing => wrong URL / Uncategorized) and prose to service-enrichment.yaml (what it is, DDL-first design, ComicVine metadata, Komga pairing, western-comics-vs-Suwayomi-manga split).",
+   "Add a Homepage tile for Mylar3 (Requests or Reading group; siteMonitor/customapi as appropriate) in the live /opt/stacks/homepage/config + repo mirror; verify via Homepage's own /api/services proxy path, not the HTML shell.",
+   "Run scripts/docs/build-wiki.sh (dockerized mkdocs on the mini, --strict); confirm the Mylar3 service page renders and the reading runbooks don't break --strict.",
+   "Re-run gen-todo.py + gen-roadmap-pages.py if task statuses changed; run the wiki-drift-check.",
+   "Commit both sides (home repo + /opt/stacks mirror), publish-deploy.sh."
+  ],
+  "verify": "The generated Mylar3 wiki service page renders with the correct mylar.tabaska.us URL + category; the Homepage tile shows via Homepage's own /api/services proxy path; wiki builds --strict clean; the tracker generators are in sync (wiki-drift-check green).",
+  "pitfalls": "gen-wiki-services pulls URL+category from service-catalog.yaml (NOT enrichment) — omit it and you get <name>.tabaska.us + Uncategorized (the ABS lesson). Never hand-edit generated wiki/docs/services/*.md. Homepage: verify the container/browser fetch, not host reachability; services.yaml hot-reloads (no restart). Commit the /opt/stacks homepage mirror too (recurring orphaned-drift class — glue-12)."
+ },
+ {
   "id": "journal-01",
   "host": "mini",
   "mode": "ai",
