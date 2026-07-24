@@ -12894,5 +12894,31 @@
     ],
     "verify": "By day: rig immich_machine_learning stopped, GPU ~free, cydonia 24B completes via OpenWebUI's LiteLLM key, smart search returns results on the NAS iGPU (~sub-second warm). Timers scheduled 01:00/07:00 EDT. rig-immich-ml checks 4/4 green (DAY_OFF_OK).",
     "pitfalls": "The Immich queue dashboard is NOT wrong: 0 jobs + pinned VRAM = model TTL residency + non-queued interactive searches. Deploy the window-aware checks BEFORE stopping the container or the crit /ping checks page. Exact-diff container manifest flags a scheduled-off container both ways (exclude it). Queue control needs job.create (not admin). LiteLLM num_retries:2 already retries the 500 (3 attempts in the logs) \u2014 retries can't beat a persistent VRAM block; the time-gate is the fix."
+  },
+  {
+    "id": "glue-15",
+    "track": "ops",
+    "title": "Clear the pre-existing fleet git-hygiene regressions surfaced during glue-14",
+    "summary": "The glue-14 verification pass ran the git-hygiene + docker-fleet check domains and surfaced 4 pre-existing (NOT glue-14-caused) warn-level failures that were already red: (1) git-foss-setup-clean \u2014 the mini /opt/foss-setup checkout has 4 uncommitted auto-regenerated host manifests (hosts/macmini/compose-images.txt, pkglist.apt-manual.txt, systemd-timers.txt, configs/inventory/inventory.md) written by the export-manifests timer and never committed; (2) manifest-image-purity \u2014 compose-images.txt is missing several live images (ghcr.io/analogj/scrutiny, ghcr.io/speaches-ai/speaches, n8nio/n8n, neosmemo/memos, syncthing/syncthing) so the 100%-coverage tripwire fails; (3) stack-mirror-drift \u2014 the mini syncthing stack (foss-03 node) live compose.yaml has no repo mirror under configs/docker-stack/stacks/syncthing/ (recurring /opt/stacks mirror gap, cf. glue-12); (4) systemd-failed-mini \u2014 a stale snap-nvim-4820.mount phantom unit ('not-found failed') from an old nvim-snap revision. All four are fleet-hygiene drift, independent of the Immich GPU work \u2014 captured here so they are not lost.",
+    "host": "mini",
+    "type": "sync",
+    "mode": "ai",
+    "run": 6,
+    "required": false,
+    "depends_on": [],
+    "estimate": "30-45 min",
+    "files": [
+      "hosts/macmini/",
+      "configs/inventory/inventory.md",
+      "configs/docker-stack/stacks/syncthing/"
+    ],
+    "steps": [
+      "Re-run export-manifests.sh on the mini so compose-images.txt picks up scrutiny/speaches/n8n/memos/syncthing, then commit the 4 regenerated manifests (compose-images.txt, pkglist.apt-manual.txt, systemd-timers.txt, inventory.md) from /opt/foss-setup -> clears git-foss-setup-clean + manifest-image-purity.",
+      "Mirror the mini syncthing live /opt/stacks/syncthing/compose.yaml into configs/docker-stack/stacks/syncthing/ (verify secrets like config.xml/keys stay gitignored per opt-stacks-git-hygiene) -> clears stack-mirror-drift.",
+      "Clear the stale snap-nvim-4820.mount on the mini (sudo systemctl reset-failed snap-nvim-4820.mount; if it persists, remove the phantom unit / refresh the nvim snap) -> clears systemd-failed-mini.",
+      "Re-run the git-hygiene + docker-fleet check domains (--no-notify) and confirm all four go green; commit + publish-deploy.sh; regenerate any affected wiki pages in the SAME commit."
+    ],
+    "verify": "git-hygiene: git-foss-setup-clean, stack-mirror-drift, manifest-image-purity all green; docker-fleet: systemd-failed-mini green. No new drift introduced.",
+    "pitfalls": "These are pre-existing, not glue-14 regressions. Per opt-stacks-git-hygiene: NEVER git add -A in /opt/stacks (syncthing home/ device key.pem/cert.pem/config.xml are secrets and gitignored) \u2014 stage explicitly + verify git check-ignore. Only commit completed-task manifest drift; leave any concurrent in-flight stack edits alone (fix-41 precedent). The snap-nvim unit is 'not-found' (file already gone) so reset-failed clears the failed state without deleting anything."
   }
 ]
