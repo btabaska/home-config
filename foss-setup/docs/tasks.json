@@ -12270,6 +12270,54 @@
   "pitfalls": "Collectors need raw device / SMART access (privileged or --device). Synology drives may need the correct device mapping via Container Manager. Don't alarm-fatigue: start the check at warn."
  },
  {
+  "id": "glue-11",
+  "track": "ops",
+  "title": "Capture the rig fstab NAS mounts + Docker service drop-in in the repo (anti-drift)",
+  "summary": "The rig's host-level NAS storage config lived only in the live /etc/fstab and /etc/systemd/system/docker.service.d/, mentioned in passing in a couple service dirs but never captured in one place — surfaced by read-18 (which added the manga rw mount + Docker After=remote-fs drop-in). No ansible-pull role manages the rig fstab/systemd mounts, so codifying is documentation-only (no reverse-drift risk). Record the 5 CIFS mounts (games/music/audiobooks/podcasts/manga) + the docker drop-in under configs/host/rig/nas-mounts/.",
+  "host": "rig",
+  "type": "sync",
+  "mode": "ai",
+  "run": 5,
+  "required": false,
+  "depends_on": [],
+  "estimate": "20-30 min",
+  "files": [
+   "configs/host/rig/nas-mounts/"
+  ],
+  "steps": [
+   "Fetch the verbatim NAS fstab lines (grep 192.168.10.4 /etc/fstab) + docker.service.d/10-remote-fs.conf from the rig.",
+   "Create configs/host/rig/nas-mounts/ with README.md (mounts, cred files, install, ansible-not-managed note), fstab.snippet (5 verbatim lines), 10-remote-fs.conf (verbatim drop-in).",
+   "Verify the repo files are byte-faithful to live (diff)."
+  ],
+  "verify": "configs/host/rig/nas-mounts/ holds README + fstab.snippet + 10-remote-fs.conf; the mount lines and drop-in diff clean vs the live rig.",
+  "pitfalls": "Documentation-only — ansible does NOT apply these, keep the snippet in sync by hand when the rig mounts change. Cred files (/etc/samba/cred-nas, /etc/nas_creds) are secrets — reference by path, never store contents."
+ },
+ {
+  "id": "glue-12",
+  "track": "ops",
+  "title": "Reconcile the uncommitted /opt/stacks drift on the mini + protect backup blobs from git (docker-stacks hygiene)",
+  "summary": "Recurring class (fix-08/fix-41 done, but read-16 + the read-18 investigation found it recurs): completed sessions mirror changes to the home repo but forget to commit the live /opt/stacks docker-stacks repo. Snapshot drift: libreseerr/bookshelf.py (bmig-06), romm/compose.yaml (RA+HLTB), uptime-kuma/bootstrap-nas-monitors.sh (bmig-05 Bookshelf + media-05 Jellyfin monitors), vaultwarden/ deletions (foss-01 retirement), + untracked backups/ (backup blobs incl. a vaultwarden.sqlite secret) and syncthing/ (foss-03 mini node; home/ holds device certs). Commit the completed-task drift to Forgejo, sync the STALE uptime-kuma home-repo mirror, and .gitignore backups/ + syncthing/home/ so secrets can never be staged.",
+  "host": "mini",
+  "type": "sync",
+  "mode": "ai",
+  "run": 5,
+  "required": false,
+  "depends_on": [],
+  "estimate": "30-45 min",
+  "files": [
+   "configs/docker-stack/stacks/uptime-kuma/bootstrap-nas-monitors.sh"
+  ],
+  "steps": [
+   "Re-verify the drift is from DONE tasks (not a concurrent session) + byte-identity vs home-repo mirrors.",
+   "Add backups/ and syncthing/home/ to /opt/stacks/.gitignore (never version the vaultwarden.sqlite / syncthing device certs).",
+   "Stage ONLY the blessed files (bookshelf.py, romm/compose.yaml, uptime-kuma script, vaultwarden deletions, syncthing/compose.yaml) + .gitignore; confirm git status is otherwise clean; commit + push to Forgejo home/docker-stacks.",
+   "Sync the stale home-repo mirror configs/docker-stack/stacks/uptime-kuma/bootstrap-nas-monitors.sh to match live.",
+   "Confirm the dirty-repo tripwire (scripts/ops/dirty-repo-check.sh) + stack-mirror-drift check report clean."
+  ],
+  "verify": "git -C /opt/stacks status is clean (nothing uncommitted/untracked except ignored secrets); the vaultwarden.sqlite + syncthing certs are gitignored; the home-repo uptime-kuma mirror matches live; the dirty-repo tripwire is green.",
+  "pitfalls": "SECRETS: never git add backups/ (vaultwarden.sqlite.sql.gz + retirement tarball) or syncthing/home/config/ (key.pem/cert.pem/config.xml). Stage files explicitly, never git add -A. Only commit drift from COMPLETED tasks — leave a genuinely concurrent session's in-flight edits alone."
+ },
+ {
   "id": "read-17",
   "track": "reading",
   "title": "Deploy Komga (comics + manga reader) on the NAS + Homepage widget",

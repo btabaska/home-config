@@ -24,7 +24,8 @@ MONITORS=(
   "NAS Sonarr|http://${NAS_IP}:8989|${ACCEPT_ARR}"
   "NAS Radarr|http://${NAS_IP}:7878|${ACCEPT_ARR}"
   "NAS Lidarr|http://${NAS_IP}:8686|${ACCEPT_ARR}"
-  "NAS Readarr|http://${NAS_IP}:8787|${ACCEPT_ARR}"
+  # readarr -> bookshelf 2026-07-20 (bmig-05); live monitor renamed via SQL UPDATE
+  "NAS Bookshelf|http://${NAS_IP}:8790|${ACCEPT_ARR}"
   "NAS Prowlarr|http://${NAS_IP}:9696|${ACCEPT_ARR}"
   "NAS FlareSolverr|http://${NAS_IP}:8191|${ACCEPT_OK}"
   "NAS Immich|http://${NAS_IP}:2283|${ACCEPT_OK}"
@@ -32,6 +33,8 @@ MONITORS=(
   "NAS Whisparr|http://${NAS_IP}:6969|${ACCEPT_ARR}"
   "NAS Calibre Web|http://${NAS_IP}:8083|${ACCEPT_ARR}"
   "NAS Plex|http://${NAS_IP}:32400|${ACCEPT_PLEX}"
+  # media-05: Jellyfin fully-local media server (parallel to Plex). /health -> "Healthy" 200.
+  "NAS Jellyfin|http://${NAS_IP}:8096/health|${ACCEPT_OK}"
   # fix-29 / L94: unpackerr was invisible to every external monitor (metrics port
   # unpublished). The port is now published; probe its [webserver] /metrics.
   "NAS Unpackerr|http://${NAS_IP}:5656/metrics|${ACCEPT_OK}"

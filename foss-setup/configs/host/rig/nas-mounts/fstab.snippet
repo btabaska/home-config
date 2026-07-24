@@ -1,0 +1,20 @@
+# rig (CachyOS, 192.168.10.12) — NAS CIFS mounts. Reference snippet for /etc/fstab.
+# These lines are the SOURCE OF TRUTH record of the rig's live NAS mounts (glue-11).
+# NOT auto-applied: no ansible-pull role manages the rig fstab (site.yml roles =
+# base/docker/tailscale/backup/state; zero mount/fstab handling), so this file is a
+# documentation mirror — edit /etc/fstab by hand and keep this in sync.
+#
+# Credentials (root:root 0600, NOT in the repo — SMB user = btabaska on the NAS):
+#   /etc/samba/cred-nas   username=/password=/domain=  (music, audiobooks, podcasts, manga)
+#   /etc/nas_creds        username=/password=/domain=  (games)
+# Recreate a cred file with:  printf 'username=btabaska\npassword=<nas-smb-pw>\ndomain=WORKGROUP\n' | sudo tee /etc/samba/cred-nas && sudo chmod 600 /etc/samba/cred-nas
+#
+# music / audiobooks / podcasts are READ-ONLY automounts (idle-timeout unmounts them);
+# games is RW automount; manga (read-18) is a PERSISTENT rw mount (NOT autofs) so the
+# Suwayomi container's bind survives NAS-reboot CIFS reconnects in place.
+
+//192.168.10.4/games /mnt/share/Games cifs credentials=/etc/nas_creds,uid=1000,gid=1000,iocharset=utf8,vers=3.0,nofail,_netdev,x-systemd.automount,x-systemd.mount-timeout=10 0 0
+//192.168.10.4/music /mnt/nas-music-ro cifs credentials=/etc/samba/cred-nas,ro,uid=1000,gid=1000,iocharset=utf8,vers=3.0,x-systemd.automount,x-systemd.idle-timeout=120,_netdev,nofail 0 0
+//192.168.10.4/audiobooks /mnt/nas-audiobooks-ro cifs credentials=/etc/samba/cred-nas,ro,uid=1000,gid=1000,iocharset=utf8,vers=3.0,x-systemd.automount,x-systemd.idle-timeout=120,_netdev,nofail 0 0
+//192.168.10.4/podcasts /mnt/nas-podcasts-ro cifs credentials=/etc/samba/cred-nas,ro,uid=1000,gid=1000,iocharset=utf8,vers=3.0,x-systemd.automount,x-systemd.idle-timeout=120,_netdev,nofail 0 0
+//192.168.10.4/manga /mnt/nas-manga cifs credentials=/etc/samba/cred-nas,rw,uid=1000,gid=1000,file_mode=0664,dir_mode=0775,iocharset=utf8,vers=3.0,_netdev,nofail,soft,x-systemd.mount-timeout=30 0 0
