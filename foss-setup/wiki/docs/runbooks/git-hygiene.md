@@ -83,7 +83,7 @@ For `wiki-drift` see the same-commit rule note in
 |---|---|---|
 | `repo-tracked-ignored` | A file matching `.gitignore` is committed in the index — hidden from `git status` but shipped in every clone (the L68 `__pycache__` class) | `git ls-files -i -c --exclude-standard` to list, then `git rm --cached <file>` and commit |
 | `tracker-count-sanity` | Generated tracker views disagree with `tasks.json`/`progress.json`: summary arithmetic broken, page stale, or a negative Open cell (L77) | Re-run `gen-todo.py` + `gen-roadmap-pages.py` and commit with the JSON change. Statuses are exclusive in the generators — retired wins over done for dual-status tasks (sbom-01/04) |
-| `unit-file-drift` | A deployed `ansible-pull` unit on mini or rig differs from `configs/ansible/` — nothing converges these automatically, so drift is silent until a run misses (L6/L86) | Copy the repo file onto the drifted host (`/etc/systemd/system/`) + `systemctl daemon-reload`; or, if the live edit was the intentional one, land it in the repo instead |
+| `unit-file-drift` | A deployed hand-copied unit differs from its repo source: the `ansible-pull` units on mini + rig (`configs/ansible/`), or the rig's other static foss-setup host units (glue-13 — `gpu-power-tune.service`, the `export-manifests` service+timer; canonical sources mapped in `configs/host/rig/README.md`). Nothing converges these automatically, so drift is silent until a run misses (L6/L86) | Copy the repo file onto the drifted host (`/etc/systemd/system/`) + `systemctl daemon-reload`; or, if the live edit was the intentional one, land it in the repo instead |
 
 ## fix-44 · tracker source coherence
 
