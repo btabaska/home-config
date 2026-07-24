@@ -12318,6 +12318,33 @@
   "pitfalls": "SECRETS: never git add backups/ (vaultwarden.sqlite.sql.gz + retirement tarball) or syncthing/home/config/ (key.pem/cert.pem/config.xml). Stage files explicitly, never git add -A. Only commit drift from COMPLETED tasks — leave a genuinely concurrent session's in-flight edits alone."
  },
  {
+  "id": "glue-13",
+  "track": "ops",
+  "title": "Audit + codify (or document external ownership of) the remaining live-only rig host units",
+  "summary": "glue-11 codified the rig's NAS fstab mounts + Docker drop-in, but the read-18/glue-11 investigation surfaced 4 more live-only rig systemd units not mirrored in foss-setup: (1) gpu-power-tune.service (NVIDIA 3090 Ti power-limit/persistence tune — referenced in docs/tasks.json + verification/checks.d/rig.yaml + wiki, but the unit file itself isn't stored under configs/host/rig/); (2) export-manifests.timer (the paired export-manifests.service IS in configs/host/rig/ but the .timer isn't); (3) /etc/systemd/system/ollama.service.d/override.conf and (4) fleet-mcp.service — the last two appear OWNED by the separate local-ai-tooling / ops repos (fleet-mcp's own header says 'Install: sudo cp ops/fleet-mcp.service'). For each: mirror the verbatim unit into configs/host/rig/ if foss-setup owns it (gpu-power-tune, export-manifests.timer), OR add a documented pointer to the owning repo if not (ollama override, fleet-mcp) — don't duplicate cross-repo config (that just creates a new drift axis). Then ensure the unit-file-drift check covers whatever gets codified.",
+  "host": "rig",
+  "type": "sync",
+  "mode": "ai",
+  "run": 6,
+  "required": false,
+  "depends_on": [
+   "glue-11"
+  ],
+  "estimate": "30-45 min",
+  "files": [
+   "configs/host/rig/"
+  ],
+  "steps": [
+   "For each live-only unit, determine its owning repo: read the unit's own header/comments for an 'Install:' hint, and check the local-ai-tooling + ops repos.",
+   "gpu-power-tune.service + export-manifests.timer (no external owner): mirror the verbatim unit files into configs/host/rig/ (export-manifests.timer beside the existing export-manifests.service).",
+   "ollama.service.d/override.conf + fleet-mcp.service (owned by local-ai-tooling/ops): add a short README pointer to where they actually live instead of duplicating — mirror only if no owner is found.",
+   "Confirm the unit-file-drift check (git-hygiene.yaml UNIT-DRIFT-OK -> scripts/verification/unit-drift-check.sh) covers the newly-codified units; extend if needed.",
+   "Verify byte-fidelity of any mirrored unit vs live; commit + publish-deploy.sh."
+  ],
+  "verify": "Every live-only rig systemd unit is either mirrored byte-faithfully under configs/host/rig/ or has a documented pointer to its owning repo; the unit-file-drift check is green.",
+  "pitfalls": "Don't duplicate units owned by local-ai-tooling/ops into foss-setup — a pointer is correct there (duplication = new cross-repo drift). Reading unit files needs no secrets. Like glue-11 this is documentation-only: no ansible role applies rig units."
+ },
+ {
   "id": "read-17",
   "track": "reading",
   "title": "Deploy Komga (comics + manga reader) on the NAS + Homepage widget",
