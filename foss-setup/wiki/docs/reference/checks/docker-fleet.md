@@ -54,7 +54,7 @@ rig: running containers match coverage manifest
 - **expects:** `COVERAGE_OK`
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=10 rig "docker ps --format '{{.Names}}'" | grep -v -- '-run-' | LC_ALL=C sort | diff /opt/verification/coverage/rig.containers - && echo COVERAGE_OK
+ssh -o BatchMode=yes -o ConnectTimeout=10 rig "docker ps --format '{{.Names}}'" | grep -vE -- '(-run-|^immich_machine_learning$)' | LC_ALL=C sort | diff /opt/verification/coverage/rig.containers - && echo COVERAGE_OK
 ```
 
 ## `containers-health-rig`
@@ -65,7 +65,7 @@ rig: no unhealthy or restart-looping containers
 - **expects:** `HEALTH_OK`
 
 ```bash
-bad=$(docker ps -a --filter health=unhealthy --format '{{.Names}}'; docker ps -a --filter status=restarting --format '{{.Names}}'); if [ -z "$bad" ]; then echo HEALTH_OK; else echo "BAD: $bad"; fi
+bad=$({ docker ps -a --filter health=unhealthy --format '{{.Names}}'; docker ps -a --filter status=restarting --format '{{.Names}}'; } | grep -vx immich_machine_learning || true); if [ -z "$bad" ]; then echo HEALTH_OK; else echo "BAD: $bad"; fi
 ```
 
 ## `soularr-not-crashlooping`

@@ -253,6 +253,7 @@ nav:
       - git-hygiene: reference/checks/git-hygiene.md
       - ha: reference/checks/ha.md
       - host-hygiene: reference/checks/host-hygiene.md
+      - ipod-abs-sync: reference/checks/ipod-abs-sync.md
       - journaling: reference/checks/journaling.md
       - media: reference/checks/media.md
       - media-aux: reference/checks/media-aux.md

@@ -43,6 +43,8 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `DB_PASSWORD`
 - `DB_USERNAME`
 - `DB_DATABASE_NAME`
+- `MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL`
+- `MACHINE_LEARNING_MODEL_TTL`
 
 ## Troubleshooting
 

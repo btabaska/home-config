@@ -2,26 +2,26 @@
 
 `foss-setup/verification/checks.d/rig-immich-ml.yaml` — 4 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
-## `rig-immich-ml-reachable`
+## `immich-smart-search-consumer`
 
-immich remote ML on rig answers /ping from the NAS (GPU offload path up)
+immich smart search returns results end-to-end (text-encode + vector search, any ML backend)
 
 - **host:** `mini` · **severity:** `crit` · **guards task:** `nas-32` · **enabled:** True
-- **expects:** `pong`
+- **expects:** `^SEARCH_OK$`
 
 ```bash
-ssh -o BatchMode=yes -o ConnectTimeout=10 nas "curl -s -m 8 http://192.168.10.12:3003/ping"
+resp=$(curl -s -m 30 -X POST https://immich.tabaska.us/api/search/smart -H "x-api-key: $IMMICH_API_KEY" -H 'Content-Type: application/json' -d '{"query":"a photo of people outdoors"}' 2>/dev/null); printf '%s' "$resp" | grep -q '"id":' && echo SEARCH_OK || echo SEARCH_FAIL
 ```
 
-## `rig-immich-ml-text-encode`
+## `rig-immich-ml-window`
 
-immich ML on rig encodes TEXT on the GPU (SigLIP2 textual model works, not just /ping)
+rig immich-ml honors the night-only GPU window (up+encoding 01-07 EDT, off by day)
 
-- **host:** `mini` · **severity:** `crit` · **guards task:** `nas-32` · **enabled:** True
-- **expects:** `^text-encode-ok$`
+- **host:** `mini` · **severity:** `warn` · **guards task:** `nas-32` · **enabled:** True
+- **expects:** `^(NIGHT_ENCODE_OK|DAY_OFF_OK)$`
 
 ```bash
-resp=$(curl -s -m 25 -X POST http://192.168.10.12:3003/predict -F 'entries={"clip":{"textual":{"modelName":"ViT-B-16-SigLIP2__webli"}}}' -F 'text=verification canary'); printf '%s' "$resp" | grep -q '"clip":"\[' && echo text-encode-ok || echo text-encode-FAIL
+H=$(TZ=America/New_York date +%H); ping=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas "curl -s -m 8 http://192.168.10.12:3003/ping" 2>/dev/null); if [ "$H" -ge 1 ] && [ "$H" -lt 7 ]; then enc=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas "curl -s -m 30 -X POST http://192.168.10.12:3003/predict -F 'entries={\"clip\":{\"textual\":{\"modelName\":\"ViT-B-16-SigLIP2__webli\"}}}' -F 'text=verification canary'" 2>/dev/null); printf '%s' "$enc" | grep -q '"clip":"\[' && echo NIGHT_ENCODE_OK || echo NIGHT_BROKEN; else printf '%s' "$ping" | grep -q pong && echo DAY_UNEXPECTED_UP || echo DAY_OFF_OK; fi
 ```
 
 ## `rig-immich-ml-configured`
