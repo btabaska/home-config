@@ -1,0 +1,12 @@
+[Unit]
+Description=Reconcile Lidarr artist-monitored invariant every 15 min (media-07 generator guard)
+
+[Timer]
+# Every 15 min: a musicseerr orphan is fixed well before the hourly
+# arr-orphan-monitor-flags tripwire would flag it.
+OnCalendar=*:0/15
+Persistent=true
+RandomizedDelaySec=90
+
+[Install]
+WantedBy=timers.target

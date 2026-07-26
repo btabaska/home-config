@@ -1,6 +1,6 @@
 # Checks — media
 
-`foss-setup/verification/checks.d/media.yaml` — 18 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/media.yaml` — 19 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `music-library-dupes`
 
@@ -176,6 +176,17 @@ python3 /opt/verification/bin/arr-grab-audit.py grabs
 
 ```bash
 python3 /opt/verification/bin/arr-grab-audit.py monitor-flags
+```
+
+## `lidarr-reconcile-timer-healthy`
+
+lidarr artist-monitor reconciler timer active + last run not failed (media-07 guard)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `media-07` · **enabled:** True
+- **expects:** `^RECONCILE_TIMER_OK`
+
+```bash
+systemctl is-active --quiet lidarr-artist-monitor-reconcile.timer && [ "$(systemctl show -p Result --value lidarr-artist-monitor-reconcile.service)" != failed ] && echo RECONCILE_TIMER_OK || echo RECONCILE_TIMER_BAD
 ```
 
 ## `seerr-request-rot`

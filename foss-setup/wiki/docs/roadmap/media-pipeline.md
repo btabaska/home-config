@@ -12,7 +12,7 @@
 | `fix-27` | Remediate "green but not watchable": sample-file imports + unextracted RARs | ✅ done | 1-3 hrs |
 | `media-05` | Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) | ✅ done | 1-2 hrs |
 | `media-06` | Resolve the rig ~/Music mirror conflict (05:00 ALAC transcode vs 05:30 rsync --delete-after) | ✅ done | 30 min |
-| `media-07` | MusicSeerr can still create unmonitored-artist requests (upstream monitor_artist=0 default) — tripwire-covered, close the generator | ⬜ open | 30-45 min |
+| `media-07` | MusicSeerr can still create unmonitored-artist requests (upstream monitor_artist=0 default) — tripwire-covered, close the generator | ✅ done | 30-45 min |
 | `media-08` | CWA duplicate ingest on Readarr re-import — connect script has no dedupe, add a books-dup tripwire | ✅ done | 30-60 min |
 | `media-09` | fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs | ⬜ open | 1-2 hrs |
 | `media-10` | Seedbox: retire drained readarr label pair from deluge-reaper | ⬜ open | 10 min |

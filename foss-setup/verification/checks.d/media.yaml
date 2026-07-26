@@ -346,6 +346,22 @@ checks:
     runbook: wiki/docs/reference/seedbox/deluge-queue-hygiene.md
     enabled: true
 
+  # media-07 closed the GENERATOR behind the flag above: a 15-min reconciler
+  # (configs/host/mini/lidarr-reconcile) flips any artist monitored when it owns
+  # a monitored+fileless album, so a musicseerr monitor_artist=0 request can no
+  # longer leave an album invisible. arr-orphan-monitor-flags is the outcome
+  # probe; THIS check catches the reconciler silently dying (timer stopped, or
+  # the last run failed) before the hourly outcome probe would notice a new one.
+  - id: lidarr-reconcile-timer-healthy
+    name: "lidarr artist-monitor reconciler timer active + last run not failed (media-07 guard)"
+    host: mini
+    cmd: 'systemctl is-active --quiet lidarr-artist-monitor-reconcile.timer && [ "$(systemctl show -p Result --value lidarr-artist-monitor-reconcile.service)" != failed ] && echo RECONCILE_TIMER_OK || echo RECONCILE_TIMER_BAD'
+    expect: '^RECONCILE_TIMER_OK'
+    severity: warn
+    task_id: media-07
+    runbook: wiki/docs/reference/seedbox/deluge-queue-hygiene.md
+    enabled: true
+
   # ---------------------------------------------------------------------------
   # Request-layer rot (added 2026-07-17, fix-26 / H4 H15 M12 M36): the request
   # dashboards (seerr, libreseerr) lying about what the backend will deliver.

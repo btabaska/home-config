@@ -1,0 +1,10 @@
+[Unit]
+Description=Reconcile Lidarr artist-monitored invariant — close the musicseerr unmonitored-artist generator (media-07)
+Documentation=file:/usr/local/sbin/lidarr-artist-monitor-reconcile.py
+OnFailure=ntfy-notify@%n.service
+
+[Service]
+Type=oneshot
+User=btabaska
+EnvironmentFile=/etc/default/lidarr-artist-monitor-reconcile
+ExecStart=/usr/local/sbin/lidarr-artist-monitor-reconcile.py
