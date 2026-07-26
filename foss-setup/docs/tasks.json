@@ -12211,6 +12211,28 @@
   "pitfalls": "Bazarr must share the SAME library paths as the arrs or it can't match media. Provider rate limits (OpenSubtitles) — set a cutoff score. NAS deploy is manual (no docker socket / no passwordless sudo)."
  },
  {
+  "id": "media-13",
+  "track": "media-pipeline",
+  "title": "Release reclaimed disk pinned by stale 2026-07-02 Btrfs @sharesnap snapshots (volume2/volume3)",
+  "host": "nas",
+  "type": "sync",
+  "mode": "ai",
+  "gate": "",
+  "run": 7,
+  "required": false,
+  "depends_on": [],
+  "estimate": "20-40 min",
+  "source": "media-09 session discovery 2026-07-26",
+  "summary": "media-09 deleted 180.04 GB of redundant library RAR sets (verified: files gone, dirs now rar-free) but `df /volume2 /volume3` did not drop. Cause: exactly one Btrfs snapshot per volume under @sharesnap -- @sharesnap/movies/GMT-07-2026.07.02-16.31.06 and @sharesnap/tv/GMT-07-2026.07.02-16.31.03, both from 2026-07-02 -- still reference the pre-07-02 blocks, so the reclaimed extents cannot free until the snapshots roll off. There is no visible DSM snapshot SCHEDULE (`synosnapshot --list-snapshot movies` returns empty) and only a single 24-day-old snapshot exists per share, which looks like a stale/manual leftover rather than a rotating protection point.",
+  "detail": "Decide whether these two @sharesnap snapshots are intentional (a Snapshot Replication / manual protection point to keep) or stale leftovers. If stale: delete them (DSM Storage Manager > Snapshot Replication, or synosnapshot) to release media-09's 180 GB plus any other post-07-02 churn, then confirm df drops. If intentional: document the retention so the logical-free vs df-free gap is understood. This is a data-protection decision -- do NOT delete a snapshot that is the only recovery point without operator sign-off. While here, review whether the media volumes should have a proper snapshot schedule at all (currently none visible).",
+  "steps": [
+   "Enumerate @sharesnap snapshots + their exclusive size on volume2/volume3 (btrfs subvolume list; DSM Snapshot Replication UI) and determine if a schedule exists.",
+   "Decide keep-vs-delete with the operator (recovery-point value vs ~180 GB+ pinned).",
+   "If deleting: remove the stale snapshots, then confirm `df -h /volume2 /volume3` reflects the freed space; if keeping: document retention in the wiki NAS storage page."
+  ],
+  "verify": "Either df /volume2 /volume3 shows media-09's ~180 GB reclaimed, OR the snapshot retention policy is documented and the two 2026-07-02 snapshots are confirmed intentional."
+ },
+ {
   "id": "read-16",
   "track": "reading",
   "title": "Deploy Audiobookshelf (audiobooks + podcasts) on the NAS + Homepage widget",
@@ -12920,5 +12942,29 @@
     ],
     "verify": "git-hygiene: git-foss-setup-clean, stack-mirror-drift, manifest-image-purity all green; docker-fleet: systemd-failed-mini green. No new drift introduced.",
     "pitfalls": "These are pre-existing, not glue-14 regressions. Per opt-stacks-git-hygiene: NEVER git add -A in /opt/stacks (syncthing home/ device key.pem/cert.pem/config.xml are secrets and gitignored) \u2014 stage explicitly + verify git check-ignore. Only commit completed-task manifest drift; leave any concurrent in-flight stack edits alone (fix-41 precedent). The snap-nvim unit is 'not-found' (file already gone) so reset-failed clears the failed state without deleting anything."
+  },
+  {
+    "id": "sec-12",
+    "track": "security",
+    "title": "Repair malformed multi-line value in mini /etc/verification/env (a stored token spans physical lines and leaks when the file is sourced) + decide on rotating the exposed Hardcover token",
+    "host": "mini",
+    "type": "async",
+    "mode": "ai",
+    "gate": "",
+    "run": 7,
+    "required": false,
+    "depends_on": [],
+    "estimate": "20-40 min",
+    "source": "net-15 discovery 2026-07-26",
+    "summary": "During net-15 (2026-07-26), sourcing the runner env with `set -a; . /etc/verification/env; set +a` failed with 'line 40: eyJ...: command not found' — a stored value (a Hardcover/rreading-glasses bearer JWT) is written across multiple physical lines, so on the second line there is no KEY= prefix and the shell tries to execute the bare token, echoing its value to stdout. This means (a) any `. env` sourcing prints the token — the edge-exposure runbook's documented re-run snippet does exactly this, and it leaked into a Claude session transcript during net-15 — and (b) any consumer that source-loads the env may mis-parse it. The verification runner (checks_runner.py) loads env differently and is unaffected (edge checks pass), so this is latent, not currently breaking checks.",
+    "detail": "Fix: normalize the offending entry in /etc/verification/env to a single KEY=\"VALUE\" line (quote it so an embedded newline can't split it), grep the whole file for any other value that wraps, then confirm `set -a; . /etc/verification/env; set +a` runs with zero 'command not found' lines. The env file is root-owned 640 root:btabaska — edit via ssh sudo. OPERATOR DECISION: whether to rotate the Hardcover token given it was exposed in a session transcript (local, not a public push; the token already lived in the vault + env). If rotating: mint a new Hardcover token, update the vault key and every consumer (rreading-glasses-hc), and re-verify the books metadata path. Also fix the runbook re-run snippet in wiki/docs/runbooks/edge-exposure.md if it still uses the leaky `. env` form.",
+    "steps": [
+      "Inspect /etc/verification/env for multi-line/unquoted values (without echoing secrets); identify the wrapped token entry at ~line 40.",
+      "Rewrite the entry as a single quoted KEY=\"VALUE\" line via ssh sudo; verify `set -a; . /etc/verification/env; set +a` produces no 'command not found' and all vars resolve.",
+      "Operator: decide on rotating the exposed Hardcover token; if yes, rotate + update vault + rreading-glasses-hc and re-verify.",
+      "Confirm the full verification sweep stays green and no token value can be printed by the documented re-run command."
+    ],
+    "verify": "sourcing /etc/verification/env emits no token to stdout and errors nothing; edge + reading checks stay green; if rotation chosen, the old token is rejected and consumers work with the new one.",
+    "pitfalls": "Never echo the env file to a shared/logged stream. Rotating the Hardcover token is disruptive to rreading-glasses-hc (quota + refresh herd, see hardcover-rg-hc-quirks) — do it deliberately, not reflexively."
   }
 ]

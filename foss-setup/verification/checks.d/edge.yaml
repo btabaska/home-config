@@ -71,6 +71,28 @@ checks:
     runbook: wiki/docs/runbooks/edge-exposure.md
     enabled: true
 
+  # -- config regression (net-15): NAS Plex must stay in MANUAL port-mapping
+  #    (ManualPortMappingMode=1, port 32400) — the gateway offers no UPnP/NAT-PMP
+  #    and the 32400 forward is manual, so leaving Plex on auto (mode=0) means it
+  #    endlessly attempts futile UPnP mappings and Remote Access status can flap.
+  #    edge-plex-remote-identity would NOT catch a silent revert (the manual
+  #    forward keeps Remote Access working either way), so this guards the pref
+  #    itself. Reads PLEX_URL/PLEX_TOKEN from /etc/verification/env.
+  - id: edge-plex-manual-port-mapping
+    name: "edge: NAS Plex uses manual port mapping (mode=1, port=32400) — no futile UPnP"
+    host: mini
+    cmd: >-
+      p=$(curl -s -m 8 "$PLEX_URL/:/prefs" -H "X-Plex-Token: $PLEX_TOKEN" | tr '>' '\n');
+      m=$(printf '%s' "$p" | grep 'id="ManualPortMappingMode"' | grep -oE 'value="[0-9]+"' | head -1);
+      pt=$(printf '%s' "$p" | grep 'id="ManualPortMappingPort"' | grep -oE 'value="[0-9]+"' | head -1);
+      { [ "$m" = 'value="1"' ] && [ "$pt" = 'value="32400"' ]; }
+      && echo PLEX_MANUAL_PORT_OK || echo "PLEX_PORT_MODE_DRIFT:mode=$m port=$pt"
+    expect: '^PLEX_MANUAL_PORT_OK$'
+    severity: warn
+    task_id: net-15
+    runbook: wiki/docs/runbooks/edge-exposure.md
+    enabled: true
+
   # -- class-level (L53): NO record in the public Cloudflare zone may point at
   #    a private address (the leak class, not just www). Audits the zone via
   #    API so a future rewrite/record can't reintroduce it unseen.

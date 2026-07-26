@@ -28,8 +28,10 @@ verification.timer (daily 07:15)
             │      nas = ssh nas (dedicated mini→nas key). rig checks are
             │      HTTP probes (host: url) by design — they test the endpoints
             │      clients hit; mini→rig SSH works, the container→host hop is
-            │      watched rig-locally (ai-stack-watchdog). Only mini→seedbox
-            │      SSH is ACL-blocked (that check stays disabled).
+            │      watched rig-locally (ai-stack-watchdog). mini→seedbox SSH
+            │      works (since fix-21) and the seedbox + edge checks run over
+            │      it; only the legacy `sys-seedbox-ssh` local check stays
+            │      disabled.
             │    • writes results.json, last-summary.md, reopen-suggestions.json
             │    • ONE ntfy summary to topic `verification` ONLY when failures
             │      exist or a previous failure recovered (diff vs prior results.json)

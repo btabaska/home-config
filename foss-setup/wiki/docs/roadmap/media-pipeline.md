@@ -1,6 +1,6 @@
 # Roadmap — media-pipeline
 
-37 task(s). Status mirrors `docs/progress.json` (the source of truth).
+38 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -18,6 +18,7 @@
 | `media-10` | Seedbox: retire drained readarr label pair from deluge-reaper | ⬜ open | 10 min |
 | `media-11` | Lidarr: 'Camera' album monitored under unmonitored artist (orphan flag) | ⬜ open | 10-20 min |
 | `media-12` | Deploy Bazarr (subtitles) on the NAS + Homepage widget | 🗑️ retired | 1.5 hr |
+| `media-13` | Release reclaimed disk pinned by stale 2026-07-02 Btrfs @sharesnap snapshots (volume2/volume3) | ⬜ open | 20-40 min |
 | `nas-10` | Deploy Plex Media Server on the NAS (libraries + Quick Sync) | ✅ done | 45-60 min |
 | `nas-20` | rclone SFTP mount of the seedbox files (persistent + self-healing) | ✅ done | 45 min |
 | `nas-21` | Deploy the NAS media-automation *arr stack (phased, pinned) | ✅ done | 1-2 hrs |

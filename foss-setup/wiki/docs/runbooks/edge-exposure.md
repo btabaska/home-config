@@ -42,6 +42,27 @@ leave open. Update via DSM Package Center on the NAS (or download the current
 `.spk` from plex.tv/media-server-downloads → Synology DSM 7.2.2+). A brief
 stream interruption is expected; prefer the 4–7AM window.
 
+## `edge-plex-manual-port-mapping` failed (warn) — Plex reverted to auto/UPnP
+
+The NAS Plex `ManualPortMappingMode` pref must be **`1`** (manual) with
+`ManualPortMappingPort=32400`. The gateway (Dream Wall) offers no UPnP/NAT-PMP
+and the 32400 forward is a manual rule, so on **auto** (`mode=0`) Plex just
+retries futile UPnP mappings and its Remote Access status can flap — the reason
+net-15 (2026-07-17→26) flipped it to manual. `edge-plex-remote-identity` will
+*not* catch a silent revert (the manual forward keeps Remote Access working
+either way), which is why this guards the pref value directly.
+
+Output `PLEX_PORT_MODE_DRIFT:mode=… port=…` means the pref drifted. Restore it:
+
+```bash
+# from any host that can reach the NAS Plex; token = vault plex.token
+curl -s -X PUT "http://192.168.10.4:32400/:/prefs?ManualPortMappingMode=1&ManualPortMappingPort=32400" \
+  -H "X-Plex-Token: <plex.token>"
+```
+
+Or in the UI: Plex → Settings → Remote Access → **Manually specify public port**
+→ `32400`. Then re-run `run-checks.sh --host edge`.
+
 ## `edge-public-dns-no-rfc1918` / `edge-public-dns-www-nxdomain` failed (warn)
 
 A record in the public `tabaska.us` Cloudflare zone points at a private IP, or

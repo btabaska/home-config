@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**223/317 done** · **62 open** · **18 deferred** · 14 retired.
+**224/319 done** · **63 open** · **18 deferred** · 14 retired.
 
 ---
 
@@ -38,9 +38,7 @@
 - [ ] **`media-09`** fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs _(est 1-2 hrs)_
 - [ ] **`media-10`** Seedbox: retire drained readarr label pair from deluge-reaper _(est 10 min)_ — ⛔ gate: not before 2026-08-04
 - [ ] **`media-11`** Lidarr: 'Camera' album monitored under unmonitored artist (orphan flag) _(est 10-20 min)_
-
-### network
-- [ ] **`net-15`** Edge/verification doc-truth trivia: stale seedbox-SSH claim in verification README; Plex ManualPortMappingMode mismatch _(est 20 min)_
+- [ ] **`media-13`** Release reclaimed disk pinned by stale 2026-07-02 Btrfs @sharesnap snapshots (volume2/volume3) _(est 20-40 min)_
 
 ### ops
 - [ ] **`dns-06`** NAS AdGuard: external resolution failing (dns-nas-external crit) _(est 20-40 min)_
@@ -76,6 +74,7 @@
 - [ ] **`sec-09`** Cloudflare token least-privilege: read-only DNS token for verification; keep the write token vault-only _(est 30-45 min)_
 - [ ] **`sec-10`** arr API keys committed in cleartext in the repo (unpackerr.conf) — rotate + externalize to a gitignored env _(est 45-90 min)_
 - [ ] **`sec-11`** Rotate bookshelf API key (exposed in agent session transcript) _(est 30-45 min)_
+- [ ] **`sec-12`** Repair malformed multi-line value in mini /etc/verification/env (a stored token spans physical lines and leaks when the file is sourced) + decide on rotating the exposed Hardcover token _(est 20-40 min)_
 
 ### smart-home
 - [ ] **`ha-04`** Install HACS (community store) _(est 15 min)_

@@ -1,6 +1,6 @@
 # Checks — edge
 
-`foss-setup/verification/checks.d/edge.yaml` — 5 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/edge.yaml` — 6 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `edge-wan-port-posture`
 
@@ -33,6 +33,17 @@ edge: exposed Plex build not >14 days behind latest Synology release
 
 ```bash
 WAN=$(curl -s -m 10 https://ifconfig.me); exp=$(ssh -o BatchMode=yes -o ConnectTimeout=10 seedbox "curl -s -m 10 http://$WAN:32400/identity" | grep -oE 'version="[^"]+"' | head -1 | cut -d'"' -f2); curl -s -m 15 https://plex.tv/api/downloads/5.json | EXPOSED="$exp" python3 -c 'import json,os,sys,time; d=json.load(sys.stdin)["nas"]["Synology (DSM 7.2.2+)"]; exp=os.environ["EXPOSED"]; age=(time.time()-d["release_date"])/86400.0; print("VERSION_OK:current" if exp==d["version"] else ("VERSION_OK:grace_%.0fd" % age if age < 14 else "VERSION_STALE:exposed="+exp+"_latest="+d["version"]))'
+```
+
+## `edge-plex-manual-port-mapping`
+
+edge: NAS Plex uses manual port mapping (mode=1, port=32400) — no futile UPnP
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `net-15` · **enabled:** True
+- **expects:** `^PLEX_MANUAL_PORT_OK$`
+
+```bash
+p=$(curl -s -m 8 "$PLEX_URL/:/prefs" -H "X-Plex-Token: $PLEX_TOKEN" | tr '>' '\n'); m=$(printf '%s' "$p" | grep 'id="ManualPortMappingMode"' | grep -oE 'value="[0-9]+"' | head -1); pt=$(printf '%s' "$p" | grep 'id="ManualPortMappingPort"' | grep -oE 'value="[0-9]+"' | head -1); { [ "$m" = 'value="1"' ] && [ "$pt" = 'value="32400"' ]; } && echo PLEX_MANUAL_PORT_OK || echo "PLEX_PORT_MODE_DRIFT:mode=$m port=$pt"
 ```
 
 ## `edge-public-dns-no-rfc1918`

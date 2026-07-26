@@ -1,6 +1,6 @@
 # Roadmap — security
 
-16 task(s). Status mirrors `docs/progress.json` (the source of truth).
+17 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -20,5 +20,6 @@
 | `sec-09` | Cloudflare token least-privilege: read-only DNS token for verification; keep the write token vault-only | ⬜ open | 30-45 min |
 | `sec-10` | arr API keys committed in cleartext in the repo (unpackerr.conf) — rotate + externalize to a gitignored env | ⬜ open | 45-90 min |
 | `sec-11` | Rotate bookshelf API key (exposed in agent session transcript) | ⬜ open | 30-45 min |
+| `sec-12` | Repair malformed multi-line value in mini /etc/verification/env (a stored token spans physical lines and leaks when the file is sourced) + decide on rotating the exposed Hardcover token | ⬜ open | 20-40 min |
 
 [← Roadmap overview](index.md)

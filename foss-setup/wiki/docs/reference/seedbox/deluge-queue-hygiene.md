@@ -8,21 +8,25 @@ Deluge runs on the seedbox (`betty.bysh.me`, **no root**). Sonarr/Radarr/Lidarr 
 
 ## Deluge RPC access (for scripts)
 
-- Daemon: `127.0.0.1:3254`, `allow_remote: true`. Label plugin enabled.
+- Daemon: `127.0.0.1:3254`, `allow_remote: false` (fix-21 loopback lockdown — the RPC daemon binds `127.0.0.1` only, so **on-box scripts** connect over localhost; remote consumers reach it over the tailnet, see below). Label plugin enabled.
 - Auth: local `btabaska` creds in `~/.config/deluge/auth` (scripts parse the `btabaska:<pass>:<lvl>` line; **never print the value**).
 - Driver: the venv python `~/venvs/deluge/bin/python` has the `deluge` lib.
 - `deluge-console` exists (`~/.local/bin/deluge-console`) but the Label plugin's console command is **NOT registered** — use the RPC (`client.label.*`) instead. `deluge-console` also defaults to the stale port `58846`, so it fails to connect without an explicit host/port.
-- RPC API surface: `client.connect("127.0.0.1", 3254, user, pw)`, then `client.label.get_labels()` / `client.label.add()` / `client.label.set_torrent()`, `client.core.get_torrents_status({}, [fields])`, `client.core.remove_torrent(hash, remove_data)`.
+- RPC API surface: `client.connect("127.0.0.1", 3254, user, pw)`, then `client.label.get_labels()` / `client.label.add()` / `client.label.set_torrent()`, `client.core.get_torrents_status({}, [fields])`, `client.core.remove_torrent(hash, remove_data)`. Scripts run **on betty** (via `ssh seedbox`) and always use `127.0.0.1` — remote RPC is disabled (`allow_remote: false`).
+- Remote consumers (the NAS *arr download-clients) do **not** use `:3254`; they reach the seedbox-managed Deluge over the **tailnet** at the seedbox tailscale node `100.119.134.94` (fix-21 repointed them there off the public interface).
 
 !!! note "Validated against live betty (2026-07-14)"
-    Reached over the working `ssh seedbox` alias (the older memory note claimed this alias was broken and required the tailscale IP — it now works directly). Deluge `core.conf` confirms `"daemon_port":3254`, `"allow_remote":true`, and `"enabled_plugins":["Bytesized","Label","ltConfig","AutoAdd"]`. `deluge-console` with no args tried `127.0.0.1:58846` and got `Connection refused` — confirming the port gotcha and the "use RPC on :3254" rule.
+    Reached over the working `ssh seedbox` alias (the older memory note claimed this alias was broken and required the tailscale IP — it now works directly). Deluge `core.conf` confirms `"daemon_port":3254`, `"allow_remote":true` (**flipped to `false` by fix-21 on 2026-07-17 — see the next note**), and `"enabled_plugins":["Bytesized","Label","ltConfig","AutoAdd"]`. `deluge-console` with no args tried `127.0.0.1:58846` and got `Connection refused` — confirming the port gotcha and the "use RPC on :3254" rule.
+
+!!! note "Updated after the fix-21 tailnet lockdown (re-verified 2026-07-26)"
+    Live `core.conf` now reads `"allow_remote":false`, and `ss -tlnp` on betty shows `deluged` listening on **`127.0.0.1:3254`** only (loopback) — remote RPC is off. On-box scripts (`deluge-reaper.py`, the seedbox half of `deluge-relabel-imported.py`) are unaffected because they connect over `127.0.0.1`. The NAS *arr download-clients were repointed to the seedbox's **tailnet** address `100.119.134.94` (its tailscale node, `tailscale status`), off the public interface.
 
 ### Deluge daemon facts (from live `core.conf`)
 
 | Setting | Value |
 | --- | --- |
 | `daemon_port` | `3254` |
-| `allow_remote` | `true` |
+| `allow_remote` | `false` (fix-21 loopback lockdown; was `true` pre-2026-07-17) |
 | `download_location` | `/home/hd34/btabaska/files/` |
 | `config_location` | `/home/hd34/btabaska/.config/deluge` |
 | `listen_interface` / `outgoing_interface` | `185.162.184.38` |
