@@ -443,6 +443,15 @@ wiki.{$DOMAIN} {
 	file_server
 }
 
+# Static: Feminist Retro Gaming Guide — self-contained HTML page served from
+# /opt/stacks/caddy/site/retro-guide (the ./site bind mount -> /srv/static). Linked
+# from the Homepage "Games" group, above the RomM tile. No upstream; file_server only.
+retro-guide.{$DOMAIN} {
+	import local_tls
+	root * /srv/static/retro-guide
+	file_server
+}
+
 # RomM — retro ROM library (retro-02); app on the mini, ROMs on the NAS games share
 romm.{$DOMAIN} {
 	import local_tls

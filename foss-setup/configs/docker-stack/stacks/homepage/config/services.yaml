@@ -259,6 +259,13 @@
           password: "{{HOMEPAGE_VAR_ADGUARD_PASS}}"
 
 - Games:
+    # Static HTML guide served by Caddy file_server at retro-guide.tabaska.us
+    # (root /srv/static/retro-guide). External page — link tile only, no widget.
+    - Retro Gaming Guide:
+        icon: mdi-book-heart
+        href: https://retro-guide.tabaska.us
+        description: Feminist retro gaming guide · 446 games
+        target: _blank
     - RomM:
         icon: mdi-controller-classic
         href: https://romm.tabaska.us

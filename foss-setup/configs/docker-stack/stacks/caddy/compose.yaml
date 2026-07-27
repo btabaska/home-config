@@ -46,6 +46,7 @@ services:
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - /opt/stacks/wiki/site:/srv/wiki:ro # static wiki (built by the wiki stack; 404 until populated)
+      - /opt/stacks/caddy/site:/srv/static:ro # one-off static pages (retro-guide etc.); served by file_server vhosts
       - caddy_data:/data # certs & keys — treat as non-ephemeral (avoids LE rate limits)
       - caddy_config:/config
     networks:
