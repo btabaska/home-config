@@ -1,0 +1,67 @@
+@import "@phosphor-icons/web/regular";
+@import "./nocturne.css";
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: #101120;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--color-accent); }
+a:hover { color: var(--color-accent-300); }
+
+@keyframes pop {
+  0% { transform: scale(.86) translateY(8px); opacity: 0 }
+  60% { transform: scale(1.02) translateY(0); opacity: 1 }
+  100% { transform: scale(1) }
+}
+@keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+
+/* App shell — center a phone-sized viewport on desktop, fill on mobile */
+.stage {
+  min-height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  font-family: Inter, system-ui, sans-serif;
+  color: var(--color-text);
+}
+.phone {
+  width: 402px; height: 874px; max-width: 100%;
+  border-radius: 48px; overflow: hidden; position: relative;
+  background: var(--color-bg); color: var(--color-text);
+  box-shadow: 0 40px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(0,0,0,0.5);
+  display: flex; flex-direction: column;
+}
+@media (max-width: 460px) {
+  .stage { padding: 0; }
+  .phone { width: 100%; height: 100dvh; border-radius: 0; box-shadow: none; }
+}
+.phone-scroll { flex: 1; overflow-y: auto; }
+.phone ::-webkit-scrollbar { width: 0; height: 0; }
+
+/* dynamic island + home indicator */
+.island {
+  position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+  width: 118px; height: 34px; border-radius: 24px; background: #000; z-index: 50;
+  pointer-events: none;
+}
+.home-indicator {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  width: 139px; height: 5px; border-radius: 100px;
+  background: rgba(255,255,255,0.5); z-index: 60; pointer-events: none;
+}
+
+.screen { height: 100%; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+/* tile / stack placeholder textures (used while images load or as fallbacks) */
+.hatch { background: repeating-linear-gradient(45deg,#22243a,#22243a 6px,#2b2d43 6px,#2b2d43 12px); }
+.hatch-lg { background: repeating-linear-gradient(45deg,#1d1f30,#1d1f30 10px,#242639 10px,#242639 20px); }
+
+.tap { all: unset; cursor: pointer; }
+button { font-family: inherit; }
+
+.toast-wrap {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 26px; z-index: 80; pointer-events: none;
+}

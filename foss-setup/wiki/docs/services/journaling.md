@@ -21,6 +21,7 @@ A fully LAN-local AI journaling stack on `mini` at `/opt/stacks/journaling/` (mi
 | `memos` | `neosmemo/memos:0.29.1@sha256:3e1253477066eb2aefa91145f7f9038bb931ed88c8a3ee05310a933594cdba7d` | `5230:5230` |
 | `n8n` | `n8nio/n8n:2.32.2@sha256:119afa425cc1ac3e62823c65aae16fcee409ef4c94555ebab3a9dff6eccb9073` | `5678:5678` |
 | `faster-whisper` | `ghcr.io/speaches-ai/speaches:0.8.3-cpu@sha256:21e3df06d842fb7802ab470dd77c25f0e8c0d22950e8d8c6ae886e851af53ef8` | `8010:8000` |
+| `bug-triage-evidence` | `python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de` | — |
 
 ## Volumes
 
@@ -29,6 +30,8 @@ A fully LAN-local AI journaling stack on `mini` at `/opt/stacks/journaling/` (mi
 | `memos` | `./memos:/var/opt/memos` |
 | `n8n` | `./n8n:/home/node/.n8n` |
 | `faster-whisper` | `./whisper-cache:/home/ubuntu/.cache/huggingface` |
+| `bug-triage-evidence` | `./bug-triage/evidence-server.py:/app/evidence-server.py:ro` |
+| `bug-triage-evidence` | `/var/run/docker.sock:/var/run/docker.sock:ro` |
 
 ## Environment (`.env`)
 
@@ -47,6 +50,10 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `IGDB_ENABLED`
 - `IGDB_CLIENT_ID`
 - `IGDB_CLIENT_SECRET`
+- `FORGEJO_TOKEN`
+- `NTFY_TOKEN`
+- `DISCORD_BUGS_WEBHOOK`
+- `LITELLM_TRIAGE_KEY`
 
 ## Troubleshooting
 

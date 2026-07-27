@@ -1,6 +1,6 @@
 # Roadmap — home-surface
 
-8 task(s). Status mirrors `docs/progress.json` (the source of truth).
+9 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -12,5 +12,6 @@
 | `home-06` | Homepage widgets, wave 2 — the key-needing existing-service tiles | ✅ done | 1.5 hr |
 | `home-07` | Homepage fleet tiles — per-host CPU/RAM/disk via existing Beszel + NAS volume split | ✅ done | 45 min |
 | `home-08` | Homepage UniFi widget (Calendar tile shipped 2026-07-22) | ✅ done | 20 min |
+| `meme-review-01` | Meme Review — self-hosted image-reaction app (Claude Design import) | ✅ done | 1 session |
 
 [← Roadmap overview](index.md)

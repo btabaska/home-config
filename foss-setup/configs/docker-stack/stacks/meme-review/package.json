@@ -1,0 +1,41 @@
+{
+  "name": "meme-review",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Self-hosted app for a small household to send each other stacks of images and react to them one at a time, iMessage-tapback style.",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c cyan,magenta \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "tsx watch server/src/index.ts",
+    "dev:web": "vite",
+    "build": "vite build",
+    "start": "cross-env NODE_ENV=production tsx server/src/index.ts",
+    "seed": "tsx server/src/seed.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "hono": "^4.6.14"
+  },
+  "devDependencies": {
+    "@phosphor-icons/web": "^2.1.1",
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "esbuild@0.25.12": true
+  }
+}

@@ -12894,169 +12894,184 @@
    "foss-setup/docs/journaling-stack-plan.md"
   ]
  },
-  {
-    "id": "glue-14",
-    "track": "ops",
-    "title": "Immich-ML GPU yield policy: night-only rig window + NAS-iGPU daytime fallback (photos = lowest-priority tenant)",
-    "summary": "A 24B chat/coding model (~22G of the 24G 3090 Ti) and Immich remote ML (~13G) cannot coexist, so an OpenWebUI request would OOM the 24B (llama-swap 'upstream command exited prematurely' -> LiteLLM 500) whenever Immich held VRAM. The Immich job queue reads 0 active/0 waiting while ~13G is still pinned (model TTL residency + interactive searches that never become queue jobs), which masked the cause. Fix (operator: photos are the lowest-priority GPU tenant, fine to run only at night): time-gate the rig ML container to a 01:00-07:00 EDT window via two systemd timers on the rig (immich-ml-window.sh on/off) that stop the container + pause the smartSearch/faceDetection/ocr queues by day and start it + resume them at night. By day Immich falls back to the NAS iGPU (OpenVINO); preload the CLIP text tower + MODEL_TTL=86400 on the NAS so interactive search stays ~225ms warm (no 27s cold load). Least-privilege Immich key (job.create+job.read) for queue control. Reconcile monitoring: window-aware rig-immich-ml checks (crit consumer smart-search + warn day-off/night-encode) and exclude the scheduled container from the docker-fleet manifest.",
-    "host": "rig",
-    "type": "fix",
-    "mode": "ai",
-    "run": 6,
-    "required": false,
-    "depends_on": [
-      "nas-32",
-      "ai-01"
-    ],
-    "estimate": "2-3 h",
-    "files": [
-      "configs/host/rig/immich-ml/",
-      "configs/nas/immich/.env.example",
-      "verification/checks.d/rig-immich-ml.yaml",
-      "verification/checks.d/docker-fleet.yaml"
-    ],
-    "steps": [
-      "Reconcile monitoring first (avoid false pages): make rig-immich-ml checks window-aware + add a backend-agnostic smart-search consumer crit; exclude immich_machine_learning from containers-manifest-rig + coverage/rig.containers.",
-      "Build immich-ml-window.sh (on=start+resume queues, off=pause queues+stop) + templated oneshot service + on/off timers under configs/host/rig/immich-ml/; deploy to the rig, arm the timers, run 'off' now for immediate GPU relief.",
-      "NAS keep-warm: add MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL + MODEL_TTL=86400 to the NAS immich .env (live + repo), recreate immich_machine_learning.",
-      "Mint a least-privilege Immich key (job.create+job.read) -> vault immich.rig_ml_window_api_key -> /etc/immich-ml-window.env on the rig.",
-      "Anti-drift: rig README unit index + unit-drift-check.sh; wiki photos runbook; tasks/progress; publish-deploy.sh."
-    ],
-    "verify": "By day: rig immich_machine_learning stopped, GPU ~free, cydonia 24B completes via OpenWebUI's LiteLLM key, smart search returns results on the NAS iGPU (~sub-second warm). Timers scheduled 01:00/07:00 EDT. rig-immich-ml checks 4/4 green (DAY_OFF_OK).",
-    "pitfalls": "The Immich queue dashboard is NOT wrong: 0 jobs + pinned VRAM = model TTL residency + non-queued interactive searches. Deploy the window-aware checks BEFORE stopping the container or the crit /ping checks page. Exact-diff container manifest flags a scheduled-off container both ways (exclude it). Queue control needs job.create (not admin). LiteLLM num_retries:2 already retries the 500 (3 attempts in the logs) \u2014 retries can't beat a persistent VRAM block; the time-gate is the fix."
-  },
-  {
-    "id": "glue-15",
-    "track": "ops",
-    "title": "Clear the pre-existing fleet git-hygiene regressions surfaced during glue-14",
-    "summary": "The glue-14 verification pass ran the git-hygiene + docker-fleet check domains and surfaced 4 pre-existing (NOT glue-14-caused) warn-level failures that were already red: (1) git-foss-setup-clean \u2014 the mini /opt/foss-setup checkout has 4 uncommitted auto-regenerated host manifests (hosts/macmini/compose-images.txt, pkglist.apt-manual.txt, systemd-timers.txt, configs/inventory/inventory.md) written by the export-manifests timer and never committed; (2) manifest-image-purity \u2014 compose-images.txt is missing several live images (ghcr.io/analogj/scrutiny, ghcr.io/speaches-ai/speaches, n8nio/n8n, neosmemo/memos, syncthing/syncthing) so the 100%-coverage tripwire fails; (3) stack-mirror-drift \u2014 the mini syncthing stack (foss-03 node) live compose.yaml has no repo mirror under configs/docker-stack/stacks/syncthing/ (recurring /opt/stacks mirror gap, cf. glue-12); (4) systemd-failed-mini \u2014 a stale snap-nvim-4820.mount phantom unit ('not-found failed') from an old nvim-snap revision. All four are fleet-hygiene drift, independent of the Immich GPU work \u2014 captured here so they are not lost.",
-    "host": "mini",
-    "type": "sync",
-    "mode": "ai",
-    "run": 6,
-    "required": false,
-    "depends_on": [],
-    "estimate": "30-45 min",
-    "files": [
-      "hosts/macmini/",
-      "configs/inventory/inventory.md",
-      "configs/docker-stack/stacks/syncthing/"
-    ],
-    "steps": [
-      "Re-run export-manifests.sh on the mini so compose-images.txt picks up scrutiny/speaches/n8n/memos/syncthing, then commit the 4 regenerated manifests (compose-images.txt, pkglist.apt-manual.txt, systemd-timers.txt, inventory.md) from /opt/foss-setup -> clears git-foss-setup-clean + manifest-image-purity.",
-      "Mirror the mini syncthing live /opt/stacks/syncthing/compose.yaml into configs/docker-stack/stacks/syncthing/ (verify secrets like config.xml/keys stay gitignored per opt-stacks-git-hygiene) -> clears stack-mirror-drift.",
-      "Clear the stale snap-nvim-4820.mount on the mini (sudo systemctl reset-failed snap-nvim-4820.mount; if it persists, remove the phantom unit / refresh the nvim snap) -> clears systemd-failed-mini.",
-      "Re-run the git-hygiene + docker-fleet check domains (--no-notify) and confirm all four go green; commit + publish-deploy.sh; regenerate any affected wiki pages in the SAME commit."
-    ],
-    "verify": "git-hygiene: git-foss-setup-clean, stack-mirror-drift, manifest-image-purity all green; docker-fleet: systemd-failed-mini green. No new drift introduced.",
-    "pitfalls": "These are pre-existing, not glue-14 regressions. Per opt-stacks-git-hygiene: NEVER git add -A in /opt/stacks (syncthing home/ device key.pem/cert.pem/config.xml are secrets and gitignored) \u2014 stage explicitly + verify git check-ignore. Only commit completed-task manifest drift; leave any concurrent in-flight stack edits alone (fix-41 precedent). The snap-nvim unit is 'not-found' (file already gone) so reset-failed clears the failed state without deleting anything."
-  },
-  {
-    "id": "sec-12",
-    "track": "security",
-    "title": "Repair malformed multi-line value in mini /etc/verification/env (a stored token spans physical lines and leaks when the file is sourced) + decide on rotating the exposed Hardcover token",
-    "host": "mini",
-    "type": "async",
-    "mode": "ai",
-    "gate": "",
-    "run": 7,
-    "required": false,
-    "depends_on": [],
-    "estimate": "20-40 min",
-    "source": "net-15 discovery 2026-07-26",
-    "summary": "During net-15 (2026-07-26), sourcing the runner env with `set -a; . /etc/verification/env; set +a` failed with 'line 40: eyJ...: command not found' — a stored value (a Hardcover/rreading-glasses bearer JWT) is written across multiple physical lines, so on the second line there is no KEY= prefix and the shell tries to execute the bare token, echoing its value to stdout. This means (a) any `. env` sourcing prints the token — the edge-exposure runbook's documented re-run snippet does exactly this, and it leaked into a Claude session transcript during net-15 — and (b) any consumer that source-loads the env may mis-parse it. The verification runner (checks_runner.py) loads env differently and is unaffected (edge checks pass), so this is latent, not currently breaking checks.",
-    "detail": "Fix: normalize the offending entry in /etc/verification/env to a single KEY=\"VALUE\" line (quote it so an embedded newline can't split it), grep the whole file for any other value that wraps, then confirm `set -a; . /etc/verification/env; set +a` runs with zero 'command not found' lines. The env file is root-owned 640 root:btabaska — edit via ssh sudo. OPERATOR DECISION: whether to rotate the Hardcover token given it was exposed in a session transcript (local, not a public push; the token already lived in the vault + env). If rotating: mint a new Hardcover token, update the vault key and every consumer (rreading-glasses-hc), and re-verify the books metadata path. Also fix the runbook re-run snippet in wiki/docs/runbooks/edge-exposure.md if it still uses the leaky `. env` form.",
-    "steps": [
-      "Inspect /etc/verification/env for multi-line/unquoted values (without echoing secrets); identify the wrapped token entry at ~line 40.",
-      "Rewrite the entry as a single quoted KEY=\"VALUE\" line via ssh sudo; verify `set -a; . /etc/verification/env; set +a` produces no 'command not found' and all vars resolve.",
-      "Operator: decide on rotating the exposed Hardcover token; if yes, rotate + update vault + rreading-glasses-hc and re-verify.",
-      "Confirm the full verification sweep stays green and no token value can be printed by the documented re-run command."
-    ],
-    "verify": "sourcing /etc/verification/env emits no token to stdout and errors nothing; edge + reading checks stay green; if rotation chosen, the old token is rejected and consumers work with the new one.",
-    "pitfalls": "Never echo the env file to a shared/logged stream. Rotating the Hardcover token is disruptive to rreading-glasses-hc (quota + refresh herd, see hardcover-rg-hc-quirks) — do it deliberately, not reflexively."
-  },
-  {
-    "id": "bug-01",
-    "track": "bug-intake",
-    "title": "Household \"Report a Problem\" intake — Homepage tile → n8n form → Forgejo issue → notify",
-    "host": "mini",
-    "type": "sync",
-    "mode": "ai-vault",
-    "gate": "",
-    "run": 9,
-    "required": false,
-    "depends_on": [],
-    "estimate": "3-4 h",
-    "source": "bug-intake pitch 2026-07-27 (home.tabaska.us bug-report + Forgejo-as-source-of-truth)",
-    "summary": "A Tailscale+LAN-only bug-report path for non-technical household members. A Homepage external tile \"🐞 Report a Problem\" opens bug.tabaska.us (an n8n Form Trigger, Caddy-fronted, NO public DNS). The form is activity-first and progressive: one required \"What were you trying to do?\" icon dropdown of ACTIVITIES (Watch / Listen / Photos / Read / Journal / Dashboard / Game / Request / Something else) so she never needs a service name, plus a required \"What happened?\" free-text; an optional \"add details\" expander offers where (device/room) / when / how-stuck / screenshot. On submit, n8n maps activity→service label and creates a Forgejo issue in a dedicated household-bugs repo (labels source:home, service:<x>, sev:<annoying|blocking>, screenshot attached), then fires ntfy topic \"bugs\" + a Discord ping to the operator with the issue link. Two required fields = a 5-second report; the optional expander is where she CAN be specific about how/when/where without ever being forced to.",
-    "detail": "Reuses running infra: n8n (in /opt/stacks/journaling), Forgejo, Caddy, Homepage, ntfy — no new external service. Access model (operator decision 2026-07-27): bug.tabaska.us resolvable on the tailnet + LAN ONLY (Caddy bound accordingly, no public record), so a home-screen bookmark on her phone works while nothing is exposed to the internet (no spam surface). The activity→service map lives in the n8n workflow (Watch→plex/jellyfin, Photos→immich, Read→abs/komga/calibre-web/suwayomi, Listen→navidrome/abs, Game→amp/palworld, Dashboard→homepage, Request→seerr/musicseerr/shelfmark); the optional \"where\" answer disambiguates (Watch + TV → Plex-on-TV). Screenshot → Forgejo attachment via API. Mint a LEAST-PRIVILEGE Forgejo API token for n8n and MERGE it into the vault (never blind-assign — vault-edit-hazard). Anti-drift: the n8n workflow export, the Caddy vhost, and the Homepage tile each land in their owning repo the same session.",
-    "steps": [
-      "Confirm the running Forgejo version; create/choose a dedicated household-issues repo (e.g. home/household-bugs) and define the label taxonomy (source:home, service:*, sev:annoying|blocking).",
-      "Build the n8n Form Trigger workflow on mini: activity-first required dropdown + \"what happened\" required + optional progressive details (where/when/severity/screenshot); no login for household ease; reachable only on tailnet+LAN.",
-      "Encode the activity→service map; on submit create a Forgejo issue via API (labels + body + screenshot attachment) and capture the issue URL.",
-      "Notify: POST ntfy topic \"bugs\" + a Discord webhook ping to the operator with the issue link.",
-      "Front bug.tabaska.us via Caddy bound to tailnet+LAN only (no public DNS); add the Homepage external tile \"🐞 Report a Problem\" (href + target:_blank, no siteMonitor/widget) in a suitable group.",
-      "Anti-drift: mirror the n8n workflow export + Caddy vhost + Homepage service tile to their repo owners (configs/docker-stack/stacks/...), commit both live and repo sides, run publish-deploy.sh.",
-      "Monitor: add a checks.d consumer probe (form reachable on the tailnet + n8n workflow active + a synthetic submit creates a Forgejo issue) with cmd/task_id:bug-01/runbook; update the coverage manifest if a new container is added.",
-      "Document: wiki service page via service-enrichment.yaml + a short household \"how to report a problem\" note; rebuild build-wiki.sh --strict."
-    ],
-    "verify": "From a tailnet device, submitting with ONLY the two required fields creates a labeled Forgejo issue (with the screenshot if attached) AND lands an ntfy + Discord notification carrying the issue link; the tile opens the form; the form is NOT reachable from off-tailnet/public. The checks.d synthetic-submit probe is green.",
-    "pitfalls": "Keep it public-free (Tailscale+LAN only — operator decision + no spam surface). Two required fields max — do not force the optional details. Homepage external tiles are href+target only, no monitoring (homepage-quirks). MERGE the Forgejo token into the vault, never blind-assign (vault-edit-hazard). Adding a household tile is user-facing → confirm timing in the 4-7AM window (mandate 4)."
-  },
-  {
-    "id": "bug-02",
-    "track": "bug-intake",
-    "title": "Read-only auto-triage — mini observes, rig reasons → Forgejo triage comment",
-    "host": "mini + rig",
-    "type": "sync",
-    "mode": "ai-vault",
-    "gate": "",
-    "run": 9,
-    "required": false,
-    "depends_on": [
-      "bug-01"
-    ],
-    "estimate": "3-5 h",
-    "source": "bug-intake pitch 2026-07-27 (home.tabaska.us bug-report + Forgejo-as-source-of-truth)",
-    "summary": "When a bug issue is filed, n8n on mini gathers READ-ONLY evidence for the mapped service (docker ps + logs --since, curl the API/status page, cross-reference Uptime-Kuma / Healthchecks / verification history) and sends the evidence bundle to the rig LLM via LiteLLM, which writes a plain-English diagnosis + likely cause + confidence. n8n posts it back as a Forgejo issue comment. The read-only ceiling (operator decision 2026-07-27) is STRUCTURAL: the reasoning half (rig) has no fleet access, and the observing half (mini) never mutates state — no restarts, no fixes, no suggested commands. So \"the rig triages the ticket\" becomes \"the rig is the brain, mini is the eyes.\"",
-    "detail": "Security-by-construction decision (bug-intake pitch): do NOT give the rig read-only SSH into the fleet. Evidence-gathering runs on mini, which already has passwordless read-only docker for its 38 containers AND tailnet reach to curl every other host's API (Immich on NAS, AMP/Palworld on rig, gamedig a port). The rig is reached only via LiteLLM :4000 (key at vault ai_stack.*) — pure inference, zero fleet-mutating hands, and no new SSH trust to manage. v1 is SINGLE-SHOT reasoning (evidence in → prose out), NOT an autonomous agent loop; a loop that decides which probes to run would need that read-only key back — deferred as a later upgrade. Best-effort aware: the rig 24B may be GPU-contended (rig-gpu-vram-contention) — the by-day ML window frees the card but a big model can still be busy; degrade gracefully (post an evidence-only comment noting the model was unavailable) rather than fail the pipeline. Use utility/fast tier per litellm-consumer-probe.",
-    "steps": [
-      "Define per-service read-only probe playbooks keyed by the activity→service map from bug-01 (Plex/Immich/reading/game/dashboard/requests), each a fixed set of OBSERVE-ONLY commands run from mini.",
-      "Extend the n8n workflow: on issue creation run the mapped probe bundle (docker ps + logs --since, curl, Uptime-Kuma/Healthchecks/verification history) and assemble an evidence bundle.",
-      "Call the rig model via LiteLLM (utility/fast; escalate only if the GPU is free) with a triage prompt that must return diagnosis + likely cause + confidence, observe-only.",
-      "Post the result as a Forgejo issue comment and label triaged; on GPU-contended/model-unavailable, post an evidence-only comment noting the degrade (SKIP, not fail).",
-      "Anti-drift: mirror the updated n8n export + any probe scripts to their repo owners; commit + publish-deploy.",
-      "Monitor: extend the bug-intake check into an E2E consumer probe (synthetic report → issue → triage comment appears), tier:daily, best-effort/SKIP-aware when the 24B can't load (journaling-loop-e2e pattern); task_id:bug-02.",
-      "Document: wiki update describing the observe(mini)/reason(rig) split and the read-only ceiling."
-    ],
-    "verify": "A synthetic report produces, within a few minutes, a Forgejo comment with a plain-English diagnosis grounded in REAL evidence — and it correctly flags an expected-state case (e.g. the by-day Immich ML window) as NOT a fault. No fleet state changes. When the 24B is unavailable, the pipeline still posts an evidence-only comment (SKIP not FAIL). The E2E check is green or cleanly SKIPs.",
-    "pitfalls": "Read-only ceiling is structural — no restarts, no suggested-command actions (operator chose report-only). rig ML is time-gated: \"24B OOM/busy by day\" is expected (rig-gpu-vram-contention) — degrade, don't fail. The Immich reasoning must know the ML night-window quirk or it will misdiagnose a normal state as the bug. Reuse mini's read-only docker access — do NOT grant the rig SSH into the fleet."
-  },
-  {
-    "id": "bug-03",
-    "track": "bug-intake",
-    "title": "Discord downtime reports for friends (game servers) → same triage pipeline",
-    "host": "mini + rig",
-    "type": "sync",
-    "mode": "ai-vault",
-    "gate": "",
-    "run": 9,
-    "required": false,
-    "depends_on": [
-      "bug-02"
-    ],
-    "estimate": "3-4 h",
-    "source": "bug-intake pitch 2026-07-27 (home.tabaska.us bug-report + Forgejo-as-source-of-truth)",
-    "summary": "Let friends report game-server downtime from Discord. A `/report` slash command (or a \"🔴 Server's down\" button in the game channel) hits the SAME n8n webhook, scoped to game-server probes (gamedig + AMP status + port check for Palworld :8211 etc.). The rig triage reasons over the evidence and the bot replies IN-THREAD (\"Palworld container is up but the port isn't answering — flagged Brandon, issue #42\") while filing a Forgejo issue. A friend at 11pm gets an instant answer; the operator gets a triaged ticket instead of a 2am DM.",
-    "detail": "Reuses the bug-01/02 pipeline end-to-end — same webhook, different door. Create a Discord app + bot; store the token in the vault (merge). Route the command into the existing n8n webhook with source:discord + the game identity, then run a game-scoped probe bundle: AMP status (instance-scoped login + correct enums per amp-api-quirks), gamedig, and a raw port check (the query port may differ from the published one; 27015 is often unpublished). Reply in-thread with the issue link + a one-line triage, and mirror it as a Forgejo issue comment. Friends are external reporters — rate-limit / guard the webhook.",
-    "steps": [
-      "Create the Discord app/bot; register a `/report` slash command (+ optional channel button) scoped to the game channel; store the token in the vault (merge, least scope).",
-      "Route the command into the existing n8n webhook with source:discord and the game identity; run the game-scoped probe bundle (AMP status, gamedig, port).",
-      "File a Forgejo issue (labels source:discord, service:game) and post the rig triage back as an in-thread Discord reply + an issue comment.",
-      "Anti-drift + monitor: mirror the workflow/bot config to the repo; add/extend a checks.d probe for the Discord path (task_id:bug-03); update coverage if a container is added.",
-      "Document: a friend-facing one-liner (\"type /report if a server's down\") + wiki."
-    ],
-    "verify": "A `/report` for a deliberately-stopped test game instance produces an in-thread Discord reply with a correct up/down triage AND a Forgejo issue; a healthy server reports healthy. No game state is mutated.",
-    "pitfalls": "AMP proxied-instance calls need instance-scoped login + correct enums (amp-api-quirks). gamedig may miss an unpublished query port — probe the real port. Keep the bot token in the vault at least scope. Friends are external — rate-limit/guard the webhook against abuse."
-  }
+ {
+  "id": "glue-14",
+  "track": "ops",
+  "title": "Immich-ML GPU yield policy: night-only rig window + NAS-iGPU daytime fallback (photos = lowest-priority tenant)",
+  "summary": "A 24B chat/coding model (~22G of the 24G 3090 Ti) and Immich remote ML (~13G) cannot coexist, so an OpenWebUI request would OOM the 24B (llama-swap 'upstream command exited prematurely' -> LiteLLM 500) whenever Immich held VRAM. The Immich job queue reads 0 active/0 waiting while ~13G is still pinned (model TTL residency + interactive searches that never become queue jobs), which masked the cause. Fix (operator: photos are the lowest-priority GPU tenant, fine to run only at night): time-gate the rig ML container to a 01:00-07:00 EDT window via two systemd timers on the rig (immich-ml-window.sh on/off) that stop the container + pause the smartSearch/faceDetection/ocr queues by day and start it + resume them at night. By day Immich falls back to the NAS iGPU (OpenVINO); preload the CLIP text tower + MODEL_TTL=86400 on the NAS so interactive search stays ~225ms warm (no 27s cold load). Least-privilege Immich key (job.create+job.read) for queue control. Reconcile monitoring: window-aware rig-immich-ml checks (crit consumer smart-search + warn day-off/night-encode) and exclude the scheduled container from the docker-fleet manifest.",
+  "host": "rig",
+  "type": "fix",
+  "mode": "ai",
+  "run": 6,
+  "required": false,
+  "depends_on": [
+   "nas-32",
+   "ai-01"
+  ],
+  "estimate": "2-3 h",
+  "files": [
+   "configs/host/rig/immich-ml/",
+   "configs/nas/immich/.env.example",
+   "verification/checks.d/rig-immich-ml.yaml",
+   "verification/checks.d/docker-fleet.yaml"
+  ],
+  "steps": [
+   "Reconcile monitoring first (avoid false pages): make rig-immich-ml checks window-aware + add a backend-agnostic smart-search consumer crit; exclude immich_machine_learning from containers-manifest-rig + coverage/rig.containers.",
+   "Build immich-ml-window.sh (on=start+resume queues, off=pause queues+stop) + templated oneshot service + on/off timers under configs/host/rig/immich-ml/; deploy to the rig, arm the timers, run 'off' now for immediate GPU relief.",
+   "NAS keep-warm: add MACHINE_LEARNING_PRELOAD__CLIP__TEXTUAL + MODEL_TTL=86400 to the NAS immich .env (live + repo), recreate immich_machine_learning.",
+   "Mint a least-privilege Immich key (job.create+job.read) -> vault immich.rig_ml_window_api_key -> /etc/immich-ml-window.env on the rig.",
+   "Anti-drift: rig README unit index + unit-drift-check.sh; wiki photos runbook; tasks/progress; publish-deploy.sh."
+  ],
+  "verify": "By day: rig immich_machine_learning stopped, GPU ~free, cydonia 24B completes via OpenWebUI's LiteLLM key, smart search returns results on the NAS iGPU (~sub-second warm). Timers scheduled 01:00/07:00 EDT. rig-immich-ml checks 4/4 green (DAY_OFF_OK).",
+  "pitfalls": "The Immich queue dashboard is NOT wrong: 0 jobs + pinned VRAM = model TTL residency + non-queued interactive searches. Deploy the window-aware checks BEFORE stopping the container or the crit /ping checks page. Exact-diff container manifest flags a scheduled-off container both ways (exclude it). Queue control needs job.create (not admin). LiteLLM num_retries:2 already retries the 500 (3 attempts in the logs) — retries can't beat a persistent VRAM block; the time-gate is the fix."
+ },
+ {
+  "id": "glue-15",
+  "track": "ops",
+  "title": "Clear the pre-existing fleet git-hygiene regressions surfaced during glue-14",
+  "summary": "The glue-14 verification pass ran the git-hygiene + docker-fleet check domains and surfaced 4 pre-existing (NOT glue-14-caused) warn-level failures that were already red: (1) git-foss-setup-clean — the mini /opt/foss-setup checkout has 4 uncommitted auto-regenerated host manifests (hosts/macmini/compose-images.txt, pkglist.apt-manual.txt, systemd-timers.txt, configs/inventory/inventory.md) written by the export-manifests timer and never committed; (2) manifest-image-purity — compose-images.txt is missing several live images (ghcr.io/analogj/scrutiny, ghcr.io/speaches-ai/speaches, n8nio/n8n, neosmemo/memos, syncthing/syncthing) so the 100%-coverage tripwire fails; (3) stack-mirror-drift — the mini syncthing stack (foss-03 node) live compose.yaml has no repo mirror under configs/docker-stack/stacks/syncthing/ (recurring /opt/stacks mirror gap, cf. glue-12); (4) systemd-failed-mini — a stale snap-nvim-4820.mount phantom unit ('not-found failed') from an old nvim-snap revision. All four are fleet-hygiene drift, independent of the Immich GPU work — captured here so they are not lost.",
+  "host": "mini",
+  "type": "sync",
+  "mode": "ai",
+  "run": 6,
+  "required": false,
+  "depends_on": [],
+  "estimate": "30-45 min",
+  "files": [
+   "hosts/macmini/",
+   "configs/inventory/inventory.md",
+   "configs/docker-stack/stacks/syncthing/"
+  ],
+  "steps": [
+   "Re-run export-manifests.sh on the mini so compose-images.txt picks up scrutiny/speaches/n8n/memos/syncthing, then commit the 4 regenerated manifests (compose-images.txt, pkglist.apt-manual.txt, systemd-timers.txt, inventory.md) from /opt/foss-setup -> clears git-foss-setup-clean + manifest-image-purity.",
+   "Mirror the mini syncthing live /opt/stacks/syncthing/compose.yaml into configs/docker-stack/stacks/syncthing/ (verify secrets like config.xml/keys stay gitignored per opt-stacks-git-hygiene) -> clears stack-mirror-drift.",
+   "Clear the stale snap-nvim-4820.mount on the mini (sudo systemctl reset-failed snap-nvim-4820.mount; if it persists, remove the phantom unit / refresh the nvim snap) -> clears systemd-failed-mini.",
+   "Re-run the git-hygiene + docker-fleet check domains (--no-notify) and confirm all four go green; commit + publish-deploy.sh; regenerate any affected wiki pages in the SAME commit."
+  ],
+  "verify": "git-hygiene: git-foss-setup-clean, stack-mirror-drift, manifest-image-purity all green; docker-fleet: systemd-failed-mini green. No new drift introduced.",
+  "pitfalls": "These are pre-existing, not glue-14 regressions. Per opt-stacks-git-hygiene: NEVER git add -A in /opt/stacks (syncthing home/ device key.pem/cert.pem/config.xml are secrets and gitignored) — stage explicitly + verify git check-ignore. Only commit completed-task manifest drift; leave any concurrent in-flight stack edits alone (fix-41 precedent). The snap-nvim unit is 'not-found' (file already gone) so reset-failed clears the failed state without deleting anything."
+ },
+ {
+  "id": "sec-12",
+  "track": "security",
+  "title": "Repair malformed multi-line value in mini /etc/verification/env (a stored token spans physical lines and leaks when the file is sourced) + decide on rotating the exposed Hardcover token",
+  "host": "mini",
+  "type": "async",
+  "mode": "ai",
+  "gate": "",
+  "run": 7,
+  "required": false,
+  "depends_on": [],
+  "estimate": "20-40 min",
+  "source": "net-15 discovery 2026-07-26",
+  "summary": "During net-15 (2026-07-26), sourcing the runner env with `set -a; . /etc/verification/env; set +a` failed with 'line 40: eyJ...: command not found' — a stored value (a Hardcover/rreading-glasses bearer JWT) is written across multiple physical lines, so on the second line there is no KEY= prefix and the shell tries to execute the bare token, echoing its value to stdout. This means (a) any `. env` sourcing prints the token — the edge-exposure runbook's documented re-run snippet does exactly this, and it leaked into a Claude session transcript during net-15 — and (b) any consumer that source-loads the env may mis-parse it. The verification runner (checks_runner.py) loads env differently and is unaffected (edge checks pass), so this is latent, not currently breaking checks.",
+  "detail": "Fix: normalize the offending entry in /etc/verification/env to a single KEY=\"VALUE\" line (quote it so an embedded newline can't split it), grep the whole file for any other value that wraps, then confirm `set -a; . /etc/verification/env; set +a` runs with zero 'command not found' lines. The env file is root-owned 640 root:btabaska — edit via ssh sudo. OPERATOR DECISION: whether to rotate the Hardcover token given it was exposed in a session transcript (local, not a public push; the token already lived in the vault + env). If rotating: mint a new Hardcover token, update the vault key and every consumer (rreading-glasses-hc), and re-verify the books metadata path. Also fix the runbook re-run snippet in wiki/docs/runbooks/edge-exposure.md if it still uses the leaky `. env` form.",
+  "steps": [
+   "Inspect /etc/verification/env for multi-line/unquoted values (without echoing secrets); identify the wrapped token entry at ~line 40.",
+   "Rewrite the entry as a single quoted KEY=\"VALUE\" line via ssh sudo; verify `set -a; . /etc/verification/env; set +a` produces no 'command not found' and all vars resolve.",
+   "Operator: decide on rotating the exposed Hardcover token; if yes, rotate + update vault + rreading-glasses-hc and re-verify.",
+   "Confirm the full verification sweep stays green and no token value can be printed by the documented re-run command."
+  ],
+  "verify": "sourcing /etc/verification/env emits no token to stdout and errors nothing; edge + reading checks stay green; if rotation chosen, the old token is rejected and consumers work with the new one.",
+  "pitfalls": "Never echo the env file to a shared/logged stream. Rotating the Hardcover token is disruptive to rreading-glasses-hc (quota + refresh herd, see hardcover-rg-hc-quirks) — do it deliberately, not reflexively."
+ },
+ {
+  "id": "bug-01",
+  "track": "bug-intake",
+  "title": "Household \"Report a Problem\" intake — Homepage tile → n8n form → Forgejo issue → notify",
+  "host": "mini",
+  "type": "sync",
+  "mode": "ai-vault",
+  "gate": "",
+  "run": 9,
+  "required": false,
+  "depends_on": [],
+  "estimate": "3-4 h",
+  "source": "bug-intake pitch 2026-07-27 (home.tabaska.us bug-report + Forgejo-as-source-of-truth)",
+  "summary": "A Tailscale+LAN-only bug-report path for non-technical household members. A Homepage external tile \"🐞 Report a Problem\" opens bug.tabaska.us (an n8n Form Trigger, Caddy-fronted, NO public DNS). The form is activity-first and progressive: one required \"What were you trying to do?\" icon dropdown of ACTIVITIES (Watch / Listen / Photos / Read / Journal / Dashboard / Game / Request / Something else) so she never needs a service name, plus a required \"What happened?\" free-text; an optional \"add details\" expander offers where (device/room) / when / how-stuck / screenshot. On submit, n8n maps activity→service label and creates a Forgejo issue in a dedicated household-bugs repo (labels source:home, service:<x>, sev:<annoying|blocking>, screenshot attached), then fires ntfy topic \"bugs\" + a Discord ping to the operator with the issue link. Two required fields = a 5-second report; the optional expander is where she CAN be specific about how/when/where without ever being forced to.",
+  "detail": "Reuses running infra: n8n (in /opt/stacks/journaling), Forgejo, Caddy, Homepage, ntfy — no new external service. Access model (operator decision 2026-07-27): bug.tabaska.us resolvable on the tailnet + LAN ONLY (Caddy bound accordingly, no public record), so a home-screen bookmark on her phone works while nothing is exposed to the internet (no spam surface). The activity→service map lives in the n8n workflow (Watch→plex/jellyfin, Photos→immich, Read→abs/komga/calibre-web/suwayomi, Listen→navidrome/abs, Game→amp/palworld, Dashboard→homepage, Request→seerr/musicseerr/shelfmark); the optional \"where\" answer disambiguates (Watch + TV → Plex-on-TV). Screenshot → Forgejo attachment via API. Mint a LEAST-PRIVILEGE Forgejo API token for n8n and MERGE it into the vault (never blind-assign — vault-edit-hazard). Anti-drift: the n8n workflow export, the Caddy vhost, and the Homepage tile each land in their owning repo the same session.",
+  "steps": [
+   "Confirm the running Forgejo version; create/choose a dedicated household-issues repo (e.g. home/household-bugs) and define the label taxonomy (source:home, service:*, sev:annoying|blocking).",
+   "Build the n8n Form Trigger workflow on mini: activity-first required dropdown + \"what happened\" required + optional progressive details (where/when/severity/screenshot); no login for household ease; reachable only on tailnet+LAN.",
+   "Encode the activity→service map; on submit create a Forgejo issue via API (labels + body + screenshot attachment) and capture the issue URL.",
+   "Notify: POST ntfy topic \"bugs\" + a Discord webhook ping to the operator with the issue link.",
+   "Front bug.tabaska.us via Caddy bound to tailnet+LAN only (no public DNS); add the Homepage external tile \"🐞 Report a Problem\" (href + target:_blank, no siteMonitor/widget) in a suitable group.",
+   "Anti-drift: mirror the n8n workflow export + Caddy vhost + Homepage service tile to their repo owners (configs/docker-stack/stacks/...), commit both live and repo sides, run publish-deploy.sh.",
+   "Monitor: add a checks.d consumer probe (form reachable on the tailnet + n8n workflow active + a synthetic submit creates a Forgejo issue) with cmd/task_id:bug-01/runbook; update the coverage manifest if a new container is added.",
+   "Document: wiki service page via service-enrichment.yaml + a short household \"how to report a problem\" note; rebuild build-wiki.sh --strict."
+  ],
+  "verify": "From a tailnet device, submitting with ONLY the two required fields creates a labeled Forgejo issue (with the screenshot if attached) AND lands an ntfy + Discord notification carrying the issue link; the tile opens the form; the form is NOT reachable from off-tailnet/public. The checks.d synthetic-submit probe is green.",
+  "pitfalls": "Keep it public-free (Tailscale+LAN only — operator decision + no spam surface). Two required fields max — do not force the optional details. Homepage external tiles are href+target only, no monitoring (homepage-quirks). MERGE the Forgejo token into the vault, never blind-assign (vault-edit-hazard). Adding a household tile is user-facing → confirm timing in the 4-7AM window (mandate 4)."
+ },
+ {
+  "id": "bug-02",
+  "track": "bug-intake",
+  "title": "Read-only auto-triage — mini observes, rig reasons → Forgejo triage comment",
+  "host": "mini + rig",
+  "type": "sync",
+  "mode": "ai-vault",
+  "gate": "",
+  "run": 9,
+  "required": false,
+  "depends_on": [
+   "bug-01"
+  ],
+  "estimate": "3-5 h",
+  "source": "bug-intake pitch 2026-07-27 (home.tabaska.us bug-report + Forgejo-as-source-of-truth)",
+  "summary": "When a bug issue is filed, n8n on mini gathers READ-ONLY evidence for the mapped service (docker ps + logs --since, curl the API/status page, cross-reference Uptime-Kuma / Healthchecks / verification history) and sends the evidence bundle to the rig LLM via LiteLLM, which writes a plain-English diagnosis + likely cause + confidence. n8n posts it back as a Forgejo issue comment. The read-only ceiling (operator decision 2026-07-27) is STRUCTURAL: the reasoning half (rig) has no fleet access, and the observing half (mini) never mutates state — no restarts, no fixes, no suggested commands. So \"the rig triages the ticket\" becomes \"the rig is the brain, mini is the eyes.\"",
+  "detail": "Security-by-construction decision (bug-intake pitch): do NOT give the rig read-only SSH into the fleet. Evidence-gathering runs on mini, which already has passwordless read-only docker for its 38 containers AND tailnet reach to curl every other host's API (Immich on NAS, AMP/Palworld on rig, gamedig a port). The rig is reached only via LiteLLM :4000 (key at vault ai_stack.*) — pure inference, zero fleet-mutating hands, and no new SSH trust to manage. v1 is SINGLE-SHOT reasoning (evidence in → prose out), NOT an autonomous agent loop; a loop that decides which probes to run would need that read-only key back — deferred as a later upgrade. Best-effort aware: the rig 24B may be GPU-contended (rig-gpu-vram-contention) — the by-day ML window frees the card but a big model can still be busy; degrade gracefully (post an evidence-only comment noting the model was unavailable) rather than fail the pipeline. Use utility/fast tier per litellm-consumer-probe.",
+  "steps": [
+   "Define per-service read-only probe playbooks keyed by the activity→service map from bug-01 (Plex/Immich/reading/game/dashboard/requests), each a fixed set of OBSERVE-ONLY commands run from mini.",
+   "Extend the n8n workflow: on issue creation run the mapped probe bundle (docker ps + logs --since, curl, Uptime-Kuma/Healthchecks/verification history) and assemble an evidence bundle.",
+   "Call the rig model via LiteLLM (utility/fast; escalate only if the GPU is free) with a triage prompt that must return diagnosis + likely cause + confidence, observe-only.",
+   "Post the result as a Forgejo issue comment and label triaged; on GPU-contended/model-unavailable, post an evidence-only comment noting the degrade (SKIP, not fail).",
+   "Anti-drift: mirror the updated n8n export + any probe scripts to their repo owners; commit + publish-deploy.",
+   "Monitor: extend the bug-intake check into an E2E consumer probe (synthetic report → issue → triage comment appears), tier:daily, best-effort/SKIP-aware when the 24B can't load (journaling-loop-e2e pattern); task_id:bug-02.",
+   "Document: wiki update describing the observe(mini)/reason(rig) split and the read-only ceiling."
+  ],
+  "verify": "A synthetic report produces, within a few minutes, a Forgejo comment with a plain-English diagnosis grounded in REAL evidence — and it correctly flags an expected-state case (e.g. the by-day Immich ML window) as NOT a fault. No fleet state changes. When the 24B is unavailable, the pipeline still posts an evidence-only comment (SKIP not FAIL). The E2E check is green or cleanly SKIPs.",
+  "pitfalls": "Read-only ceiling is structural — no restarts, no suggested-command actions (operator chose report-only). rig ML is time-gated: \"24B OOM/busy by day\" is expected (rig-gpu-vram-contention) — degrade, don't fail. The Immich reasoning must know the ML night-window quirk or it will misdiagnose a normal state as the bug. Reuse mini's read-only docker access — do NOT grant the rig SSH into the fleet."
+ },
+ {
+  "id": "bug-03",
+  "track": "bug-intake",
+  "title": "Discord downtime reports for friends (game servers) → same triage pipeline",
+  "host": "mini + rig",
+  "type": "sync",
+  "mode": "ai-vault",
+  "gate": "",
+  "run": 9,
+  "required": false,
+  "depends_on": [
+   "bug-02"
+  ],
+  "estimate": "3-4 h",
+  "source": "bug-intake pitch 2026-07-27 (home.tabaska.us bug-report + Forgejo-as-source-of-truth)",
+  "summary": "Let friends report game-server downtime from Discord. A `/report` slash command (or a \"🔴 Server's down\" button in the game channel) hits the SAME n8n webhook, scoped to game-server probes (gamedig + AMP status + port check for Palworld :8211 etc.). The rig triage reasons over the evidence and the bot replies IN-THREAD (\"Palworld container is up but the port isn't answering — flagged Brandon, issue #42\") while filing a Forgejo issue. A friend at 11pm gets an instant answer; the operator gets a triaged ticket instead of a 2am DM.",
+  "detail": "Reuses the bug-01/02 pipeline end-to-end — same webhook, different door. Create a Discord app + bot; store the token in the vault (merge). Route the command into the existing n8n webhook with source:discord + the game identity, then run a game-scoped probe bundle: AMP status (instance-scoped login + correct enums per amp-api-quirks), gamedig, and a raw port check (the query port may differ from the published one; 27015 is often unpublished). Reply in-thread with the issue link + a one-line triage, and mirror it as a Forgejo issue comment. Friends are external reporters — rate-limit / guard the webhook.",
+  "steps": [
+   "Create the Discord app/bot; register a `/report` slash command (+ optional channel button) scoped to the game channel; store the token in the vault (merge, least scope).",
+   "Route the command into the existing n8n webhook with source:discord and the game identity; run the game-scoped probe bundle (AMP status, gamedig, port).",
+   "File a Forgejo issue (labels source:discord, service:game) and post the rig triage back as an in-thread Discord reply + an issue comment.",
+   "Anti-drift + monitor: mirror the workflow/bot config to the repo; add/extend a checks.d probe for the Discord path (task_id:bug-03); update coverage if a container is added.",
+   "Document: a friend-facing one-liner (\"type /report if a server's down\") + wiki."
+  ],
+  "verify": "A `/report` for a deliberately-stopped test game instance produces an in-thread Discord reply with a correct up/down triage AND a Forgejo issue; a healthy server reports healthy. No game state is mutated.",
+  "pitfalls": "AMP proxied-instance calls need instance-scoped login + correct enums (amp-api-quirks). gamedig may miss an unpublished query port — probe the real port. Keep the bot token in the vault at least scope. Friends are external — rate-limit/guard the webhook against abuse."
+ },
+ {
+  "id": "meme-review-01",
+  "track": "home-surface",
+  "title": "Meme Review — self-hosted image-reaction app (Claude Design import)",
+  "host": "mini",
+  "type": "async",
+  "mode": "ai",
+  "gate": "",
+  "run": 9,
+  "required": false,
+  "depends_on": [],
+  "estimate": "1 session",
+  "source": "Claude Design import 2026-07-27 (Meme Review.dc.html + HANDOFF.md)",
+  "summary": "Household app to send stacks of images and react to them one at a time (iMessage-tapback style). Hono + built-in node:sqlite server + Vite/React SPA (all 11 prototype screens wired); SSE realtime; 8-rule achievement engine; optional Immich browse source (thumbnails proxied server-side), local upload fallback. Dockerized on the mini edge network, fronted at memes.tabaska.us with a real LE cert, tile under the Homepage Life Apps group. First-run creates the owner account; add the second member in Settings."
+ }
 ]

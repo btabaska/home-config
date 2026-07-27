@@ -274,6 +274,14 @@ services:
     on_demand: false
     notes: "Self-hosted AI journaling stack (journal-01): Memos front-end (:5230, memos.tabaska.us) + n8n automation (:5678, n8n.tabaska.us) + faster-whisper/speaches (:8010, internal only). Reflections come from rig llama-swap model dolphin-venice-24b. LAN/tailnet only, no cloud. Analyze workflow + tokens wired in journal-02..06."
 
+  - name: meme-review
+    category: Life
+    host: mini
+    port: 8787
+    url: https://memes.tabaska.us
+    on_demand: false
+    notes: "Self-hosted image-reaction app (meme-review-01) — send stacks of images and react to them one at a time, iMessage-tapback style. Hono + built-in node:sqlite server + Vite/React SPA; SSE realtime; 8-rule achievement engine; optional Immich browse source with local-upload fallback. Imported from a Claude Design prototype (Meme Review.dc.html + HANDOFF.md). LAN/tailnet only."
+
   # --- Smart Home -----------------------------------------------------------------
   - name: home-assistant
     category: Smart Home

@@ -181,6 +181,19 @@ bug.{$DOMAIN} {
 	reverse_proxy n8n:5678
 }
 
+# Meme Review — self-hosted image-reaction app (imported from a Claude Design
+# prototype; app + SPA served by the meme-review container on the edge network).
+# Linked from the Homepage "Life Apps" group. LAN/tailnet only (the *.tabaska.us
+# AdGuard rewrite resolves it internally; Cloudflare holds no A record). The
+# request_body cap allows large multi-image uploads.
+memes.{$DOMAIN} {
+	import local_tls
+	request_body {
+		max_size 2GB
+	}
+	reverse_proxy meme-review:8787
+}
+
 # ---------------------------------------------------------------------------
 # Platform / ops
 # ---------------------------------------------------------------------------

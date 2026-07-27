@@ -89,6 +89,7 @@ nav:
       - Life:
           - journaling: services/journaling.md
           - mealie: services/mealie.md
+          - meme-review: services/meme-review.md
       - Media:
           - jellyfin: services/jellyfin.md
           - kometa: services/kometa.md

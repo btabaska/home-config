@@ -1,0 +1,41 @@
+# Meme Review (meme-review-01) — self-hosted image-reaction app on the mini
+# (Hono + node:sqlite + React SPA), fronted at memes.tabaska.us. The container
+# publishes no host port (edge-network only), so every probe goes through Caddy
+# — which makes them genuine consumer-end checks: TLS + reverse proxy + the
+# container + the app + auth all have to work, not just `docker inspect running`.
+checks:
+  - id: meme-review-api-health
+    tier: fast
+    name: "meme-review API answers /api/health through Caddy TLS"
+    host: mini
+    cmd: curl -s -m 8 https://memes.tabaska.us/api/health
+    expect: '"ok":true'
+    severity: crit
+    task_id: meme-review-01
+    runbook: wiki/docs/services/meme-review.md
+    enabled: true
+
+  - id: meme-review-spa-served
+    tier: fast
+    name: "meme-review serves the built SPA (not the 'not built yet' fallback)"
+    host: mini
+    cmd: curl -s -m 8 https://memes.tabaska.us/
+    expect: '<title>Meme Review</title>'
+    severity: crit
+    task_id: meme-review-01
+    runbook: wiki/docs/services/meme-review.md
+    enabled: true
+
+  # Consumer invariant: the API auth wall must hold. An unauthenticated hit on a
+  # members-only route has to be rejected — proves the API layer (not just static
+  # files) is alive and that the session guard is wired, end to end through Caddy.
+  - id: meme-review-auth-wall
+    tier: fast
+    name: "meme-review rejects unauthenticated /api/drops with 401"
+    host: mini
+    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' https://memes.tabaska.us/api/drops
+    expect: '^401$'
+    severity: warn
+    task_id: meme-review-01
+    runbook: wiki/docs/services/meme-review.md
+    enabled: true

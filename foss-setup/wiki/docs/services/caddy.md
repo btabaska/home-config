@@ -26,6 +26,7 @@ Caddy is the single reverse proxy for the whole homelab, running on the Mac mini
 |---|---|
 | `caddy` | `./caddy/Caddyfile:/etc/caddy/Caddyfile:ro` |
 | `caddy` | `/opt/stacks/wiki/site:/srv/wiki:ro` |
+| `caddy` | `/opt/stacks/caddy/site:/srv/static:ro` |
 | `caddy` | `caddy_data:/data` |
 | `caddy` | `caddy_config:/config` |
 
