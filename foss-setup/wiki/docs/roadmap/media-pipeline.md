@@ -16,7 +16,7 @@
 | `media-08` | CWA duplicate ingest on Readarr re-import — connect script has no dedupe, add a books-dup tripwire | ✅ done | 30-60 min |
 | `media-09` | fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs | ⬜ open | 1-2 hrs |
 | `media-10` | Seedbox: retire drained readarr label pair from deluge-reaper | ⬜ open | 10 min |
-| `media-11` | Lidarr: 'Camera' album monitored under unmonitored artist (orphan flag) | ⬜ open | 10-20 min |
+| `media-11` | Lidarr: 'Camera' album monitored under unmonitored artist (orphan flag) | ✅ done | 10-20 min |
 | `media-12` | Deploy Bazarr (subtitles) on the NAS + Homepage widget | 🗑️ retired | 1.5 hr |
 | `media-13` | Release reclaimed disk pinned by stale 2026-07-02 Btrfs @sharesnap snapshots (volume2/volume3) | ⬜ open | 20-40 min |
 | `nas-10` | Deploy Plex Media Server on the NAS (libraries + Quick Sync) | ✅ done | 45-60 min |

@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**224/319 done** · **63 open** · **18 deferred** · 14 retired.
+**228/319 done** · **59 open** · **18 deferred** · 14 retired.
 
 ---
 
@@ -37,20 +37,16 @@
 ### media-pipeline
 - [ ] **`media-09`** fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs _(est 1-2 hrs)_
 - [ ] **`media-10`** Seedbox: retire drained readarr label pair from deluge-reaper _(est 10 min)_ — ⛔ gate: not before 2026-08-04
-- [ ] **`media-11`** Lidarr: 'Camera' album monitored under unmonitored artist (orphan flag) _(est 10-20 min)_
 - [ ] **`media-13`** Release reclaimed disk pinned by stale 2026-07-02 Btrfs @sharesnap snapshots (volume2/volume3) _(est 20-40 min)_
 
 ### ops
-- [ ] **`dns-06`** NAS AdGuard: external resolution failing (dns-nas-external crit) _(est 20-40 min)_
 - [ ] **`glue-15`** Clear the pre-existing fleet git-hygiene regressions surfaced during glue-14 _(est 30-45 min)_
 - [ ] **`nas-31`** Immich: backup freshness + mobile pairing checks failing (fix-35 regression) _(est 30-60 min)_
-- [ ] **`net-16`** homepage container DNS: EAI_AGAIN on tabaska.us names (159 errors/2h) _(est 20-40 min)_
 
 ### photos
 - [ ] **`nas-08b`** Import mirrorless-camera SD card into Immich via immich-go (+ pbak option) _(est 30 min)_
 
 ### reading
-- [ ] **`read-02`** Set up Syncthing as a systemd user service on CachyOS _(est 20 min)_
 - [ ] **`read-05`** Connect KOReader to Calibre/CWA over WiFi (OPDS + wireless send) _(est 20 min)_
 - [ ] **`read-06`** Enable CWA built-in KOReader progress sync (KOSync) on the Kobo _(est 20 min)_
 - [ ] **`read-08`** Wire the KOReader Wallabag plugin on the Kobo _(est 20 min)_

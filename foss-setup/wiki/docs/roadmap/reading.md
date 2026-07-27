@@ -10,7 +10,7 @@
 | `fix-48` | Libreseerr request-path robustness (OL-id 400s, 15s timeouts, reconciler dead-ends, unicode authors, no retry) | ✅ done | 1-3 hrs |
 | `nas-09` | Deploy Calibre-Web-Automated on Container Manager (pinned, hardened) | ✅ done | 30 min |
 | `read-01` | Install Calibre desktop (library master + conversion) on CachyOS | ✅ done | 20 min |
-| `read-02` | Set up Syncthing as a systemd user service on CachyOS | ⬜ open | 20 min |
+| `read-02` | Set up Syncthing as a systemd user service on CachyOS | ✅ done | 20 min |
 | `read-03` | Wire the Calibre library into CWA auto-ingest on the NAS | ✅ done | 20 min |
 | `read-04` | Install KOReader on the Kobo | ✅ done | 30 min |
 | `read-05` | Connect KOReader to Calibre/CWA over WiFi (OPDS + wireless send) | ⬜ open | 20 min |
