@@ -124,7 +124,8 @@ it within a few seconds (only if the coach model is loaded — best-effort).
 
 - [`templates/daily.md`](templates/daily.md) — `#journal`.
 - [`templates/gamelog.md`](templates/gamelog.md) — `#gamelog #journal` (flows through the same
-  analysis; IGDB metadata enrichment is Phase 2 / `journal-07`, deferred).
+  analysis; IGDB metadata enrichment (`journal-07`) is LIVE — a 🎮 comment is added from the
+  `**Game:**` line, alongside the 🧭 reflection).
 
 ## Backup & export
 

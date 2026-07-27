@@ -12869,7 +12869,7 @@
   "required": false,
   "run": 9,
   "gate": "User opts in AND provides a Twitch developer app Client ID + Secret (IGDB OAuth); store at vault journaling.igdb.* (merge). DO NOT build until the user explicitly enables Phase 2.",
-  "title": "Phase 2 (deferred): IGDB game-metadata enrichment for #gamelog entries",
+  "title": "IGDB game-metadata enrichment for #gamelog entries (journal-07, optional/opt-in — SHIPPED)",
   "summary": "Appendix / Phase 2 — DEFERRED, build only on explicit opt-in. Isolated n8n branch (or 2nd workflow): on a #gamelog memo, parse the title, query IGDB (Twitch OAuth, token refresh handled in n8n) for the best match, pull cover art + canonical name + release date + genres + developer, and append it as a loop-safe COMMENT (never edit the body). Graceful degradation: if creds missing or IGDB unreachable, skip silently and let the normal sentiment/coaching analysis proceed unchanged. Respect rate limits + cache lookups. Must be toggleable without touching the core loop.",
   "steps": [
    "Add Twitch/IGDB creds to .env.example as clearly-OPTIONAL vars (names only); document registering the Twitch app + token refresh.",
