@@ -384,6 +384,7 @@
  {
   "id": "glue-02",
   "title": "Desktop baseline on CachyOS: browser(s) + LibreOffice (anytime)",
+  "note": "2026-07-27 reality audit: Firefox 152 + LibreOffice 26.2 are INSTALLED and runnable on the rig (a live graphical session exists), so this is effectively done -- but the adversarial pass could not confirm LibreOffice was ever actually OPENED. Operator: open LibreOffice once to confirm, then this closes (also unblocks foss-02).",
   "host": "CachyOS",
   "type": "async",
   "depends_on": [],
@@ -10213,10 +10214,14 @@
  {
   "id": "retro-06",
   "title": "RetroAchievements + cheat DB",
+  "depends_on": [
+   "retro-05"
+  ],
+  "note": "2026-07-27 operator review: this is the achievements+cheats LAYER on top of RetroArch, which is not installed anywhere yet, so it depends on an emulator frontend existing first (retro-05 on the rig; retro-04 on the Steam Deck). Operator WANTS cheats kept in scope. Two halves: (A) log into RetroAchievements INSIDE RetroArch on each device using the RA USERNAME + PASSWORD (a login/token) -- NOT the vault RA API key, which is only for RomM's dashboard (retro-08); (B) a central RetroArch cheat DB (.cht files) under cheats/ synced across devices via the retro-03 mesh. Play target = BOTH (rig + Steam Deck).",
   "track": "gaming",
   "run": 6,
   "mode": "mixed",
-  "gate": "RetroAchievements account creds in vault",
+  "gate": "RA account USERNAME+PASSWORD for RetroArch login (distinct from the RomM API key) + an emulator installed first (retro-05 rig / retro-04 Deck)",
   "detail": [
    {
     "h": "RetroAchievements + cheats",
@@ -10512,6 +10517,7 @@
  {
   "id": "retro-08",
   "title": "RomM RetroAchievements dashboard (view-only unlock %/hardcore stats)",
+  "note": "2026-07-27 operator review: the RA API key is now in the vault (romm.retroachievements_api_key) and already wired into the live RomM env (RETROACHIEVEMENTS_API_KEY). The ONLY remaining input is the operator's RA USERNAME (set it on the RomM profile + RA_API_ENABLED=true). View-only: shows only achievements already EARNED, which come from retro-06 on-device.",
   "host": "mini",
   "type": "sync",
   "depends_on": [
@@ -11577,6 +11583,7 @@
  {
   "id": "media-09",
   "title": "fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs",
+  "note": "2026-07-27 reality audit: step 1 (re-grab) is effectively DONE -- 4 of 5 residual titles now have real WEBDL files; step 3 (stranded count) holds. The ONLY outstanding piece is the ~180GB RAR reclaim (step 2), blocked by two locked 2026-07-02 Btrfs @sharesnap snapshots and now tracked as media-13. media-09's remainder == media-13.",
   "host": "nas",
   "type": "async",
   "depends_on": [],
@@ -11974,6 +11981,7 @@
   "host": "nas",
   "estimate": "30-60 min",
   "title": "Immich: backup freshness + mobile pairing checks failing (fix-35 regression)",
+  "note": "2026-07-27 reality audit: the backup half RECOVERED -- nas-immich-backup-freshness now passes (backup=fresh, photos landing). Only nas-immich-mobile-paired still warns (paired=NO, 0 mobile sessions), which is a warn-BY-DESIGN reminder (no phone paired), not a backup breakage. Remaining action = re-pair the Immich mobile app, or accept/close as warn-by-design.",
   "summary": "nas-immich-backup-freshness (backup=STALE assets=0 fresh_file=none) and nas-immich-mobile-paired (paired=NO mobile_sessions=0) both warn as of 2026-07-20 (pre-existing, unrelated to books work). Either the mobile app lost its session/stopped backing up, or the check's data source drifted. Investigate per the photos runbook (fix-35), restore mobile backup, confirm both green.",
   "steps": [
    "Check immich sessions + recent assets via API (immich-monitoring-quirks: keys minted via DB)",
@@ -12504,13 +12512,13 @@
   "steps": [
    "Create configs/nas/mylar3/docker-compose.yml: lscr.io/linuxserver/mylar3 DIGEST-pinned, PUID=1026/PGID=100, TZ=America/New_York, volumes /volume1/docker/mylar3/config:/config + /volume1/comics:/comics, port 8090, restart unless-stopped. .env(.example) carries the ComicVine key NAME only.",
    "Deploy on the NAS (operator sudo docker — the NAS SSH user has no docker socket; sudo needs the vault password piped to sudo -S + the full /usr/local/bin/docker path). Bring it up; confirm the container runs as 1026:100.",
-   "Complete the first-run wizard in the Mylar3 WebUI (http://192.168.10.4:8090): enter the ComicVine API key (vault mylar3.comicvine_api_key), set Comic Location to /comics/Comics (= Komga's Comics library root), save + restart.",
+   "Complete the first-run wizard in the Mylar3 WebUI (http://192.168.10.4:8090): enter the ComicVine API key (vault comicvine.api_key), set Comic Location to /comics/Comics (= Komga's Comics library root), save + restart.",
    "Add Caddy vhost mylar.tabaska.us -> {$NAS_IP}:8090 (live caddy stack + repo mirror); validate + reload; confirm 200 + valid TLS.",
    "Mirror the compose + a README to configs/nas/mylar3/ (document the DDL-first design + the ComicVine-key + NAS-only rationale). No monitoring/wiki yet (read-24/read-25)."
   ],
   "verify": "mylar.tabaska.us reachable with valid cert; the Mylar3 container is up as 1026:100; the WebUI loads and the ComicVine connection test succeeds (metadata lookups return results); Comic Location is /comics/Comics.",
   "pitfalls": "Must run on the NAS (/volume1/comics is a plain non-SMB dir). Files MUST be written 1026:100 or Komga (same uid) + NAS ACLs break. NAS SSH user has no docker socket + no passwordless sudo — pipe the vault password to sudo -S, full /usr/local/bin/docker path. DS920+ RAM is tight (arrs+Plex+Immich+Komga+CWA) — Mylar3 is light but budget for it. Digest-pin the image (fix-38). Watch for a NAS docker pull deadlock at extraction (concurrent pulls).",
-  "gate": "read-20 must have landed the ComicVine key in the vault"
+  "gate": "SATISFIED 2026-07-27 -- read-20 landed the ComicVine key at vault comicvine.api_key"
  },
  {
   "id": "read-22",

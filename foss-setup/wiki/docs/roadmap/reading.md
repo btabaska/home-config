@@ -19,7 +19,7 @@
 | `read-09` | Add RSS/news to KOReader (Miniflux tie-in) | ⬜ open | 20 min |
 | `read-10` | Install the iPod sync toolchain on CachyOS (Rhythmbox + libgpod) | ✅ done | 15 min |
 | `read-11` | Sync the iPod Classic from CachyOS via Rhythmbox/libgpod | ✅ done | 45 min |
-| `read-12` | Install + configure gPodder for podcasts on CachyOS (funnel into Rhythmbox) | ⬜ open | 20 min |
+| `read-12` | Install + configure gPodder for podcasts on CachyOS (funnel into Rhythmbox) | 🗑️ retired | 20 min |
 | `read-13` | Enable official Obsidian Sync (E2E encrypted) on CachyOS | ✅ done | 20 min |
 | `read-14` | Deploy Pinchflat — archive YouTube channels into Plex (and as podcast RSS) | ✅ done | 30 min |
 | `read-15` | CWA: KOReader sync checksum table missing (book_format_checksums) | ⬜ open | 15-30 min |
@@ -27,7 +27,7 @@
 | `read-17` | Deploy Komga (comics + manga reader) on the NAS + Homepage widget | ✅ done | 1.5 hr |
 | `read-18` | Deploy Suwayomi (manga server) on the rig, feeding Komga | ✅ done | 1.5 hr |
 | `read-19` | Sync Audiobookshelf audiobooks + podcasts to the iPod Classic (alongside music) | ✅ done | 3 hr |
-| `read-20` | Provision the ComicVine API key for Mylar3 into the vault | ⬜ open | 15 min |
+| `read-20` | Provision the ComicVine API key for Mylar3 into the vault | ✅ done | 15 min |
 | `read-21` | Deploy the Mylar3 container on the NAS (base install + first-run config) | ⬜ open | 45 min |
 | `read-22` | Enable Mylar3 GetComics (DDL) acquisition + prove one comic end-to-end into Komga | ⬜ open | 1 hr |
 | `read-23` | Wire Mylar3's fallback acquisition: Prowlarr app-sync + seedbox Deluge (best-effort) | ⬜ open | 1 hr |
