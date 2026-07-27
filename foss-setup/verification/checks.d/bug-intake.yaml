@@ -1,0 +1,39 @@
+# Household "Report a Problem" bug intake (bug-01) — a tailnet/LAN-only n8n Form Trigger
+# at bug.tabaska.us that files a labeled Forgejo issue in home/household-bugs and pings
+# ntfy 'bugs' (+ Discord once its webhook is set). These probe the CONSUMER end, not
+# liveness: the deep check actually submits the form and asserts a labeled issue appears
+# (then deletes it), with a notify-suppression sentinel so a monitoring run never buzzes
+# the operator's phone. Runbook: wiki/docs/runbooks/bug-intake.md.
+checks:
+  - id: bug-intake-form-armed
+    tier: fast
+    name: "bug.tabaska.us form is served + workflow active (/form/<id> renders fields)"
+    host: mini
+    cmd: curl -s -m 8 http://localhost:5678/form/8f2c1a4b-6d3e-4a90-b1c2-a1b2c3d4e5f6
+    expect: 'What happened'
+    severity: crit
+    task_id: bug-01
+    runbook: wiki/docs/runbooks/bug-intake.md
+    enabled: true
+
+  - id: bug-intake-homepage-tile
+    tier: fast
+    name: "the 'Report a Problem' household tile is present on Homepage"
+    host: mini
+    cmd: curl -s -m 8 http://localhost:3010/api/services
+    expect: 'Report a Problem'
+    severity: warn
+    task_id: bug-01
+    runbook: wiki/docs/runbooks/bug-intake.md
+    enabled: true
+
+  - id: bug-intake-e2e
+    tier: daily
+    name: "synthetic submit -> labeled Forgejo issue in home/household-bugs (then deleted)"
+    host: mini
+    cmd: python3 /opt/verification/bin/bugreport-e2e.py
+    expect: 'BUGREPORT_OK'
+    severity: crit
+    task_id: bug-01
+    runbook: wiki/docs/runbooks/bug-intake.md
+    enabled: true

@@ -207,6 +207,11 @@
           key: "{{HOMEPAGE_VAR_MINIFLUX_KEY}}"
 
 - Home:
+    - Report a Problem:
+        icon: mdi-bug
+        href: https://bug.tabaska.us
+        description: Something not working? Tell us
+        target: _blank
     - Home Assistant:
         icon: home-assistant.png
         href: https://ha.tabaska.us

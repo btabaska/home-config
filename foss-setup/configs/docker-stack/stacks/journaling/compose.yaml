@@ -90,6 +90,17 @@ services:
       - IGDB_ENABLED=${IGDB_ENABLED:-true}
       - IGDB_CLIENT_ID=${IGDB_CLIENT_ID}
       - IGDB_CLIENT_SECRET=${IGDB_CLIENT_SECRET}
+      # bug-01: household "Report a Problem" intake (bug.tabaska.us Form Trigger ->
+      # Forgejo issue in home/household-bugs -> ntfy 'bugs' + Discord). The workflow
+      # reads these three secrets via $env; all upstream URLs are container-name
+      # routed on the edge net (forgejo:3000, ntfy:80) and hardcoded in the nodes.
+      # DISCORD_BUGS_WEBHOOK is DEFERRED (empty) — the Discord node no-ops while unset
+      # (ntfy still fires); fill vault discord.bugs_webhook_url to enable. Values live
+      # in the live .env (chmod 600); canonical at vault forgejo.n8n_household_bugs_token,
+      # ntfy.bugs_token, discord.bugs_webhook_url.
+      - FORGEJO_TOKEN=${FORGEJO_TOKEN}
+      - NTFY_TOKEN=${NTFY_TOKEN}
+      - DISCORD_BUGS_WEBHOOK=${DISCORD_BUGS_WEBHOOK:-}
     volumes:
       - ./n8n:/home/node/.n8n # workflows + sqlite + encryption key — restic-backed
     networks:

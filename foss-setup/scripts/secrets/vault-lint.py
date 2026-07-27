@@ -36,6 +36,7 @@ ALLOW_EMPTY = {
     "vesync.password": "future smart-home roadmap item, not integrated",
     "withings.client_id": "future smart-home roadmap item, not integrated",
     "withings.client_secret": "future smart-home roadmap item, not integrated",
+    "discord.bugs_webhook_url": "bug-01 Discord ping deferred — operator to provide; ntfy notification works without it, n8n no-ops the Discord node while empty",
 }
 
 

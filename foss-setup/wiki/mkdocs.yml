@@ -128,6 +128,7 @@ nav:
       - Backup & restore: runbooks/backup-restore.md
       - Rebuild a host: runbooks/rebuild-a-host.md
       - Add a service: runbooks/add-a-service.md
+      - Household bug intake (Report a Problem): runbooks/bug-intake.md
       - Recover the rig (WoL): runbooks/wake-the-rig.md
       - Update images: runbooks/update-images.md
       - Verification: runbooks/verification.md
