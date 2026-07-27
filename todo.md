@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**229/322 done** · **60 open** · **18 deferred** · 15 retired.
+**230/322 done** · **59 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -18,7 +18,6 @@
 - [ ] **`books-hc-upstream-swap`** Swap rreading-glasses-hc off the temporary local image once upstream fixes Hardcover batch limit (#574) _(est 15-30 min)_
 
 ### bug-intake
-- [ ] **`bug-01`** Household "Report a Problem" intake — Homepage tile → n8n form → Forgejo issue → notify _(est 3-4 h)_
 - [ ] **`bug-02`** Read-only auto-triage — mini observes, rig reasons → Forgejo triage comment _(est 3-5 h)_
 - [ ] **`bug-03`** Discord downtime reports for friends (game servers) → same triage pipeline _(est 3-4 h)_
 
