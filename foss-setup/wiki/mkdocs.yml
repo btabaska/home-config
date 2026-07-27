@@ -121,6 +121,7 @@ nav:
           - seerr: services/seerr.md
       - Uncategorized:
           - bgutil-pot: services/bgutil-pot.md
+          - mylar3: services/mylar3.md
           - shelfmark: services/shelfmark.md
       # END GENERATED SERVICES NAV
   - Runbooks:

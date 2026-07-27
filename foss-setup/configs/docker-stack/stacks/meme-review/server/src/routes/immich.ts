@@ -4,6 +4,7 @@ import {
   status,
   albums,
   albumAssets,
+  timeline,
   assetImage,
   getImmichConfig,
   setImmichConfig,
@@ -41,6 +42,16 @@ immichRoutes.get("/albums", requireUser, async (c) => {
     return c.json({ albums: await albums() });
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : "failed", albums: [] }, 502);
+  }
+});
+
+immichRoutes.get("/timeline", requireUser, async (c) => {
+  if (!immichEnabled()) return c.json({ error: "immich not connected", assets: [] }, 200);
+  try {
+    const page = Math.max(1, Number(c.req.query("page") ?? 1));
+    return c.json({ assets: await timeline(page) });
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : "failed", assets: [] }, 502);
   }
 });
 

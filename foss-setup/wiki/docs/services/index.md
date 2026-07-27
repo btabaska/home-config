@@ -1,6 +1,6 @@
 # Services
 
-46 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+47 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 
@@ -126,6 +126,7 @@
 | Stack | Host | URL |
 |---|---|---|
 | [bgutil-pot](bgutil-pot.md) | mini | — |
+| [mylar3](mylar3.md) | nas | https://mylar3.tabaska.us |
 | [shelfmark](shelfmark.md) | nas | https://shelfmark.tabaska.us |
 
 Not compose-managed in this repo (so not listed above): **Plex** (native NAS package), **slskd + Deluge** (seedbox — see [seedbox](../hosts/seedbox.md)), and the **rig AI stack** (litellm, open-webui, mcpo — compose lives in the separate `local-ai-tooling` repo; see [rig](../hosts/rig.md)).

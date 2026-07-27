@@ -4,6 +4,10 @@ import { useStore } from "../store";
 
 type Source = "immich" | "upload";
 
+// Sentinel collection id for "browse the whole Immich timeline" (works even when
+// the account has photos but no albums).
+const TIMELINE = "__timeline__";
+
 interface Item {
   key: string;
   immichAssetId?: string;
@@ -27,7 +31,7 @@ export function Compose() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [caption, setCaption] = useState("");
   const [albums, setAlbums] = useState<Array<{ id: string; name: string; assetCount: number }>>([]);
-  const [albumId, setAlbumId] = useState<string>("");
+  const [albumId, setAlbumId] = useState<string>(TIMELINE); // "Recent" (whole timeline) by default
   const [immichError, setImmichError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [result, setResult] = useState<CreateResult | null>(null);
@@ -35,7 +39,8 @@ export function Compose() {
   const fileInput = useRef<HTMLInputElement>(null);
   const partnerName = partner?.display_name ?? "them";
 
-  // load immich albums when switching to that source
+  // load the album list when switching to the Immich source (for the chip row).
+  // The default collection stays "Recent" (timeline) so it works with no albums.
   useEffect(() => {
     if (source !== "immich") return;
     setImmichError(null);
@@ -44,16 +49,18 @@ export function Compose() {
       .then((r) => {
         setAlbums(r.albums ?? []);
         if (r.error) setImmichError(r.error);
-        if (r.albums?.[0] && !albumId) setAlbumId(r.albums[0].id);
       })
       .catch((e) => setImmichError(e.message));
   }, [source]);
 
+  // load assets for the selected collection: "Recent" (timeline) or a chosen album.
   useEffect(() => {
-    if (source !== "immich" || !albumId) return;
+    if (source !== "immich") return;
+    const path = albumId === TIMELINE ? "/immich/timeline" : `/immich/albums/${albumId}/assets`;
     api
-      .get<{ assets: any[]; error?: string }>(`/immich/albums/${albumId}/assets`)
+      .get<{ assets: any[]; error?: string }>(path)
       .then((r) => {
+        if (r.error) setImmichError(r.error);
         setItems(
           (r.assets ?? []).map((a) => ({
             key: a.id,
@@ -153,11 +160,36 @@ export function Compose() {
         </button>
       </div>
 
+      {/* Immich collection picker — "Recent" (timeline) plus any albums. */}
+      {source === "immich" && !immichError && (
+        <div style={{ display: "flex", gap: 7, padding: "12px 18px 2px", overflowX: "auto" }}>
+          {[{ id: TIMELINE, name: "Recent" }, ...albums].map((col) => (
+            <button
+              key={col.id}
+              className="tap"
+              onClick={() => setAlbumId(col.id)}
+              style={{
+                padding: "4px 11px",
+                borderRadius: 20,
+                font: "500 11px Inter",
+                whiteSpace: "nowrap",
+                background: albumId === col.id ? "var(--color-accent-900)" : "var(--color-surface)",
+                color: albumId === col.id ? "var(--color-accent-200)" : "var(--color-neutral-400)",
+              }}
+            >
+              {col.id === TIMELINE ? "⏱ Recent" : col.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px 8px" }}>
         <span style={{ fontSize: 12, color: "var(--color-neutral-400)" }}>
           <i className="ph ph-folder-simple" />{" "}
           {source === "immich"
-            ? albums.find((a) => a.id === albumId)?.name ?? "Immich"
+            ? albumId === TIMELINE
+              ? "Immich · Recent"
+              : albums.find((a) => a.id === albumId)?.name ?? "Immich"
             : "Uploads · this device"}
         </span>
         {source === "upload" ? (

@@ -98,23 +98,40 @@ export interface ImmichAsset {
   thumbUrl: string;
 }
 
+function mapAsset(a: any): ImmichAsset {
+  return {
+    id: a.id,
+    checksum: a.checksum ?? null,
+    filename: a.originalFileName ?? a.originalPath?.split("/").pop() ?? a.id,
+    width: a.exifInfo?.exifImageWidth ?? null,
+    height: a.exifInfo?.exifImageHeight ?? null,
+    takenAt: a.fileCreatedAt ? Date.parse(a.fileCreatedAt) : null,
+    // proxied through this server — never expose the direct Immich URL/key
+    thumbUrl: `/api/immich/assets/${a.id}/thumbnail`,
+  };
+}
+
 export async function albumAssets(albumId: string): Promise<ImmichAsset[]> {
   const res = await api(`/albums/${encodeURIComponent(albumId)}`);
   if (!res.ok) throw new Error(`immich album HTTP ${res.status}`);
   const album = (await res.json()) as any;
   const assets = Array.isArray(album.assets) ? album.assets : [];
-  return assets
-    .filter((a: any) => (a.type ?? "IMAGE") === "IMAGE")
-    .map((a: any) => ({
-      id: a.id,
-      checksum: a.checksum ?? null,
-      filename: a.originalFileName ?? a.originalPath?.split("/").pop() ?? a.id,
-      width: a.exifInfo?.exifImageWidth ?? null,
-      height: a.exifInfo?.exifImageHeight ?? null,
-      takenAt: a.fileCreatedAt ? Date.parse(a.fileCreatedAt) : null,
-      // proxied through this server — never expose the direct Immich URL/key
-      thumbUrl: `/api/immich/assets/${a.id}/thumbnail`,
-    }));
+  return assets.filter((a: any) => (a.type ?? "IMAGE") === "IMAGE").map(mapAsset);
+}
+
+// Browse the whole timeline (most recent first) — the fallback when a user keeps
+// photos in Immich without organising them into albums. Backed by the metadata
+// search endpoint, which returns assets even when /albums is empty.
+export async function timeline(page = 1, size = 120): Promise<ImmichAsset[]> {
+  const res = await api(`/search/metadata`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ page, size, type: "IMAGE", order: "desc", withExif: true }),
+  });
+  if (!res.ok) throw new Error(`immich search HTTP ${res.status}`);
+  const data = (await res.json()) as any;
+  const items: any[] = data?.assets?.items ?? [];
+  return items.filter((a) => (a.type ?? "IMAGE") === "IMAGE").map(mapAsset);
 }
 
 // Stream a thumbnail/original straight through, keeping the API key server-side.

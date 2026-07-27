@@ -27,9 +27,10 @@ port — it joins the shared `edge` Docker network and Caddy reaches it by
 container name (`meme-review:8787`). All state (SQLite DB, uploads, and the
 Immich thumbnail cache) lives in the bind-mounted `./data`, which sits under
 `/opt/stacks` and is therefore covered by the existing restic backup job.
-The core loop: compose a **drop** (browse **Immich** albums — asset IDs
-referenced, thumbnails proxied server-side so the API key never reaches the
-browser — or fall back to local upload) → share its link → the recipient
+The core loop: compose a **drop** (browse **Immich** — the recent timeline
+(via `/search/metadata`, so it works even for an account that keeps photos in
+no album) or any album, asset IDs referenced, thumbnails proxied server-side
+so the API key never reaches the browser — or fall back to local upload) → share its link → the recipient
 swipes one image at a time with an always-visible reaction bar (emoji /
 sticker / GIF / text reply, multiple per person, toggling removes) →
 reactions and threads persist and never close. All eleven prototype screens
@@ -86,11 +87,18 @@ the Login screen shows a "First run — create the owner account" form (driven
 by `/api/config` `needsSetup:true`). After creating the owner, add the
 second member from the in-app **Settings → Household → Add member**. To
 reset entirely, stop the stack and delete `./data/meme-review.sqlite*`.
-- **Immich albums are empty in Compose ("Immich not connected").** — Immich is optional and off by default (upload-only). Connect it in the app
-at **Settings → Immich** (server URL + API key), or set `IMMICH_BASE_URL` /
-`IMMICH_API_KEY` in `/opt/stacks/meme-review/.env` and `docker compose up
--d`. Thumbnails are always proxied through the server, so the key stays off
-the browser.
+- **Immich says "connected" but Compose shows 0 albums / no photos.** — Expected when the Immich account keeps photos in the timeline without
+organising them into albums — `/api/albums` legitimately returns `[]`. The
+Compose picker defaults to a **"⏱ Recent"** collection backed by
+`POST /api/search/metadata`, so those photos show up regardless of albums;
+album chips appear alongside it only when albums exist. If even Recent is
+empty, confirm the API key's user actually owns assets
+(`GET /api/users/me`, then `POST /api/search/metadata {"size":1}`) and that
+the base URL has no trailing `/api`. Thumbnails are always proxied through
+this server, so the key never reaches the browser.
+- **Immich is optional and I want it off.** — It is off by default (upload-only). Connect it in-app at **Settings →
+Immich** (server URL + API key) or via `IMMICH_BASE_URL` / `IMMICH_API_KEY`
+in `/opt/stacks/meme-review/.env` + `docker compose up -d`.
 
 ## Operations
 
