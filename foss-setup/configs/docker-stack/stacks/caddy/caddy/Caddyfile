@@ -359,6 +359,12 @@ komga.{$DOMAIN} {
 	reverse_proxy {$NAS_IP}:25600
 }
 
+# Mylar3 — western-comics automation / *arr (read-21). LSIO container on the NAS, port 8090.
+mylar.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:8090
+}
+
 sonarr.{$DOMAIN} {
 	import local_tls
 	reverse_proxy {$NAS_IP}:8989

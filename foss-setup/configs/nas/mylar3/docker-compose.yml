@@ -1,0 +1,29 @@
+# Mylar3 — western-comics automation (read-21)
+# Role : the comics-native *arr (monitor + grabber + filer — Sonarr's role for western comics).
+#        Primary acquisition is the built-in GetComics DDL provider (read-22); Prowlarr/torrent is
+#        the read-23 fallback. ComicVine is the metadata authority (identity/catalog only, no files).
+# Docs : https://github.com/mylar3/mylar3  •  https://docs.linuxserver.io/images/docker-mylar3/
+# WHY NAS: the output tree /volume1/comics is a plain (non-SMB) dir — the mini/rig can't cleanly
+#        mount it as a write target — so Mylar3 must run co-located on the NAS. Output lands in
+#        /comics/Comics (= /volume1/comics/Comics), exactly where Komga's Comics library scans.
+# uid  : PUID=1026/PGID=100 (btabaska:users) — MUST match Komga so files stay readable + NAS ACLs hold.
+# ComicVine key: NOT injected via compose (the LSIO image has no CV env var) — it is stored in
+#        /config/mylar/config.ini ([General] comicvine_api), sourced from vault comicvine.api_key.
+#        See .env.example for the key name; the value never lands in the repo.
+# To upgrade: bump the tag+digest below, then
+#        ssh -t nas 'cd /volume1/docker/mylar3 && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'
+name: mylar3
+services:
+  mylar3:
+    image: lscr.io/linuxserver/mylar3:latest@sha256:4e105bb091e587bfa37d3d38b6e924695379e2b043e82037d33101396fa5eafc   # digest-pinned (fix-38/I68 supply-chain posture); pulled on the NAS 2026-07-27
+    container_name: mylar3
+    environment:
+      - PUID=1026                          # btabaska — matches Komga so grabbed CBZ stay readable
+      - PGID=100                           # users
+      - TZ=America/New_York
+    volumes:
+      - /volume1/docker/mylar3/config:/config   # config.ini + SQLite DB
+      - /volume1/comics:/comics                 # comics library root — Comic Location is /comics/Comics
+    ports:
+      - '8090:8090'
+    restart: unless-stopped
