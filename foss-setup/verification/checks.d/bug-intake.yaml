@@ -37,3 +37,27 @@ checks:
     task_id: bug-01
     runbook: wiki/docs/runbooks/bug-intake.md
     enabled: true
+
+  # bug-02: the read-only auto-triage loop (mini observes -> rig reasons -> Forgejo comment).
+  - id: bug-triage-evidence-armed
+    tier: fast
+    name: "bug-triage-evidence read-only collector is healthy (docker socket + probes)"
+    host: mini
+    cmd: docker inspect --format '{{.State.Health.Status}}' bug-triage-evidence
+    expect: 'healthy'
+    severity: warn
+    task_id: bug-02
+    runbook: wiki/docs/runbooks/bug-intake.md
+    enabled: true
+
+  - id: bug-triage-e2e
+    tier: daily
+    name: "synthetic report -> auto-triage comment appears on the Forgejo issue (degrade-aware)"
+    host: mini
+    cmd: python3 /opt/verification/bin/bugtriage-e2e.py
+    expect: '^BUGTRIAGE_(OK|SKIP_MODEL_UNAVAILABLE)'
+    severity: warn
+    task_id: bug-02
+    runbook: wiki/docs/runbooks/bug-intake.md
+    enabled: true
+    timeout: 240

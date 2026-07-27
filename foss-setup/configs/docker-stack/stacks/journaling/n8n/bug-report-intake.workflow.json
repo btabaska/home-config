@@ -110,7 +110,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// bug-01: map the household form submission to a Forgejo issue payload.\n// Two required fields (activity + what-happened); the rest are optional. Field keys\n// are the field LABELS (formTrigger typeVersion 2.2). Reads defensively.\nconst f = $input.first().json;\nconst get = (k) => { const v = f[k]; return (v == null ? '' : String(v)).trim(); };\nconst activity = get('What were you trying to do?');\nconst what     = get('What happened?');\nconst where    = get('Where were you? (which device or room)');\nconst when     = get('When did it happen?');\nconst sevRaw   = get('How much is it bothering you?');\n\nconst A = activity.toLowerCase();\nlet label = 'service:triage', svc = '(unknown — needs triage)', actName = 'Something else';\nif (A.includes('watch'))            { label='service:plex';       svc='Plex / Jellyfin';                                   actName='Watch'; }\nelse if (A.includes('listen'))      { label='service:navidrome';  svc='Navidrome / Audiobookshelf';                        actName='Listen'; }\nelse if (A.includes('photo'))       { label='service:immich';     svc='Immich';                                            actName='Photos'; }\nelse if (A.includes('read'))        { label='service:komga';      svc='Audiobookshelf / Komga / Calibre-Web / Suwayomi';   actName='Read'; }\nelse if (A.includes('journal'))     { label='service:journaling'; svc='Memos / n8n';                                       actName='Journal'; }\nelse if (A.includes('dashboard') || A.includes('home page')) { label='service:homepage'; svc='Homepage'; actName='Dashboard'; }\nelse if (A.includes('game'))        { label='service:games';      svc='AMP / Palworld';                                    actName='Game'; }\nelse if (A.includes('request'))     { label='service:seerr';      svc='Seerr / Musicseerr / Shelfmark';                    actName='Request'; }\n\n// light where-based disambiguation\nlet hint = '';\nif (label === 'service:plex' && /tv|telly|living/i.test(where)) hint = ' (likely Plex on the TV)';\n\nlet sevLabel = 'sev:annoying', sevWord = 'Annoying (unspecified)';\nif (/block/i.test(sevRaw))      { sevLabel='sev:blocking'; sevWord='Blocking'; }\nelse if (/annoy/i.test(sevRaw)) { sevLabel='sev:annoying'; sevWord='Annoying'; }\n\nconst labelNames = ['source:home', label, sevLabel];\n\nconst firstLine = ((what.split(/\\r?\\n/)[0]) || what || 'Problem reported').slice(0, 80);\nconst title = '[' + actName + '] ' + firstLine;\n\nlet body = '**What were you trying to do?** ' + (activity || '_(not provided)_') + '\\n\\n';\nbody += '**What happened?**\\n' + (what || '_(not provided)_') + '\\n\\n';\nbody += '**Likely service(s):** ' + svc + hint + '\\n';\nif (where) body += '**Where / device:** ' + where + '\\n';\nif (when)  body += '**When:** ' + when + '\\n';\nbody += '**Severity:** ' + sevWord + '\\n';\nbody += '\\n---\\n_Filed from the household “Report a Problem” form (bug.tabaska.us). Auto-labeled; the service guess may be off — triage as needed._';\n\nconst bin = $input.first().binary || {};\nconst screenshotKey = Object.keys(bin)[0] || '';\nconst hasScreenshot = !!screenshotKey;\n\nreturn [{ json: { title, body, labelNames, activity: actName, service: svc, severity: sevWord, whatShort: firstLine, hasScreenshot }, binary: $input.first().binary }];\n"
+        "jsCode": "// bug-01: map the household form submission to a Forgejo issue payload.\n// Two required fields (activity + what-happened); the rest are optional. Field keys\n// are the field LABELS (formTrigger typeVersion 2.2). Reads defensively.\nconst f = $input.first().json;\nconst get = (k) => { const v = f[k]; return (v == null ? '' : String(v)).trim(); };\nconst activity = get('What were you trying to do?');\nconst what     = get('What happened?');\nconst where    = get('Where were you? (which device or room)');\nconst when     = get('When did it happen?');\nconst sevRaw   = get('How much is it bothering you?');\n\nconst A = activity.toLowerCase();\nlet label = 'service:triage', svc = '(unknown — needs triage)', actName = 'Something else';\nif (A.includes('watch'))            { label='service:plex';       svc='Plex / Jellyfin';                                   actName='Watch'; }\nelse if (A.includes('listen'))      { label='service:navidrome';  svc='Navidrome / Audiobookshelf';                        actName='Listen'; }\nelse if (A.includes('photo'))       { label='service:immich';     svc='Immich';                                            actName='Photos'; }\nelse if (A.includes('read'))        { label='service:komga';      svc='Audiobookshelf / Komga / Calibre-Web / Suwayomi';   actName='Read'; }\nelse if (A.includes('journal'))     { label='service:journaling'; svc='Memos / n8n';                                       actName='Journal'; }\nelse if (A.includes('dashboard') || A.includes('home page')) { label='service:homepage'; svc='Homepage'; actName='Dashboard'; }\nelse if (A.includes('game'))        { label='service:games';      svc='AMP / Palworld';                                    actName='Game'; }\nelse if (A.includes('request'))     { label='service:seerr';      svc='Seerr / Musicseerr / Shelfmark';                    actName='Request'; }\n\n// light where-based disambiguation\nlet hint = '';\nif (label === 'service:plex' && /tv|telly|living/i.test(where)) hint = ' (likely Plex on the TV)';\n\nlet sevLabel = 'sev:annoying', sevWord = 'Annoying (unspecified)';\nif (/block/i.test(sevRaw))      { sevLabel='sev:blocking'; sevWord='Blocking'; }\nelse if (/annoy/i.test(sevRaw)) { sevLabel='sev:annoying'; sevWord='Annoying'; }\n\nconst labelNames = ['source:home', label, sevLabel];\n\nconst firstLine = ((what.split(/\\r?\\n/)[0]) || what || 'Problem reported').slice(0, 80);\nconst title = '[' + actName + '] ' + firstLine;\n\nlet body = '**What were you trying to do?** ' + (activity || '_(not provided)_') + '\\n\\n';\nbody += '**What happened?**\\n' + (what || '_(not provided)_') + '\\n\\n';\nbody += '**Likely service(s):** ' + svc + hint + '\\n';\nif (where) body += '**Where / device:** ' + where + '\\n';\nif (when)  body += '**When:** ' + when + '\\n';\nbody += '**Severity:** ' + sevWord + '\\n';\nbody += '\\n---\\n_Filed from the household “Report a Problem” form (bug.tabaska.us). Auto-labeled; the service guess may be off — triage as needed._';\n\nconst bin = $input.first().binary || {};\nconst screenshotKey = Object.keys(bin)[0] || '';\nconst hasScreenshot = !!screenshotKey;\n\nreturn [{ json: { title, body, labelNames, activity: actName, service: svc, severity: sevWord, whatShort: firstLine, what, where, when, hasScreenshot }, binary: $input.first().binary }];\n"
       },
       "id": "bug01-0000-0000-0000-000000000002",
       "name": "Build issue payload",
@@ -251,7 +251,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Build the ntfy + Discord notification payloads from the created issue.\nconst issue = $('Create Forgejo issue').first().json;\nconst p = $('Build issue payload').first().json;\nconst num = issue && issue.number ? issue.number : '?';\nconst link = 'https://git.tabaska.us/home/household-bugs/issues/' + num;\n// ntfy Title header must be ASCII-safe (no emoji in headers) -> emoji only in body.\nconst title = 'New bug report: ' + p.activity;\nconst msg = '\\u{1F41E} ' + p.whatShort + '\\n\\nService: ' + p.service + '\\nSeverity: ' + p.severity + '\\n' + link;\nconst priority = /block/i.test(p.severity) ? '4' : '3';\nconst dw = ($env.DISCORD_BUGS_WEBHOOK || '').trim();\nconst discordSet = dw.length > 0;\nconst discordBody = { content: '\\u{1F41E} **New household bug report** — ' + p.activity + ' (' + p.severity + ')\\n' + p.whatShort + '\\n' + link };\n// The verification synthetic-submit probe files a report carrying this sentinel; the\n// issue is still created (so the create path is exercised end-to-end) but we SKIP the\n// ntfy/Discord ping so a monitoring run never buzzes the operator's phone. The probe\n// deletes the issue afterward, leaving zero residue.\nconst notify = !/n8n-bugreport-probe/i.test(p.whatShort || '');\nreturn [{ json: { title, msg, priority, link, discordSet, discordBody, notify } }];\n"
+        "jsCode": "// Build the ntfy + Discord notification payloads from the created issue.\nconst issue = $('Create Forgejo issue').first().json;\nconst p = $('Build issue payload').first().json;\nconst num = issue && issue.number ? issue.number : '?';\nconst link = 'https://git.tabaska.us/home/household-bugs/issues/' + num;\n// ntfy Title header must be ASCII-safe (no emoji in headers) -> emoji only in body.\nconst title = 'New bug report: ' + p.activity;\nconst msg = '\\u{1F41E} ' + p.whatShort + '\\n\\nService: ' + p.service + '\\nSeverity: ' + p.severity + '\\n' + link;\nconst priority = /block/i.test(p.severity) ? '4' : '3';\nconst dw = ($env.DISCORD_BUGS_WEBHOOK || '').trim();\nconst discordSet = dw.length > 0;\nconst discordBody = { content: '\\u{1F41E} **New household bug report** — ' + p.activity + ' (' + p.severity + ')\\n' + p.whatShort + '\\n' + link };\n// The verification synthetic-submit probe files a report carrying this sentinel; the\n// issue is still created (so the create path is exercised end-to-end) but we SKIP the\n// ntfy/Discord ping so a monitoring run never buzzes the operator's phone. The probe\n// deletes the issue afterward, leaving zero residue.\nconst notify = !/n8n-bugreport-probe|n8n-triage-probe/i.test(p.whatShort || '');\nreturn [{ json: { title, msg, priority, link, discordSet, discordBody, notify } }];\n"
       },
       "id": "bug01-0000-0000-0000-000000000008",
       "name": "Build notifications",
@@ -399,6 +399,202 @@
         1500,
         300
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// bug-02: map the freshly-created issue to a read-only probe service key + decide\n// whether to run triage. Skip only the bug-01 form-armed sentinel (n8n-bugreport-probe)\n// to avoid extra LLM load on that daily check; the bug-02 sentinel (n8n-triage-probe)\n// DOES run so the triage E2E exercises the full loop.\nconst p = $('Build issue payload').first().json;\nconst issue = $('Create Forgejo issue').first().json;\nconst svcLabel = (p.labelNames || []).find(n => n.startsWith('service:')) || 'service:triage';\nconst service = svcLabel.replace('service:', '');\nconst runTriage = !/n8n-bugreport-probe/i.test(p.whatShort || '');\nreturn [{ json: { service, issueNumber: (issue && issue.number) || null,\n  activity: p.activity, whatShort: p.whatShort, what: p.what || p.whatShort || '',\n  where: p.where || '', when: p.when || '', runTriage } }];\n"
+      },
+      "id": "bug02-0000-0000-0000-000000000001",
+      "name": "Prep triage",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-run-triage",
+              "leftValue": "={{ $json.runTriage }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "bug02-0000-0000-0000-000000000002",
+      "name": "Run triage?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1340,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=http://bug-triage-evidence:8410/evidence?service={{ $json.service }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "bug02-0000-0000-0000-000000000003",
+      "name": "Gather evidence",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1560,
+        640
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "// bug-02: assemble the single-shot triage chat payload from the evidence bundle + the\n// household report. The rig only ever sees this prose+evidence (no fleet access).\nconst t = $('Prep triage').first().json;\nlet ev = {};\ntry { ev = $('Gather evidence').first().json || {}; } catch (e) { ev = {}; }\nif (ev && ev.error && !ev.service) ev = { service: t.service, evidence_error: ev.error };\nconst SYS = \"You are a READ-ONLY triage assistant for a self-hosted homelab. Input: a household bug report plus machine-gathered EVIDENCE with these parts: docker (container state/logs), http (health probes), context (background facts), expected_states (documented NORMAL conditions that can cause a symptom).\\\\n\\\\nHARD RULES:\\\\n- OBSERVE-ONLY: never propose restart/fix commands or any action.\\\\n- Ground every claim ONLY in the evidence. NEVER invent notes, jobs, schedules, or causes not present in the evidence.\\\\n- \\\\\\\"Expected state?\\\\\\\" = yes ONLY if an entry in expected_states actually explains this symptom (quote which one). The context section is background ONLY and is never by itself a reason to answer yes. If expected_states is empty or none explains the symptom, answer no even when every probe looks healthy (the cause may be downstream/unknown).\\\\n\\\\nEXAMPLE A (expected_states explains it -> yes):\\\\nReport: Photos face-search stuck during the day; browsing works. expected_states mentions Immich ML is night-gated and daytime face-search backfill is deferred.\\\\nDiagnosis: Your photos and albums are fine - browsing and uploading work normally. Only the AI face/subject search is paused, on purpose, during the day.\\\\nExpected state?: yes - Immich ML night-window (face/smart-search backfill deferred to 01:00-07:00).\\\\nLikely cause: Immich ML is intentionally night-gated; daytime face-search delay is expected, not a fault.\\\\nConfidence: high\\\\n\\\\nEXAMPLE B (probes healthy, expected_states empty -> no, do NOT invent):\\\\nReport: I requested a movie two days ago and it never arrived. Probes show the request UI healthy; expected_states is empty; context says downstream download is not probed.\\\\nDiagnosis: The request website is up and working, but nothing in this evidence shows what happened after you submitted; the download/library side, which is not checked here, is the likely place it stalled.\\\\nExpected state?: no - request UI healthy but no expected_state explains it; cause is downstream and not visible here.\\\\nLikely cause: Request UI healthy; likely a downstream indexer/download/library issue this evidence does not cover.\\\\nConfidence: medium\\\\n\\\\nAnswer the REAL report in EXACTLY this template, nothing else:\\\\nDiagnosis: <2-4 plain sentences for a non-technical operator>\\\\nExpected state?: <yes - quote the expected_state | no>\\\\nLikely cause: <one line>\\\\nConfidence: <low|medium|high>\";\nconst report = 'Activity: ' + t.activity + '\\nWhat happened: ' + (t.what || t.whatShort) +\n  (t.where ? '\\nWhere/device: ' + t.where : '') + (t.when ? '\\nWhen: ' + t.when : '');\nconst user = 'BUG REPORT\\n' + report + '\\n\\nEVIDENCE (read-only, machine-gathered):\\n' +\n  JSON.stringify(ev, null, 1);\nconst chatBody = { model: 'utility', messages: [ { role: 'system', content: SYS },\n  { role: 'user', content: user } ], temperature: 0.15, max_tokens: 450 };\nreturn [{ json: { issueNumber: t.issueNumber, service: t.service, chatBody, evidence: ev } }];\n"
+      },
+      "id": "bug02-0000-0000-0000-000000000004",
+      "name": "Build triage prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://192.168.10.12:4000/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.LITELLM_TRIAGE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.chatBody }}",
+        "options": {
+          "timeout": 90000
+        }
+      },
+      "id": "bug02-0000-0000-0000-000000000005",
+      "name": "Call LiteLLM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        640
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "// bug-02: turn the LLM reply (or its absence) into a Forgejo issue comment. On any\n// model failure/empty content we DEGRADE to an evidence-only comment (SKIP, not FAIL)\n// per the best-effort ceiling (rig 24B may be GPU-contended). Also resolves the\n// 'triaged' label id from the labels already fetched earlier in the run.\nconst src = $('Build triage prompt').first().json;\nconst ev = src.evidence || {};\nlet content = '';\ntry { content = (($input.first().json.choices || [])[0].message.content || '').trim(); }\ncatch (e) { content = ''; }\nfunction digest(ev) {\n  let s = '';\n  if (Array.isArray(ev.docker) && ev.docker.length)\n    s += '- **Containers (mini):** ' + ev.docker.map(d => d.name + ': ' + (d.status || d.error || d.state || '?')).join('; ') + '\\n';\n  if (Array.isArray(ev.http) && ev.http.length)\n    s += '- **Health probes:** ' + ev.http.map(h => h.name + '=' + (h.status == null ? 'ERR' : h.status)).join('; ') + '\\n';\n  if (Array.isArray(ev.expected_states) && ev.expected_states.length)\n    s += '- **Known expected-states considered:** ' + ev.expected_states.length + '\\n';\n  return s || '_(no evidence gathered)_\\n';\n}\nconst foot = '\\n\\n<sub>\\uD83D\\uDD0E Auto-triage \\u2014 READ-ONLY: the mini gathered evidence, the rig reasoned. No fleet state was changed and no fix was run. The service guess and diagnosis are advisory \\u2014 re-triage as needed.</sub>';\nconst meta = '\\n_service: ' + (ev.service || src.service) + ' \\u00b7 generated ' + (ev.generated_at || 'n/a') + '_\\n';\nlet body, degraded = false;\nif (content) {\n  body = '## \\uD83D\\uDD0E Auto-triage (read-only)\\n\\n' + content +\n    '\\n\\n<details><summary>Evidence gathered</summary>\\n\\n' + digest(ev) + meta + '</details>' + foot;\n} else {\n  degraded = true;\n  body = '## \\uD83D\\uDD0E Auto-triage \\u2014 evidence only\\n\\n' +\n    'The reasoning model was unavailable (best-effort degrade \\u2014 likely rig GPU contention). ' +\n    'Posting the machine-gathered evidence without a diagnosis; re-run or triage by hand.\\n\\n' +\n    digest(ev) + meta + foot;\n}\nlet triagedId = null;\ntry {\n  let labels = $('Get labels').all().map(i => i.json);\n  if (labels.length === 1 && Array.isArray(labels[0])) labels = labels[0];\n  const hit = labels.find(l => l && l.name === 'triaged');\n  if (hit) triagedId = hit.id;\n} catch (e) {}\nreturn [{ json: { issueNumber: src.issueNumber, body, degraded, triagedId } }];\n"
+      },
+      "id": "bug02-0000-0000-0000-000000000006",
+      "name": "Build triage comment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://forgejo:3000/api/v1/repos/home/household-bugs/issues/{{ $json.issueNumber }}/comments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=token {{ $env.FORGEJO_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"body\": $json.body } }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "id": "bug02-0000-0000-0000-000000000007",
+      "name": "Post triage comment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2440,
+        640
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://forgejo:3000/api/v1/repos/home/household-bugs/issues/{{ $('Build triage comment').first().json.issueNumber }}/labels",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=token {{ $env.FORGEJO_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"labels\": ($('Build triage comment').first().json.triagedId ? [ $('Build triage comment').first().json.triagedId ] : []) } }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "bug02-0000-0000-0000-000000000008",
+      "name": "Label triaged",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2660,
+        640
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     }
   ],
   "connections": {
@@ -458,6 +654,11 @@
             "node": "Prep screenshot",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Prep triage",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -511,6 +712,83 @@
           }
         ],
         []
+      ]
+    },
+    "Prep triage": {
+      "main": [
+        [
+          {
+            "node": "Run triage?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run triage?": {
+      "main": [
+        [
+          {
+            "node": "Gather evidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gather evidence": {
+      "main": [
+        [
+          {
+            "node": "Build triage prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build triage prompt": {
+      "main": [
+        [
+          {
+            "node": "Call LiteLLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call LiteLLM": {
+      "main": [
+        [
+          {
+            "node": "Build triage comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build triage comment": {
+      "main": [
+        [
+          {
+            "node": "Post triage comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post triage comment": {
+      "main": [
+        [
+          {
+            "node": "Label triaged",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },

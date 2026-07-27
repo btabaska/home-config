@@ -101,6 +101,11 @@ services:
       - FORGEJO_TOKEN=${FORGEJO_TOKEN}
       - NTFY_TOKEN=${NTFY_TOKEN}
       - DISCORD_BUGS_WEBHOOK=${DISCORD_BUGS_WEBHOOK:-}
+      # bug-02: read-only auto-triage. The workflow curls the bug-triage-evidence
+      # sidecar (no key — internal) then calls the rig LLM via LiteLLM :4000 with this
+      # least-priv virtual key (scoped to the `utility` model group). Canonical at vault
+      # ai_stack.litellm_bug_triage_key; value lives in the live .env (chmod 600).
+      - LITELLM_TRIAGE_KEY=${LITELLM_TRIAGE_KEY}
     volumes:
       - ./n8n:/home/node/.n8n # workflows + sqlite + encryption key — restic-backed
     networks:
@@ -139,6 +144,49 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  # bug-02: read-only evidence collector — "mini is the eyes." A tiny stdlib HTTP
+  # observer the bug-report triage workflow (n8n) curls at
+  # http://bug-triage-evidence:8410/evidence?service=<key> to gather REAL evidence
+  # (docker State/Health/logs for the mini-local containers + unauthenticated
+  # cross-host health probes + documented expected-state notes) which n8n then sends
+  # to the rig LLM via LiteLLM for a plain-English diagnosis. The read-only ceiling is
+  # STRUCTURAL: the socket is mounted read-only AND used GET-only; the `service` arg is
+  # allowlisted (no docker-command passthrough); the container holds NO secrets, drops
+  # all caps, and runs a read-only rootfs. Internal only — no host port, no Caddy vhost.
+  # Image digest = the multi-arch index for python:3.12-slim, resolved on the mini
+  # 2026-07-27 via `docker buildx imagetools inspect` (fix-38 supply-chain posture).
+  bug-triage-evidence:
+    image: python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de
+    container_name: bug-triage-evidence
+    restart: unless-stopped
+    command: ["python", "/app/evidence-server.py"]
+    environment:
+      - TZ=${TZ}
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    # docker.sock is read-only AND only ever hit with GET (see evidence-server.py);
+    # the .py is bind-mounted read-only so the running code cannot be swapped at rest.
+    volumes:
+      - ./bug-triage/evidence-server.py:/app/evidence-server.py:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    dns:
+      - 192.168.10.4 # net-16 (probes use raw IPs, but keep DNS sane for parity)
+    networks:
+      - edge # n8n reaches it by name here; it reaches NAS/rig services by LAN IP
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8410/healthz')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # ---------------------------------------------------------------------------
   # GPU variant (intentionally NOT used — documented per the plan). The mini has
