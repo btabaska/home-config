@@ -101,6 +101,39 @@ Caveat automerge can't cover: punctuation-variant titles/authors (curly vs strai
 apostrophe) dodge calibredb's exact match — that residue is what
 `cwa-library-dup-titles` / `cwa-library-author-split` still catch.
 
+### `cwa-koreader-sync-consumer` — KOReader/KOSync backend (read-15)
+The consumer-end probe for KOReader wireless progress sync (KOSync). It asserts two things
+on the NAS: (1) the KOSync auth endpoint `http://localhost:8083/kosync/users/auth` returns
+**401** unauthenticated (feature **enabled** — a **503** means KOReader sync is disabled,
+which was the broken state), and (2) the `book_format_checksums` table exists in
+`/volume1/books/metadata.db` with ≥1 row.
+
+**Root cause (read-15, 2026-07-20 discovery via bmig-05):** every metadata-embedded download
+logged `ERROR cps.progress_syncing.checksums.manager: Failed to store checksum for book NN:
+no such table: book_format_checksums`. The fork's checksum-store path
+(`helper.py` → `calculate_and_store_checksum`, fired on any metadata-embedded export/download)
+runs **unconditionally**, but `db.py` only *creates* `book_format_checksums` at startup when
+`koreader_sync_enabled` is set — and it was `0`. So writes hit a table that was never created.
+`book_format_checksums` belongs in **metadata.db** (Calibre library, keyed to `books.id`); the
+companion `kosync_progress` table lives in **app.db** (keyed to `user.id`) and was already present.
+
+**Fix:** enable KOReader sync — `sqlite3 …/cwa.db "UPDATE cwa_settings SET
+koreader_sync_enabled=1"` then **restart** the container. On restart the app's own
+`ensure_calibre_db_tables()` creates `book_format_checksums` (correct schema + 4 indexes + FK
+to `books` ON DELETE CASCADE) and backfills a KOReader partialMD5 per format (154 rows for the
+77-book library). This lives in a **runtime DB no compose file owns** (like the automerge
+setting), so this check is the anti-drift codification. Restarting is the only way to trigger
+the startup backfill; a live flag flip alone is honoured by the KOSync HTTP gate immediately
+(it re-reads `cwa.db` per request) but does not backfill.
+
+On failure: `auth=503` = the flag reverted to `0` (Admin → CWA Settings click, or an image
+bump) → re-enable + restart. `checksums=` empty = the table is gone (a `metadata.db` restore
+from before read-15, or a schema-mismatch migration skip — the app logs
+`book_format_checksums table schema mismatch … Migration required` and leaves it alone). The
+**KOReader device leg** (pointing a physical KOReader e-reader's sync server at CWA) is the
+human task **read-06**; this check only proves the server backend accepts and round-trips a
+KOSync progress PUT/GET.
+
 ## Standing state (2026-07-18)
 
 | thing | value |
@@ -109,6 +142,7 @@ apostrophe) dodge calibredb's exact match — that residue is what
 | `config_kobo_proxy` | `1` — ENABLED is documented intent (vault `cwa.store_passthrough`) |
 | `NETWORK_SHARE_MODE` | `false` in live compose **and** repo mirror (reconciled fix-38) |
 | `auto_ingest_automerge` | `overwrite` in `cwa.db` since 2026-07-20 (media-08; guarded by `cwa-ingest-automerge-guard`) |
+| `koreader_sync_enabled` | `1` in `cwa.db` since 2026-07-28 (read-15; creates `book_format_checksums` in metadata.db, guarded by `cwa-koreader-sync-consumer`) — KOReader device wiring is human task read-06 |
 | library | 65 books (2026-07-20), single author identities, all covers present |
 | removed-book stash | NAS `/volume1/docker/calibre-web-automated/fix38-removed-books/` (~1.5 GB, purgeable) |
 | pre-cleanup DB backups | same dir, `metadata.db.pre-fix38` + `app.db.pre-fix38` in `fix38-backups/` |

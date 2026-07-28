@@ -10,7 +10,14 @@
 #   ssh -t nas 'cd /volume1/docker/calibre-web-automated && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'
 #
 # SECURITY: keep CWA LAN/Tailscale-only (no public :8083). With v4.0.7+, Kobo sync
-# and KOSync are safe to enable when you wire read-06.
+# and KOSync are safe to enable.
+#
+# KOReader sync (KOSync) is ENABLED server-side as of read-15 (2026-07-28): the runtime
+# setting cwa.db cwa_settings.koreader_sync_enabled=1 (no compose knob for it). That creates
+# book_format_checksums in metadata.db + backfills a partialMD5 per format, which the
+# unconditional download checksum-store path needs (else it logs "no such table" per book).
+# Guarded by verification check cwa-koreader-sync-consumer; see runbooks/reading-cwa.md.
+# Pointing a physical KOReader device at CWA is the remaining human task read-06.
 
 name: calibre-web-automated
 

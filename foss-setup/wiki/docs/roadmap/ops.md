@@ -32,7 +32,7 @@
 | `glue-13` | Audit + codify (or document external ownership of) the remaining live-only rig host units | ✅ done | 30-45 min |
 | `glue-14` | Immich-ML GPU yield policy: night-only rig window + NAS-iGPU daytime fallback (photos = lowest-priority tenant) | ✅ done | 2-3 h |
 | `glue-15` | Clear the pre-existing fleet git-hygiene regressions surfaced during glue-14 | ⬜ open | 30-45 min |
-| `nas-31` | Immich: backup freshness + mobile pairing checks failing (fix-35 regression) | ⬜ open | 30-60 min |
+| `nas-31` | Immich: backup freshness + mobile pairing checks failing (fix-35 regression) | ✅ done | 30-60 min |
 | `net-16` | homepage container DNS: EAI_AGAIN on tabaska.us names (159 errors/2h) | ✅ done | 20-40 min |
 | `sbom-01` | Deploy OWASP Dependency-Track v5 (the SBOM / vulnerability dashboard) | 🗑️ retired | 45-60 min |
 | `sbom-02` | Nightly SBOMs with Syft + Grype, uploaded to Dependency-Track | 🗑️ retired | 45-60 min/host |

@@ -660,3 +660,32 @@ checks:
     task_id: read-24
     runbook: wiki/docs/runbooks/komga.md
     enabled: true
+
+  # read-15: KOReader progress-sync (KOSync) server-side consumer end. Root cause of the
+  # bmig-05 "no such table: book_format_checksums" spam: the checksum-store path (helper.py
+  # metadata-embedded download) fires unconditionally, but db.py only CREATES the table at
+  # startup when koreader_sync_enabled is set — and it was 0, so writes hit a missing table.
+  # Fix = enable KOReader sync (cwa.db cwa_settings.koreader_sync_enabled=1) + restart, so the
+  # app's own ensure_calibre_db_tables() creates book_format_checksums in metadata.db and
+  # backfills a partialMD5 per format. This probes the CONSUMER end without credentials:
+  #   (1) the KOSync auth endpoint returns 401 (feature ENABLED; it returns 503 when disabled,
+  #       which was the broken state), proving the /kosync blueprint is live and gated correctly,
+  #   (2) book_format_checksums exists in metadata.db with >=1 row (the doc->book match table
+  #       KOReader sync depends on — a missing/empty table = KOReader clients can't match books).
+  # Both live on the NAS so this runs there (curl localhost:8083 + read-only sqlite3). If the
+  # feature is ever intentionally disabled again, flip this check's enabled to false. warn: KOSync
+  # is a best-effort convenience for a human-wired KOReader device (read-06), not a crit path.
+  - id: cwa-koreader-sync-consumer
+    name: "CWA KOReader/KOSync backend enabled (auth 401 not 503) + book_format_checksums table populated (read-15 consumer end)"
+    host: nas
+    cmd: >-
+      code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' http://localhost:8083/kosync/users/auth);
+      n=$(sqlite3 "file:/volume1/books/metadata.db?mode=ro" "select count(*) from book_format_checksums;" 2>/dev/null);
+      if [ "$code" = "401" ] && [ -n "$n" ] && [ "$n" -ge 1 ] 2>/dev/null;
+      then echo "KOSYNC_OK auth=$code checksums=$n";
+      else echo "KOSYNC_FAIL auth=$code checksums=$n"; fi
+    expect: '^KOSYNC_OK'
+    severity: warn
+    task_id: read-15
+    runbook: wiki/docs/runbooks/reading-cwa.md
+    enabled: true

@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**242/323 done** · **48 open** · **18 deferred** · 15 retired.
+**243/323 done** · **47 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -47,7 +47,6 @@
 - [ ] **`read-06`** Enable CWA built-in KOReader progress sync (KOSync) on the Kobo _(est 20 min)_
 - [ ] **`read-08`** Wire the KOReader Wallabag plugin on the Kobo _(est 20 min)_
 - [ ] **`read-09`** Add RSS/news to KOReader (Miniflux tie-in) _(est 20 min)_
-- [ ] **`read-15`** CWA: KOReader sync checksum table missing (book_format_checksums) _(est 15-30 min)_
 
 ### security
 - [ ] **`foss-04`** Ente Auth adoption + YubiKey enrollment (Authy migration) _(est 1-2 hrs)_
