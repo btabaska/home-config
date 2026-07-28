@@ -118,6 +118,13 @@ services:
     url: https://bazarr.tabaska.us
     on_demand: false
     notes: Subtitle automation for Sonarr + Radarr libraries.
+  - name: bitmagnet
+    category: Media Automation
+    host: nas
+    port: 3333
+    url: https://bitmagnet.tabaska.us
+    on_demand: false
+    notes: Self-hosted DHT crawler + local Torznab indexer for Prowlarr (rate-limit-proof hedge).
   - name: flaresolverr
     category: Media Automation
     host: nas

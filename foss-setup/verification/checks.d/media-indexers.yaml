@@ -1,0 +1,57 @@
+# Bitmagnet — self-hosted DHT-crawler Torznab indexer hedge, CONSUMER-end probes (seed-12, 2026-07-28).
+# Bitmagnet only earns its keep as an indexer if (a) the DHT crawler is still INGESTING new
+# torrent metadata (a dead crawler = a frozen, useless index) and (b) Prowlarr can actually
+# query its Torznab endpoint and get real hits back (so the arrs have a working fallback when
+# the rate-limited public indexers throttle). "Container Up / 200 OK" proves neither.
+#
+# Backend: Bitmagnet + its bundled Postgres run on the NAS (bitmagnet-postgres, DB not published).
+# Torznab/web on 192.168.10.4:3333; registered in Prowlarr (192.168.10.4:9696) as "Bitmagnet (DHT)".
+checks:
+  # (a) DHT ingestion is ALIVE: count torrents the crawler wrote to its Postgres in the last
+  # 30 min. A running crawler harvests hundreds/thousands; zero = the crawler died or the DHT
+  # is unreachable and the index is going stale. Runs from the mini, reaches the NAS DB via
+  # sudo docker-exec (NAS Postgres is container-only, not published) — same pattern as the
+  # immich mobile-session probe. Password from the runner's $NAS_SUDO_PASSWORD.
+  - id: bitmagnet-dht-ingesting
+    name: "bitmagnet: DHT crawler ingested new torrents in the last 30min (rate > 0)"
+    host: mini
+    cmd: >-
+      n=$(printf '%s\n' "$NAS_SUDO_PASSWORD"
+      | ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "sudo -S -p '' /usr/local/bin/docker exec bitmagnet-postgres psql -U postgres -d bitmagnet
+      -tAc \"SELECT count(*) FROM torrents WHERE created_at > now() - interval '30 minutes'\""
+      2>/dev/null | tr -d '[:space:]');
+      { [ -n "$n" ] && [ "$n" -gt 0 ]
+      && echo "ingesting=yes recent30m=$n"; } || echo "ingesting=NO recent30m=${n:-query_failed}"
+    expect: '^ingesting=yes recent30m=[1-9][0-9]*$'
+    severity: warn
+    task_id: seed-12
+    runbook: wiki/docs/runbooks/verification.md
+    enabled: true
+
+  # (b) Prowlarr → Bitmagnet Torznab actually returns results: find the "Bitmagnet (DHT)"
+  # indexer in Prowlarr by NAME (id can change on re-add), then run a real keyword search
+  # THROUGH Prowlarr scoped to just that indexer and require > 0 hits. This proves the whole
+  # consumer chain in one shot: indexer registered + Torznab reachable + returns real torrents.
+  # The Prowlarr API key is self-sourced from the NAS config.xml (readable by the ssh user),
+  # so no new secret goes into the runner env.
+  - id: bitmagnet-torznab-via-prowlarr
+    name: "bitmagnet: registered in Prowlarr + Torznab search returns real hits (consumer end)"
+    host: mini
+    cmd: >-
+      K=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "grep -oE '<ApiKey>[a-f0-9]+</ApiKey>' /volume1/docker/prowlarr/config/config.xml"
+      2>/dev/null | sed 's/<[^>]*>//g');
+      [ -n "$K" ] || { echo 'no_prowlarr_key'; exit 0; };
+      ID=$(curl -s -H "X-Api-Key: $K" http://192.168.10.4:9696/api/v1/indexer
+      | python3 -c "import sys,json;print(next((i['id'] for i in json.load(sys.stdin) if i['name']=='Bitmagnet (DHT)'),''))");
+      [ -n "$ID" ] || { echo 'BITMAGNET_NOT_REGISTERED'; exit 0; };
+      N=$(curl -s -H "X-Api-Key: $K" "http://192.168.10.4:9696/api/v1/search?query=1080p&indexerIds=$ID&limit=5"
+      | python3 -c "import sys,json;print(len(json.load(sys.stdin)))" 2>/dev/null);
+      { [ -n "$N" ] && [ "$N" -gt 0 ]
+      && echo "BITMAGNET_PROWLARR_OK indexer=$ID hits=$N"; } || echo "BITMAGNET_PROWLARR_FAIL hits=${N:-err}"
+    expect: '^BITMAGNET_PROWLARR_OK indexer=[0-9]+ hits=[1-9][0-9]*$'
+    severity: warn
+    task_id: seed-12
+    runbook: wiki/docs/runbooks/verification.md
+    enabled: true

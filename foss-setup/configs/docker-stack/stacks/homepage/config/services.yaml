@@ -378,6 +378,11 @@
           type: bazarr
           url: http://192.168.10.4:6767
           key: "{{HOMEPAGE_VAR_BAZARR_KEY}}"
+    - Bitmagnet:
+        icon: bitmagnet.png
+        href: https://bitmagnet.tabaska.us
+        description: DHT indexer hedge
+        siteMonitor: http://192.168.10.4:3333
     - FlareSolverr:
         icon: flaresolverr.png
         href: https://flaresolverr.tabaska.us

@@ -1,0 +1,70 @@
+# Bitmagnet — self-hosted BitTorrent DHT crawler + metadata index (seed-12)
+# Role : a LOCAL Torznab indexer for Prowlarr/the *arrs. Bitmagnet crawls the public
+#        BitTorrent DHT, harvests torrent METADATA ONLY (infohash + name + files + size),
+#        and serves it over a Torznab endpoint. It is an INDEX, not a download client —
+#        it never downloads or seeds torrent CONTENT. This is the designed function.
+# WHY   : indexer-redundancy hedge. Public trackers (IPT ~600 grabs/day, EZTV/TPB) rate-
+#        limit and can go dark; Bitmagnet has no query cap, no Cloudflare, nothing to seize.
+#        If the public indexers throttle, Prowlarr still has a working local source.
+# WHY NAS: co-located with Prowlarr + the arrs (all on this NAS) so Torznab is a LAN hop.
+# Ports : 3333  = web UI + Torznab/GraphQL API (bitmagnet.tabaska.us -> mini Caddy).
+#         3334  = DHT node (TCP+UDP) — publish it so the crawler gets inbound DHT peers
+#                 and ingests faster.
+# Backend: bundled Postgres 16 (bitmagnet REQUIRES Postgres; SQLite is not supported).
+#          DB is container-only (not published); password in .env (vault bitmagnet.postgres_password).
+# Prowlarr wiring: Settings > Indexers > Add > Generic Torznab
+#          URL      = http://192.168.10.4:3333/torznab
+#          API Path = /api      API Key = anything non-empty (vault bitmagnet.torznab_apikey;
+#          Bitmagnet does not authenticate Torznab, but Prowlarr's form requires a value).
+# Homepage: `bitmagnet` custom API tile against the GraphQL torrent count (Media Automation).
+# NO TMDB key: classification (movie/tv enrichment) is optional; Torznab keyword search
+#          works on the raw torrent name index without it. Add TMDB_API_KEY later to enrich.
+# To upgrade: bump the tag+digest below, read release notes, then:
+#   ssh -t nas 'cd /volume1/docker/bitmagnet && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'
+name: bitmagnet
+services:
+  bitmagnet:
+    image: ghcr.io/bitmagnet-io/bitmagnet:latest@sha256:cf2c16fac5b51f1c18e630b4710175d35d7e44b83012cfd05a2b43712feec05e   # digest-pinned (supply-chain posture); pulled on the NAS 2026-07-28
+    container_name: bitmagnet
+    ports:
+      - '3333:3333'                        # web UI + Torznab/GraphQL API
+      - '3334:3334/tcp'                    # DHT (inbound peers -> faster ingestion)
+      - '3334:3334/udp'
+    restart: unless-stopped
+    environment:
+      - POSTGRES_HOST=postgres             # the bundled DB service below (compose network)
+      - POSTGRES_NAME=bitmagnet
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - TZ=America/New_York
+    command:                              # run everything: DHT crawler + queue + HTTP/Torznab server
+      - worker
+      - run
+      - --all
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine@sha256:57c72fd2a128e416c7fcc499958864df5301e940bca0a56f58fddf30ffc07777   # digest-pinned; pulled on the NAS 2026-07-28
+    container_name: bitmagnet-postgres
+    volumes:
+      - /volume1/docker/bitmagnet/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=bitmagnet
+      - PGUSER=postgres
+    shm_size: 1g                           # bitmagnet's DB does heavy sorts; give Postgres shared mem
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command:                              # DS920+ spins Btrfs on HDD; modest tuning, no SSD assumptions
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - max_connections=200

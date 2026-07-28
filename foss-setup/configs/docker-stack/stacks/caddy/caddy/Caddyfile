@@ -371,6 +371,12 @@ bazarr.{$DOMAIN} {
 	reverse_proxy {$NAS_IP}:6767
 }
 
+# Bitmagnet — self-hosted DHT crawler + Torznab indexer hedge (seed-12). NAS container, port 3333.
+bitmagnet.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:3333
+}
+
 sonarr.{$DOMAIN} {
 	import local_tls
 	reverse_proxy {$NAS_IP}:8989
