@@ -1,0 +1,43 @@
+# game-12 — Ludusavi save-game backup replicated across the foss-03 Syncthing mesh
+# ("self-hosted Steam Cloud"). Consumer probe, NOT liveness: "ludusavi installed"
+# or "folder added" is meaningless — what matters is that the rig's backed-up
+# saves actually made it OFF-HOST. The first check asks the always-on NAS hub
+# whether the dedicated `game-saves` folder is fully in sync AND the rig peer is
+# 100% complete (i.e. the hub holds every save file the rig backed up). The second
+# guards the mechanism that keeps producing fresh backups (the rig --user timer):
+# if it dies, the mesh would silently freeze the last-known saves while looking green.
+checks:
+  - id: game-saves-mesh-synced
+    tier: fast
+    name: "ludusavi game-saves folder fully replicated to the NAS hub (rig peer 100%)"
+    host: nas
+    cmd: >-
+      API=$(grep -o '<apikey>[^<]*</apikey>' /volume1/docker/syncthing/config/config.xml | sed 's/<[^>]*>//g');
+      RIG=KDLS63N-KNX5Q4U-IAGLHGX-2BW7CS2-VGVQBNL-V7VOZ4R-O2NBHQZ-VMSCAQ7;
+      S=$(curl -s -H "X-API-Key: $API" "http://127.0.0.1:8384/rest/db/status?folder=game-saves");
+      C=$(curl -s -H "X-API-Key: $API" "http://127.0.0.1:8384/rest/db/completion?folder=game-saves&device=$RIG");
+      printf '%s\n@@@\n%s\n' "$S" "$C" | python3 -c "import json,sys;
+      P=sys.stdin.read().split('@@@');
+      s=json.loads(P[0]); c=json.loads(P[1]);
+      g=s.get('globalFiles',0); n=s.get('needFiles',0); st=s.get('state','?'); comp=c.get('completion',0);
+      ok = g>0 and n==0 and comp>=100;
+      print('game_saves_mesh=ok files=%d rig_complete=%d%% state=%s'%(g,comp,st) if ok else 'game_saves_mesh=DEGRADED files=%d need=%d rig_complete=%.1f%% state=%s'%(g,n,comp,st))"
+    expect: '^game_saves_mesh=ok '
+    severity: warn
+    task_id: game-12
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
+  - id: ludusavi-backup-timer-alive
+    tier: fast
+    name: "rig ludusavi-backup.timer enabled + last run succeeded (keeps saves fresh)"
+    host: rig
+    cmd: >-
+      A=$(systemctl --user is-active ludusavi-backup.timer 2>/dev/null);
+      R=$(systemctl --user show ludusavi-backup.service -p Result --value 2>/dev/null);
+      echo "ludusavi_timer=$A last_result=$R"
+    expect: '^ludusavi_timer=active last_result=success$'
+    severity: warn
+    task_id: game-12
+    runbook: wiki/runbooks/rig.md
+    enabled: true

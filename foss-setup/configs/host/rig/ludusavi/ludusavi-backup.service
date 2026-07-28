@@ -1,0 +1,11 @@
+[Unit]
+Description=Ludusavi game-save backup into the Syncthing game-saves mesh folder
+Documentation=https://github.com/mtkennerly/ludusavi
+Wants=syncthing.service
+After=syncthing.service
+
+[Service]
+Type=oneshot
+Nice=10
+ExecStart=%h/.local/bin/ludusavi backup --force
+# Ludusavi exits non-zero only on hard failure; a run with 0 changed games is success.

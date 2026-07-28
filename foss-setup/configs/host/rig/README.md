@@ -51,6 +51,16 @@ this repo only points at where they live:
   (`tee $OVERRIDE_FILE`); that script is the source of truth. Regression-guarded by the
   `rig-ollama-keepalive` verification check.
 
+## Per-user units (`~/.config/systemd/user/`, not `/etc/systemd/system/`)
+
+The table above is **system** units. A few rig units run in the `btabaska` **user** manager
+instead (same class as the `--user` `syncthing.service`); linger is on, so they run without a
+login session. Canonical sources live here too:
+
+| Live user unit (`~/.config/systemd/user/`) | Canonical source | Owner | Notes |
+|---|---|---|---|
+| `ludusavi-backup.service` / `.timer` | `configs/host/rig/ludusavi/` | foss-setup (game-12) | save-game backup → Syncthing `game-saves` mesh folder; see `ludusavi/README.md` |
+
 ## Drift coverage
 
 The statically-mirrored foss-setup units are byte-compared against live on the mini + rig by the
