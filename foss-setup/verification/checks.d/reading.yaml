@@ -642,3 +642,21 @@ checks:
     task_id: read-18
     runbook: wiki/docs/runbooks/komga.md
     enabled: true
+
+  # Mylar3 western-comics acquisition (read-24) consumer end: walk the whole chain, not
+  # liveness. Asserts (1) Mylar3's API answers on the NAS (getVersion success=true), (2) at
+  # least one CBZ has landed under /volume1/comics/Comics (probed via ssh nas find from the
+  # mini runner — a live-but-empty tree means nothing flowed even if both servers look green),
+  # and (3) Komga's Comics library is available with >= baseline indexed series (a comic that
+  # flowed Mylar3 -> GetComics DDL -> /comics/Comics -> Komga, i.e. the read-22 grab is really
+  # readable). Best-effort acquisition => warn, not crit (mirrors suwayomi-feeds-komga). Helper
+  # reads MYLAR3_API_KEY + KOMGA_USER/KOMGA_PASS from the runner env (never argv).
+  - id: mylar3-feeds-komga
+    name: "Mylar3: API up + CBZ on disk under /volume1/comics/Comics + Komga Comics library indexes a series (read-24 pipeline consumer end)"
+    host: mini
+    cmd: python3 /opt/verification/bin/mylar3-feeds-komga.py
+    expect: '^MYLAR3_OK'
+    severity: warn
+    task_id: read-24
+    runbook: wiki/docs/runbooks/komga.md
+    enabled: true

@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**235/323 done** · **55 open** · **18 deferred** · 15 retired.
+**236/323 done** · **54 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -55,7 +55,6 @@
 - [ ] **`read-08`** Wire the KOReader Wallabag plugin on the Kobo _(est 20 min)_
 - [ ] **`read-09`** Add RSS/news to KOReader (Miniflux tie-in) _(est 20 min)_
 - [ ] **`read-15`** CWA: KOReader sync checksum table missing (book_format_checksums) _(est 15-30 min)_
-- [ ] **`read-24`** Add a consumer-end monitoring check + coverage for Mylar3 _(est 30 min)_
 - [ ] **`read-25`** Document Mylar3: service catalog + wiki page + Homepage tile _(est 45 min)_
 
 ### security

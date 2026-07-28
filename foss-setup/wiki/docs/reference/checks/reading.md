@@ -1,6 +1,6 @@
 # Checks — reading
 
-`foss-setup/verification/checks.d/reading.yaml` — 24 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/reading.yaml` — 25 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `cwa-kobo-sync-consumer`
 
@@ -430,6 +430,17 @@ Suwayomi: API up + NAS output mount writable + Komga Manga library indexes a ser
 
 ```bash
 python3 /opt/verification/bin/suwayomi-feeds-komga.py
+```
+
+## `mylar3-feeds-komga`
+
+Mylar3: API up + CBZ on disk under /volume1/comics/Comics + Komga Comics library indexes a series (read-24 pipeline consumer end)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `read-24` · **enabled:** True
+- **expects:** `^MYLAR3_OK`
+
+```bash
+python3 /opt/verification/bin/mylar3-feeds-komga.py
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

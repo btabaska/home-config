@@ -31,6 +31,11 @@ MONITORS=(
   "NAS Immich|http://${NAS_IP}:2283|${ACCEPT_OK}"
   "NAS Stash|http://${NAS_IP}:9999|${ACCEPT_OK}"
   "NAS Whisparr|http://${NAS_IP}:6969|${ACCEPT_ARR}"
+  # read-24: Mylar3 (western-comics *arr, feeds Komga's Comics library). Web/API on
+  # :8090; root 303-redirects to the login page, so ACCEPT_ARR covers it. This tile is
+  # liveness only — the consumer-end proof (CBZ on disk + Komga serves it) is the
+  # verification runner's mylar3-feeds-komga check (checks.d/reading.yaml).
+  "NAS Mylar3|http://${NAS_IP}:8090|${ACCEPT_ARR}"
   "NAS Calibre Web|http://${NAS_IP}:8083|${ACCEPT_ARR}"
   "NAS Plex|http://${NAS_IP}:32400|${ACCEPT_PLEX}"
   # media-05: Jellyfin fully-local media server (parallel to Plex). /health -> "Healthy" 200.

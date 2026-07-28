@@ -249,6 +249,7 @@ nav:
       - Overview: reference/checks/index.md
       - alerting: reference/checks/alerting.md
       - backups: reference/checks/backups.md
+      - bug-intake: reference/checks/bug-intake.md
       - dns: reference/checks/dns.md
       - docker-fleet: reference/checks/docker-fleet.md
       - edge: reference/checks/edge.md
@@ -262,6 +263,7 @@ nav:
       - media-aux: reference/checks/media-aux.md
       - media-library-correctness: reference/checks/media-library-correctness.md
       - media-watchable: reference/checks/media-watchable.md
+      - meme-review: reference/checks/meme-review.md
       - mini-services: reference/checks/mini-services.md
       - monitoring-coverage: reference/checks/monitoring-coverage.md
       - nas-host: reference/checks/nas-host.md
