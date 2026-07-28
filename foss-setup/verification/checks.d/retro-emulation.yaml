@@ -1,0 +1,31 @@
+# retro-05 — ES-DE emulation frontend on the rig, consumer end.
+# Not liveness: the front-end being "installed" is meaningless if it can't SEE
+# games. This probes the actual consumer path — the same NAS ROM library RomM
+# (mini) manages, browsed by ES-DE through the ~/ROMs symlink tree, launched by
+# the RetroArch cores ES-DE calls. It fails loudly if the CIFS mount to the NAS
+# drops (the library vanishes), if the RomM shelf empties, or if a backing core
+# is missing (a system would be un-launchable). Runs ON the rig (ssh from mini).
+# ES-DE is a host app, not a container, so it is not in rig.containers — this
+# dedicated check is its coverage (same pattern as music-mirror/ipod-abs-sync).
+# Canonical setup: configs/host/rig/es-de/.
+checks:
+  - id: rig-esde-romm-library
+    name: "ES-DE on the rig sees the RomM NAS ROM library + has all launch cores (retro-05)"
+    host: rig
+    cmd: >
+      command -v es-de >/dev/null 2>&1 || { echo NO-ESDE; exit 1; };
+      ls /home/btabaska/ROMs/nes/ >/dev/null 2>&1 || { echo NAS-LIBRARY-UNREACHABLE; exit 1; };
+      for core in mesen snes9x mgba gambatte mupen64plus_next dolphin; do
+      [ -e "/usr/lib/libretro/${core}_libretro.so" ] || { echo "MISSING-CORE:${core}"; exit 1; };
+      done;
+      n=0;
+      for s in gb gba n64 nes snes gc wii; do
+      c=$(ls "/home/btabaska/ROMs/$s" 2>/dev/null | grep -vi eaDir | wc -l);
+      n=$((n+c));
+      done;
+      if [ "$n" -ge 8000 ]; then echo "ESDE-ROMM-OK roms=$n"; else echo "LIBRARY-THIN roms=$n"; exit 1; fi
+    expect: '^ESDE-ROMM-OK'
+    severity: warn
+    task_id: retro-05
+    runbook: wiki/docs/runbooks/game-backups.md
+    enabled: true

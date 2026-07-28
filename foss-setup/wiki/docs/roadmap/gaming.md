@@ -16,14 +16,14 @@
 | `game-09` | Rig idle-power tuning (24/7 baseline) | ⬜ open | 20-30 min |
 | `game-10` | GPU power-limit + (optional) undervolt the 3090 Ti, persistent across reboot | ✅ done | 30-45 min |
 | `game-11` | Headless display for Apollo (HDMI dummy plug + display-policy service) | ✅ done | 20-45 min |
-| `game-12` | Save-game sync with Ludusavi + Syncthing | ⬜ open | 30 min |
+| `game-12` | Save-game sync with Ludusavi + Syncthing | ✅ done | 30 min |
 | `game-13` | GPU contention policy (one 3090 Ti shared by stream/servers/AI) | ✅ done | 15 min |
 | `game-14` | Game launcher (Heroic/Lutris) + RomM retro library | ⏸️ deferred | 45 min |
 | `retro-01` | NAS ROM library layout | ✅ done | 30 min |
 | `retro-02` | RomM — self-hosted ROM manager | ✅ done | 60-90 min |
 | `retro-03` | Save/state sync mesh (Syncthing) | ⬜ open | 60 min |
 | `retro-04` | SteamDeck: EmuDeck/RetroDeck wiring | ⬜ open | 45 min |
-| `retro-05` | Rig: emulation frontend + RomM integration | ⬜ open | 60 min |
+| `retro-05` | Rig: emulation frontend + RomM integration | ✅ done | 60 min |
 | `retro-06` | RetroAchievements + cheat DB | ⬜ open | 30 min |
 | `retro-07` | Retro handheld onboarding (e.g. AYN Thor Max) | ⏸️ deferred | 45 min |
 | `retro-08` | RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) | ⬜ open | ~15 min config |

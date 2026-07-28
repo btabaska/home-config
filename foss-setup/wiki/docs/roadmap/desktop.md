@@ -9,7 +9,7 @@
 | `glue-02` | Desktop baseline on CachyOS: browser(s) + LibreOffice (anytime) | ⬜ open | 20-40 min |
 | `glue-03` | Set Kagi as the default search engine (anytime) | ✅ done | 5 min |
 | `glue-04` | Version-controlled dotfiles with chezmoi — MacBook bootstrap | ✅ done | 30-60 min |
-| `glue-04b` | Apply chezmoi dotfiles to rig + mini (fleet rollout) | ⬜ open | 20-30 min |
+| `glue-04b` | Apply chezmoi dotfiles to rig + mini (fleet rollout) | ✅ done | 20-30 min |
 | `prep-01` | Operator station: clone foss-setup and verify SSH/scp | ✅ done | 10 min |
 
 [← Roadmap overview](index.md)

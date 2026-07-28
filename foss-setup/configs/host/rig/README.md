@@ -61,6 +61,16 @@ login session. Canonical sources live here too:
 |---|---|---|---|
 | `ludusavi-backup.service` / `.timer` | `configs/host/rig/ludusavi/` | foss-setup (game-12) | save-game backup → Syncthing `game-saves` mesh folder; see `ludusavi/README.md` |
 
+## Host applications (not systemd units)
+
+Not everything the rig's host config owns is a unit. Some are interactively-launched
+desktop apps whose install + integration still must be codified here (no unit re-applies
+them, so live-only setup is silent drift):
+
+| Host app | Canonical source | Owner | Notes |
+|---|---|---|---|
+| **ES-DE + RetroArch** (emulation frontend) | `configs/host/rig/es-de/` | foss-setup (retro-05) | ES-DE `3.4.1` (AUR) + native RetroArch cores; browses the **same** NAS ROM library RomM (mini) manages via a `~/ROMs/<system>` symlink tree into `/mnt/share/Games/romm/roms/`. Consumer check `rig-esde-romm-library`. See `es-de/README.md`. |
+
 ## Drift coverage
 
 The statically-mirrored foss-setup units are byte-compared against live on the mini + rig by the

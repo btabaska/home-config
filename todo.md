@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**240/323 done** · **50 open** · **18 deferred** · 15 retired.
+**241/323 done** · **49 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -28,7 +28,6 @@
 - [ ] **`game-09`** Rig idle-power tuning (24/7 baseline) _(est 20-30 min)_
 - [ ] **`retro-03`** Save/state sync mesh (Syncthing) _(est 60 min)_ — ⛔ gate: device pairing approvals
 - [ ] **`retro-04`** SteamDeck: EmuDeck/RetroDeck wiring _(est 45 min)_ — ⛔ gate: on-device steps
-- [ ] **`retro-05`** Rig: emulation frontend + RomM integration _(est 60 min)_
 - [ ] **`retro-06`** RetroAchievements + cheat DB _(est 30 min)_ — ⛔ gate: RA account USERNAME+PASSWORD for RetroArch login (distinct from the RomM API key) + an emulator installed first (retro-05 rig / retro-04 Deck)
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
 
