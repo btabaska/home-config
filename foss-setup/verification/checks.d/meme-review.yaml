@@ -1,3 +1,7 @@
+# DECOMMISSIONED 2026-07-28 (temporary): all checks below set enabled:false while
+# the app is stopped (container down, tile + Caddy vhost pulled). Re-enable when the
+# service is revived. Left in place (not deleted) so revival is a one-line flip.
+#
 # Meme Review (meme-review-01) — self-hosted image-reaction app on the mini
 # (Hono + node:sqlite + React SPA), fronted at memes.tabaska.us. The container
 # publishes no host port (edge-network only), so every probe goes through Caddy
@@ -13,7 +17,7 @@ checks:
     severity: crit
     task_id: meme-review-01
     runbook: wiki/docs/services/meme-review.md
-    enabled: true
+    enabled: false
 
   - id: meme-review-spa-served
     tier: fast
@@ -24,7 +28,7 @@ checks:
     severity: crit
     task_id: meme-review-01
     runbook: wiki/docs/services/meme-review.md
-    enabled: true
+    enabled: false
 
   # Consumer invariant: the API auth wall must hold. An unauthenticated hit on a
   # members-only route has to be rejected — proves the API layer (not just static
@@ -38,4 +42,4 @@ checks:
     severity: warn
     task_id: meme-review-01
     runbook: wiki/docs/services/meme-review.md
-    enabled: true
+    enabled: false

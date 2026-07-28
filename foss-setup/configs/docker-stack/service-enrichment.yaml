@@ -820,6 +820,13 @@ services:
       On the NAS hub, look under `/volume1/docker/syncthing/Sync/.stversions/` — staggered versioning keeps timestamped copies (`name~YYYYMMDD-HHMMSS.ext`) for up to 30 days. Copy the wanted version back into `Sync/`; it re-propagates to the peers.
 - name: meme-review
   about: |-
+    > **DECOMMISSIONED 2026-07-28 (temporary).** The app was pulled — container
+    > stopped and removed, Homepage tile removed, Caddy vhost `memes.tabaska.us`
+    > retired, and the three verification checks disabled. The stack directory
+    > (`/opt/stacks/meme-review/`) and its `./data` are retained for revival; to
+    > bring it back, restore the Caddy vhost + Homepage tile, re-enable the checks,
+    > and `docker compose up -d`. Everything below describes it as it was.
+
     A self-hosted app for a two-person household to send each other stacks of
     images and react to them one at a time, iMessage-tapback style — imported
     from a Claude Design prototype (`Meme Review.dc.html` + `HANDOFF.md`) and

@@ -181,18 +181,10 @@ bug.{$DOMAIN} {
 	reverse_proxy n8n:5678
 }
 
-# Meme Review — self-hosted image-reaction app (imported from a Claude Design
-# prototype; app + SPA served by the meme-review container on the edge network).
-# Linked from the Homepage "Life Apps" group. LAN/tailnet only (the *.tabaska.us
-# AdGuard rewrite resolves it internally; Cloudflare holds no A record). The
-# request_body cap allows large multi-image uploads.
-memes.{$DOMAIN} {
-	import local_tls
-	request_body {
-		max_size 2GB
-	}
-	reverse_proxy meme-review:8787
-}
+# Meme Review — DECOMMISSIONED 2026-07-28 (temporary). App was a mess; container
+# stopped, Homepage tile pulled, checks disabled. Stack dir + data retained at
+# /opt/stacks/meme-review for revival (re-add this vhost + tile + `docker compose
+# up -d` to bring it back). Was: reverse_proxy meme-review:8787 at memes.tabaska.us.
 
 # ---------------------------------------------------------------------------
 # Platform / ops

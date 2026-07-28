@@ -7,9 +7,16 @@ Meme Review — self-hosted image-reaction app (imported from a Claude Design
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://memes.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/meme-review/compose.yaml` |
-| **Notes** | Self-hosted image-reaction app (meme-review-01) — send stacks of images and react to them one at a time, iMessage-tapback style. Hono + built-in node:sqlite server + Vite/React SPA; SSE realtime; 8-rule achievement engine; optional Immich browse source with local-upload fallback. Imported from a Claude Design prototype (Meme Review.dc.html + HANDOFF.md). LAN/tailnet only. |
+| **Notes** | DECOMMISSIONED 2026-07-28 (temporary — container down, tile + Caddy vhost pulled, checks disabled; stack dir + data retained for revival). Self-hosted image-reaction app (meme-review-01) — send stacks of images and react to them one at a time, iMessage-tapback style. Hono + built-in node:sqlite server + Vite/React SPA; SSE realtime; 8-rule achievement engine; optional Immich browse source with local-upload fallback. Imported from a Claude Design prototype (Meme Review.dc.html + HANDOFF.md). LAN/tailnet only. |
 
 ## About
+
+> **DECOMMISSIONED 2026-07-28 (temporary).** The app was pulled — container
+> stopped and removed, Homepage tile removed, Caddy vhost `memes.tabaska.us`
+> retired, and the three verification checks disabled. The stack directory
+> (`/opt/stacks/meme-review/`) and its `./data` are retained for revival; to
+> bring it back, restore the Caddy vhost + Homepage tile, re-enable the checks,
+> and `docker compose up -d`. Everything below describes it as it was.
 
 A self-hosted app for a two-person household to send each other stacks of
 images and react to them one at a time, iMessage-tapback style — imported

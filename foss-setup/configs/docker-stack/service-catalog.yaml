@@ -301,7 +301,7 @@ services:
     port: 8787
     url: https://memes.tabaska.us
     on_demand: false
-    notes: "Self-hosted image-reaction app (meme-review-01) — send stacks of images and react to them one at a time, iMessage-tapback style. Hono + built-in node:sqlite server + Vite/React SPA; SSE realtime; 8-rule achievement engine; optional Immich browse source with local-upload fallback. Imported from a Claude Design prototype (Meme Review.dc.html + HANDOFF.md). LAN/tailnet only."
+    notes: "DECOMMISSIONED 2026-07-28 (temporary — container down, tile + Caddy vhost pulled, checks disabled; stack dir + data retained for revival). Self-hosted image-reaction app (meme-review-01) — send stacks of images and react to them one at a time, iMessage-tapback style. Hono + built-in node:sqlite server + Vite/React SPA; SSE realtime; 8-rule achievement engine; optional Immich browse source with local-upload fallback. Imported from a Claude Design prototype (Meme Review.dc.html + HANDOFF.md). LAN/tailnet only."
 
   # --- Smart Home -----------------------------------------------------------------
   - name: home-assistant

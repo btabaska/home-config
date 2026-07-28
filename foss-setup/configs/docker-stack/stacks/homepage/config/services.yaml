@@ -132,11 +132,6 @@
         href: https://memos.tabaska.us
         description: Journal & notes
         siteMonitor: http://memos:5230
-    - Meme Review:
-        icon: mdi-emoticon-lol
-        href: https://memes.tabaska.us
-        description: Send & react to memes
-        siteMonitor: http://meme-review:8787/api/health
     - ProtonMail:
         icon: proton-mail.png
         href: https://mail.proton.me/u/0/inbox
