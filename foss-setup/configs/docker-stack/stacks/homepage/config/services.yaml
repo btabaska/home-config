@@ -40,6 +40,11 @@
               color: purple
               params:
                 showName: true
+    - Report a Problem:
+        icon: mdi-bug
+        href: https://bug.tabaska.us
+        description: Something not working? Tell us
+        target: _blank
 
 - Media:
     - Plex:
@@ -106,6 +111,14 @@
         href: https://shelfmark.tabaska.us
         description: Books
         siteMonitor: http://192.168.10.4:8084
+    - Mylar3:
+        icon: mylar.png
+        href: https://mylar.tabaska.us
+        description: Comics acquisition
+        widget:
+          type: mylar
+          url: http://192.168.10.4:8090
+          key: "{{HOMEPAGE_VAR_MYLAR_KEY}}"
     - Pinchflat:
         icon: pinchflat.png
         href: https://pinchflat.tabaska.us
@@ -192,14 +205,6 @@
         widget:
           type: suwayomi
           url: http://192.168.10.12:4567
-    - Mylar3:
-        icon: mylar.png
-        href: https://mylar.tabaska.us
-        description: Comics acquisition
-        widget:
-          type: mylar
-          url: http://192.168.10.4:8090
-          key: "{{HOMEPAGE_VAR_MYLAR_KEY}}"
     - Wallabag:
         icon: wallabag.png
         href: https://wallabag.tabaska.us
@@ -215,11 +220,6 @@
           key: "{{HOMEPAGE_VAR_MINIFLUX_KEY}}"
 
 - Home:
-    - Report a Problem:
-        icon: mdi-bug
-        href: https://bug.tabaska.us
-        description: Something not working? Tell us
-        target: _blank
     - Home Assistant:
         icon: home-assistant.png
         href: https://ha.tabaska.us
