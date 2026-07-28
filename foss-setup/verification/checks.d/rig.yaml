@@ -363,6 +363,32 @@ checks:
     runbook: wiki/runbooks/rig.md
     enabled: true
 
+  # game-09 idle-power baseline, half 2 (the plasmashell busy-loop): the 24/7 rig
+  # keeps a Plasma-Wayland session logged in via autologin, and a historical
+  # plasmashell defect could peg a core at 100% forever — pure idle-power waste that
+  # every liveness probe ignores. Rather than a lifetime %CPU (which lags a fresh
+  # loop), this takes a real 3s utime+stime delta from /proc/<pid>/stat and asserts
+  # the compositor shell is < 30% busy. Absent plasmashell (a future headless pass)
+  # passes cleanly. Warn tier: a busy-loop inflates idle draw but doesn't take the
+  # box down. Pairs with rig-gpu-power-tune above (the two idle-power levers).
+  # NOTE: the <100W *wall* reading is still human-only — the rig has no power meter
+  # (HA exposes no rig smart-plug), so a Kill-A-Watt is needed to close game-09.
+  - id: rig-plasmashell-idle
+    name: "rig plasmashell not busy-looping (< 30% CPU over 3s — idle-power guard)"
+    host: rig
+    cmd: >-
+      pid=$(pgrep -x plasmashell | head -1) || true;
+      if [ -z "$pid" ]; then echo "plasmashell absent (headless) OK"; exit 0; fi;
+      a=$(awk '{print $14+$15}' /proc/$pid/stat); sleep 3;
+      b=$(awk '{print $14+$15}' /proc/$pid/stat);
+      hz=$(getconf CLK_TCK); pct=$(( (b-a)*100/(3*hz) ));
+      if [ "$pct" -lt 30 ]; then echo "plasmashell cpu=${pct}% OK"; else echo "plasmashell cpu=${pct}% BUSYLOOP"; fi
+    expect: 'OK'
+    severity: warn
+    task_id: game-09
+    runbook: wiki/runbooks/rig.md
+    enabled: true
+
   # media-06: the rig's ~/Music is an ALAC-only derived mirror (FLAC lives on the
   # NAS master; nas-music-mirror.service transcodes FLAC->.m4a and copies mp3/aac
   # verbatim). A FLAC file appearing here means the retired verbatim-rsync mirror
