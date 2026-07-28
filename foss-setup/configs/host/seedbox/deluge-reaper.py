@@ -14,7 +14,10 @@ MAX_AGE = 14*86400
 # "readarr" stays until the last readarr-imported torrent drains past the 14d
 # reap age (readarr itself decommissioned 2026-07-20, bmig-05; last such torrent
 # added 2026-07-20 -> removable after 2026-08-03). "bookshelf" replaced it.
-ARR_LABELS = {"sonarr", "tv-sonarr", "radarr", "lidarr", "readarr", "bookshelf", "tv-whisparr"}
+# "mylar" added read-23 (2026-07-27): Mylar3's best-effort torrent fallback labels
+# grabs `mylar`; it has no Remote Path Mapping so those torrents may never import
+# to the NAS -> reaping keeps the seedbox from accreting fallback grabs.
+ARR_LABELS = {"sonarr", "tv-sonarr", "radarr", "lidarr", "readarr", "bookshelf", "tv-whisparr", "mylar"}
 LABELS = ARR_LABELS | {l + "-imported" for l in ARR_LABELS if l != "tv-sonarr"}
 LOG = os.path.expanduser("~/logs/deluge-reaper.log")
 

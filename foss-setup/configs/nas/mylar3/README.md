@@ -68,6 +68,52 @@ series adds/refreshes.
 DDL grab → 12 CBZ filed under `Comics/Watchmen (1986)/` owned 1026:100 (valid CBZ, ComicInfo.xml) →
 Komga scan: Comics series 1→2, all 12 books READY, page-1 streams HTTP 200 `image/jpeg`. No torrent.
 
+## Torrent fallback (read-23, best-effort) — Prowlarr app-sync + seedbox Deluge
+
+DDL/GetComics is the **primary** path; this is the **safety net** for titles GetComics doesn't
+carry, reusing existing infra (no new indexers, no new download client). Torrent PP across the
+remote seedbox is fragile (Mylar3 has **no Remote Path Mapping** unlike Sonarr/Radarr) — treat it
+as best-effort, not the main path.
+
+**Prowlarr Application (DB state, not repo-mirrored — like every other arr's Prowlarr app).**
+Registered Mylar as a Prowlarr *Application* (`implementation: Mylar`, `syncLevel: fullSync`):
+
+| field | value | why |
+|-------|-------|-----|
+| `prowlarrUrl` | `http://192.168.10.4:9696` | **NAS host IP, not `http://prowlarr:9696`** — Mylar3 runs on its own `mylar3_default` bridge and can't resolve peer container names; it reaches Prowlarr's host-published port instead. This IP is what Prowlarr bakes into the pushed Torznab URLs. |
+| `baseUrl` | `http://192.168.10.4:8090` | how Prowlarr reaches Mylar (same host-IP reason). |
+| `apiKey` | *(vault `mylar3.api_key`)* | Mylar's API key. |
+| `syncCategories` | `[7030]` | comics only — category-gated exactly like Whisparr's XXX gating. |
+
+Full Sync then pushes **only** the 7030-capable indexers into Mylar as Torznab providers
+(`config.ini [Torznab] extra_torznabs`): **IPTorrents**, **MyAnonamouse**, **RetroToon** (of the 7
+live indexers). MyAnonamouse is the clean **English** one; IPTorrents comics skew French (TONER
+scene); RetroToon is toon-focused (0 hits for western titles — expected). No per-indexer setup
+inside Mylar. Re-point/re-sync: `PUT /api/v1/applications/<id>` then
+`POST /api/v1/command {"name":"ApplicationIndexerSync"}`.
+
+**config.ini keys (set while STOPPED — Mylar rewrites config.ini on graceful shutdown; not
+repo-mirrored, holds the CV/API keys):**
+
+| section | key | value | why |
+|---------|-----|-------|-----|
+| `[Torrents]` | `enable_torrents` / `enable_torrent_search` | `True` / `True` | let Mylar use torrent + torznab providers |
+| `[Torznab]` | `enable_torznab` | `True` | master switch for the synced Torznab providers |
+| `[Client]` | `torrent_downloader` | `4` | `4` = Deluge (`1`=uTorrent `2`=rTorrent `3`=Transmission `5`=qBittorrent) |
+| `[Deluge]` | `deluge_host` | `100.119.134.94:3254` | off-site **Betty** deluged over the tailnet. seedbox binds `127.0.0.1:3254`; tailscaled userspace-networking forwards the tailnet IP → loopback (fix-21), so Mylar's container reaches it. **daemon RPC** (host:port), unlike the arrs which use the deluge-web JSON-RPC on `:5945`. |
+| `[Deluge]` | `deluge_username` | `btabaska` | daemon-RPC user from the seedbox `~/.config/deluge/auth` (`localclient` is the other). |
+| `[Deluge]` | `deluge_password` | *(vault `deluge.password`)* | the `btabaska` auth line. |
+| `[Deluge]` | `deluge_label` | `mylar` | dedicated Label-plugin category (created on Betty; reaped by `deluge-reaper.py` `ARR_LABELS`, extended read-23). |
+| `[Providers]` | `provider_order` | `0, DDL(GetComics), 1, IPTorrents (Prowlarr), 2, MyAnonamouse (Prowlarr), 3, RetroToon (Prowlarr)` | **DDL first**, Torznab as fallback. Mylar's `provider_sequence()` only searches providers present in this string (search.py) — new Torznab providers must be listed here; it appends them after DDL at startup, but set it explicitly for determinism. |
+
+**Consumer proof (read-23, 2026-07-27):** Prowlarr app id 7 at Full Sync → 3 comics indexers
+(7030) in Mylar's `extra_torznabs`. Mylar `testdeluge` → *"Successfully validated Deluge
+connection"* (daemon v2.2.0, libtorrent 2.0.13.0). Mylar `testtorznab` → all 3 *"Successfully
+tested"*. Torznab searches returned comics (q=batman: MyAnonamouse 20, IPTorrents 100; RetroToon 0
+= expected). `provider_order` keeps `DDL(GetComics)` first (Torznab is the fallback). A full
+torrent → PP → Komga round-trip is deliberately **not** proven (no Remote Path Mapping — the
+fragile part is best-effort by design). Settings survive a container restart.
+
 ## Deploy / upgrade
 
 ```sh

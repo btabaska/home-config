@@ -30,7 +30,7 @@
 | `read-20` | Provision the ComicVine API key for Mylar3 into the vault | ✅ done | 15 min |
 | `read-21` | Deploy the Mylar3 container on the NAS (base install + first-run config) | ✅ done | 45 min |
 | `read-22` | Enable Mylar3 GetComics (DDL) acquisition + prove one comic end-to-end into Komga | ✅ done | 1 hr |
-| `read-23` | Wire Mylar3's fallback acquisition: Prowlarr app-sync + seedbox Deluge (best-effort) | ⬜ open | 1 hr |
+| `read-23` | Wire Mylar3's fallback acquisition: Prowlarr app-sync + seedbox Deluge (best-effort) | ✅ done | 1 hr |
 | `read-24` | Add a consumer-end monitoring check + coverage for Mylar3 | ⬜ open | 30 min |
 | `read-25` | Document Mylar3: service catalog + wiki page + Homepage tile | ⬜ open | 45 min |
 
