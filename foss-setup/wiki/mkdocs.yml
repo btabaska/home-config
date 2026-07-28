@@ -99,6 +99,7 @@ nav:
       - Media & Acquisition:
           - media-automation: services/media-automation.md
       - Media Automation:
+          - bazarr: services/bazarr.md
           - recyclarr: services/recyclarr.md
           - tautulli: services/tautulli.md
       - Music:

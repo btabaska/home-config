@@ -1,6 +1,6 @@
 # Services
 
-48 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+49 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 
@@ -76,6 +76,7 @@
 
 | Stack | Host | URL |
 |---|---|---|
+| [bazarr](bazarr.md) | nas | https://bazarr.tabaska.us |
 | [recyclarr](recyclarr.md) | mini | — |
 | [tautulli](tautulli.md) | mini | https://tautulli.tabaska.us |
 
