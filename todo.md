@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**241/323 done** · **49 open** · **18 deferred** · 15 retired.
+**242/323 done** · **48 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -38,7 +38,6 @@
 
 ### ops
 - [ ] **`glue-15`** Clear the pre-existing fleet git-hygiene regressions surfaced during glue-14 _(est 30-45 min)_
-- [ ] **`nas-31`** Immich: backup freshness + mobile pairing checks failing (fix-35 regression) _(est 30-60 min)_
 
 ### photos
 - [ ] **`nas-08b`** Import mirrorless-camera SD card into Immich via immich-go (+ pbak option) _(est 30 min)_

@@ -208,6 +208,10 @@ checks:
   # the API (DB truth via admin statistics) and the filesystem (originals on
   # disk under /volume1/photo, world-readable). Catches never-flowed (now) and
   # stopped-flowing (later) with one invariant: fresh content within 7 days.
+  # This is the AUTHORITATIVE "backups are flowing / a consumer is connected"
+  # signal — it measures the real OUTCOME (fresh assets landing) regardless of
+  # WHICH client uploaded them (native mobile app, web drag-drop, CLI). It
+  # therefore subsumes the old nas-immich-mobile-paired proxy (retired nas-31).
   - id: nas-immich-backup-freshness
     name: "immich library has assets and a file landed in the last 7 days (phone backup flowing)"
     host: mini
@@ -225,11 +229,21 @@ checks:
     runbook: wiki/runbooks/photos.md
     enabled: true
 
-  # CLASS (H28 root cause): a mobile client is actually paired — at least one
-  # iOS/Android session row exists. Guards the whole "server green but no
-  # consumer ever connected" class: never-paired (the audit state), all-devices
-  # revoked after a reset, or a family member's account (kaelyn92) that never
-  # completed setup. DB truth via the established nas-sudo psql idiom.
+  # RETIRED (nas-31, 2026-07-28): this was a PROXY for "a consumer is connected /
+  # backups are flowing", asserting >=1 iOS/Android `session` row exists. Two
+  # problems made it a permanent false alarm: (1) it tests an implementation
+  # detail (a native-app login session) that is NOT the actual goal — this fleet
+  # backs photos up via the WEB uploader, so fresh phone photos keep landing
+  # (IMG_2114.jpg on 2026-07-27, 162 assets created that day) with ZERO native
+  # mobile sessions ever recorded; (2) it can only be satisfied by a PHYSICAL
+  # device pairing the Immich app — no server-side action can make it green.
+  # Its regression intent (catch "server green but nothing is actually being
+  # backed up") is fully and more strongly covered by nas-immich-backup-freshness
+  # above, which asserts the real OUTCOME (fresh assets within 7 days) rather
+  # than a session-row proxy. Re-pairing the native app is a user choice tracked
+  # as a needs-human follow-up, not an automated monitor. Left disabled (not
+  # deleted) for provenance; the daily sweep respects `enabled`, so this no
+  # longer pages.
   - id: nas-immich-mobile-paired
     name: "immich has at least one mobile (iOS/Android) session paired"
     host: mini
@@ -244,7 +258,7 @@ checks:
     severity: warn
     task_id: fix-35
     runbook: wiki/runbooks/photos.md
-    enabled: true
+    enabled: false
 
   # home-07: the NAS beszel-agent breaks /volume1,2,3 out per-mount in the Beszel
   # dashboard via /extra-filesystems bind mounts (volume1 IS the agent's root disk;

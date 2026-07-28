@@ -61,13 +61,34 @@ This is the flagship instance of the audit's monitoring-vs-reality class: see
 | id | probes | green means |
 |----|--------|-------------|
 | `nas-immich-backup-freshness` | admin statistics API (photos+videos) **and** newest original file on disk under `/volume1/photo` | at least one asset exists AND a file landed within 7 days — backup is actually flowing |
-| `nas-immich-mobile-paired` | `session` table via psql (nas-sudo idiom) | ≥1 iOS/Android session exists — a real phone is attached |
+| `nas-immich-mobile-paired` | *(retired nas-31)* `session` table via psql — ≥1 iOS/Android session | *(disabled)* was a proxy for "a consumer is connected"; superseded by backup-freshness |
 
-Both are `severity: warn`, daily sweep tier, ntfy topic `verification`. The freshness
-check is the **regression** guard (exact H17 bug: empty/stale library behind green
-liveness); the paired check is the **class** guard (server green but no consumer ever
-connected — catches never-paired, all-devices-revoked, and a family account that never
-completed setup).
+`nas-immich-backup-freshness` is `severity: warn`, daily sweep tier, ntfy topic
+`verification`. It is both the **regression** guard (exact H17 bug: empty/stale library
+behind green liveness) **and** the **class** guard (server green but no consumer ever
+connected): it asserts the real OUTCOME — fresh assets landing within 7 days — regardless
+of which client uploaded them.
+
+### nas-31 (2026-07-28): why `nas-immich-mobile-paired` was retired
+
+The 2026-07-20 audit flagged both fix-35 checks failing. Reality on 2026-07-28:
+
+- **backup-freshness RECOVERED and is genuinely healthy** — `backup=fresh`, DB dump
+  `immich-2026-07-28.sql.gz`, organic daily uploads continuing (162 assets created
+  2026-07-27, newest original on disk `IMG_2114.jpg` @ 2026-07-27 22:53). Photos are
+  really being backed up.
+- **mobile-paired was accurate but is the wrong proxy.** The `session` table has *never*
+  held an iOS/Android row — only Safari/Firefox on macOS/Linux. Yet fresh phone photos
+  keep landing, because this fleet backs up via the **web uploader**, not the native app.
+  The check tests an implementation detail (a native-app login session) that is not the
+  actual goal, and it can only be made green by a **physical device** pairing the app — no
+  server-side action clears it. Left it as a permanent false alarm.
+
+**Resolution:** retired (set `enabled: false`, kept for provenance) because its intent —
+catch "server green but nothing is actually being backed up" — is fully and more strongly
+covered by `nas-immich-backup-freshness`, which measures the outcome rather than a
+session-row proxy. Re-pairing the native Immich app (see "Pairing a phone" above) remains a
+user choice / **needs-human** action, not an automated monitor.
 
 ## If `backup=STALE` fires *after* pairing worked
 
