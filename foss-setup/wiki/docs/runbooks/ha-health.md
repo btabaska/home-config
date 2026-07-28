@@ -85,7 +85,54 @@ pairing code from HA → Settings → Devices & Services → HomeKit Bridge. The
 already-paired clients keep working throughout; don't reset the bridge
 pairing itself unless both sides are stale.
 
+## HACS (community store) — install + the human GitHub-login step
+
+HACS (Home Assistant Community Store) lets you add community integrations
+(`midea_ac_lan`, Bermuda, …). It is a **custom integration**: files under
+`/config/custom_components/hacs`, then a UI config flow whose last leg is a
+**GitHub device-login that only a human can complete**.
+
+**Install (ha-04, done 2026-07-28):**
+
+1. Start the `core_ssh` add-on over the Supervisor WS proxy (see
+   [reverse proxy runbook](reverse-proxy.md) step 2 — REST `/api/hassio/*`
+   401s on 2026.x, use the WS `supervisor/api` command
+   `/addons/core_ssh/start`), then `ssh root@192.168.10.50` (laptop
+   `id_ed25519` pubkey is authorized on the add-on).
+2. Download the current release and `ha core check`:
+   ```bash
+   cd /config && wget -O - https://get.hacs.xyz | bash -   # -> custom_components/hacs (2.0.5)
+   ha core check && ha core restart
+   ```
+3. **Stop the add-on again** (`/addons/core_ssh/stop`) — leave no SSH port
+   open.
+
+After the restart HA **recognizes** HACS (WS `manifest/get` for `hacs`:
+`config_flow=True`, `is_built_in=False`) and lists it under **Settings →
+Devices & Services → Add Integration → HACS**. But `hacs` is *not* yet in
+`/api/config` components, and it won't be until the config flow runs.
+
+**The human leg (still pending — cannot be automated):** Settings → Devices &
+Services → **Add Integration → HACS** → accept the prompts → HA shows a
+**GitHub device code**; open <https://github.com/login/device>, sign in, and
+enter that code to authorize HACS to read GitHub. Then **restart HA Core once
+more**. HACS now appears in the sidebar and can fetch repositories.
+
+- Without the GitHub device-login, HACS can't fetch repositories — the store
+  is inert. This step needs hands; there is no token/API shortcut.
+- Only install community integrations you vet — HACS code runs inside HA.
+- Monitoring: `ha-hacs-loaded` (`verification/checks.d/ha.yaml`) probes
+  `/api/config` for the `hacs` component. It ships **`enabled: false`** because
+  it stays red until the GitHub device-login completes — **flip it to
+  `enabled: true`** once you finish that step and it goes green.
+
 ## History
+
+2026-07-28 (ha-04): HACS 2.0.5 installed into `/config/custom_components/hacs`
+via the `core_ssh` add-on over the Supervisor WS proxy; core restarted; HA
+recognizes the integration (config flow available). GitHub device-login +
+final restart left for the operator; `ha-hacs-loaded` check added (disabled
+until then).
 
 2026-07-19 (fix-36): Core 2026.6.4 → 2026.7.2, HAOS 16.3 → 18.1, Matter
 Server 9.0.3 → 9.1.0 applied via `update.install` service calls; baseline

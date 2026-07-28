@@ -215,3 +215,26 @@ checks:
     task_id: ha-12
     runbook: wiki/runbooks/docker.md
     enabled: true
+
+  # HACS (ha-04, 2026-07-28). HACS 2.0.5 files were installed into
+  # /config/custom_components/hacs via the core_ssh add-on over the Supervisor
+  # WS proxy (see ha-health.md HACS section); HA recognizes the integration
+  # (WS manifest/get: domain=hacs, config_flow=True, is_built_in=False) and now
+  # offers it under Settings -> Devices & Services -> Add Integration -> HACS.
+  # The FINAL leg — Add Integration -> HACS -> GitHub device-login
+  # (github.com/login/device, enter the code) -> restart core — is INHERENTLY
+  # HUMAN and is NOT yet done. Until that config entry loads, `hacs` is absent
+  # from /api/config components and this REST probe is red, so it ships
+  # enabled:false. FLIP enabled:true after the GitHub device-login completes;
+  # it goes green once the hacs config entry loads (community store usable).
+  - id: ha-hacs-loaded
+    name: "HACS integration loaded (community store usable)"
+    host: mini
+    cmd: >-
+      curl -s -m 8 -H "Authorization: Bearer $HA_TOKEN"
+      http://192.168.10.50:8123/api/config | grep -c '"hacs"'
+    expect: '^1$'
+    severity: warn
+    task_id: ha-04
+    runbook: wiki/docs/runbooks/ha-health.md
+    enabled: false
