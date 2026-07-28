@@ -155,6 +155,20 @@ wallabag.{$DOMAIN} {
 	reverse_proxy wallabag:80
 }
 
+# BookLogr — personal reading tracker / library. Two vhosts: the React SPA and
+# its Flask API. The SPA (served here) calls the API cross-origin from the
+# browser, so the API MUST have its own external URL (BL_API_ENDPOINT in the
+# booklogr stack points at booklogr-api.tabaska.us). API sends CORS allow-all.
+booklogr.{$DOMAIN} {
+	import local_tls
+	reverse_proxy booklogr-web:80
+}
+
+booklogr-api.{$DOMAIN} {
+	import local_tls
+	reverse_proxy booklogr-api:5000
+}
+
 # Journaling stack (journal-01). Memos front-end + n8n automation, both on the
 # edge network (reached by container name). faster-whisper (:8010) is internal
 # only — deliberately NO vhost (server-side dictation stays off the edge).

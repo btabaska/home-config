@@ -114,6 +114,7 @@ nav:
           - stash: services/stash.md
       - Reading & Docs:
           - audiobookshelf: services/audiobookshelf.md
+          - booklogr: services/booklogr.md
           - calibre-web-automated: services/calibre-web-automated.md
           - komga: services/komga.md
           - miniflux: services/miniflux.md

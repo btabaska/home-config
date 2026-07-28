@@ -1,6 +1,6 @@
 # Roadmap — reading
 
-29 task(s). Status mirrors `docs/progress.json` (the source of truth).
+30 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -33,5 +33,6 @@
 | `read-23` | Wire Mylar3's fallback acquisition: Prowlarr app-sync + seedbox Deluge (best-effort) | ✅ done | 1 hr |
 | `read-24` | Add a consumer-end monitoring check + coverage for Mylar3 | ✅ done | 30 min |
 | `read-25` | Document Mylar3: service catalog + wiki page + Homepage tile | ✅ done | 45 min |
+| `read-26` | Deploy BookLogr (personal reading tracker / library) on the mini + Homepage tile | ✅ done | 1 hr |
 
 [← Roadmap overview](index.md)

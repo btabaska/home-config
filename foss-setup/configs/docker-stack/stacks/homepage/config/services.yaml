@@ -172,6 +172,11 @@
         target: _blank
 
 - Reading:
+    - BookLogr:
+        icon: booklogr.png
+        href: https://booklogr.tabaska.us
+        description: Reading tracker
+        siteMonitor: http://booklogr-web:80
     - Calibre-Web:
         icon: calibre-web.png
         href: https://books.tabaska.us

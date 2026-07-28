@@ -689,3 +689,19 @@ checks:
     task_id: read-15
     runbook: wiki/docs/runbooks/reading-cwa.md
     enabled: true
+
+  # BookLogr personal reading tracker (read-26) consumer end: walk the browser->API
+  # chain, not liveness. The SPA runs in the browser and calls the API cross-origin,
+  # so a broken BL_API_ENDPOINT or a dead/CORS-blocked API breaks every user action
+  # while BOTH containers still report "up". The helper asserts the SPA is served, its
+  # JS bundle still carries the API URL, and that API answers cross-origin with the
+  # version JSON + an Access-Control-Allow-Origin header.
+  - id: booklogr-serves-consumer
+    name: "BookLogr: SPA served + bundle carries API endpoint + API answers cross-origin with version JSON & CORS (read-26 consumer end)"
+    host: mini
+    cmd: python3 /opt/verification/bin/booklogr-serves.py
+    expect: '^BOOKLOGR_OK'
+    severity: warn
+    task_id: read-26
+    runbook: wiki/docs/services/booklogr.md
+    enabled: true

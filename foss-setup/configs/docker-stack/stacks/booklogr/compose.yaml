@@ -1,0 +1,54 @@
+# BookLogr — self-hosted personal reading tracker / library (Reading stack).
+# Source: https://github.com/Mozzo1000/booklogr   Docs: https://booklogr.app/docs
+#
+# TWO containers by design:
+#   booklogr-api  — Flask backend, listens :5000, owns the SQLite DB (./data/books.db)
+#   booklogr-web  — React SPA served by nginx, listens :80
+# The SPA runs in the BROWSER and calls the API cross-origin, so the API needs its
+# OWN externally-reachable URL. Hence two Caddy vhosts on the edge network:
+#   booklogr.tabaska.us      -> booklogr-web:80
+#   booklogr-api.tabaska.us  -> booklogr-api:5000     (see BL_API_ENDPOINT below)
+# The API uses flask_cors CORS(app) = allow-all-origins, so the cross-subdomain
+# calls from the web origin succeed with no extra config.
+#
+# PINNED to v1.11.1 (latest upstream release). SQLite (default) — fine for a
+# household library; the DB lives in the gitignored ./data bind mount.
+#
+# Auth: multi-user. Registration is OPEN for the initial account signup, then
+# flipped off (AUTH_ALLOW_REGISTRATION=False in .env) and redeployed once the
+# household accounts exist.
+#
+# Secrets: AUTH_SECRET_KEY lives in the vault (booklogr.auth_secret_key) and is
+# written into ./.env at deploy time. .env is gitignored in the docker-stacks
+# repo (see .env.example for the template) — never committed.
+
+name: booklogr
+
+services:
+  booklogr-api:
+    image: mozzo/booklogr:v1.11.1
+    container_name: booklogr-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/instance
+    networks:
+      - edge
+
+  booklogr-web:
+    image: mozzo/booklogr-web:v1.11.1
+    container_name: booklogr-web
+    restart: unless-stopped
+    environment:
+      # Must be the EXTERNAL URL the browser can reach the API at, not an
+      # internal container name (the SPA fetches it client-side).
+      - BL_API_ENDPOINT=https://booklogr-api.tabaska.us/
+      - BL_GOOGLE_ID=        # empty = Google sign-in disabled
+      - BL_DEMO_MODE=false
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true

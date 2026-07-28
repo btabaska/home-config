@@ -12634,6 +12634,38 @@
   "pitfalls": "gen-wiki-services pulls URL+category from service-catalog.yaml (NOT enrichment) — omit it and you get <name>.tabaska.us + Uncategorized (the ABS lesson). Never hand-edit generated wiki/docs/services/*.md. Homepage: verify the container/browser fetch, not host reachability; services.yaml hot-reloads (no restart). Commit the /opt/stacks homepage mirror too (recurring orphaned-drift class — glue-12)."
  },
  {
+  "id": "read-26",
+  "track": "reading",
+  "title": "Deploy BookLogr (personal reading tracker / library) on the mini + Homepage tile",
+  "summary": "A self-hosted Goodreads-style shelf (Reading / Already Read / To Be Read / Did Not Finish, ratings, progress, notes, optional public profile) to track the household's reading, complementing Calibre-Web/Komga/Audiobookshelf. Two-container app (Flask API + React SPA); the SPA calls the API cross-origin from the browser, so both get their own Caddy vhost. Homepage tile at the top of Reading.",
+  "host": "mini",
+  "type": "sync",
+  "mode": "ai-vault",
+  "run": 4,
+  "required": false,
+  "depends_on": [],
+  "estimate": "1 hr",
+  "files": [
+   "configs/docker-stack/stacks/booklogr/",
+   "configs/docker-stack/stacks/caddy/caddy/Caddyfile",
+   "configs/docker-stack/stacks/homepage/config/services.yaml",
+   "configs/docker-stack/service-catalog.yaml",
+   "configs/docker-stack/service-enrichment.yaml",
+   "verification/checks.d/reading.yaml",
+   "verification/bin/booklogr-serves.py",
+   "verification/coverage/mini.containers"
+  ],
+  "steps": [
+   "Deploy booklogr stack on the mini (/opt/stacks/booklogr): mozzo/booklogr (API :5000, SQLite ./data) + mozzo/booklogr-web (nginx SPA :80), both on the edge network, no host ports. AUTH_SECRET_KEY from the vault into .env (gitignored).",
+   "Two Caddy vhosts: booklogr.tabaska.us -> booklogr-web:80, booklogr-api.tabaska.us -> booklogr-api:5000; web BL_API_ENDPOINT points at the API vhost (browser calls it cross-origin; API is flask_cors allow-all).",
+   "Homepage tile at the TOP of the Reading group (icon booklogr.png, siteMonitor http://booklogr-web:80).",
+   "Catalog + enrichment prose; consumer-end check (booklogr-serves.py walks SPA->bundle->API cross-origin) + coverage entries for both containers.",
+   "Mirror compose to repo, commit both /opt/stacks and foss-setup, publish-deploy.sh, rebuild wiki. Registration opened for initial signup then flipped off."
+  ],
+  "verify": "booklogr.tabaska.us + booklogr-api.tabaska.us reachable with valid certs; the SPA bundle carries the API URL and the API answers cross-origin with version JSON + CORS; Homepage shows BookLogr first in Reading; booklogr-serves-consumer green + both containers in coverage.",
+  "pitfalls": "The SPA runs in the BROWSER, so BL_API_ENDPOINT must be the EXTERNAL API URL, not an internal container name — and it is baked in at web-container start (redeploy after changing it). API has no /api prefix (routes are /v1/...; health is GET /). Registration is gated by AUTH_ALLOW_REGISTRATION via a @disable_route decorator."
+ },
+ {
   "id": "journal-01",
   "host": "mini",
   "mode": "ai",
