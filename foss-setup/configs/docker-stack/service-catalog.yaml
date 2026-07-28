@@ -386,6 +386,14 @@ services:
     ui: false
     on_demand: false
     notes: BedrockConnect gateway (UDP 19132) — consoles reach LAN/playit Minecraft via AdGuard featured-server rewrites.
+  - name: terraria
+    category: AI & Gaming
+    host: mini
+    port: 7777
+    url: null
+    ui: false
+    on_demand: false
+    notes: "Terraria (TShock) co-op — the mini's single always-on light game server (game-01). Join at <mini-ip>:7777 (TCP) on LAN/tailnet; no internet exposure (game-04 owns Tailscale friend reach). REST 7878 is localhost-only for the verification probe."
   - name: romm
     category: AI & Gaming
     host: mini

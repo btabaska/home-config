@@ -926,3 +926,15 @@ services:
       The collector runs but nothing shows up on the hub dashboard for this host.
     fix: |-
       The collector cannot reach the hub. It POSTs to `COLLECTOR_API_ENDPOINT=http://192.168.10.4:8080` — confirm reachability from the container's host (`curl -s http://192.168.10.4:8080/api/health`) and that the NAS `scrutiny` container is up. Then force a run: `docker exec scrutiny-collector /opt/scrutiny/bin/scrutiny-collector-metrics run`.
+- name: terraria
+  about: |-
+    Terraria is the Mac mini's single always-on light co-op game server (game-01). Because the mini is an 8GB box already running Seerr/Caddy/AdGuard/LiteLLM and 30-plus other containers, the capacity rule is one lightweight game server only — this is it. It runs the community TShock dedicated server as `ryshe/terraria:tshock-1.4.5.6-6.1.0` on `mini` from `foss-setup/configs/docker-stack/stacks/terraria/compose.yaml`, capped at `mem_limit: 1g` so it can never OOM its neighbours (it idles around 320 MB). On first boot `bootstrap.sh` auto-creates a small normal world named `AnalogueCoop` from the `WORLD_FILENAME`/`-autocreate 1` flags; later boots load the saved world. Friends join over the LAN or tailnet at the mini's address on TCP `7777` (Terraria menu -> Multiplayer -> Join via IP) — there is no web UI. The server is deliberately NOT internet-exposed: exposing it to friends over Tailscale is a separate downstream task (game-04), which must also set a `ServerPassword` before any external reach. The TShock REST API is enabled but bound to `127.0.0.1:7878` only; it is not a user surface, it exists purely so the verification sweep can read `/v2/server/status`. Runtime state (`world/`, `logs/`, the TShock-rewritten `tshock-config/config.json`) is gitignored; a fresh host seeds `config.json` from the committed `config.json.example`.
+  troubleshoot:
+  - symptom: |-
+      A friend cannot connect and their client reports a version mismatch.
+    fix: |-
+      This image tracks a Terraria 1.4.5.x beta, so clients must run the matching Terraria version (a stable-release client is kicked with "You are not using the same version as this server"). Confirm the server itself is healthy with `curl -s 127.0.0.1:7878/v2/server/status` on the mini — a 200 with `world: AnalogueCoop` and `maxplayers: 8` means the join pipeline is up and the mismatch is client-side. Have the friend match the server's Terraria version.
+  - symptom: |-
+      The server is up but the world never finished generating / status shows no world.
+    fix: |-
+      On first boot the small world takes 60-90s to generate; watch `docker logs terraria` for "Server started" and the worldgen steps to complete. If it is stuck, confirm the `world/` volume is writable and `tshock-config/config.json` is valid JSON (a broken config aborts startup); reseed it from `config.json.example` and `docker compose up -d`. The consumer checks `terraria-join-handshake` and `terraria-world-loaded` in the verification sweep flag both failure modes.

@@ -68,6 +68,7 @@ nav:
           - palworld: services/palworld.md
           - playit: services/playit.md
           - romm: services/romm.md
+          - terraria: services/terraria.md
       - Documents & Life:
           - paperless-ngx: services/paperless-ngx.md
       - Files & Sync:

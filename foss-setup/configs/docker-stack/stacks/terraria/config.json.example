@@ -1,0 +1,11 @@
+{
+  "Settings": {
+    "ServerName": "Going Analogue Co-op (Terraria)",
+    "MaxSlots": 8,
+    "RestApiEnabled": true,
+    "RestApiPort": 7878,
+    "EnableTokenLogin": false,
+    "LogRest": false,
+    "StorageType": "sqlite"
+  }
+}

@@ -1,0 +1,30 @@
+# Terraria (TShock) — the Mac mini's single always-on light co-op server.
+# game-01: 8GB box → ONE lightweight always-on game server only (do not stack
+# more alongside Seerr/Caddy/AdGuard/LiteLLM). TShock dedicated server, small
+# world, memory-capped at 1g so it can never OOM its neighbours.
+#
+# Reachable on LAN/tailnet at <host>:7777 (TCP). NOT internet-exposed — friend
+# exposure over Tailscale is a SEPARATE task (game-04). The TShock REST API
+# (7878) is bound to 127.0.0.1 only and exists solely for the verification
+# consumer probe (GET /v2/server/status) — it is not a public surface.
+services:
+  terraria:
+    image: ryshe/terraria:tshock-1.4.5.6-6.1.0
+    container_name: terraria
+    restart: unless-stopped
+    stdin_open: true            # TShock server console expects a TTY
+    tty: true
+    mem_limit: 1g
+    environment:
+      - WORLD_FILENAME=analogue.wld     # bootstrap.sh maps this to -world <path>
+      - CONFIGPATH=/tshock-config       # config.json (incl. REST settings) lives here
+    command: >-
+      -autocreate 1
+      -worldname AnalogueCoop
+    ports:
+      - "7777:7777/tcp"                 # game port — LAN/tailnet joinable
+      - "127.0.0.1:7878:7878/tcp"       # TShock REST — localhost only (probe)
+    volumes:
+      - ./world:/root/.local/share/Terraria/Worlds
+      - ./tshock-config:/tshock-config
+      - ./logs:/tshock/logs

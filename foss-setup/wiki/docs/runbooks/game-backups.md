@@ -80,3 +80,29 @@ Source checks: `verification/checks.d/gaming.yaml` + BLOAT scan in
 `scripts/backup/restic-snapshot-hygiene.sh` · Dead-man: healthchecks
 `playit-udp-rig` · Findings closed: H10, M29, M30
 (`docs/quality-gate-2026-07-16.md`).
+
+## Terraria co-op (mini, game-01)
+
+The Mac mini hosts exactly **one** lightweight always-on game server — TShock
+Terraria — from `foss-setup/configs/docker-stack/stacks/terraria/`
+(live: `mini:/opt/stacks/terraria/`), capped at `mem_limit: 1g`. Friends join on
+the LAN/tailnet at `<mini-ip>:7777` (TCP). It is NOT internet-exposed; Tailscale
+friend reach is game-04, which must also set `Settings.ServerPassword` first.
+Two consumer checks in `gaming.yaml`:
+
+- **terraria-join-handshake NO-HANDSHAKE / FAIL:** the game port 7777 isn't
+  speaking Terraria. Check the container: `ssh mini 'docker ps | grep terraria;
+  docker logs --tail 40 terraria'`. Worldgen on first boot takes 60-90s (port
+  binds only after "Server started"). Restart: `cd /opt/stacks/terraria &&
+  docker compose up -d`. If `tshock-config/config.json` is corrupt, reseed it
+  from `config.json.example`.
+- **terraria-world-loaded NOT-READY / REST-DOWN:** the REST status endpoint
+  (localhost-only `127.0.0.1:7878`) didn't report a loaded world with open
+  slots — the server is up but stuck (mid-worldgen or a bad world file). Inspect
+  `docker logs terraria`; confirm `world/` is writable. The world is
+  `AnalogueCoop` (small, normal), auto-created from `WORLD_FILENAME` +
+  `-autocreate 1`.
+- **A friend gets "not using the same version":** expected — this image tracks a
+  Terraria 1.4.5.x beta, so clients must run the matching Terraria version. The
+  server is fine as long as `curl -s 127.0.0.1:7878/v2/server/status` returns a
+  200 with `world: AnalogueCoop`.

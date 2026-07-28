@@ -1,0 +1,6 @@
+# Runtime state — never commit (world saves, rewritten TShock config, logs, DB).
+# TShock rewrites tshock-config/config.json on every boot (merges ~100 defaults);
+# the committed template is config.json.example. Seed the live file from it.
+world/
+logs/
+tshock-config/

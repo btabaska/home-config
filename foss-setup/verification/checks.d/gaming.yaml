@@ -111,3 +111,70 @@ checks:
     task_id: fix-34
     runbook: wiki/docs/runbooks/game-backups.md
     enabled: true
+
+  # ---- game-01: Terraria (TShock) — the mini's single always-on co-op server ----
+  # Consumer-end, not liveness. The mini is an 8GB box hosting ONE light game
+  # server; these probe the join path a friend actually uses, on the mini itself.
+  #
+  # join-handshake: speak the real Terraria wire protocol to the game port 7777
+  # (Connect Request, msgType 1) and require a framed Terraria reply — msgType 3
+  # (accepted), 37 (password) or 2 (version-mismatch kick "LegacyMultiplayer.4").
+  # Any of those proves the join pipeline reached the version-check stage and
+  # answered per-protocol; a dead port or non-Terraria service cannot. (This is a
+  # 1.4.5.x beta build, so a stable-release client version is kicked — expected.)
+  - id: terraria-join-handshake
+    name: "Terraria game port 7777 completes the join handshake (game-01)"
+    host: mini
+    cmd: |
+      python3 - <<'PY'
+      import socket, struct, sys
+      def wstr(s):
+          b = s.encode(); n = len(b); o = b""
+          while True:
+              x = n & 0x7F; n >>= 7; o += bytes([x | (0x80 if n else 0)])
+              if not n: break
+          return o + b
+      payload = b"\x01" + wstr("Terraria279")
+      frame = struct.pack("<H", len(payload) + 2) + payload
+      try:
+          s = socket.create_connection(("127.0.0.1", 7777), timeout=8)
+          s.settimeout(8); s.sendall(frame)
+          hdr = b""
+          while len(hdr) < 3:
+              c = s.recv(3 - len(hdr))
+              if not c: break
+              hdr += c
+          s.close()
+          if len(hdr) >= 3 and hdr[2] in (2, 3, 37):
+              print("JOINABLE msgType=%d" % hdr[2]); sys.exit(0)
+          print("NO-HANDSHAKE hdr=%s" % hdr.hex()); sys.exit(1)
+      except Exception as e:
+          print("FAIL %s: %s" % (type(e).__name__, e)); sys.exit(1)
+      PY
+    expect: '^JOINABLE'
+    severity: crit
+    task_id: game-01
+    runbook: wiki/docs/runbooks/game-backups.md
+    enabled: true
+
+  # world-loaded: TShock REST /v2/server/status (localhost-only, 7878) must
+  # report the world actually loaded and open join slots — real game state the
+  # handshake alone can't confirm (e.g. server up but stuck mid-worldgen).
+  - id: terraria-world-loaded
+    name: "Terraria has world AnalogueCoop loaded with open slots (game-01)"
+    host: mini
+    cmd: |
+      s=$(curl -s -m 8 http://127.0.0.1:7878/v2/server/status)
+      echo "$s" | grep -q '"status": *"200"' || { echo REST-DOWN; exit 1; }
+      w=$(echo "$s" | grep -o '"maxplayers": *[0-9]\+' | grep -o '[0-9]\+')
+      world=$(echo "$s" | sed -n 's/.*"world": *"\([^"]*\)".*/\1/p')
+      if [ -n "$world" ] && [ "${w:-0}" -gt 0 ]; then
+        echo "WORLD-LOADED world=$world slots=$w"
+      else
+        echo NOT-READY
+      fi
+    expect: '^WORLD-LOADED'
+    severity: warn
+    task_id: game-01
+    runbook: wiki/docs/runbooks/game-backups.md
+    enabled: true
