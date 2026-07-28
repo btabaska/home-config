@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **286 checks across 31 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **288 checks across 31 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -11,7 +11,7 @@ Every acceptance/regression check the fleet runs — **286 checks across 31 doma
 | [docker-fleet](docker-fleet.md) | 9 | 0 | 9 |
 | [edge](edge.md) | 6 | 1 | 5 |
 | [gaming](gaming.md) | 5 | 2 | 3 |
-| [git-hygiene](git-hygiene.md) | 10 | 0 | 10 |
+| [git-hygiene](git-hygiene.md) | 11 | 0 | 11 |
 | [ha](ha.md) | 10 | 2 | 8 |
 | [host-hygiene](host-hygiene.md) | 7 | 0 | 7 |
 | [ipod-abs-sync](ipod-abs-sync.md) | 1 | 0 | 1 |
@@ -29,11 +29,11 @@ Every acceptance/regression check the fleet runs — **286 checks across 31 doma
 | [power-journal](power-journal.md) | 3 | 0 | 3 |
 | [reading](reading.md) | 25 | 0 | 25 |
 | [rig](rig.md) | 31 | 2 | 29 |
-| [rig-immich-ml](rig-immich-ml.md) | 4 | 1 | 3 |
+| [rig-immich-ml](rig-immich-ml.md) | 5 | 1 | 4 |
 | [secrets](secrets.md) | 4 | 3 | 1 |
 | [seedbox](seedbox.md) | 8 | 4 | 4 |
 | [sync](sync.md) | 2 | 0 | 2 |
 | [system](system.md) | 9 | 4 | 5 |
 | [verification-self](verification-self.md) | 5 | 0 | 5 |
 
-_Total: 286 checks._
+_Total: 288 checks._

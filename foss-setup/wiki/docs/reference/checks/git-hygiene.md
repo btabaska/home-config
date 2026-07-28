@@ -1,6 +1,6 @@
 # Checks — git-hygiene
 
-`foss-setup/verification/checks.d/git-hygiene.yaml` — 10 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/git-hygiene.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `git-stacks-clean`
 
@@ -110,6 +110,17 @@ deployed ansible-pull units byte-match the repo on mini + rig (L86 class)
 
 ```bash
 D=/var/lib/verification/wiki-drift-repo; { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } && git -C "$D" fetch -q origin main && git -C "$D" reset --hard -q FETCH_HEAD && bash "$D/foss-setup/scripts/verification/unit-drift-check.sh" "$D"
+```
+
+## `dotfiles-content-clean`
+
+chezmoi dotfiles have no uncommitted content drift on mini + rig (glue-04b)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `glue-04b` · **enabled:** True
+- **expects:** `DOTFILES-CONTENT-CLEAN`
+
+```bash
+m=$(chezmoi diff 2>/dev/null | grep -c '^@@' || true); r=$(ssh -o BatchMode=yes -o ConnectTimeout=10 rig "chezmoi diff 2>/dev/null | grep -c '^@@'" </dev/null | tr -d '[:space:]'); echo "mini_hunks=$m rig_hunks=$r"; { [ "$m" = 0 ] && [ "$r" = 0 ]; } && echo DOTFILES-CONTENT-CLEAN
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

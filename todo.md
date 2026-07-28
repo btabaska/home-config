@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**238/323 done** · **52 open** · **18 deferred** · 15 retired.
+**239/323 done** · **51 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -20,7 +20,6 @@
 ### desktop
 - [ ] **`foss-02`** Package the FOSS desktop suite: cachyos-desktop-suite.sh + macOS Brewfile (chezmoi-tracked) _(est ~half day)_
 - [ ] **`glue-02`** Desktop baseline on CachyOS: browser(s) + LibreOffice (anytime) _(est 20-40 min)_
-- [ ] **`glue-04b`** Apply chezmoi dotfiles to rig + mini (fleet rollout) _(est 20-30 min)_
 
 ### ebook-mgmt
 - [ ] **`ebook-06`** End-to-end ebook verification (Libreseerr → Betty → Readarr → CWA → Plex/Kobo) _(est 30-45 min)_

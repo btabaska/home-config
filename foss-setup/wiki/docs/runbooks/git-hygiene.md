@@ -85,6 +85,29 @@ For `wiki-drift` see the same-commit rule note in
 | `tracker-count-sanity` | Generated tracker views disagree with `tasks.json`/`progress.json`: summary arithmetic broken, page stale, or a negative Open cell (L77) | Re-run `gen-todo.py` + `gen-roadmap-pages.py` and commit with the JSON change. Statuses are exclusive in the generators — retired wins over done for dual-status tasks (sbom-01/04) |
 | `unit-file-drift` | A deployed hand-copied unit differs from its repo source: the `ansible-pull` units on mini + rig (`configs/ansible/`), or the rig's other static foss-setup host units (glue-13 — `gpu-power-tune.service`, the `export-manifests` service+timer; canonical sources mapped in `configs/host/rig/README.md`). Nothing converges these automatically, so drift is silent until a run misses (L6/L86) | Copy the repo file onto the drifted host (`/etc/systemd/system/`) + `systemctl daemon-reload`; or, if the live edit was the intentional one, land it in the repo instead |
 
+## glue-04b · chezmoi dotfiles drift (rig + mini)
+
+The personal terminal stack (Ghostty + Starship + zsh, `home/dotfiles`) is
+chezmoi-managed and rolled out to **rig** and **mini** (glue-04b). Same
+repo↔live invariant as the stacks above, one plane down: a live edit to
+`~/.zshrc` / `~/.config/starship.toml` / `~/.config/ghostty/config` /
+`~/.config/fish/config.fish` that never lands back in the source — or a source
+update never `chezmoi apply`ed on a host — is silent drift.
+
+| check | red means | fix |
+|---|---|---|
+| `dotfiles-content-clean` | A chezmoi-managed dotfile on mini or rig has **content** drift vs its applied source (the runner reaches rig over the shared cross-host ssh key; an unreachable rig also reds it) | On the drifted host: `chezmoi diff` to see it, then `chezmoi apply` (source is truth) or `chezmoi edit <file> && chezmoi apply && chezmoi cd && git push` + `chezmoi update` elsewhere (live edit is truth). Then re-run the check |
+
+**Why content, not `chezmoi status`:** chezmoi derives a `dot_`-file's target
+mode from the *runtime umask*. mini's login shells run `umask 002`
+(group-writable) but the systemd verification runner defaults to `022`, so a
+plain `chezmoi status` flaps 0↔7 on cosmetic mode bits alone and would page a
+fake drift. The check counts real content hunks (`chezmoi diff | grep -c '^@@'`;
+mode-only diffs carry no `@@` hunk) — umask-agnostic and uniform across both
+hosts. The Linux `.chezmoiignore` OS-guard means only the terminal stack is
+managed on these hosts; `~/.ssh/config`, `~/.gitconfig`, and nvim are never
+touched.
+
 ## fix-44 · tracker source coherence
 
 | check | what failing means | fix |

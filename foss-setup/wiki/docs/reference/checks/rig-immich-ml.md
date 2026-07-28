@@ -1,6 +1,6 @@
 # Checks — rig-immich-ml
 
-`foss-setup/verification/checks.d/rig-immich-ml.yaml` — 4 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/rig-immich-ml.yaml` — 5 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `immich-smart-search-consumer`
 
@@ -33,6 +33,17 @@ immich server config still routes ML at the rig (URL not reverted to NAS-only)
 
 ```bash
 printf '%s\n' "$NAS_SUDO_PASSWORD" | ssh -o BatchMode=yes -o ConnectTimeout=10 nas "sudo -S -p '' /usr/local/bin/docker exec immich_postgres psql -U postgres -d immich -tAc \"SELECT value FROM system_metadata WHERE key='system-config'\"" 2>/dev/null | grep -q 'http://192.168.10.12:3003' && echo present || echo MISSING
+```
+
+## `immich-dedup-maxdistance-tuned`
+
+immich duplicate-detection maxDistance stays tuned for SigLIP2 (0.0015, not reverted to 0.01)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `nas-33` · **enabled:** True
+- **expects:** `^tuned$`
+
+```bash
+printf '%s\n' "$NAS_SUDO_PASSWORD" | ssh -o BatchMode=yes -o ConnectTimeout=10 nas "sudo -S -p '' /usr/local/bin/docker exec immich_postgres psql -U postgres -d immich -tAc \"SELECT value FROM system_metadata WHERE key='system-config'\"" 2>/dev/null | grep -qE '\"maxDistance\":[[:space:]]*0.0015' && echo tuned || echo REVERTED
 ```
 
 ## `rig-immich-ml-version-match`

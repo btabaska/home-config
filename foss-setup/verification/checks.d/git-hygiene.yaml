@@ -181,3 +181,31 @@ checks:
     task_id: fix-43
     runbook: wiki/docs/runbooks/git-hygiene.md
     enabled: true
+
+  # glue-04b: the chezmoi dotfiles rollout to rig + mini must stay in sync with
+  # its applied source — a live edit to ~/.zshrc / starship.toml / ghostty config
+  # / fish config that never lands back in the `home/dotfiles` source (or a source
+  # update never `chezmoi apply`ed) is exactly the repo↔live drift this file
+  # guards, just for the personal-config plane instead of the stack plane.
+  #
+  # We assert CONTENT parity, not `chezmoi status` cleanliness: chezmoi derives a
+  # dot_-file's target mode from the *runtime umask*, and mini's login shells run
+  # umask 002 (group-writable) while the systemd runner defaults to 022 — so a
+  # naive `chezmoi status` flaps 0↔7 purely on cosmetic mode bits and would page a
+  # fake drift. `chezmoi diff | grep -c '^@@'` counts real content hunks only
+  # (mode-only diffs carry no @@ hunk), which is umask-agnostic and uniform across
+  # both hosts. Runner is btabaska on mini; rig is reached over the same ssh key
+  # the other cross-host checks use (unreachable rig => non-zero => fail).
+  - id: dotfiles-content-clean
+    name: "chezmoi dotfiles have no uncommitted content drift on mini + rig (glue-04b)"
+    host: mini
+    cmd: >-
+      m=$(chezmoi diff 2>/dev/null | grep -c '^@@' || true);
+      r=$(ssh -o BatchMode=yes -o ConnectTimeout=10 rig "chezmoi diff 2>/dev/null | grep -c '^@@'" </dev/null | tr -d '[:space:]');
+      echo "mini_hunks=$m rig_hunks=$r";
+      { [ "$m" = 0 ] && [ "$r" = 0 ]; } && echo DOTFILES-CONTENT-CLEAN
+    expect: DOTFILES-CONTENT-CLEAN
+    severity: warn
+    task_id: glue-04b
+    runbook: wiki/docs/runbooks/git-hygiene.md
+    enabled: true
