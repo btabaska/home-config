@@ -63,6 +63,7 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `HOMEPAGE_VAR_ABS_KEY`
 - `HOMEPAGE_VAR_KOMGA_USER`
 - `HOMEPAGE_VAR_KOMGA_PASS`
+- `HOMEPAGE_VAR_MYLAR_KEY`
 - `HOMEPAGE_VAR_STASH_KEY`
 - `HOMEPAGE_VAR_DELUGE_PASS`
 - `HOMEPAGE_VAR_SLSKD_KEY`

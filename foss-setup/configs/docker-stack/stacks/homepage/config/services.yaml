@@ -197,6 +197,14 @@
         widget:
           type: suwayomi
           url: http://192.168.10.12:4567
+    - Mylar3:
+        icon: mylar.png
+        href: https://mylar.tabaska.us
+        description: Comics acquisition
+        widget:
+          type: mylar
+          url: http://192.168.10.4:8090
+          key: "{{HOMEPAGE_VAR_MYLAR_KEY}}"
     - Wallabag:
         icon: wallabag.png
         href: https://wallabag.tabaska.us

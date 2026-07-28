@@ -235,6 +235,13 @@ services:
     url: https://manga.tabaska.us
     on_demand: false
     notes: Manga acquisition server (read-18). Tachidesk; runs Tachiyomi/Mihon extensions server-side and writes per-chapter CBZ to the NAS "manga" DSM share (/mnt/nas-manga -> /volume1/manga) which Komga's Manga library scans. No app auth (LAN posture like ollama/comfyui).
+  - name: mylar3
+    category: Reading & Docs
+    host: nas
+    port: 8090
+    url: https://mylar.tabaska.us
+    on_demand: false
+    notes: Western-comics acquisition *arr (read-21..25) — Sonarr's role for comics. LSIO container on the NAS; PUID/PGID 1026:100 (matches Komga so grabbed CBZ stay readable). Primary acquisition = built-in GetComics DDL over plain HTTPS (read-22, no indexer/download client); torrent safety-net via Prowlarr app-sync + off-site Betty Deluge (read-23, best-effort). ComicVine API key = metadata authority (identity/catalog only, like TheTVDB to Sonarr). Output lands in /volume1/comics/Comics/<Series>/ which Komga's Comics library scans. Completes the comics/manga row — Mylar3 = western comics, Suwayomi = manga, Komga = shared reader. Homepage widget uses the Mylar3 API key.
   - name: paperless
     category: Reading & Docs
     host: mini

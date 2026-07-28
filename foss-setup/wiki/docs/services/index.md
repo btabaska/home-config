@@ -111,6 +111,7 @@
 | [calibre-web-automated](calibre-web-automated.md) | nas | https://books.tabaska.us |
 | [komga](komga.md) | nas | https://komga.tabaska.us |
 | [miniflux](miniflux.md) | mini | https://rss.tabaska.us |
+| [mylar3](mylar3.md) | nas | https://mylar.tabaska.us |
 | [wallabag](wallabag.md) | mini | https://wallabag.tabaska.us |
 
 ## Requests
@@ -126,7 +127,6 @@
 | Stack | Host | URL |
 |---|---|---|
 | [bgutil-pot](bgutil-pot.md) | mini | — |
-| [mylar3](mylar3.md) | nas | https://mylar3.tabaska.us |
 | [shelfmark](shelfmark.md) | nas | https://shelfmark.tabaska.us |
 
 Not compose-managed in this repo (so not listed above): **Plex** (native NAS package), **slskd + Deluge** (seedbox — see [seedbox](../hosts/seedbox.md)), and the **rig AI stack** (litellm, open-webui, mcpo — compose lives in the separate `local-ai-tooling` repo; see [rig](../hosts/rig.md)).
