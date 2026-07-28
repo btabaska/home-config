@@ -95,6 +95,30 @@ checks:
     runbook: wiki/runbooks/photos.md
     enabled: true
 
+  # ── (5) DEDUP TUNING drift — maxDistance stays tuned for SigLIP2 (nas-33) ────
+  # Duplicate detection reuses the SigLIP2 smart-search embeddings, whose vector
+  # geometry is far tighter than the old ViT-B-32 default. maxDistance was lowered
+  # 0.01 -> 0.003 (nas-33, 2026-07-28) so burst/consecutive shots stop being merged
+  # as false duplicates. Immich only stores maxDistance in system-config when it is
+  # non-default, so a revert to the 0.01 default drops the 0.003 value entirely.
+  # This guards against an admin (or a config reset) silently reverting the tuning.
+  - id: immich-dedup-maxdistance-tuned
+    tier: fast
+    name: "immich duplicate-detection maxDistance stays tuned for SigLIP2 (0.003, not reverted to 0.01)"
+    host: mini
+    cmd: >-
+      printf '%s\n' "$NAS_SUDO_PASSWORD"
+      | ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "sudo -S -p '' /usr/local/bin/docker exec immich_postgres psql -U postgres -d immich
+      -tAc \"SELECT value FROM system_metadata WHERE key='system-config'\""
+      2>/dev/null
+      | grep -qE '\"maxDistance\":[[:space:]]*0.003' && echo tuned || echo REVERTED
+    expect: '^tuned$'
+    severity: warn
+    task_id: nas-33
+    runbook: wiki/runbooks/photos.md
+    enabled: true
+
   - id: rig-immich-ml-version-match
     tier: fast
     name: "rig immich-ml -cuda image matches NAS immich-server version (no ML/server skew)"
