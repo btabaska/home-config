@@ -370,6 +370,14 @@
           type: prowlarr
           url: http://192.168.10.4:9696
           key: "{{HOMEPAGE_VAR_PROWLARR_KEY}}"
+    - Bazarr:
+        icon: bazarr.png
+        href: https://bazarr.tabaska.us
+        description: Subtitles
+        widget:
+          type: bazarr
+          url: http://192.168.10.4:6767
+          key: "{{HOMEPAGE_VAR_BAZARR_KEY}}"
     - FlareSolverr:
         icon: flaresolverr.png
         href: https://flaresolverr.tabaska.us

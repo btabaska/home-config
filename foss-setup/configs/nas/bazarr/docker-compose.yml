@@ -1,0 +1,37 @@
+# Bazarr — automatic subtitle management for the *arr stack (media-12)
+# Role : the subtitle *arr — watches Sonarr's TV + Radarr's movie libraries and fetches
+#        matching subtitles from configured providers (Sonarr/Radarr do NOT do subtitles).
+# Docs : https://www.bazarr.media  •  https://docs.linuxserver.io/images/docker-bazarr/
+# WHY NAS: Bazarr must see the EXACT SAME library paths the arrs report, or it can't match
+#        media on disk. Sonarr + Radarr both run on this NAS, so Bazarr is co-located and
+#        mounts the identical container paths: /tv (= /volume3/tv, same as Sonarr) and
+#        /movies (= /volume2/movies, same as Radarr). No Bazarr path-mapping needed because
+#        the paths are byte-identical to what the arrs hand it over the API.
+# Wiring: Settings > Sonarr  -> http://192.168.10.4:8989 (arr_api_keys.sonarr)
+#         Settings > Radarr  -> http://192.168.10.4:7878 (arr_api_keys.radarr)
+#         Settings > Providers-> OpenSubtitles.com (vault subtitle_providers.opensubtitles_*)
+#                                + Podnapisi (no-account, free) as a fallback.
+#         Languages profile   -> English, cutoff score set so it stops once a good match lands.
+# uid  : PUID=1026/PGID=100 (btabaska:users) — MUST match Sonarr/Radarr so the subs Bazarr
+#        writes next to each video stay co-owned and the arrs/players can read them.
+# Front: bazarr.tabaska.us -> mini Caddy reverse_proxy {$NAS_IP}:6767 (import local_tls).
+# Homepage: `bazarr` widget against http://192.168.10.4:6767, key = Settings > General API key
+#        (vault homepage_widgets.bazarr_key) — shows wanted-subtitle counts.
+# To upgrade: bump the tag+digest below, read release notes, then:
+#   ssh -t nas 'cd /volume1/docker/bazarr && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'
+name: bazarr
+services:
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:v1.6.0-ls356@sha256:ab401a0f361cfad328e444838b13d5b334b189d0f556fc91a3623eb581df36df   # digest-pinned (fix-38/I68 supply-chain posture); pulled on the NAS 2026-07-28
+    container_name: bazarr
+    environment:
+      - PUID=1026                          # btabaska — matches Sonarr/Radarr so written subs stay co-owned
+      - PGID=100                            # users
+      - TZ=America/New_York
+    volumes:
+      - /volume1/docker/bazarr/config:/config   # Bazarr config + SQLite DB
+      - /volume3/tv:/tv                          # SAME path Sonarr reports (Sonarr: /volume3/tv -> /tv)
+      - /volume2/movies:/movies                  # SAME path Radarr reports (Radarr: /volume2/movies -> /movies)
+    ports:
+      - '6767:6767'
+    restart: unless-stopped

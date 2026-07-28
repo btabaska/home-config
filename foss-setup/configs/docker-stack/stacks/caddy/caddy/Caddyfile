@@ -365,6 +365,12 @@ mylar.{$DOMAIN} {
 	reverse_proxy {$NAS_IP}:8090
 }
 
+# Bazarr — subtitle *arr for Sonarr/Radarr (media-12). LSIO container on the NAS, port 6767.
+bazarr.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:6767
+}
+
 sonarr.{$DOMAIN} {
 	import local_tls
 	reverse_proxy {$NAS_IP}:8989

@@ -1,0 +1,35 @@
+# Bazarr — subtitle *arr consumer-end probe (media-12, 2026-07-28).
+# Bazarr is only useful if it is actually SYNCED to the arrs and can compute
+# missing subtitles for real media — "container Up / 200 OK" says none of that.
+# This probes the CONSUMER end from the mini runner: it authenticates with the
+# Bazarr API key, requires the movie library to be non-empty (i.e. Bazarr pulled
+# Radarr's movies over the API, not just started), and requires BOTH the Sonarr
+# AND Radarr SignalR live-connections to report LIVE (Bazarr is actively wired to
+# both arrs, so new grabs get subtitle jobs). If either arr link drops or the
+# sync breaks, this fails even though the container stays green.
+#
+# Secret: BAZARR_API_KEY in mini /etc/verification/env (vault homepage_widgets.bazarr_key —
+# Bazarr Settings > General API key). Bazarr listens on the NAS at 192.168.10.4:6767,
+# reachable from the mini over the LAN.
+#
+# NOTE on providers: the sole enabled provider is Podnapisi (free, no account — no
+# OpenSubtitles.com credentials exist in the vault). Podnapisi rate-limits by IP, so a
+# provider-search probe would self-throttle and false-alarm; provider auth is therefore
+# NOT asserted here (it was proven at deploy time: 27 real candidates returned for a real
+# movie). Add an OpenSubtitles.com account later for redundancy (handoff item).
+checks:
+  - id: bazarr-synced-from-arrs
+    name: "bazarr: synced from Radarr + both arr SignalR links LIVE (consumer end)"
+    host: mini
+    cmd: >-
+      python3 -c "import os,json,urllib.request as u;
+      h={'X-API-KEY':os.environ['BAZARR_API_KEY']};
+      g=lambda p: json.load(u.urlopen(u.Request('http://192.168.10.4:6767'+p,headers=h),timeout=20));
+      b=g('/api/badges'); m=g('/api/movies?length=1'); s=g('/api/series?length=1');
+      ok=(b.get('sonarr_signalr')=='LIVE' and b.get('radarr_signalr')=='LIVE' and m.get('total',0)>0);
+      print('BAZARR_OK movies=%d series=%d sonarr=%s radarr=%s' % (m.get('total',0),s.get('total',0),b.get('sonarr_signalr'),b.get('radarr_signalr')) if ok else 'BAZARR_FAIL '+json.dumps(b))"
+    expect: '^BAZARR_OK movies=[1-9][0-9]* series=[0-9]+ sonarr=LIVE radarr=LIVE$'
+    severity: warn
+    task_id: media-12
+    runbook: wiki/docs/runbooks/verification.md
+    enabled: true

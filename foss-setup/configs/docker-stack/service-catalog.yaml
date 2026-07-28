@@ -111,6 +111,13 @@ services:
     url: https://prowlarr.tabaska.us
     on_demand: false
     notes: Indexer manager for the *arr stack.
+  - name: bazarr
+    category: Media Automation
+    host: nas
+    port: 6767
+    url: https://bazarr.tabaska.us
+    on_demand: false
+    notes: Subtitle automation for Sonarr + Radarr libraries.
   - name: flaresolverr
     category: Media Automation
     host: nas
