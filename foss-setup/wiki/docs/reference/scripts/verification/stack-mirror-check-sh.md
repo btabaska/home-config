@@ -42,7 +42,7 @@ stack-mirror-check.sh mirrors|manifest
 
 ## Environment / variables referenced
 
-`COMPOSE_NAMES`, `HOST`, `MIRROR`, `MODE`, `ROOT`, `STACKS_DIR`
+`COMPOSE_NAMES`, `HOST`, `MIRROR`, `MIRROR_RENAME`, `MODE`, `ROOT`, `STACKS_DIR`
 
 ## See also
 

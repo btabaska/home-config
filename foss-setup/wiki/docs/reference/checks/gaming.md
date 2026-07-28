@@ -1,6 +1,6 @@
 # Checks — gaming
 
-`foss-setup/verification/checks.d/gaming.yaml` — 5 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/gaming.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `game-amp-backup-fresh`
 
@@ -74,6 +74,60 @@ playit agent logged no UDP-claim register errors in 24h (M30 class)
 
 ```bash
 n=$(docker logs --since 24h playit 2>&1 | grep -ac 'unexpected response from register'); if [ "${n:-0}" -eq 0 ]; then echo REGISTER-OK; else echo "REGISTER-ERRORS:${n}"; fi
+```
+
+## `terraria-join-handshake`
+
+Terraria game port 7777 completes the join handshake (game-01)
+
+- **host:** `mini` · **severity:** `crit` · **guards task:** `game-01` · **enabled:** True
+- **expects:** `^JOINABLE`
+
+```bash
+python3 - <<'PY'
+import socket, struct, sys
+def wstr(s):
+    b = s.encode(); n = len(b); o = b""
+    while True:
+        x = n & 0x7F; n >>= 7; o += bytes([x | (0x80 if n else 0)])
+        if not n: break
+    return o + b
+payload = b"\x01" + wstr("Terraria279")
+frame = struct.pack("<H", len(payload) + 2) + payload
+try:
+    s = socket.create_connection(("127.0.0.1", 7777), timeout=8)
+    s.settimeout(8); s.sendall(frame)
+    hdr = b""
+    while len(hdr) < 3:
+        c = s.recv(3 - len(hdr))
+        if not c: break
+        hdr += c
+    s.close()
+    if len(hdr) >= 3 and hdr[2] in (2, 3, 37):
+        print("JOINABLE msgType=%d" % hdr[2]); sys.exit(0)
+    print("NO-HANDSHAKE hdr=%s" % hdr.hex()); sys.exit(1)
+except Exception as e:
+    print("FAIL %s: %s" % (type(e).__name__, e)); sys.exit(1)
+PY
+```
+
+## `terraria-world-loaded`
+
+Terraria has world AnalogueCoop loaded with open slots (game-01)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `game-01` · **enabled:** True
+- **expects:** `^WORLD-LOADED`
+
+```bash
+s=$(curl -s -m 8 http://127.0.0.1:7878/v2/server/status)
+echo "$s" | grep -q '"status": *"200"' || { echo REST-DOWN; exit 1; }
+w=$(echo "$s" | grep -o '"maxplayers": *[0-9]\+' | grep -o '[0-9]\+')
+world=$(echo "$s" | sed -n 's/.*"world": *"\([^"]*\)".*/\1/p')
+if [ -n "$world" ] && [ "${w:-0}" -gt 0 ]; then
+  echo "WORLD-LOADED world=$world slots=$w"
+else
+  echo NOT-READY
+fi
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

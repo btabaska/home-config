@@ -1,6 +1,6 @@
 # Checks — rig
 
-`foss-setup/verification/checks.d/rig.yaml` — 31 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/rig.yaml` — 32 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `rig-ollama`
 
@@ -242,6 +242,17 @@ rig GPU power-tune applied (persistence on + gpu-power-tune.service active)
 
 ```bash
 echo "svc=$(systemctl is-active gpu-power-tune.service) persist=$(nvidia-smi --query-gpu=persistence_mode --format=csv,noheader | tr -d ' ')"
+```
+
+## `rig-plasmashell-idle`
+
+rig plasmashell not busy-looping (< 30% CPU over 3s — idle-power guard)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `game-09` · **enabled:** True
+- **expects:** `OK`
+
+```bash
+pid=$(pgrep -x plasmashell | head -1) || true; if [ -z "$pid" ]; then echo "plasmashell absent (headless) OK"; exit 0; fi; a=$(awk '{print $14+$15}' /proc/$pid/stat); sleep 3; b=$(awk '{print $14+$15}' /proc/$pid/stat); hz=$(getconf CLK_TCK); pct=$(( (b-a)*100/(3*hz) )); if [ "$pct" -lt 30 ]; then echo "plasmashell cpu=${pct}% OK"; else echo "plasmashell cpu=${pct}% BUSYLOOP"; fi
 ```
 
 ## `rig-music-no-flac`

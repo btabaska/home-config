@@ -1,9 +1,5 @@
 # Syncthing v2 — mini NODE of the local-first sync mesh (foss-03)
 #
-# Repo mirror dir is `syncthing-node` (the wiki generator keys pages by dir
-# name, mini-tree first — a bare `syncthing` here would shadow the NAS-hub
-# page); the LIVE stack on the mini is /opt/stacks/syncthing.
-#
 # ROLE: a node, NOT the hub. Pairs to the NAS hub (192.168.10.4) which relays
 # to the rig. Mind the mini's memory ceiling — Syncthing idles ~40-80 MB, well
 # within budget, but keep it lean (no large folders here; the hub is on the NAS).

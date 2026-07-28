@@ -182,7 +182,7 @@ t=$(curl -sm 10 -H "x-api-key: $IMMICH_API_KEY" "$IMMICH_URL/api/server/statisti
 
 immich has at least one mobile (iOS/Android) session paired
 
-- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-35` · **enabled:** True
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-35` · **enabled:** False
 - **expects:** `^paired=yes$`
 
 ```bash

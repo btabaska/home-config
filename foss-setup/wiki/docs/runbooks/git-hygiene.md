@@ -32,6 +32,12 @@ logic self-updates with the repo.
   `publish-deploy.sh`. This is exactly how forgejo — the deploy control plane
   itself — went unrebuildable-looking for weeks (M48: its mirror sat unfound in
   `configs/git/`, a path nothing else used; fix-41 folded it into `stacks/`).
+  One deliberate exception: the mini's live `/opt/stacks/syncthing` (mesh node,
+  foss-03) mirrors to `configs/docker-stack/stacks/syncthing-node/`, not
+  `.../syncthing/`, so `gen-wiki-services.py` (keys pages by dir name, mini-tree
+  first) doesn't let the node shadow the separate NAS-hub `syncthing` page. The
+  check carries a `MIRROR_RENAME` map (`syncthing`→`syncthing-node`) for this one
+  case; the mirrored compose stays byte-identical to live (glue-15).
 - **`MIRROR-DRIFT: <name>`** — live compose edited without mirroring back (or a
   repo change never deployed). Diff them, decide which side is truth (live wins
   per the standing mandate unless it's an undeployed hardening), sync, commit.

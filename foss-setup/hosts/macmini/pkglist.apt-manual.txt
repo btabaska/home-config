@@ -43,7 +43,6 @@ openssh-server
 python3-docker
 python3-pip
 python3.10-venv
-restic
 shim-signed
 slurm
 software-properties-common

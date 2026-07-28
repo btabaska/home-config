@@ -1,6 +1,6 @@
 # Checks — ha
 
-`foss-setup/verification/checks.d/ha.yaml` — 10 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/ha.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `ha-http`
 
@@ -110,6 +110,17 @@ HA Assist LLM backend (rig Ollama) reachable + serves the configured model
 
 ```bash
 curl -sm 15 http://192.168.10.12:11434/api/tags | python3 -c "import sys,json; d=json.load(sys.stdin); ms=[m.get('name') for m in d.get('models',[])]; print('assist_llm=ok' if 'llama3.2:3b' in ms else 'assist_llm=MISSING')" 2>/dev/null || echo assist_llm=UNREACHABLE
+```
+
+## `ha-hacs-loaded`
+
+HACS integration loaded (community store usable)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `ha-04` · **enabled:** False
+- **expects:** `^1$`
+
+```bash
+curl -s -m 8 -H "Authorization: Bearer $HA_TOKEN" http://192.168.10.50:8123/api/config | grep -c '"hacs"'
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

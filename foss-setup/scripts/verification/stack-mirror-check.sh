@@ -34,6 +34,14 @@ MIRROR="${ROOT}/configs/docker-stack/stacks"
 HOST="$(hostname -s)"
 COMPOSE_NAMES=(compose.yaml compose.yml docker-compose.yml docker-compose.yaml)
 
+# Live-stack dir name -> repo mirror dir name, for the one documented case where
+# they intentionally differ. The mini's live /opt/stacks/syncthing is the mesh
+# NODE (foss-03); its repo mirror is configs/docker-stack/stacks/syncthing-node/
+# so gen-wiki-services.py (keys pages by dir name, mini-tree first) doesn't let
+# the node shadow the separate NAS-hub `syncthing` service page. Same compose,
+# different dir name — so map it here rather than byte-check a dir that can't exist.
+declare -A MIRROR_RENAME=( [syncthing]=syncthing-node )
+
 env_keys() { grep -oE '^[A-Za-z_][A-Za-z0-9_]*=' "$1" 2>/dev/null | tr -d '=' | sort -u; }
 
 live_compose_files() {
@@ -48,26 +56,27 @@ case "${MODE}" in
   mirrors)
     for d in "${STACKS_DIR}"/*/; do
       name="$(basename "$d")"
+      mname="${MIRROR_RENAME[$name]:-$name}"    # repo mirror dir (usually == name)
       compose=""
       for f in "${COMPOSE_NAMES[@]}"; do
         [[ -f "${d}${f}" ]] && { compose="$f"; break; }
       done
       [[ -z "$compose" ]] && continue          # data-only / retired dirs
-      if [[ ! -f "${MIRROR}/${name}/${compose}" ]]; then
-        echo "MIRROR-MISSING: ${name} (live ${compose} has no repo copy under configs/docker-stack/stacks/)"
+      if [[ ! -f "${MIRROR}/${mname}/${compose}" ]]; then
+        echo "MIRROR-MISSING: ${name} (live ${compose} has no repo copy under configs/docker-stack/stacks/${mname}/)"
         fail=1
         continue
       fi
-      if ! cmp -s "${d}${compose}" "${MIRROR}/${name}/${compose}"; then
+      if ! cmp -s "${d}${compose}" "${MIRROR}/${mname}/${compose}"; then
         echo "MIRROR-DRIFT: ${name}/${compose} differs from repo copy"
         fail=1
       fi
       if [[ -f "${d}.env" ]]; then
-        if [[ ! -f "${MIRROR}/${name}/.env.example" ]]; then
+        if [[ ! -f "${MIRROR}/${mname}/.env.example" ]]; then
           echo "ENV-EXAMPLE-MISSING: ${name} has a live .env but no repo .env.example"
           fail=1
         else
-          missing="$(comm -23 <(env_keys "${d}.env") <(env_keys "${MIRROR}/${name}/.env.example") | xargs || true)"
+          missing="$(comm -23 <(env_keys "${d}.env") <(env_keys "${MIRROR}/${mname}/.env.example") | xargs || true)"
           if [[ -n "${missing}" ]]; then
             echo "ENV-KEYS-UNMIRRORED: ${name} [${missing}] — a rebuild from the example would drop these"
             fail=1

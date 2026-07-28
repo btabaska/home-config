@@ -256,6 +256,7 @@ nav:
       - dns: reference/checks/dns.md
       - docker-fleet: reference/checks/docker-fleet.md
       - edge: reference/checks/edge.md
+      - game-saves: reference/checks/game-saves.md
       - gaming: reference/checks/gaming.md
       - git-hygiene: reference/checks/git-hygiene.md
       - ha: reference/checks/ha.md
@@ -264,7 +265,9 @@ nav:
       - journaling: reference/checks/journaling.md
       - media: reference/checks/media.md
       - media-aux: reference/checks/media-aux.md
+      - media-indexers: reference/checks/media-indexers.md
       - media-library-correctness: reference/checks/media-library-correctness.md
+      - media-subtitles: reference/checks/media-subtitles.md
       - media-watchable: reference/checks/media-watchable.md
       - meme-review: reference/checks/meme-review.md
       - mini-services: reference/checks/mini-services.md
@@ -274,6 +277,7 @@ nav:
       - network: reference/checks/network.md
       - power-journal: reference/checks/power-journal.md
       - reading: reference/checks/reading.md
+      - retro-emulation: reference/checks/retro-emulation.md
       - rig: reference/checks/rig.md
       - rig-immich-ml: reference/checks/rig-immich-ml.md
       - secrets: reference/checks/secrets.md
