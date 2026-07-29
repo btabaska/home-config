@@ -17,6 +17,7 @@ silently reverts it. The 2026-07-16 quality gate found four flavors of this
 | `stack-mirror-drift` | a live mini stack's top-level compose has **no repo mirror**, differs from it byte-wise, or its live `.env` holds keys the repo `.env.example` lacks |
 | `manifest-image-purity` | `hosts/macmini/compose-images.txt` lists an image name no live top-level compose pins (phantom/pollution), or a live image name is missing from it |
 | `tracker-integrity` | the tracker JSON **sources** are incoherent: an orphan status id, a duplicate task id, a contradictory status combo, or the retired `_meta` count fields crept back (M46 class) |
+| `ai-tooling-clean-pushed` | the rig's `local-ai-tooling` checkout (the AI stack's second control plane) has uncommitted changes, **or** its `HEAD` isn't on **both** the `origin` (github) and `forgejo` remotes — committed-but-unpushed, or pushed-to-github-only (ai-03) |
 
 `stack-mirror-drift` and `manifest-image-purity` judge live state against a
 fetched clone of `origin/main` HEAD (cache: `/var/lib/verification/wiki-drift-repo`,
@@ -77,6 +78,32 @@ on failure. A silently-dead timer or a failing run both page.
 `git status`, then either commit+push the intentional change (as `btabaska`,
 not root — root has no forgejo ssh alias) or revert the accident. Expect
 intentional short-lived drift while a concurrent agent session is mid-task.
+
+## ai-03 · rig `local-ai-tooling` clean + pushed to both remotes
+
+`ai-tooling-clean-pushed` (runs on rig; the runner ssh's in) is the
+`git-stacks-clean` analog for the AI stack's **second control plane** —
+`~/Documents/GitHub/local-ai-tooling` on the rig, invisible to every other
+guardrail until ai-03. It asserts the checkout is porcelain-clean **and** its
+`HEAD` is present on **both** remotes:
+
+- `origin` → `git@github.com:btabaska/local-ai-tooling.git`
+- `forgejo` → `forgejo:home/local-ai-tooling` (rig pushes with the dedicated
+  `~/.ssh/id_forgejo` **rig-workstation** user key).
+
+To fix a red: `ssh rig`, `cd ~/Documents/GitHub/local-ai-tooling`, `git status`.
+Commit any real change, then **publish to both** (the recurring orphaned-drift
+failure mode is pushing only one) — see the repo README's **"Publishing — push
+to BOTH remotes"** section:
+
+```bash
+git push origin main && git push forgejo main
+git push origin --tags && git push forgejo --tags   # when tags change
+```
+
+Verify the forgejo user key with `ssh -T forgejo` ("rig-workstation"). An
+unreachable rig / broken key fails the check (non-zero, no sentinel) — that is a
+real incident, not a false page.
 
 For `wiki-drift` see the same-commit rule note in
 [`verification.md`](verification.md): re-run the generators

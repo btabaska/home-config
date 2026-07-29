@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**246/330 done** · **51 open** · **18 deferred** · 15 retired.
+**247/330 done** · **50 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -12,7 +12,6 @@
 - [ ] **`handoff-12`** Post-sprint cleanup — delete vault and rotate keys _(est 10 min)_
 
 ### ai
-- [ ] **`ai-03`** Wire local-ai-tooling into the fleet drift / hygiene controls (clean + pushed-to-both tripwire) _(est 1 session)_
 - [ ] **`ai-04`** Vault-map the local-ai-tooling docker/.env bootstrap secrets + .env.example parity _(est 1 session)_
 - [ ] **`ai-05`** Close the service-catalog + wiki gaps for the rig AI services (comfyui, gpu-arbiter, per-service pages) _(est 1 session)_
 - [ ] **`ai-06`** Model-weight manifest for /opt/llm/models (make the stack rebuildable after disk loss) _(est 1 session)_

@@ -1,6 +1,6 @@
 # Checks — git-hygiene
 
-`foss-setup/verification/checks.d/git-hygiene.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/git-hygiene.yaml` — 12 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `git-stacks-clean`
 
@@ -121,6 +121,17 @@ chezmoi dotfiles have no uncommitted content drift on mini + rig (glue-04b)
 
 ```bash
 m=$(chezmoi diff 2>/dev/null | grep -c '^@@' || true); r=$(ssh -o BatchMode=yes -o ConnectTimeout=10 rig "chezmoi diff 2>/dev/null | grep -c '^@@'" </dev/null | tr -d '[:space:]'); echo "mini_hunks=$m rig_hunks=$r"; { [ "$m" = 0 ] && [ "$r" = 0 ]; } && echo DOTFILES-CONTENT-CLEAN
+```
+
+## `ai-tooling-clean-pushed`
+
+rig local-ai-tooling repo is clean AND HEAD pushed to both remotes (ai-03)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `ai-03` · **enabled:** True
+- **expects:** `AI-TOOLING-CLEAN-PUSHED`
+
+```bash
+cd ~/Documents/GitHub/local-ai-tooling && dirty=$(git status --porcelain | wc -l | tr -d '[:space:]') && head=$(git rev-parse HEAD) && o=$(git ls-remote origin HEAD | awk 'NR==1{print $1}') && f=$(git ls-remote forgejo HEAD | awk 'NR==1{print $1}') && echo "dirty=$dirty head=${head:0:12} origin=${o:0:12} forgejo=${f:0:12}" && { [ "$dirty" = 0 ] && [ -n "$head" ] && [ "$head" = "$o" ] && [ "$head" = "$f" ]; } && echo AI-TOOLING-CLEAN-PUSHED
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

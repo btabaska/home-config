@@ -209,3 +209,32 @@ checks:
     task_id: glue-04b
     runbook: wiki/docs/runbooks/git-hygiene.md
     enabled: true
+
+  # ai-03: the rig's local-ai-tooling repo (~/Documents/GitHub/local-ai-tooling)
+  # is a SECOND control plane — the whole AI stack's config (litellm, llama-swap,
+  # ollama tune, fleet-mcp, seed scripts) lives there, in a repo foss-setup's
+  # guardrails could not see. It has TWO remotes (origin = github, forgejo =
+  # git.tabaska.us via the rig-workstation id_forgejo user key); ai-02 made the
+  # rule "every commit lands on BOTH". This is the git-stacks-clean analog for
+  # that plane: the checkout must be porcelain-clean AND its HEAD must be present
+  # on BOTH remotes (committed-but-unpushed, or pushed-to-github-only, is exactly
+  # the orphaned-drift class the fleet is paranoid about). Runs on rig (runner
+  # ssh's in); ls-remote uses the same keys the rig's own pushes use, so an
+  # unreachable rig / broken key => non-zero => FAIL. HEAD here is the default-
+  # branch (main) tip on each side — the branch every commit is published on.
+  - id: ai-tooling-clean-pushed
+    name: "rig local-ai-tooling repo is clean AND HEAD pushed to both remotes (ai-03)"
+    host: rig
+    cmd: >-
+      cd ~/Documents/GitHub/local-ai-tooling &&
+      dirty=$(git status --porcelain | wc -l | tr -d '[:space:]') &&
+      head=$(git rev-parse HEAD) &&
+      o=$(git ls-remote origin HEAD | awk 'NR==1{print $1}') &&
+      f=$(git ls-remote forgejo HEAD | awk 'NR==1{print $1}') &&
+      echo "dirty=$dirty head=${head:0:12} origin=${o:0:12} forgejo=${f:0:12}" &&
+      { [ "$dirty" = 0 ] && [ -n "$head" ] && [ "$head" = "$o" ] && [ "$head" = "$f" ]; } && echo AI-TOOLING-CLEAN-PUSHED
+    expect: AI-TOOLING-CLEAN-PUSHED
+    severity: warn
+    task_id: ai-03
+    runbook: wiki/docs/runbooks/git-hygiene.md
+    enabled: true

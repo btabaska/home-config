@@ -1,6 +1,6 @@
 # Checks — reading
 
-`foss-setup/verification/checks.d/reading.yaml` — 26 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/reading.yaml` — 27 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `cwa-kobo-sync-consumer`
 
@@ -452,6 +452,17 @@ CWA KOReader/KOSync backend enabled (auth 401 not 503) + book_format_checksums t
 
 ```bash
 code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' http://localhost:8083/kosync/users/auth); n=$(sqlite3 "file:/volume1/books/metadata.db?mode=ro" "select count(*) from book_format_checksums;" 2>/dev/null); if [ "$code" = "401" ] && [ -n "$n" ] && [ "$n" -ge 1 ] 2>/dev/null; then echo "KOSYNC_OK auth=$code checksums=$n"; else echo "KOSYNC_FAIL auth=$code checksums=$n"; fi
+```
+
+## `booklogr-serves-consumer`
+
+BookLogr: SPA served + bundle carries API endpoint + API answers cross-origin with version JSON & CORS (read-26 consumer end)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `read-26` · **enabled:** True
+- **expects:** `^BOOKLOGR_OK`
+
+```bash
+python3 /opt/verification/bin/booklogr-serves.py
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

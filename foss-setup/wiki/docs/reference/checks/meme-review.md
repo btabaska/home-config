@@ -6,7 +6,7 @@
 
 meme-review API answers /api/health through Caddy TLS
 
-- **host:** `mini` · **severity:** `crit` · **guards task:** `meme-review-01` · **enabled:** True
+- **host:** `mini` · **severity:** `crit` · **guards task:** `meme-review-01` · **enabled:** False
 - **expects:** `"ok":true`
 
 ```bash
@@ -17,7 +17,7 @@ curl -s -m 8 https://memes.tabaska.us/api/health
 
 meme-review serves the built SPA (not the 'not built yet' fallback)
 
-- **host:** `mini` · **severity:** `crit` · **guards task:** `meme-review-01` · **enabled:** True
+- **host:** `mini` · **severity:** `crit` · **guards task:** `meme-review-01` · **enabled:** False
 - **expects:** `<title>Meme Review</title>`
 
 ```bash
@@ -28,7 +28,7 @@ curl -s -m 8 https://memes.tabaska.us/
 
 meme-review rejects unauthenticated /api/drops with 401
 
-- **host:** `mini` · **severity:** `warn` · **guards task:** `meme-review-01` · **enabled:** True
+- **host:** `mini` · **severity:** `warn` · **guards task:** `meme-review-01` · **enabled:** False
 - **expects:** `^401$`
 
 ```bash
