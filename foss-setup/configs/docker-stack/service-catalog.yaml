@@ -369,6 +369,21 @@ services:
     url: https://mcpo.tabaska.us
     on_demand: false
     notes: MCP→OpenAPI tool bridge; docs at /docs (root 404s by design). Rig runs 24/7.
+  - name: comfyui
+    category: AI & Gaming
+    host: rig
+    port: 8188
+    url: https://comfyui.tabaska.us
+    on_demand: false
+    notes: Image-gen backend (ai-01, added 2026-07-18) serving 3 image models — Z-Image Turbo / NoobAI-XL / Flux.2 Klein — for the RP frontends (OWUI/Lumiverse/Marinara). Frontends do NOT hit :8188 directly; they go through the gpu-arbiter (:8189) so image gen and the local LLMs take turns on the single 3090 Ti. LAN posture (like ollama). Rig runs 24/7.
+  - name: gpu-arbiter
+    category: AI & Gaming
+    host: rig
+    port: 8189
+    url: null
+    ui: false
+    on_demand: false
+    notes: Take-turns GPU-sharing proxy (ai-01) fronting ComfyUI on :8189 — internal only, no web UI/vhost. On an incoming gen it force-unloads llama-swap, proxies to ComfyUI (:8188), then /free's ComfyUI after, so image gen and the 73k-ctx 24B LLMs share one 3090 Ti without OOM. The unload hook must match /api/prompt (the path web-UI/API clients POST), not just /prompt. Rig runs 24/7.
   - name: apollo
     category: AI & Gaming
     host: rig
