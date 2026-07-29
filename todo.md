@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**249/330 done** · **48 open** · **18 deferred** · 15 retired.
+**250/330 done** · **47 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -12,7 +12,6 @@
 - [ ] **`handoff-12`** Post-sprint cleanup — delete vault and rotate keys _(est 10 min)_
 
 ### ai
-- [ ] **`ai-06`** Model-weight manifest for /opt/llm/models (make the stack rebuildable after disk loss) _(est 1 session)_
 - [ ] **`ai-07`** Reconcile / retire the stale local-ai-tooling build-handoff docs against live truth _(est 1 session)_
 
 ### books-cutover
