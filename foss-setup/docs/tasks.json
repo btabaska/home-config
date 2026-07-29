@@ -9156,6 +9156,163 @@
   "mode": "mixed"
  },
  {
+  "id": "ai-02",
+  "track": "ai",
+  "title": "Mirror local-ai-tooling to Forgejo (git.tabaska.us) as a second remote",
+  "host": "rig",
+  "type": "async",
+  "depends_on": [],
+  "estimate": "1 session",
+  "required": false,
+  "run": 9,
+  "mode": "mixed",
+  "steps": [
+   "Stack repo is local-ai-tooling (separate git remote on the rig: ~/Documents/GitHub/local-ai-tooling). Today it has ONE remote — github.com/btabaska/local-ai-tooling — and is NOT on Forgejo (confirmed 2026-07-29 spike: `git.tabaska.us/home/local-ai-tooling` = 'Cannot find repository'). Every other fleet repo dual-remotes to Forgejo; this one is a single-remote island.",
+   "Decision (operator, 2026-07-29): KEEP it a separate repo + add a Forgejo mirror (do NOT fold into foss-setup). Mirrors the home/docker-stacks precedent.",
+   "Create the `home/local-ai-tooling` repo on Forgejo (mini) — private, no auto-init — via the Forgejo API or web UI.",
+   "On the rig checkout add a `forgejo` remote (`forgejo:home/local-ai-tooling`) — the rig's forgejo push uses the dedicated ~/.ssh/id_forgejo USER key (see remote-ai-coding-setup memory), NOT root. Verify `ssh -T forgejo` identifies as rig-workstation.",
+   "Push `main` (+ tags) to forgejo; confirm forgejo HEAD == origin HEAD. If a Mac checkout of the repo exists, add the same remote there too so both operator stations publish to both.",
+   "Document the dual-remote topology in the repo README (a 'publish to both' note, analogous to foss-setup/scripts/docs/publish-deploy.sh) so future AI-stack commits land in BOTH remotes, not just GitHub."
+  ],
+  "commands": [
+   "ssh rig 'cd ~/Documents/GitHub/local-ai-tooling && git remote -v'",
+   "ssh rig 'cd ~/Documents/GitHub/local-ai-tooling && git ls-remote forgejo HEAD && git ls-remote origin HEAD'"
+  ],
+  "files": [],
+  "docs": [
+   {
+    "title": "publish-deploy precedent",
+    "url": "https://wiki.tabaska.us/architecture/local-ai-build/"
+   }
+  ],
+  "verify": "git.tabaska.us shows home/local-ai-tooling; forgejo HEAD == origin HEAD == live working-tree HEAD; a subsequent test commit pushes cleanly to both remotes."
+ },
+ {
+  "id": "ai-03",
+  "track": "ai",
+  "title": "Wire local-ai-tooling into the fleet drift / hygiene controls (clean + pushed-to-both tripwire)",
+  "host": "mini",
+  "type": "async",
+  "depends_on": [
+   "ai-02"
+  ],
+  "estimate": "1 session",
+  "required": false,
+  "run": 9,
+  "mode": "mixed",
+  "steps": [
+   "The AI stack is a second control plane invisible to foss-setup's guardrails: git-hygiene.yaml only checks the home/homelab Forgejo repo, so committed-but-unpushed or live-vs-repo drift in local-ai-tooling is UNMONITORED — the exact drift class the fleet is paranoid about everywhere else.",
+   "Add a verification check (checks.d/git-hygiene.yaml or a new checks.d/ai-tooling.yaml) — an analog of git-stacks-clean — asserting the rig local-ai-tooling checkout is (a) porcelain-clean AND (b) HEAD pushed to BOTH origin and forgejo. Runs from the mini runner over ssh rig.",
+   "Negative-test: a dummy unpushed commit / a dirty file must make the check FAIL; then revert and confirm green.",
+   "Add the check to the coverage manifest / task_id map so the 100%-coverage tripwire counts it.",
+   "Codify a 'publish AI stack to both remotes' helper or README step so operators don't have to remember the second remote (the recurring orphaned-drift failure mode from opt-stacks-git-hygiene)."
+  ],
+  "commands": [
+   "ssh rig 'cd ~/Documents/GitHub/local-ai-tooling && git status --porcelain | wc -l'"
+  ],
+  "files": [
+   "verification/checks.d/git-hygiene.yaml"
+  ],
+  "docs": [],
+  "verify": "New check green on a clean+pushed repo; negative-tested (dirty OR unpushed -> FAIL); appears in coverage; runner --host rig/mini still all-green."
+ },
+ {
+  "id": "ai-04",
+  "track": "ai",
+  "title": "Vault-map the local-ai-tooling docker/.env bootstrap secrets + .env.example parity",
+  "host": "rig",
+  "type": "async",
+  "depends_on": [],
+  "estimate": "1 session",
+  "required": false,
+  "run": 9,
+  "mode": "mixed",
+  "steps": [
+   "docker/.env (gitignored, real, rig-only + in restic) holds the stack's bootstrap secrets — LiteLLM master/salt, litellm-db postgres creds, OWUI secret key, lumiverse/marinara BetterAuth secrets, virtual keys. Many ai_stack.* keys are already in the vault; confirm EVERY key has a durable second source so rig-loss isn't secret-loss.",
+   "Inventory every non-comment key in docker/.env; for each, verify it exists at a vault path in foss-setup/.handoff-secrets.yaml (follow vault-edit-hazard: merge, never blind-assign) or record it as derived/regenerable.",
+   "Bring docker/.env.example to full key parity (names only, no values) so the shape is documented in git.",
+   "Optional: an 'every live .env key has an .env.example counterpart' check (the mini-stack .env-key-parity pattern) so future added secrets can't silently escape the vault."
+  ],
+  "commands": [
+   "ssh rig 'grep -vE \"^#|^$\" ~/Documents/GitHub/local-ai-tooling/docker/.env | cut -d= -f1'"
+  ],
+  "files": [
+   ".handoff-secrets.yaml.example"
+  ],
+  "docs": [],
+  "verify": "Every docker/.env key is either mapped in the vault or documented regenerable; .env.example lists every key; no secret value ever printed to chat/commit."
+ },
+ {
+  "id": "ai-05",
+  "track": "ai",
+  "title": "Close the service-catalog + wiki gaps for the rig AI services (comfyui, gpu-arbiter, per-service pages)",
+  "host": "device",
+  "type": "async",
+  "depends_on": [],
+  "estimate": "1 session",
+  "required": false,
+  "run": 9,
+  "mode": "mixed",
+  "steps": [
+   "service-catalog.yaml has 7 of the 9 AI containers; comfyui and gpu-arbiter have NO catalog entry (URL + category source), so any tile/page for them renders wrong or Uncategorized (audiobookshelf-quirks precedent).",
+   "Add comfyui + gpu-arbiter to configs/docker-stack/service-catalog.yaml (URL, category, enrichment prose as needed).",
+   "gen-wiki-services.py SKIPS configs/host/rig, and the rig AI services aren't /opt/stacks stacks either — so they get no generated per-service wiki page (only the architecture/local-ai-build.md design page). Decide + implement how each rig AI service gets documented (extend the generator's inputs, or an explicit hand-maintained section) WITHOUT breaking --strict.",
+   "Rebuild the wiki (scripts/docs/build-wiki.sh, --strict) and confirm no broken links / no Uncategorized AI tiles."
+  ],
+  "commands": [],
+  "files": [
+   "configs/docker-stack/service-catalog.yaml",
+   "configs/docker-stack/service-enrichment.yaml"
+  ],
+  "docs": [],
+  "verify": "All 9 AI containers have catalog entries; wiki build --strict passes; comfyui + gpu-arbiter documented; no Uncategorized/placeholder URLs."
+ },
+ {
+  "id": "ai-06",
+  "track": "ai",
+  "title": "Model-weight manifest for /opt/llm/models (make the stack rebuildable after disk loss)",
+  "host": "rig",
+  "type": "async",
+  "depends_on": [],
+  "estimate": "1 session",
+  "required": false,
+  "run": 9,
+  "mode": "mixed",
+  "steps": [
+   "Model weights in /opt/llm/models are deliberately OUTSIDE restic (too large) — correct, but they're also un-inventoried, so the stack is NOT provably reproducible after an NVMe loss (which GGUF, from where, what quant).",
+   "Create a committed manifest in the repo (e.g. docker/models.manifest.yaml): for every GGUF served by llama-swap-config.yaml + the ollama shim — filename, HF repo / source URL, quant, size, sha256, and which LiteLLM alias / llama-swap model it backs.",
+   "Cross-check against the bakeoff/ notes (which already record the chosen coder/creative models + ctx ceilings).",
+   "Optional: a fetch/restore script that re-pulls the manifest set to /opt/llm/models, so 'rebuild the rig' is a documented, runnable path."
+  ],
+  "commands": [
+   "ssh rig 'ls -la /opt/llm/models 2>/dev/null; sed -n \"1,40p\" ~/Documents/GitHub/local-ai-tooling/docker/llama-swap-config.yaml'"
+  ],
+  "files": [],
+  "docs": [],
+  "verify": "Manifest lists every GGUF currently served; a spot-checked sha256 matches on-disk; documented restore path re-creates a served model."
+ },
+ {
+  "id": "ai-07",
+  "track": "ai",
+  "title": "Reconcile / retire the stale local-ai-tooling build-handoff docs against live truth",
+  "host": "device",
+  "type": "async",
+  "depends_on": [],
+  "estimate": "1 session",
+  "required": false,
+  "run": 9,
+  "mode": "mixed",
+  "steps": [
+   "HANDOFF-ai-01.md, HANDOFF-ai-02-frontend-wiring.md, and INSTRUCTIONS.md are build-time handoffs (last touched during the ai-01/ai-02 builds); the README already banners the legacy-Ollama sections. Standing mandate #3: docs must describe what's RUNNING, not what was planned.",
+   "Reconcile each against live truth (README + wiki/architecture/local-ai-build.md); fold durable/still-accurate content into the README or wiki as the single current entry point.",
+   "Retire (delete or clearly archive/banner) the handoff docs that no longer reflect live state, so nothing in-repo contradicts the running stack."
+  ],
+  "commands": [],
+  "files": [],
+  "docs": [],
+  "verify": "No in-repo doc contradicts the live stack; README is the single current entry point; retired handoffs are gone or explicitly marked historical."
+ },
+ {
   "id": "fix-01",
   "title": "Fix set -e in self-healing scripts (failures silently ignored)",
   "host": "device",
