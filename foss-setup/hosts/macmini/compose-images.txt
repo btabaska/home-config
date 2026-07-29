@@ -27,6 +27,8 @@ mariadb:11
 mariadb:11.4
 metube-bgutil:local
 miniflux/miniflux:2.3.1
+mozzo/booklogr:v1.11.1
+mozzo/booklogr-web:v1.11.1
 mvance/unbound:1.22.0
 n8nio/n8n:2.32.2@sha256:119afa425cc1ac3e62823c65aae16fcee409ef4c94555ebab3a9dff6eccb9073
 neosmemo/memos:0.29.1@sha256:3e1253477066eb2aefa91145f7f9038bb931ed88c8a3ee05310a933594cdba7d
