@@ -5,7 +5,7 @@
 | Task | Title | Status | Effort |
 |---|---|---|---|
 | `ai-01` | Local-AI buildout: llama.cpp/llama-swap stack, coding + ops agents, wiki RAG | ✅ done | multi-session |
-| `ai-02` | Mirror local-ai-tooling to Forgejo (git.tabaska.us) as a second remote | ⬜ open | 1 session |
+| `ai-02` | Mirror local-ai-tooling to Forgejo (git.tabaska.us) as a second remote | ✅ done | 1 session |
 | `ai-03` | Wire local-ai-tooling into the fleet drift / hygiene controls (clean + pushed-to-both tripwire) | ⬜ open | 1 session |
 | `ai-04` | Vault-map the local-ai-tooling docker/.env bootstrap secrets + .env.example parity | ⬜ open | 1 session |
 | `ai-05` | Close the service-catalog + wiki gaps for the rig AI services (comfyui, gpu-arbiter, per-service pages) | ⬜ open | 1 session |
