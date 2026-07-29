@@ -238,3 +238,28 @@ checks:
     task_id: ai-03
     runbook: wiki/docs/runbooks/git-hygiene.md
     enabled: true
+
+  # ai-04: the rig's local-ai-tooling docker/.env holds the AI stack's bootstrap
+  # secrets (litellm master/salt, litellm-db postgres pw, OWUI secret, kagi key,
+  # lumiverse/marinara auth + virtual keys). Each real secret has a durable second
+  # copy in the vault (foss-setup/.handoff-secrets.yaml ai_stack.* / litellm.* /
+  # open_webui.*), MAPPED key-by-key in docker/.env.example (each line carries a
+  # `-> vault <path>` or `non-secret/regenerable` note). This tripwire enforces
+  # that mapping stays complete: every live .env key must appear in .env.example,
+  # so a future-added secret can't silently escape the vault (the .env itself is
+  # gitignored + rig-only, so .env.example is the only place git can see the shape).
+  # Pure-shell (no inline python) per the checksd folding hazard; runs on rig.
+  - id: ai-tooling-env-example-parity
+    name: "rig local-ai-tooling docker/.env keys all mapped in .env.example (ai-04)"
+    host: rig
+    cmd: >-
+      cd ~/Documents/GitHub/local-ai-tooling/docker &&
+      exk=$(grep -vE '^#|^$' .env.example | cut -d= -f1) &&
+      miss=$(for k in $(grep -vE '^#|^$' .env | cut -d= -f1); do echo "$exk" | grep -qx "$k" || echo "$k"; done | wc -l | tr -d '[:space:]') &&
+      echo "keys-missing-from-example=$miss" &&
+      [ "$miss" = 0 ] && echo ENV-EXAMPLE-PARITY-OK
+    expect: ENV-EXAMPLE-PARITY-OK
+    severity: warn
+    task_id: ai-04
+    runbook: wiki/docs/runbooks/git-hygiene.md
+    enabled: true
