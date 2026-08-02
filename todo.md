@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**252/351 done** · **66 open** · **18 deferred** · 15 retired.
+**253/351 done** · **65 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -79,7 +79,6 @@
 - [ ] **`sec-09`** Cloudflare token least-privilege: read-only DNS token for verification; keep the write token vault-only _(est 30-45 min)_
 - [ ] **`sec-10`** arr API keys committed in cleartext in the repo (unpackerr.conf) — rotate + externalize to a gitignored env _(est 45-90 min)_
 - [ ] **`sec-11`** Rotate bookshelf API key (exposed in agent session transcript) _(est 30-45 min)_
-- [ ] **`sec-12`** Repair malformed multi-line value in mini /etc/verification/env (a stored token spans physical lines and leaks when the file is sourced) + decide on rotating the exposed Hardcover token _(est 20-40 min)_
 
 ### smart-home
 - [ ] **`fix-66`** mini cannot reach the IoT VLAN: journaling docker bridge 192.168.16.0/20 swallows 192.168.20.0/24 (net-05 regression) + HA appliance 3-min overnight network loss _(est 1-3 hrs)_

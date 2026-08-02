@@ -285,6 +285,7 @@ nav:
       - seedbox: reference/checks/seedbox.md
       - sync: reference/checks/sync.md
       - system: reference/checks/system.md
+      - verification-env-integrity: reference/checks/verification-env-integrity.md
       - verification-self: reference/checks/verification-self.md
       # END GENERATED CHECKS NAV
   - Scripts reference:

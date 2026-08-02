@@ -1,0 +1,46 @@
+# sec-12 — /etc/verification/env integrity + mini OnFailure paging delivery.
+#
+# Root cause (finding SH3, 2026-08-02): line 40 of /etc/verification/env held an
+# UNQUOTED "Bearer <jwt>" value (a space split it). Every consumer that SOURCES
+# the file under `set -euo pipefail` (scripts/backup/ntfy-notify.sh — the
+# OnFailure=ntfy-notify@ wrapper — plus bin/llm-triage*.sh) then executed the
+# bare JWT as a command: exit 127 killed ALL mini OnFailure paging, and the raw
+# token leaked into journald on every trigger. Fix = quote the value onto one
+# line. These checks probe the CONSUMER end so the class can't recur silently:
+#   1. verification-env-source-clean — sourcing the env (exactly as the wrapper
+#      does) produces no `command not found` and exits 0. Catches ANY future
+#      unquoted/multi-line value, not just this one. Never echoes the file.
+#   2. mini-onfailure-ntfy-delivers — publish+read-back on the `backups` topic
+#      (the wrapper's own NTFY_URL/NTFY_TOKEN, injected by the runner) proves the
+#      paging pipe actually delivers, not just that a container is up.
+checks:
+  - id: verification-env-source-clean
+    name: "sec-12: /etc/verification/env sources clean — no unquoted/multi-line value executes or leaks (regression + class guard)"
+    host: mini
+    cmd: >-
+      out=$({ set -a; . /etc/verification/env; set +a; } 2>&1); rc=$?;
+      if [ "$rc" -eq 0 ] && ! printf '%s' "$out" | grep -q 'command not found';
+      then echo ENV_SOURCE_CLEAN; else echo "ENV_SOURCE_DIRTY rc=$rc"; fi
+    expect: '^ENV_SOURCE_CLEAN$'
+    severity: crit
+    task_id: sec-12
+    runbook: wiki/docs/runbooks/verification-self.md
+    enabled: true
+
+  - id: mini-onfailure-ntfy-delivers
+    name: "sec-12: mini OnFailure ntfy paging delivers end-to-end (publish + read-back on the backups topic)"
+    host: mini
+    cmd: >-
+      N="sec12chk-$(date +%s)-$$"; B="${NTFY_URL%/*}"; S=$(date +%s);
+      curl -fsS -m 10 -H "Authorization: Bearer $NTFY_TOKEN" -H "Priority: min"
+      -H "Tags: test_tube" -H "Title: sec-12 paging self-test" -d "$N"
+      "$B/backups" >/dev/null || { echo NTFY_PUBLISH_FAIL; exit 0; };
+      for i in 1 2 3 4 5 6; do
+      curl -fsS -m 8 -H "Authorization: Bearer $NTFY_TOKEN"
+      "$B/backups/json?poll=1&since=$S" 2>/dev/null | grep -q "$N"
+      && { echo NTFY_DELIVERY_OK; exit 0; }; sleep 1; done; echo NTFY_DELIVERY_FAIL
+    expect: '^NTFY_DELIVERY_OK$'
+    severity: crit
+    task_id: sec-12
+    runbook: wiki/docs/runbooks/verification-self.md
+    enabled: true

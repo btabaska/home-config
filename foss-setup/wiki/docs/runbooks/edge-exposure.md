@@ -80,6 +80,11 @@ A record in the public `tabaska.us` Cloudflare zone points at a private IP, or
 ## Re-run the checks
 
 ```bash
-ssh mini 'set -a; . /etc/verification/env; set +a; \
-  /opt/verification/bin/run-checks.sh --host edge --no-notify --json'
+ssh mini '/opt/verification/bin/run-checks.sh --host edge --no-notify --json'
 ```
+
+`run-checks.sh` loads `/etc/verification/env` itself (`checks_runner.py`'s
+`load_env_file` parses `KEY=VALUE` without sourcing), so **do not** prefix the
+command with `set -a; . /etc/verification/env; set +a`. Sourcing the file
+directly *executes* any malformed value — an unquoted/line-wrapped token runs as
+a command (exit 127) and leaks into the terminal/journal (that was sec-12).

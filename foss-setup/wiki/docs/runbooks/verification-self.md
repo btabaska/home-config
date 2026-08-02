@@ -85,6 +85,56 @@ foss-setup/scripts/verification/deploy.sh
 If a **new** check adds a script under some other `scripts/<area>/` dir, add it
 to the `EXTERNAL_BIN` list in `deploy.sh` so future deploys stage it too.
 
+## `verification-env-source-clean` failed (crit) — a value in `/etc/verification/env` breaks sourcing (sec-12 class)
+
+`/etc/verification/env` is **sourced** (`set -a; . env`) under `set -euo pipefail`
+by `/opt/scripts/ntfy-notify.sh` (the `OnFailure=ntfy-notify@` wrapper) and by
+`bin/llm-triage*.sh`. A value that is unquoted-with-a-space or wrapped across two
+physical lines makes the shell execute part of it as a command (exit 127): the
+wrapper dies before paging, so **every mini OnFailure page is silently dropped**,
+and the raw value **leaks into journald**. That was sec-12 (finding SH3): line 40
+was `HARDCOVER_API_TOKEN=Bearer <jwt>` and the space split it.
+
+The check output is `ENV_SOURCE_DIRTY rc=<n>` (it never prints the file). Fix:
+
+```bash
+# find the offending line WITHOUT echoing secrets — flags any value that is
+# unquoted-with-whitespace or a bare (no KEY=) continuation line:
+ssh mini "sudo python3 - <<'PY'
+import re
+for i,l in enumerate(open('/etc/verification/env').read().split('\n'),1):
+    if l=='' or l.lstrip().startswith('#'): continue
+    m=re.match(r'^[A-Za-z_][A-Za-z0-9_]*=(.*)\$', l)
+    if not m: print(i,'NOT_ASSIGN'); continue
+    v=m.group(1)
+    if v[:1] in ('\"',\"'\"):
+        if not (len(v)>=2 and v.rstrip().endswith(v[0])): print(i,'UNBALANCED_QUOTE')
+    elif ' ' in v or '\t' in v: print(i,'UNQUOTED_WHITESPACE')
+PY"
+```
+
+Then **double-quote** the value onto one line (`KEY="Bearer eyJ..."`) via
+`sudo` (the file is `640 root:btabaska` — back it up first). `checks_runner.py`
+strips surrounding quotes when it parses, so quoting does not change the value
+any consumer reads. Verify: `ssh mini 'sudo bash -c "set -a; . /etc/verification/env; set +a"'`
+exits 0 and prints nothing. Never `cat` the env file to a shared/logged stream.
+
+## `mini-onfailure-ntfy-delivers` failed (crit) — mini OnFailure paging does not reach ntfy
+
+Proves the `OnFailure=ntfy-notify@` path end-to-end: it posts a nonce to the
+`backups` topic with the wrapper's own `NTFY_URL`/`NTFY_TOKEN` (min priority, so
+no phone push) and reads it back. `NTFY_PUBLISH_FAIL` = bad/missing token or the
+ntfy vhost is down (see the *ntfy* service page); `NTFY_DELIVERY_FAIL` =
+published but not retrievable (topic/ACL or cache issue). Because the wrapper
+sources `/etc/verification/env`, a `verification-env-source-clean` failure will
+also break real paging even if this publish/read self-test still passes — fix
+that one first. Re-prove a real page after any fix:
+
+```bash
+ssh mini 'sudo systemctl reset-failed "ntfy-notify@*" 2>/dev/null; \
+  sudo /opt/scripts/ntfy-notify.sh sec12-manual-test.service'   # must exit 0 and land on `backups`
+```
+
 ---
 
 ## Scheduled-tier behaviour (quirks fixed in fix-30)
