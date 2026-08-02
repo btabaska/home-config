@@ -13262,5 +13262,568 @@
   "estimate": "1 session",
   "source": "Claude Design import 2026-07-27 (Meme Review.dc.html + HANDOFF.md)",
   "summary": "Household app to send stacks of images and react to them one at a time (iMessage-tapback style). Hono + built-in node:sqlite server + Vite/React SPA (all 11 prototype screens wired); SSE realtime; 8-rule achievement engine; optional Immich browse source (thumbnails proxied server-side), local upload fallback. Dockerized on the mini edge network, fronted at memes.tabaska.us with a real LE cert, tile under the Homepage Life Apps group. First-run creates the owner account; add the second member in Settings."
+ },
+ {
+  "id": "fix-49",
+  "title": "Navidrome total library wipeout: bad .ndignore written by the fix-28 guard + one empty-root CIFS scan flagged all 3495 tracks missing",
+  "host": "mini",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "media-pipeline",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Since 2026-08-01 05:18 every track in Navidrome is greyed out/unplayable (missing=3495/3495, library root itself flagged missing): the hourly quick scan observed the CIFS root as empty and quick scans can never un-miss files; compounding it, /mnt/nas/music/.ndignore (written Aug 1 05:00 by the fix-28-era guard) contains '#recycle' which is a gitignore COMMENT, not a pattern. Fix the guard to write a real pattern, run a full scan (-f) to clear missing flags, and harden the scanner against transient empty-mount reads (mount-gate the scan). fix-28 regression.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SC1"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-50",
+  "title": "Bitmagnet DHT junk-grab storm: arrs re-grabbing owned titles hourly, foreign-audio junk imported into the library today; indexer also timing out via Prowlarr",
+  "host": "nas",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "media-pipeline",
+  "run": 10,
+  "mode": "ai",
+  "gate": "disruptive — removes wrongly-imported library files + changes indexer config; 4-7AM window + operator approval for deletions",
+  "summary": "Every recent grab in radarr (hourly) and sonarr (every ~30min) is from the Bitmagnet (DHT) indexer: junk re-releases of already-owned titles (MegaPeer/seleZen re-encodes, RUS/MULTi dubs), some of which imported into the movie library TODAY — active library pollution plus wasted seedbox bandwidth. Simultaneously Bitmagnet is failing/timing out through Prowlarr (>6h, seed-12 regression) and its dedicated check dies at the 60s runner budget with unbounded inner curls. Rein in the indexer (quality/seeders profiles, or demote from RSS/auto-grab), purge today's junk imports, and give the check a realistic budget. Also the top steady I/O consumer on the NAS — coordinate with fix-55.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SC2",
+   "SM6",
+   "SM27"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-51",
+  "title": "LAN exposure batch: rogue nc -lvnp 9999 listener on mini (17 days), ~85 fleet ports on 0.0.0.0 bypassing Caddy auth, BookLogr registration still open",
+  "host": "mini",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": false,
+  "track": "security",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "An orphaned 'nc -lvnp 9999' has been listening on 0.0.0.0 on mini for 17 days (likely leftover from a debug session — identify provenance, kill, and add a listener-drift check). The wider posture: ~30 mini + ~20 rig + ~35 NAS service ports bound to 0.0.0.0 on the flat LAN, including unauthenticated GPU/AI endpoints whose only auth lives in Caddy — direct-port access bypasses it. BookLogr registration remains OPEN (AUTH_ALLOW_REGISTRATION=True), the planned lockdown never executed. Define the intended-exposure baseline, close the accidental ones, codify as a check.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SM56",
+   "SM58",
+   "SM24"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-52",
+  "title": "Seedbox Syncthing: syncs nothing (0 folders, 0 peers, 0 bytes ever) while its plaintext-HTTP GUI is open to the public internet",
+  "host": "seedbox",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "security",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "The seedbox syncthing process is pure dead weight — zero folders beyond the default stanza, zero peers, zero lifetime bytes — yet its GUI listens on all interfaces and is reachable from the public internet at betty.bysh.me:12104 over plaintext HTTP. Either retire it or wire it properly into the foss-03 mesh with loopback/tailnet-only binding + auth. Adjacent to open task sec-04 (seedbox hardening) but not covered by it.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SH5"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-53",
+  "title": "File-permission regressions: mylar3 writes 0644 secret-bearing config + world-writable cache (fix-23 regression), HA offsite tars group-writable to every NAS group",
+  "host": "nas",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": false,
+  "track": "security",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "The Jul 27 mylar3 deploy reintroduced the fix-23 failure class: config.ini (23 credential-class keys, currently empty values) is 0644 and app-rewritten so chmod alone regresses within hours, plus 5 world-writable cache/ComicTagger files — fix the container umask/PUID at source and re-green nas-secret-file-perms (crit) + nas-worldwritable-sweep. Separately the HA offsite backup tars on /volume1/backups grant write+delete to every NAS group including http and household.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SM2",
+   "SM3",
+   "SM42"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-54",
+  "title": "Movies/TV import stall: torrent payloads deleted under live torrents, move_completed wedge, 3-4 day arr retry loops, sample files back in the library",
+  "host": "seedbox",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "media-pipeline",
+  "run": 10,
+  "mode": "ai",
+  "gate": "disruptive — removes wedged torrents/queue records and deletes junk sample files; 4-7AM window + operator approval",
+  "summary": "Sonarr has been retrying 'path does not exist' every few minutes for 3-4 days on two grabs whose payloads no longer exist on seedbox disk despite deluge showing 'Seeding 100%' (investigate what deleted them — deluge-reaper and the 88%-consumed user quota, real headroom only ~321G, are suspects); HotD S02E07 is wedged with move_completed never fired; radarr holds 9 stale stuck records; Leverage S05 sample-file imports are back (fix-27 regression); radarr also churns ffprobe failures on a PAL file. Clear the wedges, root-cause the payload deletion + quota pressure, restore preimport-reaper coverage, and make the arr queue self-clean stale records. Regressions of fix-25/fix-27/verify-06.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SH2",
+   "SH9",
+   "SM4",
+   "SM26",
+   "SM28",
+   "SM17",
+   "SL3",
+   "SL17"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-55",
+  "title": "NAS chronic I/O pressure + SQLite 'database is locked' storm degrading 5 arr apps, killing soularr, hanging docker CLI and healthchecks",
+  "host": "nas",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "nas-foundation",
+  "run": 10,
+  "mode": "ai",
+  "gate": "disruptive — may restart NAS DB-backed containers; 4-7AM window",
+  "summary": "Every NAS arr except sonarr logs recurring 'database is locked' (lidarr: 1254 errors in 30h) failing scheduled tasks and 500ing APIs; soularr crash-exits on those 500s (verify-06 regression), mini's lidarr reconcile unit flaps on them, CWA's 3s container healthcheck fails streak-7, and docker CLI operations (logs/system df) hang for minutes. The sweep measured 78% iowait load 15-20 at 13:2x (partly self-inflicted) but the chronic baseline is real, with bitmagnet the top steady consumer. Measure per-container blkio quietly, relocate/throttle the hogs, tune SQLite busy-timeouts where exposed, and add an I/O-pressure check.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SH1",
+   "SH10",
+   "SM35",
+   "SM31",
+   "SM52",
+   "SM10",
+   "SM11"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-56",
+  "title": "Music acquisition hygiene: soularr failed-import backlog cycling, junk MusicBrainz albums grinding every 5 minutes, 3 albums stuck partial",
+  "host": "nas",
+  "type": "sync",
+  "depends_on": [
+   "fix-55"
+  ],
+  "estimate": "1-3 hrs",
+  "required": false,
+  "track": "media-pipeline",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Soularr's failed-import backlog has grown to 6 permanently-skipped albums with Camera + Heat Waves cycling past the staleness threshold (fix-40 regression); three junk Chinese-titled MusicBrainz albums monitored under Charli xcx make soularr grind and fail every 5-minute cycle; lidarr holds 2 importFailed album grabs (one 5 days old) and 3 albums stuck partial (fix-28 regression). Clean the wanted list, unmonitor/replace the junk MB entries, drain the backlog. Depends on fix-55 (DB-locked storm) for the underlying 500s.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SM7",
+   "SM29",
+   "SM30"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-57",
+  "title": "Books request layer broken-quiet: last successful request 07-20, 12/30 libreseerr requests errored, one grabbed book lost pre-import for 13 days",
+  "host": "nas",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "reading",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Libreseerr shows 12 of 30 requests in error state and the last SUCCESSFUL request was 2026-07-20 — the 07-28 user session failed 6/6 on Hardcover lookups; 'Adrift' (K.T. Konkoly) sits 100% complete in the deluge bookshelf label for ~306h with zero trace in Bookshelf or Calibre (lost import from the bmig-05 migration day); 'The Rotten Romans' is wanted-monitored with no forward progress for 13 days; the Kobo sync payload also carries a stray bare-string element for both devices. Restore request→grab→import flow end to end and recover the lost book. Regressions adjacent to fix-26/books pipeline.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SH11",
+   "SM5",
+   "SL19",
+   "SM32"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-58",
+  "title": "Manga chain silently severed at BOTH ends: Komga scheduler scans a deleted library-id (279 new chapters invisible 6 days) and Suwayomi's bind raced the CIFS mount into an empty view",
+  "host": "nas",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "reading",
+  "run": 10,
+  "mode": "ai",
+  "gate": "disruptive — Komga library-id surgery + container restart ordering changes on rig; 4-7AM window",
+  "summary": "Komga's scheduler resolves 'Manga' to the pre-read-18 library id deleted at re-homing — every 6h it errors 'Library does not exist' (28x/week) while the real library got ZERO scans, leaving 279 downloaded chapters invisible to readers for 6 days. On rig, the 08-01 boot started suwayomi 5s BEFORE mnt-nas-manga.mount, so the container captured the empty pre-mount dir (rprivate) — its downloads view is empty and new chapter downloads would miss the NAS. Also 63x HTTP 500 thumbnail errors from orphaned .tmp cache entries, and 16/19 in-library manga have 0 chapters downloaded under the current policy. Fix the scheduler id, add mount-ordering (After/BindsTo remote-fs) to the container unit, rescan, deepen the too-shallow chain checks (series>=1 / mount-touch thresholds).",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SH12",
+   "SH13",
+   "SM21",
+   "SL16",
+   "SL20",
+   "SM34"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-59",
+  "title": "Bazarr has ZERO subtitle providers enabled — 2868 wanted episodes can never fetch while the check stays green (media-12 regression)",
+  "host": "nas",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "media-polish",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "enabled_providers=[] live, /api/providers returns empty, and download history total=0 — no subtitle has ever been fetched in this deployment, against a wanted backlog of 2868 episodes + 27 movies. The green bazarr-synced-from-arrs check only asserts arr-sync liveness, the exact mandate-1 gap. Re-enable/configure Podnapisi (the chosen sole provider), verify one real subtitle lands beside media, and extend the check to assert provider-count>=1 + recent download throughput.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SH7"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-60",
+  "title": "Immich cluster: nightly ffmpeg segfault on one corrupt .mov (5 nights), second household user has 0 photos ever, bogus 4501 date tops the timeline, pg-dumps unrotated",
+  "host": "nas",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": false,
+  "track": "photos",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "immich_server's bundled ffmpeg dumps a 23MB core at 00:00 EVERY night on the same 2021 IMG_3674.mov (fix-45 regression — quarantine or repair the asset and stop the infinite retry); the second household user (Kaelyn) has 0 photos/0 videos ever — her phone backup never flowed and no check can catch a per-user zero (add one); one asset with fileCreatedAt 4501-01-01 permanently tops date-descending views; pg dumps accumulate ~254MB/day with no observed rotation; newest asset overall is 3+ days old (watch the trend). fix-35/fix-45 adjacent regressions.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SM1",
+   "SM36",
+   "SL5",
+   "SL22",
+   "SL29"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-61",
+  "title": "Verification framework repair: daily run killed by its own 30-min timeout mid-incident (dead-man dark, no self-page), triage 91% nonfunctional, chronic false-positive + flapping checks",
+  "host": "mini",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "verification",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "On 08-01, the daily sweep was killed by TimeoutStartSec=30min mid-LLM-triage during the rig outage — the dead-man ping was skipped (verification-mini dark ~12h), no OnFailure alert existed, and this morning's crit was the (correct) delayed self-detection. LLM triage returned malformed-JSON fallbacks for 68/75 verdicts over 5 runs while its e2e guard passes, and its 15-verdict cap is file-ordered so the day's only crit got no verdict. spent-enabled-timers false-positives on verification.timer during every daily run (5 lanes filed it); the healthchecks Django banner pollutes check output; fast-tier crit checks flapped 8+ page/recover cycles overnight (29 pages in 12h = alert fatigue); the reopen bridge is write-only (its documented consumer doesn't exist) and 22 checks carry a nonexistent task_id (verify-06). Raise/split the unit timeout, add OnFailure paging (after sec-12), fix triage parsing + crit-first capping, de-flap with retries, repair the two false-positive checks, wire the bridge into the session-start protocol for real. Regressions of fix-30/fix-39/sec-03.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SH8",
+   "SH15",
+   "SH17",
+   "SM22",
+   "SM46",
+   "SM23",
+   "SM38",
+   "SM47",
+   "SM50"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-62",
+  "title": "Check quality + coverage batch: 4 structurally-broken checks (plex-version, stash auth, immich-backup 60s find, esde), Stash no-op self-heal page storm, liveness-only quartet, filed monitoring gaps",
+  "host": "fleet",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "verification",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "edge-plex-version-current greps the XML declaration so it alarms forever while Plex is actually current (fix-24 'regression' is a check bug); stash-serving 401s (Stash gained auth ~07-22) with empty diagnostics — the app is healthy and effectively unmonitored since, while a mislocated self-heal 'compose up' no-op paged homelab-alerts every 15min for 8.5h; nas-immich-backup-freshness runs a 7-minute find against a 60s budget (flagship photo signal permanently dark — backups verified healthy by hand); rig-esde-romm-library omits wiiu and can't detect single-platform loss; immich smart-search crit check has zero timeout margin; paperless/wallabag/mealie/tautulli remain bare liveness probes; OWUI knowledge API shows populated collections as empty and wiki-rag-sync never re-verifies attachment (needs a retrieval-level check); HA /api/conversation/process and BedrockConnect have zero functional coverage (both paths verified working this sweep). One session: fix the broken five, relocate+fix the self-heal semantics with backoff, deepen the quartet, add the two missing e2e checks.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SM8",
+   "SM9",
+   "SM55",
+   "SH14",
+   "SL21",
+   "SL32",
+   "SL35",
+   "SM44",
+   "SM45",
+   "SL46"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-63",
+  "title": "Alerting-plane architecture: everything that could report a mini outage lives ON mini; rig auto-recovery only in the daily tier; ntfy history 12h; no alert-delivery proof",
+  "host": "mini",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "ops",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "ntfy, Healthchecks, Uptime Kuma, and all three verification tiers are co-located on mini together with Caddy (sole TLS edge), primary DNS and the Forgejo deploy remote — mini down means no https, no DNS, and no alert can say so. Rig-down detection is 10 minutes but WoL recovery lives only in the daily tier (up to 24h latency); ntfy's cache retains ~12h so incident history evaporates; the only published Kuma status page is an empty placeholder; and nothing proves a page ever reaches a device (mandate-2 gap). Design an off-mini dead-man (external Healthchecks-style or phone-native), move/extend WoL self-heal to the fast tier, extend ntfy retention, publish a real status page, and add an operator-confirmed alert-delivery drill.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SH19",
+   "SM54",
+   "SL45",
+   "SL23",
+   "SM39"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-64",
+  "title": "Rig host stability: 27h operator poweroff (power key honored on a 24/7 host), RTC 4h skew corrupting timelines, boot-race + catch-up failures, crash-loop and segfault batch",
+  "host": "rig",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "ops",
+  "run": 10,
+  "mode": "ai",
+  "gate": "disruptive — logind/RTC changes + possible rig reboot; 4-7AM window",
+  "summary": "The 27h outage was a clean plasma-shutdown poweroff — logind still honors power-key/desktop shutdown on a 24/7-mandate host (inhibit or redirect it); the RTC held time 4h off so the next boot's journal lied until NTP stepped (fix set-local-rtc/UTC + timer ordering after time-sync); post-step catch-up ran the ML night-window unit in daytime and failed the playit self-heal start. Batch the rest: moondeckbuddy crash-looping every 10s for weeks (76k+ restarts, missing AppImage), avahi hostname-conflict storm (1856/boot, cachyos.local broken), containerd-shim SIGSEGV killed lumiverse once, palworld segfaulted twice in 4 days, UFW block-flood noise, 3-reboots-in-7-days pattern review. Also decide the operator protocol: powering the rig off must be announced/gated.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SH4",
+   "SM12",
+   "SM53",
+   "SM33",
+   "SM13",
+   "SM14",
+   "SM15",
+   "SM25",
+   "SL9",
+   "SL10",
+   "SL12"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-65",
+  "title": "Config control-plane drift: local-ai-tooling Forgejo 16 commits behind (ai-03 regression), ansible perpetual changed=1 root-caused, Mac ssh-config 3-layer drift where an apply would delete live aliases",
+  "host": "rig",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "ops",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "local-ai-tooling's Forgejo remote is a strict 16 commits behind GitHub (the whole ai-10 body of work exists only on the cloud remote — push both, and consider a pre-push/tripwire hardening beyond the existing check); ansible-site-converged-mini's perpetual changed=1 is the chezmoi task's creates: guard checking /root while running as btabaska (fix the guard, un-red fix-42's check); the Mac ~/.ssh/config is a 3-layer drift where a blanket chezmoi apply would DELETE the live rig/rig-code/forgejo aliases (reconcile source vs live NOW before an accidental apply); dotfiles GitHub origin 2 behind Forgejo (inverse gap); /opt/stacks .gitignore's top-level dir-exclude defeats the n8n workflow-source negation (workflow source silently unversioned); rig flatpak.txt inventory is zero bytes vs 8 live apps; rig manifest loop degraded (pkglist lookup failing every run + export-manifests stale 152h on its Healthchecks slot).",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SH16",
+   "SM40",
+   "SM41",
+   "SL8",
+   "SL28",
+   "SL15",
+   "SL39",
+   "SM16"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-66",
+  "title": "mini cannot reach the IoT VLAN: journaling docker bridge 192.168.16.0/20 swallows 192.168.20.0/24 (net-05 regression) + HA appliance 3-min overnight network loss",
+  "host": "mini",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "smart-home",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "net-trusted-to-iot-reachable's 'tok=BAD' is a routing failure, not auth: the journaling stack's docker bridge claimed 192.168.16.0/20 which contains the IoT subnet 192.168.20.0/24, so mini routes Hue-bridge traffic into the bridge and every IoT probe from mini dies while HA (different host) controls the lights fine. Recreate the network with a non-overlapping subnet (mind the sys-docker-subnet-squat=3 check, adjacent to open task ha-19) and re-green net-05. Also: HA lost all network for ~3 minutes overnight (00:40-00:43, self-recovered — watch for recurrence) and core 2026.7.2→.7.4 + HAOS 18.1→18.2 updates are pending.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SH6",
+   "SL13",
+   "SL14"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-67",
+  "title": "Small-pipeline regression batch: kometa IMDb 403s (29 errors), pinchflat bot-check strandings, CWA cover, edited-memo journaling hole, bug-intake residue, syncthing hub inotify, Terraria tile",
+  "host": "mini",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": false,
+  "track": "media-polish",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Seven small independent regressions/holes, one session: kometa's 29 run errors are 7 IMDb list fetches 403-blocked (fix-37 regression — auth/UA or replace the lists); pinchflat has a new bot-check-stranded video beyond the accepted 7 (id 3076, abandoned since 07-20, fix-37 regression); 'Wuthering Heights' lacks a cover on disk and on the Kobo shelf (fix-38 regression); a #journal tag added by EDIT is silently never analyzed (memo 36 permanently unprocessed — n8n only triggers on create); stale synthetic bug-intake issue #14 open since 07-27 with no residue sweeper and the ntfy 'bugs' notify branch has zero coverage; the NAS syncthing hub's inotify watcher is dead on game-saves (periodic-scan only); Terraria has no Homepage tile.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SM19",
+   "SM20",
+   "SL4",
+   "SM37",
+   "SL25",
+   "SL27",
+   "SL30",
+   "SL24"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-68",
+  "title": "Tracker/docs truth repair: 20 done tasks failing checks with zero formal reopens, wiki-drift from a same-commit violation, catalog lagging 6 live services, stale-path/plan-era prose",
+  "host": "repo",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": true,
+  "track": "wiki",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "The tracker asserts 20 done tasks closed while their checks fail (the sweep's regression ledger — this queue reopens them as fix-49..69; add the missing process: formal reopen annotations in progress.json); wiki-drift is red because ai-04's commit 554c560 added a check without regenerating (re-run generators, recommit, and consider a pre-push hook); service-catalog.yaml misses 6 live services and still lists retired readarr as live with a dead URL; README still narrates the 10-stack plan era vs 46 live containers; ~/Documents/Home persists in 8 places across 4 wiki pages; rig README still calls local-ai-tooling GitHub-only (superseded); syncthing hub compose header still documents relays as a 'harmless fallback' contradicting the hardened posture; plus cosmetic unit-file drift and the syncthing-node/adguard-nas mirror-naming traps. wiki-05 regression.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SH18",
+   "SM48",
+   "SM49",
+   "SL31",
+   "SL33",
+   "SL34",
+   "SL36",
+   "SL37",
+   "SL38",
+   "SL42",
+   "SL43"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-69",
+  "title": "Fleet hygiene batch: meme-review check-vs-policy contradiction, log floods (synologand 7k, deluged 1.1/s, ufw), stale units/kernel, /tmp session litter incl. cookies, dead experiments",
+  "host": "fleet",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": false,
+  "track": "docker-host",
+  "run": 10,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Batchable cleanups: stacks-orphan-dirs flags meme-review whose data retention was deliberate — align check allowlist or archive the dir; DSM synologand geo-lookup floods /var/log/messages (7156 lines) on every tailnet login; deluged.log is 99% one libtorrent warning at 1.1/sec; mini has a stale snap-lxd mount unit keeping failed-units red, a kernel installed 24 days without reboot, 53 stale /tmp agent artifacts including two session-cookie files, and 12 stale ad-hoc results-*.json in the verification state dir; a stale host-level unpackerr on mini polls a wrong-subnet IP (retire it — the NAS container is the real one); seedbox carries dead rootless-docker artifacts; NAS has a zero-byte scheduled-task file. Nothing urgent; one sweep-and-codify session.",
+  "steps": [
+   "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-02.md (NOT the 2026-07-16 quality-gate doc)."
+  ],
+  "findings": [
+   "SM51",
+   "SM18",
+   "SL1",
+   "SL2",
+   "SL6",
+   "SL7",
+   "SL18",
+   "SL40",
+   "SL41",
+   "SL44"
+  ],
+  "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
+  "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
  }
 ]

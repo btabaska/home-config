@@ -3,7 +3,8 @@ description: Resolve one quality-gate work item (fix-NN) end to end — align, r
 argument-hint: "next" (auto-pick next open) | fix-NN (e.g. fix-20) | a raw finding id like H7
 ---
 
-You are resolving a quality-gate remediation item from the 2026-07-16 audit, requested as:
+You are resolving a quality-gate remediation item from the 2026-07-16 audit or the 2026-08-02
+fleet sweep, requested as:
 **$ARGUMENTS**. Run it in THIS session, end to end, against the definition of done below. Do NOT
 report it resolved until every stage passes with evidence. If a stage cannot be completed or
 verified, say so plainly — never claim done.
@@ -15,7 +16,8 @@ verified, say so plainly — never claim done.
   `fix-NN` with `NN ≥ 20`; drop any `id` present in `progress.json.done` (a dict keyed by id). Pick
   the **lowest-numbered remaining** one — the ids are numbered in wave order (fix-20 incident →
   fix-21-24 security → fix-25-29 pipelines → fix-30-38 infra → fix-39-45 hygiene → fix-46-48
-  books-stack scan), so lowest = next.
+  books-stack scan → **2026-08-02 fleet sweep: fix-49-50 active incidents → fix-51-53 security →
+  fix-54-60 pipelines → fix-61-67 service/infra → fix-68-69 hygiene/drift**), so lowest = next.
   State which item you picked and why before continuing.
 - If it's a `fix-NN`: use that task.
 - If it's a raw finding id (e.g. `H7`): use the `fix-NN` task whose `findings` array contains it.
@@ -29,7 +31,9 @@ verified, say so plainly — never claim done.
 3. Read every listed finding's full entry (severity, detail, **evidence**) in the doc named by
    the task's `source` field — quality-gate items (H/M/L/I findings) live in
    `foss-setup/docs/quality-gate-2026-07-16.md`; books-stack items fix-46–48 (B findings) live in
-   `foss-setup/docs/books-stack-scan-2026-07-20.md`. The evidence block has the exact commands
+   `foss-setup/docs/books-stack-scan-2026-07-20.md`; fleet-sweep items fix-49–69 (SC/SH/SM/SL/SI
+   findings) live in `foss-setup/docs/fleet-sweep-2026-08-02.md` (clusters + wave rationale in
+   `fleet-sweep-2026-08-02-worklist.md`). The evidence block has the exact commands
    that reproduced each issue — start from those.
 4. If root-cause discovery will be read-heavy (many files/hosts), delegate it to an `Explore` or
    `general-purpose` subagent and have it return only the conclusion, to keep this session lean.

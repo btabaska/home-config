@@ -56,9 +56,13 @@ into chat, commits, or docs.** Template: `.handoff-secrets.yaml.example`.
 3. **Live stack is the source of truth for docs** — document what's running, not what was planned.
 4. **Disruptive work → 4–7AM EST window.** Confirm before destructive or user-facing actions.
 
-## Current priority: quality-gate remediation
+## Current priority: fleet-sweep remediation (2026-08-02)
 
-A full read-only audit (2026-07-15/16) produced **`foss-setup/docs/quality-gate-2026-07-16.md`**
-(303 findings + evidence) and **`docs/quality-gate-worklist.md`** (26 root-cause work items =
-tasks `fix-20`…`fix-45`). Work them one session each with **`/resolve-finding fix-NN`**. Start with
-`fix-20` (active rig read-only-filesystem incident).
+The `/fleet-sweep` full audit (2026-08-02) produced **`foss-setup/docs/fleet-sweep-2026-08-02.md`**
+(318 findings + evidence, SC/SH/SM/SL/SI ids) and **`docs/fleet-sweep-2026-08-02-worklist.md`**
+(21 root-cause work items = tasks `fix-49`…`fix-69`, wave-ordered). Work them one session each with
+**`/resolve-finding fix-NN`**, starting at `fix-49` (Navidrome library wipeout — active user-facing
+outage). Also escalated: open task `sec-12` (its blast radius now includes ALL OnFailure paging on
+mini being dead + the JWT leaking into the journal daily — see finding SH3). The prior queue
+(2026-07-16 quality-gate `fix-20`…`fix-48`, `docs/quality-gate-2026-07-16.md`) is fully done;
+20 of those closures have regressed and are re-queued inside fix-49…69.

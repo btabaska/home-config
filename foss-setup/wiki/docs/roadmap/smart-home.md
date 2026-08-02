@@ -1,10 +1,11 @@
 # Roadmap — smart-home
 
-39 task(s). Status mirrors `docs/progress.json` (the source of truth).
+40 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
 | `fix-36` | Home Assistant health: unavailable entities, dead integrations, pending updates | ✅ done | 1-3 hrs |
+| `fix-66` | mini cannot reach the IoT VLAN: journaling docker bridge 192.168.16.0/20 swallows 192.168.20.0/24 (net-05 regression) + HA appliance 3-min overnight network loss | ⬜ open | 1-3 hrs |
 | `fut-01` | Garden watering: OpenSprinkler (or ESPHome valves) — local irrigation | ⏸️ deferred | weekend |
 | `fut-02` | Plug-in solar (NY legislation) + local production monitoring | ⏸️ deferred | weekend+ |
 | `fut-03` | DIY weather station (local) | ⏸️ deferred | day |

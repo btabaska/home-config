@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**251/330 done** · **46 open** · **18 deferred** · 15 retired.
+**251/351 done** · **67 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -21,6 +21,9 @@
 - [ ] **`foss-02`** Package the FOSS desktop suite: cachyos-desktop-suite.sh + macOS Brewfile (chezmoi-tracked) _(est ~half day)_
 - [ ] **`glue-02`** Desktop baseline on CachyOS: browser(s) + LibreOffice (anytime) _(est 20-40 min)_
 
+### docker-host
+- [ ] **`fix-69`** Fleet hygiene batch: meme-review check-vs-policy contradiction, log floods (synologand 7k, deluged 1.1/s, ufw), stale units/kernel, /tmp session litter incl. cookies, dead experiments _(est 1-3 hrs)_
+
 ### ebook-mgmt
 - [ ] **`ebook-06`** End-to-end ebook verification (Libreseerr → Betty → Readarr → CWA → Plex/Kobo) _(est 30-45 min)_
 
@@ -32,20 +35,42 @@
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
 
 ### media-pipeline
+- [ ] **`fix-49`** Navidrome total library wipeout: bad .ndignore written by the fix-28 guard + one empty-root CIFS scan flagged all 3495 tracks missing _(est 1-3 hrs)_
+- [ ] **`fix-50`** Bitmagnet DHT junk-grab storm: arrs re-grabbing owned titles hourly, foreign-audio junk imported into the library today; indexer also timing out via Prowlarr _(est 1-3 hrs)_ — ⛔ gate: disruptive — removes wrongly-imported library files + changes indexer config; 4-7AM window + operator approval for deletions
+- [ ] **`fix-54`** Movies/TV import stall: torrent payloads deleted under live torrents, move_completed wedge, 3-4 day arr retry loops, sample files back in the library _(est 1-3 hrs)_ — ⛔ gate: disruptive — removes wedged torrents/queue records and deletes junk sample files; 4-7AM window + operator approval
+- [ ] **`fix-56`** Music acquisition hygiene: soularr failed-import backlog cycling, junk MusicBrainz albums grinding every 5 minutes, 3 albums stuck partial _(est 1-3 hrs)_
 - [ ] **`media-09`** fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs _(est 1-2 hrs)_
 - [ ] **`media-10`** Seedbox: retire drained readarr label pair from deluge-reaper _(est 10 min)_ — ⛔ gate: not before 2026-08-04
 - [ ] **`media-13`** Release reclaimed disk pinned by stale 2026-07-02 Btrfs @sharesnap snapshots (volume2/volume3) _(est 20-40 min)_
 
+### media-polish
+- [ ] **`fix-59`** Bazarr has ZERO subtitle providers enabled — 2868 wanted episodes can never fetch while the check stays green (media-12 regression) _(est 1-3 hrs)_
+- [ ] **`fix-67`** Small-pipeline regression batch: kometa IMDb 403s (29 errors), pinchflat bot-check strandings, CWA cover, edited-memo journaling hole, bug-intake residue, syncthing hub inotify, Terraria tile _(est 1-3 hrs)_
+
+### nas-foundation
+- [ ] **`fix-55`** NAS chronic I/O pressure + SQLite 'database is locked' storm degrading 5 arr apps, killing soularr, hanging docker CLI and healthchecks _(est 1-3 hrs)_ — ⛔ gate: disruptive — may restart NAS DB-backed containers; 4-7AM window
+
+### ops
+- [ ] **`fix-63`** Alerting-plane architecture: everything that could report a mini outage lives ON mini; rig auto-recovery only in the daily tier; ntfy history 12h; no alert-delivery proof _(est 1-3 hrs)_
+- [ ] **`fix-64`** Rig host stability: 27h operator poweroff (power key honored on a 24/7 host), RTC 4h skew corrupting timelines, boot-race + catch-up failures, crash-loop and segfault batch _(est 1-3 hrs)_ — ⛔ gate: disruptive — logind/RTC changes + possible rig reboot; 4-7AM window
+- [ ] **`fix-65`** Config control-plane drift: local-ai-tooling Forgejo 16 commits behind (ai-03 regression), ansible perpetual changed=1 root-caused, Mac ssh-config 3-layer drift where an apply would delete live aliases _(est 1-3 hrs)_
+
 ### photos
+- [ ] **`fix-60`** Immich cluster: nightly ffmpeg segfault on one corrupt .mov (5 nights), second household user has 0 photos ever, bogus 4501 date tops the timeline, pg-dumps unrotated _(est 1-3 hrs)_
 - [ ] **`nas-08b`** Import mirrorless-camera SD card into Immich via immich-go (+ pbak option) _(est 30 min)_
 
 ### reading
+- [ ] **`fix-57`** Books request layer broken-quiet: last successful request 07-20, 12/30 libreseerr requests errored, one grabbed book lost pre-import for 13 days _(est 1-3 hrs)_
+- [ ] **`fix-58`** Manga chain silently severed at BOTH ends: Komga scheduler scans a deleted library-id (279 new chapters invisible 6 days) and Suwayomi's bind raced the CIFS mount into an empty view _(est 1-3 hrs)_ — ⛔ gate: disruptive — Komga library-id surgery + container restart ordering changes on rig; 4-7AM window
 - [ ] **`read-05`** Connect KOReader to Calibre/CWA over WiFi (OPDS + wireless send) _(est 20 min)_
 - [ ] **`read-06`** Enable CWA built-in KOReader progress sync (KOSync) on the Kobo _(est 20 min)_
 - [ ] **`read-08`** Wire the KOReader Wallabag plugin on the Kobo _(est 20 min)_
 - [ ] **`read-09`** Add RSS/news to KOReader (Miniflux tie-in) _(est 20 min)_
 
 ### security
+- [ ] **`fix-51`** LAN exposure batch: rogue nc -lvnp 9999 listener on mini (17 days), ~85 fleet ports on 0.0.0.0 bypassing Caddy auth, BookLogr registration still open _(est 1-3 hrs)_
+- [ ] **`fix-52`** Seedbox Syncthing: syncs nothing (0 folders, 0 peers, 0 bytes ever) while its plaintext-HTTP GUI is open to the public internet _(est 1-3 hrs)_
+- [ ] **`fix-53`** File-permission regressions: mylar3 writes 0644 secret-bearing config + world-writable cache (fix-23 regression), HA offsite tars group-writable to every NAS group _(est 1-3 hrs)_
 - [ ] **`foss-04`** Ente Auth adoption + YubiKey enrollment (Authy migration) _(est 1-2 hrs)_
 - [ ] **`sec-01`** Turn on MFA/2FA everywhere (hardware key on the crown jewels) _(est 1-2 hrs)_
 - [ ] **`sec-04`** Harden exposed surfaces (CrowdSec + forward-auth on the seedbox/public ports) _(est 1 hr)_ — ⛔ gate: Tailscale SSH ACL for operator → seedbox (currently blocked)
@@ -58,6 +83,7 @@
 - [ ] **`sec-12`** Repair malformed multi-line value in mini /etc/verification/env (a stored token spans physical lines and leaks when the file is sourced) + decide on rotating the exposed Hardcover token _(est 20-40 min)_
 
 ### smart-home
+- [ ] **`fix-66`** mini cannot reach the IoT VLAN: journaling docker bridge 192.168.16.0/20 swallows 192.168.20.0/24 (net-05 regression) + HA appliance 3-min overnight network loss _(est 1-3 hrs)_
 - [ ] **`ha-04`** Install HACS (community store) _(est 15 min)_
 - [ ] **`ha-06`** Thermostat: install ecobee Premium (in box) — local HomeKit control; retire Nest SDM plan _(est 45-60 min)_
 - [ ] **`ha-07`** Add Midea AC + dehumidifier via midea_ac_lan (local) — and BACK UP the .json _(est 30 min)_
@@ -75,6 +101,13 @@
 - [ ] **`ha-28`** Withings Body Cardio scale + BPM Connect (cloud OAuth) _(est 30 min)_
 - [ ] **`ha-31`** Automations pack v1 (git-backed YAML) _(est half day)_
 - [ ] **`ha-32`** HA ops glue: SSH add-on, git-backed /config, nightly backups verify, checks.d/ha.yaml, Homepage _(est 1 h)_
+
+### verification
+- [ ] **`fix-61`** Verification framework repair: daily run killed by its own 30-min timeout mid-incident (dead-man dark, no self-page), triage 91% nonfunctional, chronic false-positive + flapping checks _(est 1-3 hrs)_
+- [ ] **`fix-62`** Check quality + coverage batch: 4 structurally-broken checks (plex-version, stash auth, immich-backup 60s find, esde), Stash no-op self-heal page storm, liveness-only quartet, filed monitoring gaps _(est 1-3 hrs)_
+
+### wiki
+- [ ] **`fix-68`** Tracker/docs truth repair: 20 done tasks failing checks with zero formal reopens, wiki-drift from a same-commit violation, catalog lagging 6 live services, stale-path/plan-era prose _(est 1-3 hrs)_
 
 ---
 
