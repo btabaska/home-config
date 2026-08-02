@@ -46,30 +46,23 @@ checks:
   # self-sourced from the NAS config.xml (readable by the ssh user), so no new secret in the env.
   #
   # SM6/SM27 (fix-50): a real DHT keyword search floats ~8-25s but, under concurrent arr load
-  # (the grab storm hammered it), the UNBOUNDED inner curls blew past the 60s default runner
-  # budget and the check died with exit 124 "TIMEOUT after 60s" — an EXTERNAL kill that erased
-  # all diagnosis (state unknown, fed seed-12 to reopen-suggestions with no evidence). Fixed:
-  # `-m` on every inner curl with a distinct failure string, plus `timeout: 90` so a real answer
-  # OR a named failing stage ("hits=timeout_or_err") always comes back inside budget — never a
-  # bare 124-kill. The search curl is capped at 60s so a genuine load-storm fails cleanly instead
-  # of burning 100s+ of NAS Postgres I/O every cycle (fix-55 is the I/O-storm work item).
+  # (the grab storm, and the fix-55 I/O storm), the search DB scan can exceed any sane budget
+  # — the ORIGINAL unbounded check died with exit 124 "TIMEOUT after 60s" (state unknown), and
+  # a naive time-boxed rewrite then FLAPPED warn on that same transient latency (SM23/SM38
+  # alert-fatigue). Now that Bitmagnet is DEMOTED to interactive-only, its Torznab endpoint
+  # serves ONLY manual searches — a merely-SLOW manual fallback must not page. The probe
+  # (bitmagnet-torznab-probe.py) uses a TRUE-STATE ladder: OK if the scoped Prowlarr search
+  # returns real hits; SLOW->PASS if the search is slow/empty BUT the endpoint answers a static
+  # `t=caps` query (alive, load-degraded — the crawler's freshness is separately guarded by
+  # bitmagnet-dht-ingesting); FAIL only if unregistered / Prowlarr unreachable / the Torznab
+  # endpoint is itself dead (caps also fails). Inner requests are individually timeboxed so it
+  # never hangs and never burns 100s+ of NAS Postgres I/O.
   - id: bitmagnet-torznab-via-prowlarr
-    name: "bitmagnet: registered in Prowlarr + Torznab search returns real hits (consumer end)"
+    name: "bitmagnet: registered in Prowlarr + Torznab endpoint alive for manual search (consumer end)"
     host: mini
-    timeout: 90
-    cmd: >-
-      K=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas
-      "grep -oE '<ApiKey>[a-f0-9]+</ApiKey>' /volume1/docker/prowlarr/config/config.xml"
-      2>/dev/null | sed 's/<[^>]*>//g');
-      [ -n "$K" ] || { echo 'no_prowlarr_key'; exit 0; };
-      ID=$(curl -s -m 15 -H "X-Api-Key: $K" http://192.168.10.4:9696/api/v1/indexer
-      | python3 -c "import sys,json;print(next((i['id'] for i in json.load(sys.stdin) if i['name']=='Bitmagnet (DHT)'),''))" 2>/dev/null);
-      [ -n "$ID" ] || { echo 'BITMAGNET_NOT_REGISTERED'; exit 0; };
-      N=$(curl -s -m 60 -H "X-Api-Key: $K" "http://192.168.10.4:9696/api/v1/search?query=1080p&indexerIds=$ID&limit=5"
-      | python3 -c "import sys,json;print(len(json.load(sys.stdin)))" 2>/dev/null);
-      { [ -n "$N" ] && [ "$N" -gt 0 ]
-      && echo "BITMAGNET_PROWLARR_OK indexer=$ID hits=$N"; } || echo "BITMAGNET_PROWLARR_FAIL hits=${N:-timeout_or_err}"
-    expect: '^BITMAGNET_PROWLARR_OK indexer=[0-9]+ hits=[1-9][0-9]*$'
+    timeout: 75
+    cmd: python3 /opt/verification/bin/bitmagnet-torznab-probe.py
+    expect: '^BITMAGNET_PROWLARR_(OK|SLOW)'
     severity: warn
     task_id: fix-50
     runbook: wiki/docs/runbooks/verification.md
