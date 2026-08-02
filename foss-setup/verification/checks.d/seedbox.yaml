@@ -9,12 +9,14 @@
 checks:
   # -- class-level: NOTHING admin-shaped may answer on the public IP. Catches this
   #    exact regression (deluge/qbittorrent/slskd rebinding 0.0.0.0) and any sibling
-  #    service that newly appears on a public port.
+  #    service that newly appears on a public port. 12104 (retired syncthing GUI) +
+  #    16878 (retired syncthing sync) added with SH5/fix-52 — the retired plaintext-
+  #    HTTP admin GUI must never answer on the public internet again.
   - id: seedbox-public-lockdown
-    name: "seedbox: admin ports closed on public IP (H2/L9/M25 regression)"
+    name: "seedbox: admin ports closed on public IP incl. retired syncthing 12104/16878 (H2/L9/M25 + SH5)"
     host: mini
     cmd: >-
-      open=""; for p in 3254 5945 13091 5030 5031; do
+      open=""; for p in 3254 5945 13091 5030 5031 12104 16878; do
       timeout 5 bash -c "</dev/tcp/betty.bysh.me/$p" 2>/dev/null && open="$open $p";
       done; [ -z "$open" ] && echo CLOSED_ALL || echo "STILL_OPEN:$open"
     expect: '^CLOSED_ALL$'
@@ -75,16 +77,41 @@ checks:
   # -- coverage tripwire for the (non-docker) seedbox: expected daemons running,
   #    retired ones absent — mirrors verification/coverage/seedbox.services.
   - id: seedbox-services-manifest
-    name: "seedbox: running services match coverage manifest (qbittorrent retired)"
+    name: "seedbox: running services match coverage manifest (qbittorrent + syncthing retired)"
     host: seedbox
     cmd: >-
-      bad=""; for s in deluged deluge-web slskd tailscaled syncthing; do
+      bad=""; for s in deluged deluge-web slskd tailscaled; do
       pgrep -u "$(whoami)" -x "$s" >/dev/null || bad="$bad down:$s"; done;
-      pgrep -u "$(whoami)" -x qbittorrent-nox >/dev/null && bad="$bad retired-but-running:qbittorrent-nox";
+      for r in qbittorrent-nox syncthing; do
+      pgrep -u "$(whoami)" -x "$r" >/dev/null && bad="$bad retired-but-running:$r"; done;
       [ -z "$bad" ] && echo MANIFEST_OK || echo "BAD:$bad"
     expect: '^MANIFEST_OK$'
     severity: warn
     task_id: fix-21
+    runbook: wiki/docs/runbooks/seedbox-exposure.md
+    enabled: true
+
+  # ── fix-52 (SH5) · syncthing RETIRED — regression, on-host proof ─────────────
+  # Syncthing on betty synced nothing (0 folders / 0 peers / 0 lifetime bytes) yet its
+  # plaintext-HTTP GUI answered on the PUBLIC internet at betty.bysh.me:12104. Retired
+  # 2026-08-02: process killed, binary ~/apps/syncthing removed, ~/.config/syncthing
+  # removed, and the launcher ~/.startup/syncthing removed (that is the Bytesized boot
+  # launcher — the provider runs ~/.startup/* at boot — so it cannot respawn on reboot).
+  # This asserts it stays gone on the box; the public-IP angle is covered by
+  # seedbox-public-lockdown (12104/16878 now in its sweep).
+  - id: seedbox-syncthing-retired
+    name: "seedbox: syncthing fully retired — no process, :12104/:16878 closed, binary+launcher gone (SH5)"
+    host: seedbox
+    cmd: >-
+      bad="";
+      pgrep -u "$(whoami)" -x syncthing >/dev/null && bad="$bad process-running";
+      ss -tln 2>/dev/null | grep -qE "(0.0.0.0|\*|127.0.0.1):(12104|16878) " && bad="$bad port-listening";
+      [ -e "$HOME/apps/syncthing/syncthing" ] && bad="$bad binary-present";
+      [ -e "$HOME/.startup/syncthing" ] && bad="$bad launcher-present";
+      [ -z "$bad" ] && echo RETIRED_OK || echo "BAD:$bad"
+    expect: '^RETIRED_OK$'
+    severity: crit
+    task_id: fix-52
     runbook: wiki/docs/runbooks/seedbox-exposure.md
     enabled: true
 

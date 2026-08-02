@@ -1,7 +1,8 @@
 # Runbook — seedbox exposure / tailnet path (fix-21)
 
 **Checks:** `seedbox-public-lockdown`, `seedbox-loopback-binds`, `seedbox-arr-deluge-e2e`,
-`seedbox-slskd-e2e`, `seedbox-services-manifest` (`verification/checks.d/seedbox.yaml`).
+`seedbox-slskd-e2e`, `seedbox-services-manifest`, `seedbox-syncthing-retired`
+(`verification/checks.d/seedbox.yaml`).
 
 ## Design (2026-07-17 lockdown, quality-gate H2/L9/M25)
 
@@ -53,10 +54,33 @@ Walk the chain:
 ## seedbox-services-manifest FAILS
 
 Compare against `verification/coverage/seedbox.services`. `down:` = start it
-(deluge via `~/.startup/deluge`; slskd/tailscaled via `systemctl --user start …`;
-syncthing via `~/.startup/syncthing`). `retired-but-running:qbittorrent-nox` = kill it
+(deluge via `~/.startup/deluge`; slskd/tailscaled via `systemctl --user start …`).
+`retired-but-running:qbittorrent-nox` or `retired-but-running:syncthing` = kill it
 and delete whatever launcher resurrected it. Deploying/retiring a seedbox service =
 update the manifest file + this runbook + `configs/host/seedbox/README.md`.
+
+## seedbox-syncthing-retired FAILS (SH5 / fix-52)
+
+Syncthing was retired 2026-08-02 — it synced nothing (0 folders / 0 peers / 0 lifetime
+bytes) but exposed a plaintext-HTTP GUI on the **public** IP `betty.bysh.me:12104`.
+A failure here means it came back. Kill + purge again (user-scope, no root):
+
+```
+pkill -x syncthing                                  # NOT `pkill -f apps/syncthing/...`
+rm -f ~/apps/syncthing/syncthing ~/apps/syncthing/syncthing.old
+rm -rf ~/.config/syncthing
+rm -f ~/.startup/syncthing                           # the provider boot launcher — durable disable
+```
+
+- **`pkill -f` footgun:** `pkill -f "apps/syncthing/syncthing"` also matches your own
+  remote shell (its argv contains that string) and kills your ssh session. Use
+  `pkill -x syncthing` (exact process name).
+- **How it respawns:** the provider runs `~/.startup/*` at boot under the root
+  `thorrent_slave` service; `~/.startup/syncthing` was a `start-stop-daemon -b`
+  wrapper (hence PPID 1). Removing that file + the binary is the durable non-root
+  disable. The definitive uninstall is server-side in the Bytesized panel (operator).
+- `seedbox-public-lockdown` also covers this from the public side: ports 12104
+  (GUI) + 16878 (sync) are in its public-IP sweep and must stay `CLOSED_ALL`.
 
 ## Gotchas that already bit
 

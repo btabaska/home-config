@@ -9,6 +9,27 @@ the user via two mechanisms:
 | slskd | systemd **user** unit `slskd.service` → `~/bin/slskd/start-slskd.sh` (sources `~/slskd-native/.env`) | `loginctl` linger=yes |
 | tailscaled + `tailscale up` | systemd user units `tailscaled.service` / `tailscale-up.service` | linger=yes |
 | ~~qbittorrent-nox~~ | **retired 2026-07-17 (fix-21 / L9)** — launcher `~/.startup/qbittorrent` deleted; config left at `~/.config/qBittorrent` | — |
+| ~~syncthing~~ | **retired 2026-08-02 (fix-52 / SH5)** — launcher `~/.startup/syncthing` (a `start-stop-daemon -b` wrapper the provider ran at boot), binary `~/apps/syncthing/` **and** config `~/.config/syncthing/` all removed. It synced nothing (0 folders / 0 peers / 0 lifetime bytes) yet exposed a plaintext-HTTP GUI on the public IP `betty.bysh.me:12104`. **Not** part of the foss-03 mesh (NAS hub + mini + rig) — do **not** reinstall via the Bytesized panel. | — |
+
+## syncthing retirement (2026-08-02, fix-52 / fleet-sweep SH5)
+
+The seedbox syncthing was pure dead weight with a live exposure: the API confirmed
+**0 folders, 0 peers, 0 in/out lifetime bytes**, and betty is not enrolled in the
+foss-03 Syncthing mesh — yet its GUI bound `*:12104` with `tls=false` and answered
+HTTP 200 from the public internet (`betty.bysh.me:12104`) and the tailnet
+(`100.119.134.94:12104`). Retirement (user-scope only, no root available):
+
+1. `rm ~/apps/syncthing/syncthing ~/apps/syncthing/syncthing.old` — remove the binary so any boot respawn `exec`s a missing file.
+2. kill the running monitor+main (`start-stop-daemon` had launched it `-b`, hence PPID 1 under the provider's `thorrent_slave` cgroup).
+3. `rm -rf ~/.config/syncthing` — remove config (nothing to preserve; it synced nothing).
+4. `rm ~/.startup/syncthing` — remove the boot launcher (the provider runs `~/.startup/*` at boot; **this** is the durable disable).
+
+There is no user-writable app registry to disable — install/uninstall is otherwise
+server-side in the Bytesized panel; the definitive panel-side uninstall is an operator
+follow-up. A tombstone note lives on-host at `~/apps/RETIRED-syncthing-fix52.txt`.
+Guarded by `seedbox-syncthing-retired` + `seedbox-public-lockdown` (ports 12104/16878)
+in `verification/checks.d/seedbox.yaml`. Adjacent to open task **sec-04** (seedbox
+hardening umbrella) but this specific exposure is now closed.
 
 ## fix-21 lockdown (2026-07-17) — nothing binds the public IP any more
 

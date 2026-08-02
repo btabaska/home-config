@@ -265,6 +265,7 @@ nav:
       - host-hygiene: reference/checks/host-hygiene.md
       - ipod-abs-sync: reference/checks/ipod-abs-sync.md
       - journaling: reference/checks/journaling.md
+      - lan-exposure: reference/checks/lan-exposure.md
       - media: reference/checks/media.md
       - media-aux: reference/checks/media-aux.md
       - media-indexers: reference/checks/media-indexers.md

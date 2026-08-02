@@ -18,11 +18,16 @@ The ISP never sees a swarm.
 - **deluge-reaper** — daily 05:00 cron (`~/scripts/deluge-reaper.py --live`,
   repo copy `configs/host/seedbox/deluge-reaper.py`): prunes dead/aged
   torrents per label rules
-- **tailscaled** (userspace) + **syncthing** — systemd user units / `~/.startup`
+- **tailscaled** (userspace) — systemd user unit (linger), `tailscale up --ssh`
 
 Nothing else. No *arr apps, no sync agents — the full *arr stack lives on the
 [NAS](nas.md). qBittorrent was **retired 2026-07-17** (fix-21/L9: idle since
-Jun 27 with a public WebUI).
+Jun 27 with a public WebUI). **Syncthing was retired 2026-08-02** (fix-52/SH5):
+it synced nothing (0 folders / 0 peers / 0 lifetime bytes) while its plaintext-HTTP
+GUI answered on the public internet at `betty.bysh.me:12104` — the process was
+killed and its binary (`~/apps/syncthing`), config (`~/.config/syncthing`) and boot
+launcher (`~/.startup/syncthing`) removed, so it cannot respawn. betty is **not** part
+of the foss-03 Syncthing mesh (NAS hub + mini + rig); do not reinstall it here.
 
 ## Network exposure (fix-21 lockdown, 2026-07-17)
 

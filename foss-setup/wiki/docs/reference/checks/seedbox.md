@@ -1,16 +1,16 @@
 # Checks — seedbox
 
-`foss-setup/verification/checks.d/seedbox.yaml` — 8 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/seedbox.yaml` — 9 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `seedbox-public-lockdown`
 
-seedbox: admin ports closed on public IP (H2/L9/M25 regression)
+seedbox: admin ports closed on public IP incl. retired syncthing 12104/16878 (H2/L9/M25 + SH5)
 
 - **host:** `mini` · **severity:** `crit` · **guards task:** `fix-21` · **enabled:** True
 - **expects:** `^CLOSED_ALL$`
 
 ```bash
-open=""; for p in 3254 5945 13091 5030 5031; do timeout 5 bash -c "</dev/tcp/betty.bysh.me/$p" 2>/dev/null && open="$open $p"; done; [ -z "$open" ] && echo CLOSED_ALL || echo "STILL_OPEN:$open"
+open=""; for p in 3254 5945 13091 5030 5031 12104 16878; do timeout 5 bash -c "</dev/tcp/betty.bysh.me/$p" 2>/dev/null && open="$open $p"; done; [ -z "$open" ] && echo CLOSED_ALL || echo "STILL_OPEN:$open"
 ```
 
 ## `seedbox-loopback-binds`
@@ -48,13 +48,24 @@ curl -sm 15 -H "X-API-Key: $SLSKD_API_KEY" http://100.119.134.94:5030/api/v0/ser
 
 ## `seedbox-services-manifest`
 
-seedbox: running services match coverage manifest (qbittorrent retired)
+seedbox: running services match coverage manifest (qbittorrent + syncthing retired)
 
 - **host:** `seedbox` · **severity:** `warn` · **guards task:** `fix-21` · **enabled:** True
 - **expects:** `^MANIFEST_OK$`
 
 ```bash
-bad=""; for s in deluged deluge-web slskd tailscaled syncthing; do pgrep -u "$(whoami)" -x "$s" >/dev/null || bad="$bad down:$s"; done; pgrep -u "$(whoami)" -x qbittorrent-nox >/dev/null && bad="$bad retired-but-running:qbittorrent-nox"; [ -z "$bad" ] && echo MANIFEST_OK || echo "BAD:$bad"
+bad=""; for s in deluged deluge-web slskd tailscaled; do pgrep -u "$(whoami)" -x "$s" >/dev/null || bad="$bad down:$s"; done; for r in qbittorrent-nox syncthing; do pgrep -u "$(whoami)" -x "$r" >/dev/null && bad="$bad retired-but-running:$r"; done; [ -z "$bad" ] && echo MANIFEST_OK || echo "BAD:$bad"
+```
+
+## `seedbox-syncthing-retired`
+
+seedbox: syncthing fully retired — no process, :12104/:16878 closed, binary+launcher gone (SH5)
+
+- **host:** `seedbox` · **severity:** `crit` · **guards task:** `fix-52` · **enabled:** True
+- **expects:** `^RETIRED_OK$`
+
+```bash
+bad=""; pgrep -u "$(whoami)" -x syncthing >/dev/null && bad="$bad process-running"; ss -tln 2>/dev/null | grep -qE "(0.0.0.0|\*|127.0.0.1):(12104|16878) " && bad="$bad port-listening"; [ -e "$HOME/apps/syncthing/syncthing" ] && bad="$bad binary-present"; [ -e "$HOME/.startup/syncthing" ] && bad="$bad launcher-present"; [ -z "$bad" ] && echo RETIRED_OK || echo "BAD:$bad"
 ```
 
 ## `deluge-preimport-stuck`
