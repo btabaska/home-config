@@ -21,13 +21,21 @@ ROOT_MARKER="$MUSIC/.ndignore"
 # recycle-bin emptying pass (including the monthly empty-recycle-30d.sh task),
 # so also keep a share-root .ndignore with a '#recycle' pattern — it lives
 # outside the bin and survives emptying.
-if [ -f "$ROOT_MARKER" ]; then
-  echo "ok: $ROOT_MARKER already present"
+#
+# fix-49 (2026-08-02): the pattern MUST be escaped as `\#recycle`. `.ndignore`
+# uses gitignore syntax where a leading `#` is a COMMENT, so a bare `#recycle`
+# line left the file with ZERO active patterns == an EMPTY .ndignore, which
+# Navidrome treats as "skip this whole folder and everything below". At the music
+# ROOT that greyed out the ENTIRE library (all 3495 tracks missing=1). `\#recycle`
+# escapes the `#` so it is a literal-`#recycle` ignore pattern, leaving the root
+# scannable. Do NOT revert to a bare '#recycle'. Guard: navidrome-scan-integrity.
+if [ -f "$ROOT_MARKER" ] && grep -qxF '\#recycle' "$ROOT_MARKER"; then
+  echo "ok: $ROOT_MARKER already present and correct (\\#recycle)"
 else
-  printf '#recycle\n' > "$ROOT_MARKER"
+  printf '\\#recycle\n' > "$ROOT_MARKER"
   chown 1026:100 "$ROOT_MARKER" 2>/dev/null || true
   chmod 644 "$ROOT_MARKER"
-  echo "created: $ROOT_MARKER"
+  echo "wrote: $ROOT_MARKER (\\#recycle — escaped literal, not a comment)"
 fi
 
 if [ ! -d "$RECYCLE" ]; then

@@ -21,8 +21,16 @@ services:
       # consumer end (a recent backup file actually on disk).
       ND_BACKUP_PATH: /backup
       ND_ENABLEINSIGHTSCOLLECTOR: "${ND_ENABLEINSIGHTSCOLLECTOR:-true}"
-      ND_SCANNER_SCHEDULE: "@every 1h"   # 0.62 new-scanner key; ND_SCANSCHEDULE was ignored -> periodic scan disabled
-      ND_SCANNER_WATCHERWAIT: "0"           # fs watcher unreliable/EBADF over CIFS; rely on periodic full scan
+      # fix-49 (2026-08-02): Navidrome's built-in periodic scanner is DISABLED.
+      # An hourly QUICK scan that observed the read-only CIFS music root as
+      # momentarily EMPTY mass-flagged all 3495 tracks missing=1 (a 30h whole-
+      # library outage) and quick scans can NEVER clear a missing flag. Scanning
+      # is now driven by a mount-gated host timer on mini
+      # (configs/host/mini/navidrome-scan/): it refuses to scan an empty/unmounted
+      # root and full-scans to self-heal a mass-flag. Do NOT re-enable this
+      # without that gate — an unattended empty-root scan is what caused SC1.
+      ND_SCANNER_SCHEDULE: "0"              # disabled -> mount-gated navidrome-scan.timer drives scans
+      ND_SCANNER_WATCHERWAIT: "0"           # fs watcher unreliable/EBADF over CIFS
       ND_LOGLEVEL: info
       ND_SESSIONTIMEOUT: 24h
       ND_BASEURL: ${ND_BASEURL:-}

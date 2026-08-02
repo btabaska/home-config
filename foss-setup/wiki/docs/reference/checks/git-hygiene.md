@@ -1,6 +1,6 @@
 # Checks — git-hygiene
 
-`foss-setup/verification/checks.d/git-hygiene.yaml` — 12 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/git-hygiene.yaml` — 13 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `git-stacks-clean`
 
@@ -132,6 +132,17 @@ rig local-ai-tooling repo is clean AND HEAD pushed to both remotes (ai-03)
 
 ```bash
 cd ~/Documents/GitHub/local-ai-tooling && dirty=$(git status --porcelain | wc -l | tr -d '[:space:]') && head=$(git rev-parse HEAD) && o=$(git ls-remote origin HEAD | awk 'NR==1{print $1}') && f=$(git ls-remote forgejo HEAD | awk 'NR==1{print $1}') && echo "dirty=$dirty head=${head:0:12} origin=${o:0:12} forgejo=${f:0:12}" && { [ "$dirty" = 0 ] && [ -n "$head" ] && [ "$head" = "$o" ] && [ "$head" = "$f" ]; } && echo AI-TOOLING-CLEAN-PUSHED
+```
+
+## `ai-tooling-env-example-parity`
+
+rig local-ai-tooling docker/.env keys all mapped in .env.example (ai-04)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `ai-04` · **enabled:** True
+- **expects:** `ENV-EXAMPLE-PARITY-OK`
+
+```bash
+cd ~/Documents/GitHub/local-ai-tooling/docker && exk=$(grep -vE '^#|^$' .env.example | cut -d= -f1) && miss=$(for k in $(grep -vE '^#|^$' .env | cut -d= -f1); do echo "$exk" | grep -qx "$k" || echo "$k"; done | wc -l | tr -d '[:space:]') && echo "keys-missing-from-example=$miss" && [ "$miss" = 0 ] && echo ENV-EXAMPLE-PARITY-OK
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

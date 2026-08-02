@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**251/351 done** · **67 open** · **18 deferred** · 15 retired.
+**252/351 done** · **66 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -35,7 +35,6 @@
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
 
 ### media-pipeline
-- [ ] **`fix-49`** Navidrome total library wipeout: bad .ndignore written by the fix-28 guard + one empty-root CIFS scan flagged all 3495 tracks missing _(est 1-3 hrs)_
 - [ ] **`fix-50`** Bitmagnet DHT junk-grab storm: arrs re-grabbing owned titles hourly, foreign-audio junk imported into the library today; indexer also timing out via Prowlarr _(est 1-3 hrs)_ — ⛔ gate: disruptive — removes wrongly-imported library files + changes indexer config; 4-7AM window + operator approval for deletions
 - [ ] **`fix-54`** Movies/TV import stall: torrent payloads deleted under live torrents, move_completed wedge, 3-4 day arr retry loops, sample files back in the library _(est 1-3 hrs)_ — ⛔ gate: disruptive — removes wedged torrents/queue records and deletes junk sample files; 4-7AM window + operator approval
 - [ ] **`fix-56`** Music acquisition hygiene: soularr failed-import backlog cycling, junk MusicBrainz albums grinding every 5 minutes, 3 albums stuck partial _(est 1-3 hrs)_

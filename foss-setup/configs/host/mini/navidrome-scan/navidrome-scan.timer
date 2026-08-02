@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the Navidrome mount-gated scan every 15 min (fix-49)
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

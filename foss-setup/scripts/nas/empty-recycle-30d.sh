@@ -23,12 +23,18 @@ for share in music youtube; do
   echo "$share/#recycle: $(find "$bin" -mindepth 1 | wc -l) entries remain (kept < $DAYS days old)"
 done
 
-# Navidrome guards (L15 + fix-28):
-# 1) share-root .ndignore with a '#recycle' pattern (survives emptying passes)
-if [ ! -f /volume1/music/.ndignore ]; then
-  printf '#recycle\n' > /volume1/music/.ndignore
+# Navidrome guards (L15 + fix-28 + fix-49):
+# 1) share-root .ndignore with a '\#recycle' pattern (survives emptying passes).
+#    fix-49 (2026-08-02): the pattern is `\#recycle`, NOT `#recycle`. `.ndignore`
+#    is gitignore syntax where a leading `#` is a COMMENT, so a bare `#recycle`
+#    left ZERO active patterns == an EMPTY .ndignore, which Navidrome reads as
+#    "skip this whole folder" — at the music ROOT that greyed out all 3495 tracks
+#    (missing=1). Rewrite when absent OR wrong (the old bare-`#recycle` file must
+#    be corrected, not left in place). Do NOT revert to a bare '#recycle'.
+if ! grep -qxF '\#recycle' /volume1/music/.ndignore 2>/dev/null; then
+  printf '\\#recycle\n' > /volume1/music/.ndignore
   chown 1026:100 /volume1/music/.ndignore && chmod 644 /volume1/music/.ndignore
-  echo "recreated /volume1/music/.ndignore"
+  echo "wrote /volume1/music/.ndignore (\\#recycle — escaped literal, not a comment)"
 fi
 # 2) empty marker inside #recycle (belt-and-braces for the 0.62 scanner)
 if [ -d "/volume1/music/#recycle" ]; then

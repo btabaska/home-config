@@ -95,8 +95,54 @@ checks:
       missing='||(select count(*) from media_file where missing=1)||'/'||(select
       count(*) from media_file) end;"
     expect: '^PRESENT_OK'
-    severity: warn
+    # fix-49 (SC1): bumped warn->crit. This check ALREADY caught the 2026-08-01
+    # whole-library grey-out (PRESENT_DEGRADED missing=3495/3495) but sat at warn,
+    # so it never paged and the outage ran 30h. A mass-missing library is a full
+    # user-facing outage of the music service — it must page.
+    severity: crit
     task_id: fix-28
+    runbook: wiki/docs/runbooks/media-library-correctness.md
+    enabled: true
+
+  # ── fix-49 (SC1) · Navidrome whole-library grey-out — class probe + dead-man ──
+  # 2026-08-01: the music-root .ndignore held the single line "#recycle" — a
+  # gitignore COMMENT, so the file was effectively EMPTY, which Navidrome treats
+  # as "skip this whole folder"; at the library root that greyed out all 3495
+  # tracks (missing=1) for 30h while the container stayed healthy + /ping 200.
+  # navidrome-library-present (above, now crit) is the exact regression pager;
+  # these two add the CLASS probe and a dead-man for the mount-gated scanner.
+
+  # (class) .ndignore must carry a real (non-comment/non-blank) pattern, the
+  # library must be non-empty and not mass-missing, and the library-root folder
+  # row must be present + not flagged missing. Catches the .ndignore trap at any
+  # folder, a mount-gone mass-flag, and a dropped library root. Reads the
+  # consumer's own DB + the live .ndignore.
+  - id: navidrome-scan-integrity
+    name: "navidrome: .ndignore sane + library root present + not mass-missing (SC1 class)"
+    host: mini
+    cmd: python3 /opt/verification/bin/navidrome-scan-integrity.py
+    expect: '^INTEGRITY_OK'
+    severity: crit
+    task_id: fix-49
+    runbook: wiki/docs/runbooks/media-library-correctness.md
+    enabled: true
+
+  # (dead-man) the built-in periodic scanner is now DISABLED (ND_SCANNER_SCHEDULE
+  # =0); scanning is driven by the mount-gated navidrome-scan.timer on mini. If
+  # that timer/script/API path silently stops, new music stops appearing AND a
+  # future mass-flag would no longer self-heal — so assert Navidrome's own
+  # last_scan_at stays recent (timer fires every 15m; 45m allows 2 misses).
+  - id: navidrome-scan-fresh
+    name: "navidrome: mount-gated scanner ran recently (last_scan_at < 45m)"
+    host: mini
+    cmd: >-
+      docker exec navidrome sqlite3 -readonly /data/navidrome.db "select case when
+      (julianday('now')-julianday(substr(max(last_scan_at),1,19)))*1440 < 45 then
+      'SCAN_FRESH' else 'SCAN_STALE' end||' age_min='||round((julianday('now')-julianday(substr(max(last_scan_at),1,19)))*1440,1)
+      from library;"
+    expect: '^SCAN_FRESH'
+    severity: warn
+    task_id: fix-49
     runbook: wiki/docs/runbooks/media-library-correctness.md
     enabled: true
 

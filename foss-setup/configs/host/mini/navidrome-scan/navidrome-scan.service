@@ -1,0 +1,13 @@
+[Unit]
+Description=Navidrome mount-gated scan trigger (fix-49)
+Documentation=file:///usr/local/sbin/navidrome-scan-gate.sh
+After=network-online.target docker.service mnt-nas-music.automount
+Wants=network-online.target
+OnFailure=ntfy-notify@%n.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/navidrome-scan-gate.sh
+# creds are sourced by the script from /etc/navidrome-scan.env (root:root 0600)
+Nice=10
+IOSchedulingClass=idle

@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **301 checks across 35 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **304 checks across 35 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -12,7 +12,7 @@ Every acceptance/regression check the fleet runs — **301 checks across 35 doma
 | [edge](edge.md) | 6 | 1 | 5 |
 | [game-saves](game-saves.md) | 2 | 0 | 2 |
 | [gaming](gaming.md) | 7 | 3 | 4 |
-| [git-hygiene](git-hygiene.md) | 12 | 0 | 12 |
+| [git-hygiene](git-hygiene.md) | 13 | 0 | 13 |
 | [ha](ha.md) | 11 | 2 | 9 |
 | [host-hygiene](host-hygiene.md) | 7 | 0 | 7 |
 | [ipod-abs-sync](ipod-abs-sync.md) | 1 | 0 | 1 |
@@ -20,7 +20,7 @@ Every acceptance/regression check the fleet runs — **301 checks across 35 doma
 | [media](media.md) | 19 | 7 | 12 |
 | [media-aux](media-aux.md) | 6 | 1 | 5 |
 | [media-indexers](media-indexers.md) | 2 | 0 | 2 |
-| [media-library-correctness](media-library-correctness.md) | 7 | 0 | 7 |
+| [media-library-correctness](media-library-correctness.md) | 9 | 2 | 7 |
 | [media-subtitles](media-subtitles.md) | 1 | 0 | 1 |
 | [media-watchable](media-watchable.md) | 4 | 0 | 4 |
 | [meme-review](meme-review.md) | 3 | 2 | 1 |
@@ -40,4 +40,4 @@ Every acceptance/regression check the fleet runs — **301 checks across 35 doma
 | [system](system.md) | 9 | 4 | 5 |
 | [verification-self](verification-self.md) | 5 | 0 | 5 |
 
-_Total: 301 checks._
+_Total: 304 checks._
