@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**254/351 done** · **64 open** · **18 deferred** · 15 retired.
+**255/351 done** · **63 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -66,7 +66,6 @@
 - [ ] **`read-09`** Add RSS/news to KOReader (Miniflux tie-in) _(est 20 min)_
 
 ### security
-- [ ] **`fix-51`** LAN exposure batch: rogue nc -lvnp 9999 listener on mini (17 days), ~85 fleet ports on 0.0.0.0 bypassing Caddy auth, BookLogr registration still open _(est 1-3 hrs)_
 - [ ] **`fix-52`** Seedbox Syncthing: syncs nothing (0 folders, 0 peers, 0 bytes ever) while its plaintext-HTTP GUI is open to the public internet _(est 1-3 hrs)_
 - [ ] **`fix-53`** File-permission regressions: mylar3 writes 0644 secret-bearing config + world-writable cache (fix-23 regression), HA offsite tars group-writable to every NAS group _(est 1-3 hrs)_
 - [ ] **`foss-04`** Ente Auth adoption + YubiKey enrollment (Authy migration) _(est 1-2 hrs)_

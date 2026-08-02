@@ -1,0 +1,73 @@
+# fix-51 — flat-LAN listener-exposure drift (fleet-sweep 2026-08-02 SM56/SM58/SM24).
+#
+# SM56: a bare `nc -lvnp 9999` in a stray detached tmux session (`rigshell`,
+#       created 2026-07-16) sat open on 0.0.0.0 on mini for 17 days because
+#       NOTHING watched listening sockets vs an expected-ports baseline. Killed
+#       via `tmux kill-session -t rigshell`; nothing respawns it.
+# SM58: ~30 mini + ~20 rig + ~35 NAS service ports bind 0.0.0.0 on the flat LAN.
+#       MOST are by design (Caddy is the auth edge; docker-proxy publishes on
+#       0.0.0.0) — the deliverable is a *documented baseline* + a drift tripwire,
+#       NOT firewalling live services. Baselines: assets/expected-listeners/*.ports.
+# SM24: BookLogr registration is intentionally left OPEN pending a future
+#       lockdown — this file only RECORDS the posture so a flip is visible; it
+#       does NOT assert AUTH_ALLOW_REGISTRATION=False.
+#
+# The three drift checks run ON the mini runner (host: mini); the rig/nas ones
+# ssh out from mini (no sudo — listing listen ports needs no root). Any NEW
+# all-interface listener not in the host's baseline => FAIL (the nc tripwire).
+# Class + regression are one and the same here: the baseline set IS the guard.
+# Runbook: wiki/docs/runbooks/lan-exposure.md
+checks:
+  # ── SM56 regression + SM58 class · mini listener baseline ────────────────
+  # This is the exact tripwire that would have flagged nc:9999 the next day.
+  - id: lan-listeners-drift-mini
+    name: "mini all-interface TCP listeners match the intended-exposure baseline (SM56/SM58)"
+    host: mini
+    cmd: /opt/verification/bin/listener-drift.sh mini
+    expect: '^LISTENER_DRIFT=NONE'
+    severity: warn
+    task_id: fix-51
+    runbook: wiki/docs/runbooks/lan-exposure.md
+    enabled: true
+
+  # ── SM58 class · rig listener baseline (unauth GPU/AI endpoints live here) ─
+  - id: lan-listeners-drift-rig
+    name: "rig all-interface TCP listeners match the intended-exposure baseline (SM58)"
+    host: mini
+    cmd: /opt/verification/bin/listener-drift.sh rig
+    expect: '^LISTENER_DRIFT=NONE'
+    severity: warn
+    task_id: fix-51
+    runbook: wiki/docs/runbooks/lan-exposure.md
+    enabled: true
+
+  # ── SM58 class · NAS listener baseline (DSM native + arr/media docker) ────
+  - id: lan-listeners-drift-nas
+    name: "NAS all-interface TCP listeners match the intended-exposure baseline (SM58)"
+    host: mini
+    cmd: /opt/verification/bin/listener-drift.sh nas
+    expect: '^LISTENER_DRIFT=NONE'
+    severity: warn
+    task_id: fix-51
+    runbook: wiki/docs/runbooks/lan-exposure.md
+    enabled: true
+
+  # ── SM24 posture recorder · BookLogr registration state ──────────────────
+  # RECORDS AUTH_ALLOW_REGISTRATION (currently True — registration intentionally
+  # OPEN pending a future household lockdown) so its value is in results.json and
+  # a future flip is visible. Does NOT assert False. Fails ONLY on anti-drift:
+  # the running container env and the committed /opt/stacks/booklogr/.env
+  # disagree (someone edited .env but never redeployed), or the setting vanished.
+  - id: booklogr-registration-posture
+    name: "BookLogr registration posture recorded + container/.env agree (SM24)"
+    host: mini
+    cmd: >-
+      env=$(docker inspect booklogr-api --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | grep -E '^AUTH_ALLOW_REGISTRATION=' | cut -d= -f2);
+      dotenv=$(sudo -n grep -E '^AUTH_ALLOW_REGISTRATION=' /opt/stacks/booklogr/.env 2>/dev/null | cut -d= -f2);
+      match=$([ "$env" = "$dotenv" ] && echo yes || echo no);
+      echo "BOOKLOGR_REG=${env:-UNSET} envfile=${dotenv:-UNSET} match=$match"
+    expect: '^BOOKLOGR_REG=(True|False) envfile=(True|False) match=yes$'
+    severity: warn
+    task_id: fix-51
+    runbook: wiki/docs/runbooks/lan-exposure.md
+    enabled: true

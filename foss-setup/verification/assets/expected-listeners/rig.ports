@@ -1,0 +1,35 @@
+# Intended-exposure baseline — rig (CachyOS 192.168.10.12, AI stack + game servers)
+# fix-51 (fleet-sweep SM56/SM58). Consumed by bin/listener-drift.sh.
+#
+# ALL-INTERFACE (0.0.0.0 / * / [::]) TCP LISTEN ports EXPECTED on rig and WHY.
+# NOTE: the AI/GPU endpoints (ollama, llama-swap, comfyui, litellm, gpu-arbiter)
+# publish on 0.0.0.0 and are UNAUTHENTICATED on the LAN — their only auth is at
+# the mini Caddy edge, which a direct-LAN hit bypasses (fleet-sweep SM58,
+# "Marinara-class hole"). Accepted on the trusted VLAN pending ha-19 IoT
+# segmentation; captured here so a NEW listener (e.g. another debug nc) drifts.
+# Host-IP / tailscale-IP / 127.0.0.1 binds (e.g. suwayomi 192.168.10.12:4567,
+# palworld 127.0.0.1:25575) are intentionally NOT all-interface and out of scope.
+#
+# Format: one port per line; text after # is a comment.
+22      # sshd (host)
+1716    # kdeconnectd (host)
+3000    # open-webui
+3001    # lumiverse
+3002    # marinara
+4000    # litellm
+5355    # systemd-resolved — LLMNR (host)
+8000    # mcpo
+8080    # amp — CubeCoders AMP web
+8188    # comfyui
+8189    # gpu-arbiter
+8212    # palworld — REST admin API
+8384    # syncthing — GUI
+8765    # fleet-mcp (local-ai-tooling ops/fleet_mcp.py, host)
+9292    # llama-swap
+11434   # ollama (host)
+22000   # syncthing — sync protocol
+25565   # amp — Minecraft Java
+47984   # apollo/sunshine — game streaming (HTTPS)
+47989   # apollo/sunshine — game streaming (HTTP)
+47990   # apollo/sunshine — web UI
+48010   # apollo/sunshine — control

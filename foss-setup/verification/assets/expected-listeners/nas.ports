@@ -1,0 +1,58 @@
+# Intended-exposure baseline — nas (Synology DS920+ 192.168.10.4)
+# fix-51 (fleet-sweep SM56/SM58). Consumed by bin/listener-drift.sh.
+#
+# ALL-INTERFACE (0.0.0.0 / * / [::]) TCP LISTEN ports EXPECTED on the NAS and
+# WHY. The NAS mixes DSM-native daemons (nginx web station, NFS/SMB file
+# sharing, Synology services) with the *arr/media docker stack (docker-proxy
+# publishes each UI on 0.0.0.0). All LAN-bound, not WAN-exposed. Media UIs are
+# fronted by Caddy on mini for auth; direct-LAN access bypasses that (accepted,
+# same tradeoff as mini/rig — see wiki runbook lan-exposure.md). Entries labelled
+# "DSM" are Synology-native and should not be firewalled without DSM breakage.
+# NAS:9999 here is a legitimate docker-proxy container (NOT the rogue mini nc).
+#
+# Format: one port per line; text after # is a comment.
+22      # sshd (host)
+53      # adguardhome — fleet DNS (net-16: containers resolve via NAS .4)
+80      # nginx — DSM / reverse-proxy HTTP
+111     # rpcbind — NFS portmapper (DSM)
+139     # smbd — SMB/NetBIOS (DSM)
+443     # nginx — DSM / reverse-proxy HTTPS
+445     # smbd — SMB (DSM)
+662     # statd — NFS status monitor (DSM)
+892     # mountd — NFS mount (DSM)
+2049    # nfsd — NFS (DSM)
+2283    # immich — server
+3000    # docker-proxy container
+3261    # DSM Synology native service
+3263    # DSM Synology native service
+3264    # DSM Synology native service
+3265    # DSM Synology native service
+3333    # docker-proxy container
+3334    # docker-proxy container
+4045    # nlockmgr — NFS lock manager (DSM)
+5000    # nginx — DSM Web UI (HTTP)
+5001    # nginx — DSM Web UI (HTTPS)
+5357    # nginx — WSDAPI / DSM
+5566    # DSM Synology native service
+5656    # docker-proxy container
+6767    # bazarr
+6969    # docker-proxy container
+7878    # radarr
+8080    # docker-proxy container
+8083    # docker-proxy container
+8084    # docker-proxy container
+8090    # docker-proxy container
+8096    # jellyfin
+8191    # flaresolverr
+8337    # docker-proxy container
+8384    # syncthing — GUI
+8686    # lidarr
+8789    # docker-proxy container
+8790    # docker-proxy container
+8989    # sonarr
+9696    # prowlarr
+9999    # docker-proxy container (legit — NOT the mini nc)
+13378   # audiobookshelf
+22000   # syncthing — sync protocol
+25600   # komga
+32400   # plex

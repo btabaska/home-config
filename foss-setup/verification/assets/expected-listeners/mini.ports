@@ -1,0 +1,46 @@
+# Intended-exposure baseline — mini (Ubuntu Mac mini 192.168.10.2)
+# fix-51 (fleet-sweep SM56/SM58). Consumed by bin/listener-drift.sh.
+#
+# Every ALL-INTERFACE (0.0.0.0 / * / [::]) TCP LISTEN port that is EXPECTED on
+# mini and WHY. This is a flat-LAN homelab on the trusted VLAN: Caddy (:80/:443)
+# is the auth edge, so most app ports below are 0.0.0.0 by design (docker
+# publishes via docker-proxy) and are reachable direct-on-LAN — that is an
+# accepted defense-in-depth tradeoff pending IoT-VLAN segmentation (ha-19).
+# See wiki runbook lan-exposure.md for the model. A port that appears here but
+# is NOT in this list = drift → listener-drift check FAILs (that is what would
+# have caught the rogue nc -lvnp 9999 that sat here 17 days).
+#
+# Format: one port per line; text after # is a comment. Order irrelevant.
+22      # sshd (host)
+53      # adguardhome — DNS
+80      # caddy — HTTP auth edge
+111     # rpcbind — RPC portmapper (host)
+443     # caddy — HTTPS auth edge
+853     # adguardhome — DNS-over-TLS
+2222    # forgejo — git SSH
+3001    # uptime-kuma
+3010    # homepage
+3030    # forgejo — web UI
+4533    # navidrome
+5001    # dockge
+5055    # seerr (overseerr/jellyseerr)
+5230    # memos
+5656    # unpackerr — metrics/exporter (host)
+5678    # n8n
+7777    # terraria — game server
+8000    # paperless-ngx
+8001    # healthchecks
+8010    # faster-whisper
+8080    # ntfy
+8081    # metube
+8082    # miniflux
+8085    # wallabag
+8090    # beszel
+8181    # tautulli
+8384    # syncthing — GUI
+8688    # musicseerr
+8789    # libreseerr
+8945    # pinchflat
+8998    # romm
+9000    # mealie
+22000   # syncthing — sync protocol
