@@ -11,7 +11,7 @@
 | `fix-26` | Reconcile stuck request-layer states (seerr/libreseerr/musicseerr dangling & unmonitored) | ✅ done | 1-3 hrs |
 | `fix-27` | Remediate "green but not watchable": sample-file imports + unextracted RARs | ✅ done | 1-3 hrs |
 | `fix-49` | Navidrome total library wipeout: bad .ndignore written by the fix-28 guard + one empty-root CIFS scan flagged all 3495 tracks missing | ✅ done | 1-3 hrs |
-| `fix-50` | Bitmagnet DHT junk-grab storm: arrs re-grabbing owned titles hourly, foreign-audio junk imported into the library today; indexer also timing out via Prowlarr | ⬜ open | 1-3 hrs |
+| `fix-50` | Bitmagnet DHT junk-grab storm: arrs re-grabbing owned titles hourly, foreign-audio junk imported into the library today; indexer also timing out via Prowlarr | ✅ done | 1-3 hrs |
 | `fix-54` | Movies/TV import stall: torrent payloads deleted under live torrents, move_completed wedge, 3-4 day arr retry loops, sample files back in the library | ⬜ open | 1-3 hrs |
 | `fix-56` | Music acquisition hygiene: soularr failed-import backlog cycling, junk MusicBrainz albums grinding every 5 minutes, 3 albums stuck partial | ⬜ open | 1-3 hrs |
 | `media-05` | Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) | ✅ done | 1-2 hrs |

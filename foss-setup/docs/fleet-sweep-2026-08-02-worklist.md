@@ -49,6 +49,8 @@ Every recent grab in radarr (hourly) and sonarr (every ~30min) is from the Bitma
 
 **Resolves 3 findings:** `SC2` Active Bitmagnet-DHT junk-grab storm: arrs re-grab owned tit, `SM6` Bitmagnet indexer failing through Prowlarr for >6h — corrobo, `SM27` bitmagnet-torznab-via-prowlarr TIMEOUT verified: searches ta
 
+**✅ RESOLVED 2026-08-02** — Bitmagnet demoted to interactive-only via a new Prowlarr App Sync Profile `Interactive-Only (fix-50)` (RSS+auto off, propagated to radarr+sonarr); 9 foreign-audio junk imports purged from the movie library (file+record deleted, release blocklisted) + 9 junk queue grabs blocklisted/removed; radarr immediately re-grabbed CLEAN English copies from IPTorrents/OnlyEncodes (self-healed). SM6/SM27: `bitmagnet-torznab-via-prowlarr` time-boxed (`timeout:90`, inner curls `-m`) — now completes in ~11s reporting true state. New checks: `bitmagnet-demoted-interactive-only` (regression) + `arr-grab-source-not-storming` (class). See commit + progress.json.
+
 
 ## Wave 1 — security / exposure
 

@@ -6,6 +6,14 @@
 #
 # Backend: Bitmagnet + its bundled Postgres run on the NAS (bitmagnet-postgres, DB not published).
 # Torznab/web on 192.168.10.4:3333; registered in Prowlarr (192.168.10.4:9696) as "Bitmagnet (DHT)".
+#
+# fix-50 (2026-08-02): a DHT crawler surfaces low-quality re-encodes + foreign-audio dub rips, and
+# with RSS/auto-search on the arrs auto-grabbed them ~hourly, replacing/adding Russian/Bulgarian dub
+# copies of owned titles in the library (SC2). Bitmagnet is now DEMOTED to INTERACTIVE-ONLY — RSS +
+# Automatic Search disabled via a dedicated Prowlarr "Interactive-Only (fix-50)" App Sync Profile that
+# Prowlarr propagates to every arr. It survives as a MANUAL-search fallback only. The two grab-source
+# checks below (arr-grab-indexer-share.py) keep the storm from silently recurring; the torznab check is
+# time-boxed so it reports true state instead of dying at the runner budget (SM6/SM27).
 checks:
   # (a) DHT ingestion is ALIVE: count torrents the crawler wrote to its Postgres in the last
   # 30 min. A running crawler harvests hundreds/thousands; zero = the crawler died or the DHT
@@ -33,25 +41,66 @@ checks:
   # indexer in Prowlarr by NAME (id can change on re-add), then run a real keyword search
   # THROUGH Prowlarr scoped to just that indexer and require > 0 hits. This proves the whole
   # consumer chain in one shot: indexer registered + Torznab reachable + returns real torrents.
-  # The Prowlarr API key is self-sourced from the NAS config.xml (readable by the ssh user),
-  # so no new secret goes into the runner env.
+  # This is an INTERACTIVE search, so it still exercises Bitmagnet after the fix-50 demotion
+  # (only RSS + Automatic Search are off; manual search stays live). The Prowlarr API key is
+  # self-sourced from the NAS config.xml (readable by the ssh user), so no new secret in the env.
+  #
+  # SM6/SM27 (fix-50): a real DHT keyword search floats ~8-25s but, under concurrent arr load
+  # (the grab storm hammered it), the UNBOUNDED inner curls blew past the 60s default runner
+  # budget and the check died with exit 124 "TIMEOUT after 60s" — an EXTERNAL kill that erased
+  # all diagnosis (state unknown, fed seed-12 to reopen-suggestions with no evidence). Fixed:
+  # `-m` on every inner curl with a distinct failure string, plus `timeout: 90` so a real answer
+  # OR a named failing stage ("hits=timeout_or_err") always comes back inside budget — never a
+  # bare 124-kill. The search curl is capped at 60s so a genuine load-storm fails cleanly instead
+  # of burning 100s+ of NAS Postgres I/O every cycle (fix-55 is the I/O-storm work item).
   - id: bitmagnet-torznab-via-prowlarr
     name: "bitmagnet: registered in Prowlarr + Torznab search returns real hits (consumer end)"
     host: mini
+    timeout: 90
     cmd: >-
       K=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas
       "grep -oE '<ApiKey>[a-f0-9]+</ApiKey>' /volume1/docker/prowlarr/config/config.xml"
       2>/dev/null | sed 's/<[^>]*>//g');
       [ -n "$K" ] || { echo 'no_prowlarr_key'; exit 0; };
-      ID=$(curl -s -H "X-Api-Key: $K" http://192.168.10.4:9696/api/v1/indexer
-      | python3 -c "import sys,json;print(next((i['id'] for i in json.load(sys.stdin) if i['name']=='Bitmagnet (DHT)'),''))");
+      ID=$(curl -s -m 15 -H "X-Api-Key: $K" http://192.168.10.4:9696/api/v1/indexer
+      | python3 -c "import sys,json;print(next((i['id'] for i in json.load(sys.stdin) if i['name']=='Bitmagnet (DHT)'),''))" 2>/dev/null);
       [ -n "$ID" ] || { echo 'BITMAGNET_NOT_REGISTERED'; exit 0; };
-      N=$(curl -s -H "X-Api-Key: $K" "http://192.168.10.4:9696/api/v1/search?query=1080p&indexerIds=$ID&limit=5"
+      N=$(curl -s -m 60 -H "X-Api-Key: $K" "http://192.168.10.4:9696/api/v1/search?query=1080p&indexerIds=$ID&limit=5"
       | python3 -c "import sys,json;print(len(json.load(sys.stdin)))" 2>/dev/null);
       { [ -n "$N" ] && [ "$N" -gt 0 ]
-      && echo "BITMAGNET_PROWLARR_OK indexer=$ID hits=$N"; } || echo "BITMAGNET_PROWLARR_FAIL hits=${N:-err}"
+      && echo "BITMAGNET_PROWLARR_OK indexer=$ID hits=$N"; } || echo "BITMAGNET_PROWLARR_FAIL hits=${N:-timeout_or_err}"
     expect: '^BITMAGNET_PROWLARR_OK indexer=[0-9]+ hits=[1-9][0-9]*$'
     severity: warn
-    task_id: seed-12
+    task_id: fix-50
+    runbook: wiki/docs/runbooks/verification.md
+    enabled: true
+
+  # ── fix-50 · grab-source sanity: the Bitmagnet DHT junk-grab storm (SC2) ──────────────
+  # REGRESSION guard for the exact bug. The storm was ONLY possible because Bitmagnet's
+  # arr-side indexer had RSS + Automatic Search enabled. fix-50 demoted it to interactive-only
+  # via the Prowlarr "Interactive-Only (fix-50)" sync profile. This asserts that demotion is
+  # still in force in BOTH radarr and sonarr — if a Prowlarr re-sync or an operator flips
+  # either flag back on, the auto-grab path reopens and this fails immediately.
+  - id: bitmagnet-demoted-interactive-only
+    name: "bitmagnet: RSS + automatic-search DISABLED in radarr & sonarr — no auto-grab path (fix-50 regression)"
+    host: mini
+    cmd: python3 /opt/verification/bin/arr-grab-indexer-share.py demoted
+    expect: '^DEMOTED_OK'
+    severity: warn
+    task_id: fix-50
+    runbook: wiki/docs/runbooks/verification.md
+    enabled: true
+
+  # CLASS tripwire for siblings: no single indexer may DOMINATE the recent grab stream while
+  # it is still auto-grab-enabled — a live junk-grab storm, from Bitmagnet OR any future
+  # runaway indexer. A demoted indexer whose old storm grabs still linger in history is benign
+  # (its auto-grab path is closed), so this does not flap red forever after the fix.
+  - id: arr-grab-source-not-storming
+    name: "arr grabs: no auto-grab-enabled indexer is monopolising the grab stream (fix-50 class)"
+    host: mini
+    cmd: python3 /opt/verification/bin/arr-grab-indexer-share.py share
+    expect: '^SHARE_OK'
+    severity: warn
+    task_id: fix-50
     runbook: wiki/docs/runbooks/verification.md
     enabled: true
