@@ -9,7 +9,7 @@
 | `fix-23` | Secrets & filesystem-permission hygiene (world-readable env, stale local secret dumps) | ✅ done | 1-3 hrs |
 | `fix-51` | LAN exposure batch: rogue nc -lvnp 9999 listener on mini (17 days), ~85 fleet ports on 0.0.0.0 bypassing Caddy auth, BookLogr registration still open | ✅ done | 1-3 hrs |
 | `fix-52` | Seedbox Syncthing: syncs nothing (0 folders, 0 peers, 0 bytes ever) while its plaintext-HTTP GUI is open to the public internet | ✅ done | 1-3 hrs |
-| `fix-53` | File-permission regressions: mylar3 writes 0644 secret-bearing config + world-writable cache (fix-23 regression), HA offsite tars group-writable to every NAS group | ⬜ open | 1-3 hrs |
+| `fix-53` | File-permission regressions: mylar3 writes 0644 secret-bearing config + world-writable cache (fix-23 regression), HA offsite tars group-writable to every NAS group | ✅ done | 1-3 hrs |
 | `foss-01` | Password + secrets consolidation → Proton Pass (Vaultwarden retired) | ✅ done | 1-2 hrs |
 | `foss-04` | Ente Auth adoption + YubiKey enrollment (Authy migration) | ⬜ open | 1-2 hrs |
 | `sec-01` | Turn on MFA/2FA everywhere (hardware key on the crown jewels) | ⬜ open | 1-2 hrs |

@@ -43,6 +43,16 @@ The ansible `backup` role that would *manage* the restic units is still
 SOPS-gated (sec-03) — the live timers were hand-deployed from
 `scripts/backup/`; treat the repo scripts as their source.
 
+**ACL posture on `/volume1/backups` (fix-53, 2026-08-02).** The HA offsite tars are the
+only off-eMMC HA backup leg. The shared folder used to grant full rwx+**delete** to
+every NAS group (media/users/http/household/docker-service) via inheritable ACEs, so a
+compromised web service or container could silently delete/replace them (read is
+mitigated — tars are client-side encrypted, key at vault `hosts.ha.backup_password`).
+`scripts/nas/harden-backups-acl.sh` (idempotent, run as root on the NAS) downgrades
+those groups to **read-only**, leaving only `administrators` (restore) and `ha-backup`
+(the SMB writer) with write/delete; new HA tars inherit the tightened folder ACL.
+Monitored by `nas-ha-backup-acl` — if it fires, re-run the script.
+
 ## Restore: Immich database (the drill that matters now)
 
 Immich data = photo files under `UPLOAD_LOCATION` (`/volume1/...`) **plus**

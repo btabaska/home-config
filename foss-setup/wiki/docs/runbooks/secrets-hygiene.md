@@ -44,7 +44,21 @@ ntfy `verification` topic via the runner.
 - **nas-secret-file-perms / nas-worldwritable-sweep** — usually an app upgrade or DSM
   ACL default recreated a file 0777. Fix the listed file (`chmod 600` secrets,
   `chmod o-w` otherwise) via piped-vault sudo on the NAS. Re-run:
-  `/opt/verification/bin/run-checks.sh --host nas`.
+  `/opt/verification/bin/run-checks.sh --host nas`. If the offenders are under
+  `/volume1/docker/mylar3` see the mylar3 note below. (These two do a full `find` over
+  `/volume1/docker` — under NAS I/O saturation they can TIMEOUT rather than report an
+  offender; confirm with the manual `find` before assuming a real regression.)
+- **nas-mylar3-umask-guard** — the mylar3 container lost its `umask 077` entrypoint (a
+  redeploy from an older compose, or someone editing it out). Restore the
+  `entrypoint: ["/bin/sh","-c","umask 077; exec /init"]` line in
+  `configs/nas/mylar3/docker-compose.yml`, push it live, and recreate the container.
+  Without it a fresh `config.ini` is created 0644 (23 credential-class keys) instead of
+  0600 — the fix-23 regression this task (fix-53) closed.
+- **nas-ha-backup-acl** — a NAS group other than `administrators`/`ha-backup` regained
+  write/delete on the `/volume1/backups` HA tars (usually someone re-saved the
+  `backups` shared-folder permissions in DSM). Re-run
+  `sudo bash /volume1/scripts/nas/harden-backups-acl.sh` (idempotent) to downgrade the
+  offending groups back to read-only and re-enforce inheritance onto the tars.
 - **ntfy-anon-publish-denied** — anonymous publish returned something other than 403.
   Check `NTFY_AUTH_DEFAULT_ACCESS=deny-all` in `/opt/stacks/ntfy/compose.yaml` on the
   mini; an open ntfy means alert topics can be spoofed and any leaked topic name is
@@ -70,6 +84,21 @@ users is a known, deliberate follow-up, not yet done.
 
 ## History
 
+- **2026-08-02 (fix-53):** the Jul 27 mylar3 (NAS) deploy reintroduced the fix-23
+  class — `config.ini` 0644 with 23 credential-class keys (values empty, but
+  `nas-secret-file-perms` crit-red) + five 0666/0777 cache/`.ComicTagger` files
+  (`nas-worldwritable-sweep`). Root cause: the LSIO mylar3 image ignores the `UMASK`
+  env var (its s6 run script execs mylar with no `umask`), and mylar itself calls
+  `os.umask(0)` **without restoring it** (PostProcessor/filechecker) so after the first
+  grab the process leaks to umask 0 and re-chmods cache 0666/0777. Fix: (1) PID-1 umask
+  via the compose entrypoint (`umask 077; exec /init`) — secures `config.ini`'s create
+  path (a fresh recreate now lands it 0600; the app rewrites it in-place so the mode
+  holds); (2) every-15-min DSM task `scripts/nas/mylar3-perms-guard.sh` (id=16)
+  re-secures the cache the umask can't. New guards: `nas-mylar3-umask-guard`. Separately
+  (SM42) the `/volume1/backups` HA offsite tars granted rwx+**delete** to every NAS
+  group (media/users/http/household/docker-service) via inheritable ACEs —
+  `scripts/nas/harden-backups-acl.sh` downgraded them to read-only, keeping only
+  `administrators` + `ha-backup`; guard `nas-ha-backup-acl`.
 - **2026-07-17 (fix-23):** health.env 0777→600 + token rotated & revoked; ~all of
   `/volume1/docker` de-world-written; five *arr `config.xml` + `stash/.env` +
   `media-automation/.env` → 600; `soularr/config.ini.bak-wrong-path` junk removed;

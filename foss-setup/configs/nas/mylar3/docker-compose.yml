@@ -17,9 +17,23 @@ services:
   mylar3:
     image: lscr.io/linuxserver/mylar3:latest@sha256:4e105bb091e587bfa37d3d38b6e924695379e2b043e82037d33101396fa5eafc   # digest-pinned (fix-38/I68 supply-chain posture); pulled on the NAS 2026-07-27
     container_name: mylar3
+    # fix-53 (fleet-sweep 2026-08-02, SM2/SM3) — fix-23 file-permission regression class.
+    # mylar/ComicTagger were writing config.ini 0644 (23 credential-class keys) + world-writable
+    # 0666/0777 cache/.ComicTagger files. This LSIO mylar3 image does NOT wire UMASK into its s6 run
+    # script (svc-mylar3/run execs `s6-setuidgid abc python3 Mylar.py` with no `umask` call — verified
+    # 2026-08-02), so the UMASK env var below is INERT on its own. We set umask at PID 1 instead: the
+    # entrypoint runs `umask 077` then re-execs /init (s6-overlay), and every supervised service
+    # inherits it. This secures config.ini's CREATE path (a fresh recreate lands it 0600 not 0644).
+    # It does NOT secure the cache: mylar calls os.umask(0) WITHOUT restoring it (PostProcessor.py,
+    # filechecker.py:1917/1946) so the process leaks to umask 0 after the first grab and re-chmods
+    # cache/.ComicTagger 0666/0777 — that is handled OUT-OF-BAND by the every-15-min DSM task
+    # scripts/nas/mylar3-perms-guard.sh (id=16). Safe at 077 because the ONLY consumer of
+    # /volume1/comics is Komga, which also runs as UID 1026 (owner) — group/other access not needed.
+    entrypoint: ["/bin/sh", "-c", "umask 077; exec /init"]
     environment:
       - PUID=1026                          # btabaska — matches Komga so grabbed CBZ stay readable
       - PGID=100                           # users
+      - UMASK=077                          # see entrypoint note above (inert in this image; enforced at PID 1)
       - TZ=America/New_York
     volumes:
       - /volume1/docker/mylar3/config:/config   # config.ini + SQLite DB
