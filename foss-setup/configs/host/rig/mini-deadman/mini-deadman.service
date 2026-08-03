@@ -1,0 +1,13 @@
+[Unit]
+Description=Off-mini dead-man — page the operator via ntfy.sh if mini's alerting plane is dark (fix-63/SH19)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# Runs as root: reads /etc/mini-deadman.env (0600) and writes /var/lib/mini-deadman.
+ExecStart=/usr/local/bin/mini-deadman.sh
+# No OnFailure->mini here on purpose: the whole point is that this path does not
+# depend on mini. A publish failure is logged; systemd status is the local signal.
+TimeoutStartSec=60
+Nice=10

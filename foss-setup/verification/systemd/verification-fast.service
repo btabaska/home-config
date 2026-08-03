@@ -27,6 +27,11 @@ SuccessExitStatus=1
 # Dead-man: Healthchecks 'verification-fast-mini' (period 10m, grace 25m, ntfy).
 # URL is in /etc/verification/env as VERIFY_FAST_PING_URL (kept out of git).
 ExecStartPost=/usr/bin/curl -fsS -m 10 --retry 3 -o /dev/null ${VERIFY_FAST_PING_URL}
+# Rig-down auto-recovery in the FAST tier (fix-63/SM54): fire a WoL magic packet
+# the moment the fast sweep notices the rig (24/7) is unreachable, instead of
+# waiting for the daily LLM-triage phase (up to ~24h latency). `-` prefix =>
+# never fails the unit; idempotent + hourly-escalation via its own state file.
+ExecStartPost=-/opt/verification/bin/rig-wol-selfheal.sh
 TimeoutStartSec=5min
 Nice=10
 

@@ -18,6 +18,14 @@ until ssh -o ConnectTimeout=3 rig true 2>/dev/null; do sleep 3; done
 ssh rig
 ```
 
+**Automated recovery (fix-63/SM54):** the verification **fast tier** (every 10
+min) now fires WoL itself the moment the rig is unreachable
+(`/opt/verification/bin/rig-wol-selfheal.sh`, an `ExecStartPost` on
+`verification-fast.service`), and re-pages `homelab-alerts` hourly if the rig
+stays down — so most rig drops self-heal within ~10 min without you touching
+anything. The steps below are the manual fallback. See the
+[alerting plane runbook](alerting.md).
+
 The rig's MAC is in the inventory (`configs/inventory/inventory.md`) — WoL is
 enabled in BIOS (game-08). Other recovery paths:
 

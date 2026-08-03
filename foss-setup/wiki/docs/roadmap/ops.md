@@ -22,7 +22,7 @@
 | `docker-15` | Deploy Homepage — one dashboard (your observability + the household front door) | ✅ done | 45-60 min |
 | `fix-32` | Fix Caddy reverse-proxy routes (ha.tabaska.us 400, llamaswap not reloaded, stray placeholders/vhosts) | ✅ done | 1-3 hrs |
 | `fix-41` | Repo-vs-live drift codification (forgejo stack, manifests, .env keys, ansible units) | ✅ done | 1-3 hrs |
-| `fix-63` | Alerting-plane architecture: everything that could report a mini outage lives ON mini; rig auto-recovery only in the daily tier; ntfy history 12h; no alert-delivery proof | ⬜ open | 1-3 hrs |
+| `fix-63` | Alerting-plane architecture: everything that could report a mini outage lives ON mini; rig auto-recovery only in the daily tier; ntfy history 12h; no alert-delivery proof | ✅ done | 1-3 hrs |
 | `fix-64` | Rig host stability: 27h operator poweroff (power key honored on a 24/7 host), RTC 4h skew corrupting timelines, boot-race + catch-up failures, crash-loop and segfault batch | ⬜ open | 1-3 hrs |
 | `fix-65` | Config control-plane drift: local-ai-tooling Forgejo 16 commits behind (ai-03 regression), ansible perpetual changed=1 root-caused, Mac ssh-config 3-layer drift where an apply would delete live aliases | ⬜ open | 1-3 hrs |
 | `glue-05` | Self-host Forgejo (config-as-code forge) on the Ubuntu box | ✅ done | 30-45 min |

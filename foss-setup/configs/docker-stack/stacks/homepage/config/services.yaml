@@ -437,9 +437,15 @@
           url: http://192.168.10.4:8080
     - Uptime Kuma:
         icon: uptime-kuma.png
-        href: https://uptime.tabaska.us
+        href: https://uptime.tabaska.us/status/fleet
         description: Uptime checks
         siteMonitor: http://uptime-kuma:3001
+        # widget consumes the published 'fleet' status page (fix-63/SL23);
+        # the empty 'test' placeholder could never back a widget.
+        widget:
+          type: uptimekuma
+          url: http://uptime-kuma:3001
+          slug: fleet
     - Healthchecks:
         icon: healthchecks.png
         href: https://health.tabaska.us

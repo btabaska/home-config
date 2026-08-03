@@ -18,6 +18,11 @@ services:
       - NTFY_BASE_URL=${NTFY_BASE_URL}
       - NTFY_UPSTREAM_BASE_URL=${NTFY_UPSTREAM_BASE_URL:-}
       - NTFY_CACHE_FILE=/var/cache/ntfy/cache.db
+      # Retain alert history well past the ntfy 12h default so post-incident
+      # review is possible (fix-63/SL45: the 07-31 rig-outage pages had already
+      # been purged when reconstructing it ~13h later). 30 days of low-volume
+      # homelab pages is a few MB of SQLite.
+      - NTFY_CACHE_DURATION=${NTFY_CACHE_DURATION:-720h}
       - NTFY_AUTH_FILE=/var/lib/ntfy/auth.db
       - NTFY_AUTH_DEFAULT_ACCESS=${NTFY_AUTH_DEFAULT_ACCESS:-deny-all}
       - NTFY_BEHIND_PROXY=true

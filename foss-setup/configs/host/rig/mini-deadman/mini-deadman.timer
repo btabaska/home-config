@@ -1,0 +1,13 @@
+[Unit]
+Description=Run the off-mini dead-man every 5 min (fix-63/SH19)
+
+[Timer]
+# Every 5 minutes. 3 consecutive misses (~15 min) => page. Fast enough that a
+# real mini outage pages promptly; slow enough not to flap on a Caddy restart.
+OnBootSec=3min
+OnUnitActiveSec=5min
+AccuracySec=30s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

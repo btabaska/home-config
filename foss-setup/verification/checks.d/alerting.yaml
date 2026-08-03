@@ -135,3 +135,73 @@ checks:
     task_id: sec-03
     runbook: wiki/runbooks/alerting.md
     enabled: true
+
+  # ─── fix-63 · alerting-plane resilience (SH19/SM54/SL45/SL23/SM39) ─────────
+  # The whole alerting plane lives ON mini, so these guard the OFF-mini and
+  # recovery paths that make it survivable. They probe the CONSUMER end.
+
+  # SH19 (class-level): prove SOMETHING that can page a mini outage lives OFF
+  # mini and is actively running. The dead-man is a watcher on the rig that
+  # pages via ntfy.sh; it heartbeats a file every run. Stale/absent heartbeat or
+  # a stopped timer => the fleet has NO off-mini pager (the exact SH19 gap).
+  - id: alert-offmini-deadman-armed
+    name: "off-mini dead-man (rig watcher) is armed and fresh (SH19)"
+    host: rig
+    cmd: >-
+      systemctl is-active --quiet mini-deadman.timer &&
+      hb=$(cat /var/lib/mini-deadman/heartbeat 2>/dev/null || echo 0) &&
+      age=$(( $(date +%s) - hb )) &&
+      echo "armed age=${age}s $([ "$age" -lt 1200 ] && echo FRESH || echo STALE)"
+    expect: 'armed age=[0-9]+s FRESH'
+    severity: warn
+    task_id: fix-63
+    runbook: wiki/runbooks/alerting.md
+    enabled: true
+
+  # SM54: rig-down WoL recovery must live in the FAST tier (10-min), not only in
+  # the daily cycle (up to 24h latency). Config-regression guard: the fast unit
+  # invokes the self-heal and the script is present+executable.
+  - id: alert-wol-selfheal-fast-tier
+    name: "rig WoL self-heal wired into the fast tier (SM54)"
+    host: mini
+    cmd: >-
+      systemctl cat verification-fast.service 2>/dev/null | grep -q 'rig-wol-selfheal.sh' &&
+      test -x /opt/verification/bin/rig-wol-selfheal.sh &&
+      echo WOL_FAST_TIER_OK
+    expect: '^WOL_FAST_TIER_OK$'
+    severity: warn
+    task_id: fix-63
+    runbook: wiki/runbooks/alerting.md
+    enabled: true
+
+  # SL23: the published status page must be REAL — probe the exact JSON the
+  # Homepage widget + any shared status URL consume, and require non-empty groups
+  # AND monitors (the old 'test' page rendered blank: 0 groups, 0 monitors).
+  - id: alert-kuma-statuspage-nonempty
+    name: "Uptime Kuma 'fleet' status page is published and non-empty (SL23)"
+    host: mini
+    cmd: >-
+      curl -s -m 8 http://localhost:3001/api/status-page/fleet
+      | python3 -c 'import json,sys; d=json.load(sys.stdin); g=d.get("publicGroupList",[]) or []; m=sum(len(x.get("monitorList",[]) or []) for x in g); print(f"groups={len(g)} monitors={m}")'
+    expect: 'groups=[1-9][0-9]* monitors=[1-9][0-9]*'
+    severity: warn
+    task_id: fix-63
+    runbook: wiki/runbooks/alerting.md
+    enabled: true
+
+  # SM39: prove the alert-delivery drill is actually being SENT (device receipt
+  # is an operator human-confirm). Weekly timer; stale send => the last-mile
+  # delivery test has silently stopped running.
+  - id: alert-delivery-drill-fresh
+    name: "synthetic alert-delivery drill sent within the last 8 days (SM39)"
+    host: mini
+    cmd: >-
+      f=/var/lib/verification/alert-drill-last;
+      test -f "$f" && s=$(sed -n 's/^sent_at=//p' "$f") &&
+      age=$(( ( $(date +%s) - $(date -d "$s" +%s) ) / 86400 )) &&
+      echo "drill_age_days=${age} $([ "$age" -le 8 ] && echo FRESH || echo STALE)"
+    expect: 'drill_age_days=[0-9]+ FRESH'
+    severity: warn
+    task_id: fix-63
+    runbook: wiki/runbooks/alerting.md
+    enabled: true

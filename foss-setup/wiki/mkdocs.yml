@@ -136,6 +136,7 @@ nav:
       - Add a service: runbooks/add-a-service.md
       - Household bug intake (Report a Problem): runbooks/bug-intake.md
       - Recover the rig (WoL): runbooks/wake-the-rig.md
+      - Alerting plane (off-mini dead-man): runbooks/alerting.md
       - Update images: runbooks/update-images.md
       - Verification: runbooks/verification.md
       - Acceptance testing: runbooks/acceptance-testing.md
