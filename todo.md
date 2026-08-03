@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**274/352 done** · **45 open** · **18 deferred** · 15 retired.
+**274/364 done** · **57 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -21,6 +21,11 @@
 - [ ] **`foss-02`** Package the FOSS desktop suite: cachyos-desktop-suite.sh + macOS Brewfile (chezmoi-tracked) _(est ~half day)_
 - [ ] **`glue-02`** Desktop baseline on CachyOS: browser(s) + LibreOffice (anytime) _(est 20-40 min)_
 
+### docker-host
+- [ ] **`fix-72`** Reconcile the etckeeper /etc repo so git-etckeeper-clean greens _(est <1 hr)_
+- [ ] **`fix-74`** Perform the pending mini kernel reboot in a maintenance window _(est 1-3 hrs)_ — ⛔ gate: disruptive — mini reboot is a fleet-wide outage (Caddy/DNS/alerting plane); 4-7AM window + operator approval
+- [ ] **`fix-80`** Commit the regenerated /opt/foss-setup manifests + clear clone drift _(est <1 hr)_
+
 ### ebook-mgmt
 - [ ] **`ebook-06`** End-to-end ebook verification (Libreseerr → Betty → Readarr → CWA → Plex/Kobo) _(est 30-45 min)_
 
@@ -32,14 +37,27 @@
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
 
 ### media-pipeline
+- [ ] **`fix-70`** NAS Plex is one build behind — apply the pending Plex package update _(est <1 hr)_
+- [ ] **`fix-73`** Clear the residual deluge pre-import-stuck grab (Only Murders S02E05) _(est <1 hr)_
 - [ ] **`media-09`** fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs _(est 1-2 hrs)_
 - [ ] **`media-10`** Seedbox: retire drained readarr label pair from deluge-reaper _(est 10 min)_ — ⛔ gate: not before 2026-08-04
 - [ ] **`media-13`** Release reclaimed disk pinned by stale 2026-07-02 Btrfs @sharesnap snapshots (volume2/volume3) _(est 20-40 min)_
 
+### media-polish
+- [ ] **`fix-77`** Drain the Bazarr subtitle backlog + optional provider-key upgrade _(est 1-3 hrs)_
+
+### ops
+- [ ] **`fix-75`** Set Windows RealTimeIsUniversal on rig — durable RTC-skew cure _(est <1 hr)_
+- [ ] **`fix-76`** Prove alert delivery reaches a device + add a whole-house dead-man _(est <1 hr)_
+- [ ] **`fix-79`** Identify + fix the down Uptime-Kuma monitor on /status/fleet _(est <1 hr)_
+- [ ] **`fix-81`** Verify the nvidia-cdi-refresh fix survives a rig reboot _(est <1 hr)_
+
 ### photos
+- [ ] **`fix-71`** Kaelyn Immich onboarding — enable phone photo backup for the 2nd household user _(est <1 hr)_
 - [ ] **`nas-08b`** Import mirrorless-camera SD card into Immich via immich-go (+ pbak option) _(est 30 min)_
 
 ### reading
+- [ ] **`fix-78`** Suwayomi/Komga manga backlog mass-backfill (16 series, 0 chapters) _(est 1-3 hrs)_ — ⛔ gate: storage/bandwidth decision — confirm which series + volume before mass download
 - [ ] **`read-05`** Connect KOReader to Calibre/CWA over WiFi (OPDS + wireless send) _(est 20 min)_
 - [ ] **`read-06`** Enable CWA built-in KOReader progress sync (KOSync) on the Kobo _(est 20 min)_
 - [ ] **`read-08`** Wire the KOReader Wallabag plugin on the Kobo _(est 20 min)_

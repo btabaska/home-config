@@ -1,6 +1,6 @@
 # Roadmap — media-polish
 
-8 task(s). Status mirrors `docs/progress.json` (the source of truth).
+9 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -8,6 +8,7 @@
 | `fix-37` | Media-aux service config fixes (navidrome backup, kometa, pinchflat/bgutil, RomM empty) | ✅ done | 1-3 hrs |
 | `fix-59` | Bazarr has ZERO subtitle providers enabled — 2868 wanted episodes can never fetch while the check stays green (media-12 regression) | ✅ done | 1-3 hrs |
 | `fix-67` | Small-pipeline regression batch: kometa IMDb 403s (29 errors), pinchflat bot-check strandings, CWA cover, edited-memo journaling hole, bug-intake residue, syncthing hub inotify, Terraria tile | ✅ done | 1-3 hrs |
+| `fix-77` | Drain the Bazarr subtitle backlog + optional provider-key upgrade | ⬜ open | 1-3 hrs |
 | `media-01` | Deploy Tautulli (Plex analytics + monitoring) | ✅ done | 30 min |
 | `media-02` | Deploy Kometa (Plex collections, overlays, posters) | ✅ done | 45-60 min |
 | `media-03` | (Removed from plan) Deploy Maintainerr (rule-based library pruning) | 🗑️ retired | 30-45 min |

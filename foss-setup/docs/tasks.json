@@ -13848,5 +13848,183 @@
   ],
   "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-02.md.",
   "source": "fleet sweep 2026-08-02 (docs/fleet-sweep-2026-08-02.md)"
+ },
+ {
+  "id": "fix-70",
+  "title": "NAS Plex is one build behind — apply the pending Plex package update",
+  "host": "nas",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "<1 hr",
+  "required": false,
+  "track": "media-pipeline",
+  "run": 11,
+  "mode": "human",
+  "gate": "",
+  "summary": "edge-plex-version-current warns (exposed 1.43.3.10793 vs latest .10828, past the 14d grace). fix-62 confirmed the check itself is now correct (it was previously a parse bug); this is a genuine user-facing Synology Plex package update. Ties to fix-24 (WAN-exposure, done). Update Plex on the NAS and re-green edge-plex-version-current."
+ },
+ {
+  "id": "fix-71",
+  "title": "Kaelyn Immich onboarding — enable phone photo backup for the 2nd household user",
+  "host": "nas",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "<1 hr",
+  "required": false,
+  "track": "photos",
+  "run": 11,
+  "mode": "human",
+  "gate": "",
+  "summary": "immich-user-zero-assets warns: second household user (Kaelyn Tabaska) has 0 photos/0 videos ever — her phone backup never flowed (fix-60 added the per-user-zero check). Needs HER device: open the Immich app, sign in as her account, enable backup. Clears the by-design-red check once assets flow."
+ },
+ {
+  "id": "fix-72",
+  "title": "Reconcile the etckeeper /etc repo so git-etckeeper-clean greens",
+  "host": "mini",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "<1 hr",
+  "required": false,
+  "track": "docker-host",
+  "run": 11,
+  "mode": "ai",
+  "gate": "",
+  "summary": "git-etckeeper-clean warns — the etckeeper-managed /etc git repo is not clean (pre-existing, not caused by the 2026-08-02 remediation drive; historically the glue-01/sbom-03 family). Confirm which host, review the pending /etc changes, commit or reset them so etckeeper is clean and the check greens."
+ },
+ {
+  "id": "fix-73",
+  "title": "Clear the residual deluge pre-import-stuck grab (Only Murders S02E05)",
+  "host": "seedbox",
+  "type": "sync",
+  "depends_on": [
+   "fix-54"
+  ],
+  "estimate": "<1 hr",
+  "required": false,
+  "track": "media-pipeline",
+  "run": 11,
+  "mode": "ai",
+  "gate": "",
+  "summary": "deluge-preimport-stuck warns on one pre-existing stuck Sonarr grab: Only Murders in the Building S02E05, parked in the deluge pre-import label. fix-25 class (done+reopened); fix-54 cleared the movies/TV wedges but this one persisted. Root-cause + clear/re-grab it and confirm the check greens."
+ },
+ {
+  "id": "fix-74",
+  "title": "Perform the pending mini kernel reboot in a maintenance window",
+  "host": "mini",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1-3 hrs",
+  "required": false,
+  "track": "docker-host",
+  "run": 11,
+  "mode": "human",
+  "gate": "disruptive — mini reboot is a fleet-wide outage (Caddy/DNS/alerting plane); 4-7AM window + operator approval",
+  "summary": "mini has kernel 5.15.0-186 + libc6 pending a reboot (was 25d uptime on -185); mini-reboot-not-stale nudges. A mini reboot is a FLEET-WIDE outage (Caddy TLS edge, primary DNS, ntfy/Healthchecks/Kuma, verification, Forgejo deploy remote). Follow the documented safe drain-order in wiki/docs/runbooks/host-hygiene.md."
+ },
+ {
+  "id": "fix-75",
+  "title": "Set Windows RealTimeIsUniversal on rig — durable RTC-skew cure",
+  "host": "rig",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "<1 hr",
+  "required": false,
+  "track": "ops",
+  "run": 11,
+  "mode": "human",
+  "gate": "",
+  "summary": "rig's Windows dual-boot leaves the hardware clock in localtime, so a boot into CachyOS can hold time ~4h off until NTP steps (fix-64 mitigated Linux-side: RTC pinned UTC + time-sync ordering + rig-clock-sane check). The durable fix is Windows-side: set HKLM\\SYSTEM\\CurrentControlSet\\Control\\TimeZoneInformation\\RealTimeIsUniversal=1."
+ },
+ {
+  "id": "fix-76",
+  "title": "Prove alert delivery reaches a device + add a whole-house dead-man",
+  "host": "fleet",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "<1 hr",
+  "required": false,
+  "track": "ops",
+  "run": 11,
+  "mode": "human",
+  "gate": "",
+  "summary": "fix-63 built the off-mini dead-man (rig -> ntfy.sh relay, bypasses mini) + a weekly alert-drill, but device receipt is unproven (mandate-2). Subscribe a phone to the dead-man topic (vault alerting.mini_deadman_ntfy_topic) and the alert-drill topic, confirm both land. Optional belt-and-suspenders: an external healthchecks.io heartbeat covering the rig-also-down (whole-house outage) case that the rig-hosted dead-man can't."
+ },
+ {
+  "id": "fix-77",
+  "title": "Drain the Bazarr subtitle backlog + optional provider-key upgrade",
+  "host": "nas",
+  "type": "sync",
+  "depends_on": [
+   "fix-59"
+  ],
+  "estimate": "1-3 hrs",
+  "required": false,
+  "track": "media-polish",
+  "run": 11,
+  "mode": "mixed",
+  "gate": "",
+  "summary": "fix-59 restored subtitle fetching via gestdown+yifysubtitles (both anonymous) and the 2868-episode/29-movie backlog is draining, but auto-search rejects gestdown's ~86-score results — raise Bazarr's series/movie minimum-score cutoff and run a throttled backlog batch in a 4-7AM window. Optional: add a subsource api_key or OpenSubtitles.com creds (vault subtitle_providers.*) for broader/higher-quality coverage."
+ },
+ {
+  "id": "fix-78",
+  "title": "Suwayomi/Komga manga backlog mass-backfill (16 series, 0 chapters)",
+  "host": "rig",
+  "type": "sync",
+  "depends_on": [
+   "fix-58"
+  ],
+  "estimate": "1-3 hrs",
+  "required": false,
+  "track": "reading",
+  "run": 11,
+  "mode": "ai",
+  "gate": "storage/bandwidth decision — confirm which series + volume before mass download",
+  "summary": "fix-58 reconnected the manga chain; 16 of 19 in-library series have 0 downloaded chapters because Suwayomi AUTO_DOWNLOAD_CHAPTERS only grabs newly-detected chapters (SL20, working-as-designed). A full backfill is thousands of chapters — a storage+bandwidth decision deferred pending operator go on scope."
+ },
+ {
+  "id": "fix-79",
+  "title": "Identify + fix the down Uptime-Kuma monitor on /status/fleet",
+  "host": "mini",
+  "type": "sync",
+  "depends_on": [
+   "fix-63"
+  ],
+  "estimate": "<1 hr",
+  "required": false,
+  "track": "ops",
+  "run": 11,
+  "mode": "ai",
+  "gate": "",
+  "summary": "alert-kuma-none-down warns (down=1): one of the 25 monitors fix-63 seeded on the published uptime.tabaska.us/status/fleet page is down. Identify which (a settling/mis-seeded monitor vs a genuinely-down service) and repair the monitor or the underlying service."
+ },
+ {
+  "id": "fix-80",
+  "title": "Commit the regenerated /opt/foss-setup manifests + clear clone drift",
+  "host": "fleet",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "<1 hr",
+  "required": false,
+  "track": "docker-host",
+  "run": 11,
+  "mode": "ai",
+  "gate": "",
+  "summary": "The mini and rig /opt/foss-setup clones carry regenerated-but-uncommitted inventory/manifest output (hosts/*/compose-images.txt, systemd-timers.txt, configs/inventory/inventory.md) and lag main, driving stack-mirror-drift (kometa), git-foss-setup-clean, ansible-site-converged-mini changed=1, and unit-file-drift (rig export-manifests). These self-heal on the next ansible-pull, but the manifest truth should be reviewed and committed to the repo. Reconcile + commit; confirm all four checks green."
+ },
+ {
+  "id": "fix-81",
+  "title": "Verify the nvidia-cdi-refresh fix survives a rig reboot",
+  "host": "rig",
+  "type": "sync",
+  "depends_on": [
+   "fix-64"
+  ],
+  "estimate": "<1 hr",
+  "required": false,
+  "track": "ops",
+  "run": 11,
+  "mode": "ai",
+  "gate": "",
+  "summary": "fix-64's controlled reboot surfaced that /dev/dri/cardN is not stable across reboots — a stale CDI pin blocked llama-swap + comfyui from restarting; fixed inline with nvidia-cdi-refresh.service (regenerates /etc/cdi/nvidia.yaml before docker each boot). Verify it holds across a future reboot and add/confirm a check that GPU containers come back after a reboot."
  }
 ]

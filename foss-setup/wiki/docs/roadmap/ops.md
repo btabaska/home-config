@@ -1,6 +1,6 @@
 # Roadmap — ops
 
-38 task(s). Status mirrors `docs/progress.json` (the source of truth).
+42 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -25,6 +25,10 @@
 | `fix-63` | Alerting-plane architecture: everything that could report a mini outage lives ON mini; rig auto-recovery only in the daily tier; ntfy history 12h; no alert-delivery proof | ✅ done | 1-3 hrs |
 | `fix-64` | Rig host stability: 27h operator poweroff (power key honored on a 24/7 host), RTC 4h skew corrupting timelines, boot-race + catch-up failures, crash-loop and segfault batch | ✅ done | 1-3 hrs |
 | `fix-65` | Config control-plane drift: local-ai-tooling Forgejo 16 commits behind (ai-03 regression), ansible perpetual changed=1 root-caused, Mac ssh-config 3-layer drift where an apply would delete live aliases | ✅ done | 1-3 hrs |
+| `fix-75` | Set Windows RealTimeIsUniversal on rig — durable RTC-skew cure | ⬜ open | <1 hr |
+| `fix-76` | Prove alert delivery reaches a device + add a whole-house dead-man | ⬜ open | <1 hr |
+| `fix-79` | Identify + fix the down Uptime-Kuma monitor on /status/fleet | ⬜ open | <1 hr |
+| `fix-81` | Verify the nvidia-cdi-refresh fix survives a rig reboot | ⬜ open | <1 hr |
 | `glue-05` | Self-host Forgejo (config-as-code forge) on the Ubuntu box | ✅ done | 30-45 min |
 | `glue-06` | Push ALL configs to Git + run the rebuild drill (capstone) | ⏸️ deferred | 1-2 hr |
 | `glue-07` | Fleet maintenance with Ansible (run one command across every box) | ✅ done | 1-1.5 hr |
