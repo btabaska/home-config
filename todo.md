@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**261/351 done** · **57 open** · **18 deferred** · 15 retired.
+**262/351 done** · **56 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -53,7 +53,6 @@
 - [ ] **`nas-08b`** Import mirrorless-camera SD card into Immich via immich-go (+ pbak option) _(est 30 min)_
 
 ### reading
-- [ ] **`fix-58`** Manga chain silently severed at BOTH ends: Komga scheduler scans a deleted library-id (279 new chapters invisible 6 days) and Suwayomi's bind raced the CIFS mount into an empty view _(est 1-3 hrs)_ — ⛔ gate: disruptive — Komga library-id surgery + container restart ordering changes on rig; 4-7AM window
 - [ ] **`read-05`** Connect KOReader to Calibre/CWA over WiFi (OPDS + wireless send) _(est 20 min)_
 - [ ] **`read-06`** Enable CWA built-in KOReader progress sync (KOSync) on the Kobo _(est 20 min)_
 - [ ] **`read-08`** Wire the KOReader Wallabag plugin on the Kobo _(est 20 min)_

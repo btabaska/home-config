@@ -11,7 +11,7 @@ surfaced the gap.
 | File | Live target on the rig | Purpose |
 |------|------------------------|---------|
 | `fstab.snippet` | lines appended to `/etc/fstab` | the 5 NAS CIFS mounts |
-| `10-remote-fs.conf` | `/etc/systemd/system/docker.service.d/10-remote-fs.conf` | order Docker `After=remote-fs.target` so the mounts are up before containers start |
+| `10-remote-fs.conf` | `/etc/systemd/system/docker.service.d/10-remote-fs.conf` | order Docker `After=`/`Wants=` the NAS mounts so they are up before containers start (fix-58 SH13: `After=remote-fs.target` alone is NOT enough for `nofail` mounts — see below) |
 
 ## The mounts
 
@@ -26,8 +26,17 @@ All target the NAS SMB shares on `192.168.10.4`. Consumers:
 **Why `manga` is persistent, not autofs:** it's bind-mounted continuously into the
 Suwayomi container. A persistent CIFS mount reconnects in place across NAS reboots (same
 mountpoint, no re-mount) so the container's bind stays valid; an autofs re-mount would not
-propagate into the running container (rprivate). The `10-remote-fs.conf` drop-in closes the
-boot race (Docker previously ordered only `After=network-online.target`).
+propagate into the running container (rprivate).
+
+**Boot-race fix (fix-58 SH13, 2026-08-03):** the original `10-remote-fs.conf` ordered Docker
+only `After=remote-fs.target`. That is INSUFFICIENT because the manga mount is `nofail`, and
+`nofail` strips a mount unit's implicit `Before=remote-fs.target` — so `remote-fs.target` (and
+anything ordered after it) does NOT wait for the mount. On the 2026-08-01 boot the `suwayomi`
+container therefore started 5s before `mnt-nas\x2dmanga.mount`, captured the empty pre-mount
+dir via its rprivate bind, and saw ZERO downloads (all 279 chapters + every thumbnail invisible
+until a manual `docker restart suwayomi`). The drop-in now ALSO orders Docker `After=` the
+specific `mnt-nas\x2dmanga.mount` and `Wants=` it (not `Requires=`, so a NAS outage still lets
+Docker + every other container come up — ordering only, ≤30s worst-case boot delay).
 
 ## Credentials (secrets — NOT in the repo)
 

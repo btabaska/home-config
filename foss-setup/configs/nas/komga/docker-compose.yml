@@ -11,6 +11,18 @@
 #        (non-SMB) dir, hence the split. Config + SQLite DB live in /volume1/docker/komga/config.
 # To upgrade: bump the tag+digest below, then
 #        ssh -t nas 'cd /volume1/docker/komga && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'
+#
+# MAINTENANCE — re-homing a library requires a Komga RESTART (fix-58 SH12, 2026-08-03):
+#   Komga's LibraryScanScheduler holds an IN-MEMORY periodic-scan task per library, keyed
+#   by library id. read-18 re-homed the Manga library by DELETE (old id 0R33RZ4PAF7JC) +
+#   CREATE (new id 0R3629KVZ4AKY) — but the running process kept firing the DELETED id
+#   every 6h ("Library does not exist", 28x/week) and NEVER scheduled the new one, so 279
+#   downloaded chapters stayed invisible to readers for 6 days while the container looked
+#   healthy. A restart rebuilds the scheduler from the current DB (only real libraries), so
+#   after ANY library delete+create/re-home:  sudo /usr/local/bin/docker restart komga
+#   Recurrence guard: the komga-manga-indexed-vs-disk verification check (fix-58) fails if
+#   Komga's Manga book count falls behind the CBZ count on /volume1/manga (the exact
+#   consumer-invisible-content signature).
 name: komga
 services:
   komga:

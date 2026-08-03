@@ -87,8 +87,17 @@ The chain is:
 Suwayomi (rig :4567)  ->  CBZ to /mnt/nas-manga (CIFS, rw)  ->  NAS /volume1/manga  ->  Komga /manga
 ```
 
-The `suwayomi-feeds-komga` verification check (`warn`) walks this whole chain: Suwayomi's API
-answers, the rig mount is writable, and Komga's Manga library has ≥1 indexed series.
+Three `warn` verification checks (deepened by **fix-58**, 2026-08-03, after both ends of the
+chain broke silently while the shallow checks stayed green):
+
+- `suwayomi-feeds-komga` — Suwayomi's API answers, the rig mount is writable, **the container's
+  downloads view is the real mount** (mangas/ + thumbnails/ present, not an empty pre-mount
+  underlay), **an in-library thumbnail serves 200**, and Komga's Manga library indexes **≥2**
+  series (≥1 was satisfied forever by one stale book).
+- `komga-manga-indexed-vs-disk` — Komga's indexed Manga book count tracks the on-disk CBZ count
+  under `/volume1/manga` (no scan lag). Fails when the scheduler stops scanning the real library.
+- `komga-scheduler-live-libraries` — Komga's running scheduler fires 0 scans against a deleted
+  library id (catches a re-home that left stale scheduler state).
 
 **Manga library moved off `/volume1/comics`.** `/volume1/comics` is a plain directory DSM won't
 export over SMB, so the rig can't write to it. read-18 created a dedicated **`manga` DSM shared
@@ -103,6 +112,32 @@ folder** (`/volume1/manga`) and re-homed Komga's Manga library onto `/manga` (co
 2. NAS ACL: `btabaska` needs full control on the share — `synoacltool -get /volume1/manga`
    should list `user:btabaska:allow:rwx…`.
 3. CBZ on NAS but not in Komga? Force a scan: `POST /api/v1/libraries/<manga-lib-id>/scan`.
+
+**fix-58 (2026-08-03) — the chain broke silently at BOTH ends; two distinct failure modes:**
+
+- **`komga-manga-indexed-vs-disk` / `komga-scheduler-live-libraries` FAIL — Komga isn't scanning
+  the real Manga library (SH12).** Komga's `LibraryScanScheduler` holds one in-memory periodic
+  task per library id. Re-homing a library (DELETE old + CREATE new, as read-18 did) can leave
+  the process firing the **deleted** id every 6h (`Cannot execute task ScanLibrary(...): Library
+  does not exist`) while the real library never gets a periodic scan — 279 chapters stayed
+  invisible for 6 days. **Fix: restart Komga** (`ssh nas 'sudo /usr/local/bin/docker restart
+  komga'`) to rebuild the scheduler from the current DB, then `POST /api/v1/libraries/<manga-lib-
+  id>/scan` to index immediately. Any library re-home MUST be followed by a Komga restart.
+- **`suwayomi-feeds-komga` FAILs `container-downloads-view empty/underlay` — the Suwayomi
+  container started before its CIFS mount (SH13).** The `/mnt/nas-manga` mount is `nofail`, which
+  strips its `Before=remote-fs.target` ordering, so the old `After=remote-fs.target` on Docker did
+  not wait for it; on the 2026-08-01 boot the container's rprivate bind captured the empty
+  pre-mount dir → zero downloads + every thumbnail 500ing (`<id>.tmp No such file`). **Immediate
+  fix: `ssh rig 'docker restart suwayomi'`** (re-binds the now-mounted dir). **Durable fix
+  (deployed):** the Docker drop-in `configs/host/rig/nas-mounts/10-remote-fs.conf` now orders
+  Docker `After=`/`Wants=` the specific `mnt-nas\x2dmanga.mount`, so no container can start before
+  it. Confirm the container sees the mount: `ssh rig 'docker exec suwayomi ls
+  /home/suwayomi/.local/share/Tachidesk/downloads/'` must list `mangas` + `thumbnails`.
+- **Backlist series show 0 downloads in Suwayomi (SL20) — working as designed.** `AUTO_DOWNLOAD_
+  CHAPTERS` only grabs chapters the updater *newly detects*; a series added already-complete never
+  fires that event, so it stays at 0 and never reaches Komga. This is intentional (in-app reading
+  still works). Getting a backlist series into Komga needs a deliberate manual download pass
+  (`enqueueChapterDownloads` over all chapter ids) — a large I/O + storage decision, not automatic.
 
 Full API recipes (install source, search, add, download) are in the Suwayomi compose header
 (`configs/host/rig/suwayomi/compose.yaml`) and its `service-enrichment.yaml` troubleshoot entries.

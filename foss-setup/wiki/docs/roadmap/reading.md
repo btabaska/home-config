@@ -9,7 +9,7 @@
 | `fix-47` | Books: import completion + file-to-record correctness (cross-wired pack import, 2 lost books, 36 stranded files, silent match dead-ends) | ✅ done | 1-3 hrs |
 | `fix-48` | Libreseerr request-path robustness (OL-id 400s, 15s timeouts, reconciler dead-ends, unicode authors, no retry) | ✅ done | 1-3 hrs |
 | `fix-57` | Books request layer broken-quiet: last successful request 07-20, 12/30 libreseerr requests errored, one grabbed book lost pre-import for 13 days | ✅ done | 1-3 hrs |
-| `fix-58` | Manga chain silently severed at BOTH ends: Komga scheduler scans a deleted library-id (279 new chapters invisible 6 days) and Suwayomi's bind raced the CIFS mount into an empty view | ⬜ open | 1-3 hrs |
+| `fix-58` | Manga chain silently severed at BOTH ends: Komga scheduler scans a deleted library-id (279 new chapters invisible 6 days) and Suwayomi's bind raced the CIFS mount into an empty view | ✅ done | 1-3 hrs |
 | `nas-09` | Deploy Calibre-Web-Automated on Container Manager (pinned, hardened) | ✅ done | 30 min |
 | `read-01` | Install Calibre desktop (library master + conversion) on CachyOS | ✅ done | 20 min |
 | `read-02` | Set up Syncthing as a systemd user service on CachyOS | ✅ done | 20 min |
