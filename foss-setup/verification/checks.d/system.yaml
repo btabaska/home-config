@@ -84,6 +84,31 @@ checks:
     runbook: wiki/runbooks/docker.md
     enabled: true
 
+  # fix-66 (SH6) — sharper, CONSUMER-END sibling of sys-docker-subnet-squat above.
+  # sys-docker-subnet-squat catches ANY docker subnet in 192.168.0.0/16 (broad
+  # hygiene, ha-19-owned — still warns on the scrutiny-collector + terraria squats).
+  # This one does real subnet-arithmetic (ipaddress.overlaps) and CRITs only when a
+  # docker bridge actually swallows a VLAN a Trusted host must ROUTE to — Trusted
+  # itself (10) and IoT (20, the Trusted->IoT allow path for smart-home control).
+  # That is the exact failure mode SH6 hit: journaling's 192.168.16.0/20 bridge
+  # (.16.0-.31.255) contained the IoT /24, so mini blackholed all Hue/IoT traffic
+  # into the bridge while net-trusted-to-iot-reachable went BAD. A /20 swallowing a
+  # /24 is caught (overlaps() is direction-agnostic). Cameras(30)/Work(40)/Guest(50)
+  # are firewall-isolated from Trusted, so an overlap there is latent, not a mini
+  # reachability outage — those stay under the broad ha-19 squat guard. crit: an
+  # active overlap here is a live smart-home outage, not a slow-degrade.
+  - id: sys-docker-vlan-overlap
+    name: "no docker network overlaps a routable VLAN (Trusted 192.168.10 / IoT 192.168.20)"
+    host: mini
+    cmd: >-
+      docker network ls -q | xargs -n1 docker network inspect
+      --format '{{range .IPAM.Config}}{{.Subnet}} {{end}}' 2>/dev/null | python3 -c 'import sys,ipaddress; V=[ipaddress.ip_network(x) for x in ("192.168.10.0/24","192.168.20.0/24")]; N=[ipaddress.ip_network(t,strict=False) for t in sys.stdin.read().split() if "/" in t]; bad=["%s->%s"%(n,v) for n in N for v in V if n.overlaps(v)]; print("VLAN_OVERLAP_OK n=%d"%len(N) if not bad else "VLAN_OVERLAP_FAIL "+",".join(bad))'
+    expect: '^VLAN_OVERLAP_OK n=[0-9]+$'
+    severity: crit
+    task_id: fix-66
+    runbook: wiki/runbooks/docker.md
+    enabled: true
+
   # glue-10 — per-disk SMART health, the blind spot Beszel/Kuma don't cover.
   # CONSUMER-end: asks the Scrutiny hub (omnibus on the NAS) for its rollup and
   # asserts every fleet disk (7: 1 mini SSD + 3 NAS SATA + 3 rig NVMe) is present

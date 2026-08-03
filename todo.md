@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**270/352 done** · **49 open** · **18 deferred** · 15 retired.
+**271/352 done** · **48 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -63,7 +63,6 @@
 - [ ] **`sec-11`** Rotate bookshelf API key (exposed in agent session transcript) _(est 30-45 min)_
 
 ### smart-home
-- [ ] **`fix-66`** mini cannot reach the IoT VLAN: journaling docker bridge 192.168.16.0/20 swallows 192.168.20.0/24 (net-05 regression) + HA appliance 3-min overnight network loss _(est 1-3 hrs)_
 - [ ] **`ha-04`** Install HACS (community store) _(est 15 min)_
 - [ ] **`ha-06`** Thermostat: install ecobee Premium (in box) — local HomeKit control; retire Nest SDM plan _(est 45-60 min)_
 - [ ] **`ha-07`** Add Midea AC + dehumidifier via midea_ac_lan (local) — and BACK UP the .json _(est 30 min)_

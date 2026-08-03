@@ -1,6 +1,6 @@
 # Checks — system
 
-`foss-setup/verification/checks.d/system.yaml` — 9 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/system.yaml` — 10 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `sys-ansible-pull`
 
@@ -88,6 +88,17 @@ no docker network overlaps 192.168.0.0/16 (LAN/VLAN space)
 
 ```bash
 docker network ls -q | xargs -n1 docker network inspect --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}' 2>/dev/null | grep -c '^192\.168\.' || true
+```
+
+## `sys-docker-vlan-overlap`
+
+no docker network overlaps a routable VLAN (Trusted 192.168.10 / IoT 192.168.20)
+
+- **host:** `mini` · **severity:** `crit` · **guards task:** `fix-66` · **enabled:** True
+- **expects:** `^VLAN_OVERLAP_OK n=[0-9]+$`
+
+```bash
+docker network ls -q | xargs -n1 docker network inspect --format '{{range .IPAM.Config}}{{.Subnet}} {{end}}' 2>/dev/null | python3 -c 'import sys,ipaddress; V=[ipaddress.ip_network(x) for x in ("192.168.10.0/24","192.168.20.0/24")]; N=[ipaddress.ip_network(t,strict=False) for t in sys.stdin.read().split() if "/" in t]; bad=["%s->%s"%(n,v) for n in N for v in V if n.overlaps(v)]; print("VLAN_OVERLAP_OK n=%d"%len(N) if not bad else "VLAN_OVERLAP_FAIL "+",".join(bad))'
 ```
 
 ## `sys-disk-smart-health`

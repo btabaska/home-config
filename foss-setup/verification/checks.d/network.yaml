@@ -14,13 +14,22 @@
 # this catches that. warn, not crit: it also trips if the Hue bridge itself is
 # down/moved, which is a device blip, not a firewall regression.
 # Negative-tested 2026-07-13: Hue .20.100:80 -> ok; a nonexistent IoT IP -> BAD.
+#
+# fix-66 (2026-08-03): this ALSO catches a routing-level regression, not just a
+# firewall one. The journaling docker bridge auto-claimed 192.168.16.0/20, which
+# spans .16.0-.31.255 and SWALLOWED the IoT VLAN 192.168.20.0/24 — mini routed
+# Hue traffic into the local bridge and this probe went BAD (net-05 regression,
+# SH6). Root cause now blocked by pinning that bridge off 192.168.x + the
+# structural sys-docker-vlan-overlap check (system.yaml). Renamed the echo label
+# tok=/reach= per SH6 ('tok' misread as an auth token; it's a raw TCP reachability
+# probe, no auth involved).
 checks:
   - id: net-trusted-to-iot-reachable
     name: "Trusted->IoT control path open (Hue bridge 192.168.20.100:80 reachable)"
     host: mini
     cmd: >-
-      timeout 4 bash -c 'echo > /dev/tcp/192.168.20.100/80' 2>/dev/null && echo tok=ok || echo tok=BAD
-    expect: '^tok=ok$'
+      timeout 4 bash -c 'echo > /dev/tcp/192.168.20.100/80' 2>/dev/null && echo reach=ok || echo reach=BAD
+    expect: '^reach=ok$'
     severity: warn
     task_id: net-05
     runbook: wiki/runbooks/verification.md

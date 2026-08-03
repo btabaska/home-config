@@ -35,6 +35,31 @@ Details, pinholes, and the one-way-door migration warning:
 (IGMP snooping OFF) so casting, HA discovery, and Moonlight keep working —
 this is why gaming/streaming stays on Trusted, not its own VLAN.
 
+### Docker bridges must not squat on the LAN/VLAN space
+
+The VLANs live in `192.168.10-50.0/24`. Docker on the mini hands compose stacks
+their own bridge subnets, and its **legacy** default pool used
+`192.168.0.0/16` in `/20` blocks — so a bridge could silently claim a range
+that *contains* a VLAN `/24` and blackhole it host-wide. This bit us in
+fix-66 (fleet-sweep SH6): the `journaling` stack's bridge grabbed
+`192.168.16.0/20` (spans `.16.0-.31.255`), which swallowed the **IoT** VLAN
+`192.168.20.0/24` — `ip route get 192.168.20.100` resolved into the local
+bridge, so the mini could no longer reach the Hue bridge or any IoT device
+(HA, on a different host, was unaffected, so lights still worked). Two guards:
+
+- **Daemon pool** — `/etc/docker/daemon.json` `default-address-pools` is pinned
+  to `172.16.0.0/12` + `10.201.0.0/16` (fix-19), off the LAN space, so *new*
+  auto-assigned bridges land safely.
+- **Pin the subnet on any bridge that must be stable**, off `192.168.x`. The
+  journaling bridge is now pinned to `10.201.16.0/24` in its compose. Changing a
+  bridge subnet needs a **network recreate** (`compose down` + `up`), not `up -d`.
+
+Two checks cover this: `net-trusted-to-iot-reachable` (net-05 — probes the Hue
+bridge from the mini) and `sys-docker-vlan-overlap` (fix-66 — subnet arithmetic
+that CRITs if any docker bridge overlaps the routable Trusted/IoT VLANs). The
+broader `sys-docker-subnet-squat` (ha-19) still warns on the two remaining
+`192.168.x` squatters (`scrutiny-collector`, `terraria`) pending their re-home.
+
 ## DNS — the resolver chain
 
 Target DHCP DNS chain on **every client VLAN** (fail-open, in this order):

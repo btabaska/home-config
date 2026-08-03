@@ -61,6 +61,33 @@ Blocked / needs a decision:
 **Managed appliance — HA manages itself.** Not Ansible-managed (no
 general-purpose shell to converge). Updates via the HA UI on your schedule.
 
+### Pending updates — deferred, operator-gated (as of 2026-08-03, fix-66 / SL14)
+
+Applying any of these **reboots HA** → schedule for the 4–7 AM window.
+
+| Component | Installed | Available | Pending since |
+|---|---|---|---|
+| HA Core | 2026.7.2 | 2026.7.4 | 2026-07-28 |
+| HA OS (HAOS) | 18.1 | 18.2 | 2026-08-01 |
+| matter-server add-on | 9.1.0 | 9.1.1 | 2026-07-29 |
+
+Supervisor (2026.07.5) is current. The `ha-updates-pending` check (fix-36)
+warns only past a **21-day** stale threshold, so it stays green until
+~2026-08-18 for Core — apply before then to keep it green.
+
+### Watch: 2026-08-02 overnight 3-min network blip (fix-66 / SL13)
+
+On 2026-08-02 **00:40–00:43 EDT** the appliance briefly lost all network:
+`ENETUNREACH` on HA's *own* mDNS socket (`192.168.10.50:5353`), plus matter /
+Hue / Elgato connect failures — then fully self-recovered (Hue/Elgato state
+changes resumed the same morning; no errors after 00:43:07). ENETUNREACH on
+HA's own socket = the appliance's own link/DHCP dropped for a beat, **not** a
+per-device or firewall fault, and **unrelated** to the mini docker-subnet fix
+(different host). **Single occurrence, no recurrence** through 2026-08-03. No
+fix warranted; a *sustained* recurrence is already caught by the fast-tier
+`ha-http` (crit) + `ha-api-auth`/`ha-hue-lights` checks — a sub-sweep 3-min blip
+can slip between 10-min sweeps, which is acceptable for a self-healing transient.
+
 ## Backups
 
 ⚠️ **As of 2026-07-13 there are NO real backups.** The only backup agent is

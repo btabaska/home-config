@@ -7,10 +7,10 @@
 Trusted->IoT control path open (Hue bridge 192.168.20.100:80 reachable)
 
 - **host:** `mini` · **severity:** `warn` · **guards task:** `net-05` · **enabled:** True
-- **expects:** `^tok=ok$`
+- **expects:** `^reach=ok$`
 
 ```bash
-timeout 4 bash -c 'echo > /dev/tcp/192.168.20.100/80' 2>/dev/null && echo tok=ok || echo tok=BAD
+timeout 4 bash -c 'echo > /dev/tcp/192.168.20.100/80' 2>/dev/null && echo reach=ok || echo reach=BAD
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

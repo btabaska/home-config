@@ -207,3 +207,15 @@ networks:
     external: true # shared reverse-proxy network (Caddy reaches memos/n8n by name)
   journaling:
     driver: bridge # private: n8n <-> faster-whisper <-> memos
+    # fix-66: PIN an explicit subnet OFF the 192.168.x LAN/VLAN space. Docker's
+    # legacy default pool handed this bridge 192.168.16.0/20 (spans .16.0-.31.255),
+    # which SWALLOWED the IoT VLAN 192.168.20.0/24 (and Cameras .30): mini then
+    # routed all Hue/IoT traffic INTO this bridge and every IoT probe from mini died
+    # (net-05 regression, fleet-sweep SH6). 10.201.16.0/24 sits inside the daemon's
+    # declared default-address-pool (10.201.0.0/16, fix-19), collides with no
+    # LAN/VLAN nor any other docker net. Guarded by sys-docker-vlan-overlap +
+    # net-trusted-to-iot-reachable. Changing the subnet requires a network recreate
+    # (compose down/up), not just up -d.
+    ipam:
+      config:
+        - subnet: 10.201.16.0/24
