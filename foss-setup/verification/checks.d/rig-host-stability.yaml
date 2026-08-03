@@ -1,0 +1,137 @@
+# rig-host-stability.yaml — fleet-sweep fix-64 (findings SH4 / SM12 / SM53 / SM33 /
+# SM13 / SM14 / SM15 / SM25 / SL9 / SL10 / SL12).
+#
+# The rig is a 24/7-mandate host that went dark ~27h on 2026-07-31 from a desktop
+# poweroff, booted with a 4h-skewed RTC that falsified its journal, ran a
+# moondeckbuddy crash-loop (76k+ restarts) and an avahi hostname-conflict storm
+# (1,856/boot), and floods its kernel log with benign UFW blocks. These checks
+# probe the CONSUMER end of each guard, not liveness: a stopped guard, a skewed
+# clock, or a returning crash-loop each flips a check.
+#
+# Runner context: host:rig => the mini runner SSHes to rig (mini->rig SSH is a
+# supported path). journalctl (system+user), journalctl -k and coredumpctl are all
+# readable by the ssh user without sudo on the rig. The clock check runs from mini
+# so it can CROSS-CHECK the rig's clock against an independent vantage (the rig's
+# own journal timestamps are exactly what a skew falsifies).
+#
+# The existing `rig-immich-ml-window` check (rig-immich-ml.yaml, task nas-32)
+# separately asserts the ML container is OFF by day (the VRAM-contention / daytime
+# aspect of SL10); this file adds the on-UNIT-not-left-failed regression guard.
+checks:
+  # ── (a) SH4 / SM53 · the accidental-poweroff inhibits stay in place ─────────
+  # 24/7 host: a stray power-key press or desktop "Shut Down" must not poweroff the
+  # box. logind must ignore the power key AND the polkit deny rule must be present.
+  # If the rig has been powered off locally, this SSH fails and the check goes red —
+  # so it doubles as a host-dark tripwire. Root CLI poweroff still works (bypasses
+  # both), so a PLANNED shutdown does not trip this.
+  - id: rig-poweroff-inhibit
+    tier: fast
+    name: "rig ignores accidental poweroff (logind power-key=ignore + polkit desktop-shutdown deny)"
+    host: rig
+    cmd: >-
+      hpk=$(busctl get-property org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager HandlePowerKey 2>/dev/null | awk '{print $2}' | tr -d '"');
+      pkcheck --action-id org.freedesktop.login1.power-off-multiple-sessions --process $$ >/dev/null 2>&1 && pol=allowed || pol=denied;
+      if [ "$hpk" = ignore ] && [ "$pol" = denied ]; then echo "INHIBIT_OK hpk=$hpk poweroff=$pol"; else echo "INHIBIT_WEAK hpk=$hpk poweroff=$pol"; fi
+    expect: '^INHIBIT_OK'
+    severity: warn
+    task_id: fix-64
+    runbook: wiki/docs/runbooks/rig-host-stability.md
+    enabled: true
+
+  # ── (b) SM33 · rig clock is sane, cross-checked against the mini vantage ─────
+  # The rig dual-boots Windows (RTC-localtime), which skewed its clock 4h and
+  # falsified its journal. Assert (from mini, an independent clock) that the rig's
+  # UTC time is within 120s of the mini's, that the Linux RTC is UTC (LocalRTC=no),
+  # and that NTP is synchronized. A recurrence (post-Windows skew) trips this.
+  - id: rig-clock-sane
+    tier: fast
+    name: "rig clock within 120s of mini + RTC in UTC + NTP synced (SM33 skew guard)"
+    host: mini
+    cmd: >-
+      R=$(ssh -o BatchMode=yes -o ConnectTimeout=10 rig 'echo $(date -u +%s) $(timedatectl show -p LocalRTC --value) $(timedatectl show -p NTPSynchronized --value)' 2>/dev/null);
+      RT=$(echo "$R" | awk '{print $1}'); LRTC=$(echo "$R" | awk '{print $2}'); NTP=$(echo "$R" | awk '{print $3}');
+      MT=$(date -u +%s); D=$((MT-${RT:-0})); D=${D#-};
+      if [ -n "$RT" ] && [ "$D" -lt 120 ] && [ "$LRTC" = no ] && [ "$NTP" = yes ]; then echo "CLOCK_OK offset=${D}s rtc=$LRTC ntp=$NTP"; else echo "CLOCK_BAD offset=${D}s rtc=$LRTC ntp=$NTP rt=$RT"; fi
+    expect: '^CLOCK_OK'
+    severity: warn
+    task_id: fix-64
+    runbook: wiki/docs/runbooks/rig-host-stability.md
+    enabled: true
+
+  # ── (c) SM14 + class · no unit is crash-looping ─────────────────────────────
+  # moondeckbuddy restarted every ~10s (76k+ times) exec'ing a missing AppImage.
+  # Count systemd "Scheduled restart job" messages (system AND user units land in
+  # the journal) over 10 min; a healthy host has ~0. >20/10min for any unit = a
+  # crash-loop. Catches the exact bug (moondeckbuddy) and any future looping unit.
+  - id: rig-no-crashloop-unit
+    tier: fast
+    name: "no rig unit is crash-looping (>20 systemd restarts/10min) — SM14 class"
+    host: rig
+    cmd: >-
+      n=$(journalctl --since '-10 min' 2>/dev/null | grep -c 'Scheduled restart job, restart counter is at');
+      top=$(journalctl --since '-10 min' 2>/dev/null | grep 'Scheduled restart job, restart counter is at' | grep -oE '[[:graph:]]+: Scheduled' | sed 's/: Scheduled//' | sort | uniq -c | sort -rn | head -1 | tr -s ' ');
+      if [ "${n:-0}" -le 20 ]; then echo "NO_CRASHLOOP restarts10m=${n:-0}"; else echo "CRASHLOOP restarts10m=$n top=$top"; fi
+    expect: '^NO_CRASHLOOP'
+    severity: warn
+    task_id: fix-64
+    runbook: wiki/docs/runbooks/rig-host-stability.md
+    enabled: true
+
+  # ── (d) SL10 · the immich-ml night on-unit is not left in a failed state ─────
+  # A Persistent= timer catch-up used to fire immich-ml-window@on in the daytime
+  # after an outage, fail the /ping under the day VRAM policy, and leave a failed
+  # unit + error-journal line on every post-outage boot. The on-unit now no-ops
+  # outside 01-07 EDT (see immich-ml-window.sh); this asserts it is never failed.
+  - id: rig-ml-window-catchup-clean
+    tier: fast
+    name: "immich-ml-window@on is not left failed (SL10 daytime-catch-up guard)"
+    host: rig
+    cmd: >-
+      r=$(systemctl is-failed immich-ml-window@on.service 2>/dev/null || true);
+      if [ "$r" = failed ]; then echo "ML_ON_FAILED"; else echo "ML_ON_CLEAN state=$r"; fi
+    expect: '^ML_ON_CLEAN'
+    severity: warn
+    task_id: fix-64
+    runbook: wiki/docs/runbooks/rig-host-stability.md
+    enabled: true
+
+  # ── SM13 / SM25 / SL9 · no segfault storm (crash recurrence below RestartCount) ─
+  # lumiverse (containerd-shim SIGSEGV) and Palworld (engine SIGSEGV x2/4d) both
+  # auto-recover via docker unless-stopped, so a restart-loop alarm (RestartCount>3)
+  # never fires — but a rising crash rate is the escalation signal the sweep asked
+  # for. Count coredumps per binary over 24h; >3 for any single binary = a storm
+  # worth a containerd/runc/engine review.
+  - id: rig-crash-storm-quiet
+    tier: daily
+    name: "no rig binary segfaults >3x/24h (SM13/SM25/SL9 crash-recurrence escalation)"
+    host: rig
+    cmd: >-
+      top=$(coredumpctl list --since '-24h' --no-pager 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i ~ /^\//) print $i}' | sed 's#.*/##' | sort | uniq -c | sort -rn | head -1 | tr -s ' ');
+      n=$(echo "$top" | awk '{print $1+0}');
+      if [ "${n:-0}" -le 3 ]; then echo "NO_CRASH_STORM max24h=${n:-0} (${top:-none})"; else echo "CRASH_STORM $top"; fi
+    expect: '^NO_CRASH_STORM'
+    severity: warn
+    task_id: fix-64
+    runbook: wiki/docs/runbooks/rig-host-stability.md
+    enabled: true
+
+  # ── SM15 / SL12 · mDNS + firewall logs stay quiet ───────────────────────────
+  # avahi conflicts must stay ~0 (dual mDNS responder fixed: resolved MulticastDNS
+  # off, avahi restricted to enp10s0), cachyos.local must resolve, and the two
+  # silenced UFW noise sources (Syncthing 21027 multicast + the Samsung TV .177)
+  # must not reappear in the kernel log (their reappearance = the drop rules were
+  # lost).
+  - id: rig-mdns-fw-quiet
+    tier: fast
+    name: "rig mDNS conflict-free + cachyos.local resolves + UFW noise silenced (SM15/SL12)"
+    host: rig
+    cmd: >-
+      ac=$(journalctl -u avahi-daemon --since '-5 min' 2>/dev/null | grep -c 'Host name conflict');
+      res=$(avahi-resolve -4 -n cachyos.local 2>/dev/null | grep -c '192.168.10.12');
+      noisy=$(journalctl -k --since '-2 min' 2>/dev/null | grep 'UFW BLOCK' | grep -cE 'DPT=21027|SRC=192.168.10.177');
+      if [ "${ac:-99}" -le 5 ] && [ "${res:-0}" -ge 1 ] && [ "${noisy:-99}" -eq 0 ]; then echo "QUIET conflicts5m=$ac fwnoise2m=$noisy resolves=$res"; else echo "NOISY conflicts5m=$ac fwnoise2m=$noisy resolves=$res"; fi
+    expect: '^QUIET'
+    severity: warn
+    task_id: fix-64
+    runbook: wiki/docs/runbooks/rig-host-stability.md
+    enabled: true

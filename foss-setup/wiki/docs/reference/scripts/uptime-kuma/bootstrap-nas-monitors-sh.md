@@ -22,4 +22,5 @@
 
 - [`add-functional-monitors.sh`](add-functional-monitors-sh.md)
 - [`seed-monitors.sh`](seed-monitors-sh.md)
+- [`seed-status-page.sh`](seed-status-page-sh.md)
 - [Uptime Kuma scripts](index.md) · [All scripts](../index.md)

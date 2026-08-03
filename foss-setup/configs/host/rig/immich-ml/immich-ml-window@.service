@@ -4,6 +4,12 @@
 Description=Immich ML rig-GPU night window (%i)
 After=docker.service
 Wants=docker.service
+# fix-64 (SM33): order after the clock is NTP-synced so a boot with a skewed RTC
+# (Windows dual-boot writes localtime) does not run the window at a false wall
+# time. time-sync.target is made to actually block on sync by the enabled
+# systemd-time-wait-sync.service (see configs/host/rig/README.md).
+After=time-sync.target
+Wants=time-sync.target
 ConditionPathExists=/etc/immich-ml-window.env
 
 [Service]

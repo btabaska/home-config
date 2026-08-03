@@ -49,6 +49,18 @@ queue_cmd(){  # $1 = pause|resume
 
 case "${1:-}" in
   on)
+    # SL10 (fix-64): with Persistent=true, a start missed while the host was down is
+    # caught up at the NEXT boot regardless of wall-clock time. After the 2026-07-31
+    # outage the catch-up fired this on-unit at 14:26 EDT (daytime), the ML container
+    # did not answer /ping under the day VRAM policy, and the unit exited 1 — a
+    # spurious FAILED unit + error-journal line on every post-outage boot. No-op when
+    # invoked outside the 01:00-07:00 EDT night window (daytime GPU belongs to
+    # chat/coding). Set IMMICH_ML_FORCE=1 to override for a manual/interactive start.
+    H=$((10#$(date +%H)))
+    if [ "${IMMICH_ML_FORCE:-0}" != 1 ] && { [ "$H" -lt 1 ] || [ "$H" -ge 7 ]; }; then
+      log "NIGHT(on) invoked at ${H}:00 local — outside the 01-07 window (Persistent catch-up); skipping GPU start (no-op)"
+      exit 0
+    fi
     log "NIGHT: starting $CONTAINER"
     docker start "$CONTAINER" >/dev/null
     for _ in $(seq 1 30); do

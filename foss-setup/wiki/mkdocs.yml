@@ -136,6 +136,7 @@ nav:
       - Add a service: runbooks/add-a-service.md
       - Household bug intake (Report a Problem): runbooks/bug-intake.md
       - Recover the rig (WoL): runbooks/wake-the-rig.md
+      - Rig host stability (power protocol / clock / crash hygiene): runbooks/rig-host-stability.md
       - Alerting plane (off-mini dead-man): runbooks/alerting.md
       - Update images: runbooks/update-images.md
       - Verification: runbooks/verification.md
@@ -284,6 +285,7 @@ nav:
       - reading: reference/checks/reading.md
       - retro-emulation: reference/checks/retro-emulation.md
       - rig: reference/checks/rig.md
+      - rig-host-stability: reference/checks/rig-host-stability.md
       - rig-immich-ml: reference/checks/rig-immich-ml.md
       - secrets: reference/checks/secrets.md
       - seedbox: reference/checks/seedbox.md
@@ -400,6 +402,7 @@ nav:
           - add-functional-monitors.sh: reference/scripts/uptime-kuma/add-functional-monitors-sh.md
           - bootstrap-nas-monitors.sh: reference/scripts/uptime-kuma/bootstrap-nas-monitors-sh.md
           - seed-monitors.sh: reference/scripts/uptime-kuma/seed-monitors-sh.md
+          - seed-status-page.sh: reference/scripts/uptime-kuma/seed-status-page-sh.md
       - verification:
           - Index: reference/scripts/verification/index.md
           - deploy.sh: reference/scripts/verification/deploy-sh.md

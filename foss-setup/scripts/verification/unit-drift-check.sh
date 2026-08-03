@@ -46,4 +46,12 @@ check_rig   /etc/systemd/system/immich-ml-window@.service   foss-setup/configs/h
 check_rig   /etc/systemd/system/immich-ml-window-on.timer   foss-setup/configs/host/rig/immich-ml/immich-ml-window-on.timer
 check_rig   /etc/systemd/system/immich-ml-window-off.timer  foss-setup/configs/host/rig/immich-ml/immich-ml-window-off.timer
 
+# fix-64: rig host-stability units (foss-setup static mirror under configs/host/rig/).
+# The polkit rule at /etc/polkit-1/rules.d/ is NOT here — that dir is root-only, so a
+# non-root cat fails; it is functionally guarded by the rig-poweroff-inhibit check.
+check_rig   /etc/systemd/logind.conf.d/10-ignore-power-key.conf   foss-setup/configs/host/rig/logind/10-ignore-power-key.conf
+check_rig   /etc/systemd/resolved.conf.d/10-disable-mdns.conf     foss-setup/configs/host/rig/resolved/10-disable-mdns.conf
+check_rig   /etc/systemd/system/nvidia-cdi-refresh.service        foss-setup/configs/host/rig/nvidia-cdi/nvidia-cdi-refresh.service
+check_rig   /etc/systemd/system/playit-udp-guard.service          foss-setup/configs/host/rig/playit-udp-guard/playit-udp-guard.service
+
 [ "$fail" -eq 0 ] && echo UNIT-DRIFT-OK || exit 1

@@ -1,10 +1,10 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **338 checks across 39 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **348 checks across 40 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
-| [alerting](alerting.md) | 11 | 3 | 8 |
+| [alerting](alerting.md) | 15 | 3 | 12 |
 | [backups](backups.md) | 13 | 5 | 8 |
 | [bug-intake](bug-intake.md) | 5 | 2 | 3 |
 | [dns](dns.md) | 6 | 4 | 2 |
@@ -35,6 +35,7 @@ Every acceptance/regression check the fleet runs — **338 checks across 39 doma
 | [reading](reading.md) | 30 | 0 | 30 |
 | [retro-emulation](retro-emulation.md) | 1 | 0 | 1 |
 | [rig](rig.md) | 32 | 2 | 30 |
+| [rig-host-stability](rig-host-stability.md) | 6 | 0 | 6 |
 | [rig-immich-ml](rig-immich-ml.md) | 5 | 1 | 4 |
 | [secrets](secrets.md) | 6 | 3 | 3 |
 | [seedbox](seedbox.md) | 12 | 5 | 7 |
@@ -44,4 +45,4 @@ Every acceptance/regression check the fleet runs — **338 checks across 39 doma
 | [verification-env-integrity](verification-env-integrity.md) | 2 | 2 | 0 |
 | [verification-self](verification-self.md) | 7 | 0 | 7 |
 
-_Total: 338 checks._
+_Total: 348 checks._

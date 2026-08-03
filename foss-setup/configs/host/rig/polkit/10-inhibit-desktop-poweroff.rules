@@ -1,0 +1,20 @@
+// fix-64 (SH4) — rig is a 24/7-mandate host. The 2026-07-31 27h outage was a
+// deliberate desktop "Shut Down" (systemd-logind logged 'poweroff requested from
+// client PID … (plasma-shutdown)'). Deny the interactive power-off / halt paths
+// so a stray desktop-menu click, Ctrl-Alt-Del, or a non-root `loginctl poweroff`
+// cannot take the box down.
+//
+// A PLANNED shutdown still works from a root CLI: `sudo systemctl poweroff` (and
+// `sudo shutdown -h now`) connect to systemd's private bus as root and are NOT
+// mediated by polkit, so this rule does not touch them. Reboot is left allowed on
+// purpose — a reboot self-recovers on the next boot; a poweroff does not.
+//
+// Canonical source: configs/host/rig/polkit/10-inhibit-desktop-poweroff.rules
+// Deploy: install -m 644 to /etc/polkit-1/rules.d/10-inhibit-desktop-poweroff.rules
+//         then `sudo systemctl restart polkit`.
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.login1.power-off") == 0 ||
+        action.id.indexOf("org.freedesktop.login1.halt") == 0) {
+        return polkit.Result.NO;
+    }
+});

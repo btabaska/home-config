@@ -1,0 +1,20 @@
+[Unit]
+# fix-64 — the NVIDIA CDI spec (/etc/cdi/nvidia.yaml) pins the GPU's DRM node by
+# number (/dev/dri/cardN). That number is NOT stable across reboots: after the
+# 2026-08-03 reboot the 3090 Ti moved card1 -> card0, the stale spec pointed at a
+# nonexistent /dev/dri/card1, and dockerd's CDI injection failed -> llama-swap and
+# comfyui could not start (unless-stopped could not recover them). Regenerate the
+# CDI spec from the live device layout BEFORE docker starts containers, every boot.
+Description=Regenerate NVIDIA CDI spec before docker (stable /dev/dri/cardN across reboots)
+Wants=docker.service
+Before=docker.service
+After=basic.target
+ConditionPathExists=/usr/bin/nvidia-ctk
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+
+[Install]
+WantedBy=multi-user.target

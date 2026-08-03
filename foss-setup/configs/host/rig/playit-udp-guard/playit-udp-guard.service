@@ -2,6 +2,12 @@
 Description=End-to-end Bedrock UDP tunnel probe + playit self-heal (fix-34 M30)
 After=docker.service
 Requires=docker.service
+# fix-64 (SM33/SL10): order after NTP sync so a boot with a skewed RTC does not
+# run the self-heal against a false wall time (the 2026-08-01 catch-up fired this
+# at a bogus 14:26 stamp and failed). time-sync.target blocks on real sync via
+# the enabled systemd-time-wait-sync.service.
+After=time-sync.target
+Wants=time-sync.target
 
 [Service]
 Type=oneshot

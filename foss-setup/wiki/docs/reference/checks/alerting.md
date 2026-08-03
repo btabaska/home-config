@@ -1,6 +1,6 @@
 # Checks — alerting
 
-`foss-setup/verification/checks.d/alerting.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/alerting.yaml` — 15 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `alert-ntfy-healthy`
 
@@ -121,6 +121,50 @@ Beszel hub shows no system down (mini/nas/rig agents, seeded 2026-07-09)
 
 ```bash
 TOK=$(curl -s -m 8 -X POST http://localhost:8090/api/collections/_superusers/auth-with-password -H 'Content-Type: application/json' -d "{\"identity\":\"$BESZEL_ADMIN_USER\",\"password\":\"$BESZEL_ADMIN_PASSWORD\"}" | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])') && curl -s -m 8 -H "Authorization: $TOK" 'http://localhost:8090/api/collections/systems/records?filter=(status%3D%22down%22)' | python3 -c 'import json,sys; print("down="+str(json.load(sys.stdin)["totalItems"]))'
+```
+
+## `alert-offmini-deadman-armed`
+
+off-mini dead-man (rig watcher) is armed and fresh (SH19)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `fix-63` · **enabled:** True
+- **expects:** `armed age=[0-9]+s FRESH`
+
+```bash
+systemctl is-active --quiet mini-deadman.timer && hb=$(cat /var/lib/mini-deadman/heartbeat 2>/dev/null || echo 0) && age=$(( $(date +%s) - hb )) && echo "armed age=${age}s $([ "$age" -lt 1200 ] && echo FRESH || echo STALE)"
+```
+
+## `alert-wol-selfheal-fast-tier`
+
+rig WoL self-heal wired into the fast tier (SM54)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-63` · **enabled:** True
+- **expects:** `^WOL_FAST_TIER_OK$`
+
+```bash
+systemctl cat verification-fast.service 2>/dev/null | grep -q 'rig-wol-selfheal.sh' && test -x /opt/verification/bin/rig-wol-selfheal.sh && echo WOL_FAST_TIER_OK
+```
+
+## `alert-kuma-statuspage-nonempty`
+
+Uptime Kuma 'fleet' status page is published and non-empty (SL23)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-63` · **enabled:** True
+- **expects:** `groups=[1-9][0-9]* monitors=[1-9][0-9]*`
+
+```bash
+curl -s -m 8 http://localhost:3001/api/status-page/fleet | python3 -c 'import json,sys; d=json.load(sys.stdin); g=d.get("publicGroupList",[]) or []; m=sum(len(x.get("monitorList",[]) or []) for x in g); print(f"groups={len(g)} monitors={m}")'
+```
+
+## `alert-delivery-drill-fresh`
+
+synthetic alert-delivery drill sent within the last 8 days (SM39)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-63` · **enabled:** True
+- **expects:** `drill_age_days=[0-9]+ FRESH`
+
+```bash
+f=/var/lib/verification/alert-drill-last; test -f "$f" && s=$(sed -n 's/^sent_at=//p' "$f") && age=$(( ( $(date +%s) - $(date -d "$s" +%s) ) / 86400 )) && echo "drill_age_days=${age} $([ "$age" -le 8 ] && echo FRESH || echo STALE)"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

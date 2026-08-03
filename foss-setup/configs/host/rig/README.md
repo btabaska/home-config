@@ -20,7 +20,13 @@ the map.
 | `ai-stack-watchdog.service` / `.timer` | `configs/host/rig/ai-stack-watchdog/` | foss-setup | — |
 | `nas-music-mirror.service` / `.timer` | `configs/host/rig/music-mirror/` | foss-setup | — |
 | `pcie-aer-monitor.service` / `.timer` | `configs/host/rig/pcie-aer-monitor/` | foss-setup | — |
-| `playit-udp-guard.service` / `.timer` | `configs/host/rig/playit-udp-guard/` | foss-setup | — |
+| `playit-udp-guard.service` / `.timer` | `configs/host/rig/playit-udp-guard/` | foss-setup | ✅ `unit-file-drift` |
+| `logind.conf.d/10-ignore-power-key.conf` | `configs/host/rig/logind/10-ignore-power-key.conf` | foss-setup (fix-64) | ✅ `unit-file-drift` |
+| `polkit-1/rules.d/10-inhibit-desktop-poweroff.rules` | `configs/host/rig/polkit/10-inhibit-desktop-poweroff.rules` | foss-setup (fix-64) | — (root-only dir; guarded by `rig-poweroff-inhibit`) |
+| `resolved.conf.d/10-disable-mdns.conf` | `configs/host/rig/resolved/10-disable-mdns.conf` | foss-setup (fix-64) | ✅ `unit-file-drift` |
+| `nvidia-cdi-refresh.service` | `configs/host/rig/nvidia-cdi/nvidia-cdi-refresh.service` | foss-setup (fix-64) | ✅ `unit-file-drift` |
+| avahi `allow-interfaces=enp10s0` (partial `/etc/avahi/avahi-daemon.conf` edit) | `configs/host/rig/avahi/README.md` | foss-setup (fix-64) | — (partial-file; guarded by `rig-mdns-fw-quiet`) |
+| UFW silent-drop blocks (partial `/etc/ufw/before{,6}.rules` edit) | `configs/host/rig/ufw/README.md` | foss-setup (fix-64) | — (partial-file; guarded by `rig-mdns-fw-quiet`) |
 | `docker.service.d/10-remote-fs.conf` | `configs/host/rig/nas-mounts/10-remote-fs.conf` | foss-setup (glue-11) | — |
 | `export-manifests.service` (rig variant) | `configs/host/rig/export-manifests.service` | foss-setup | ✅ `unit-file-drift` |
 | `gpu-power-tune.service` | `scripts/gaming/gpu-power-tune.service` | foss-setup | ✅ `unit-file-drift` |
@@ -70,6 +76,37 @@ them, so live-only setup is silent drift):
 | Host app | Canonical source | Owner | Notes |
 |---|---|---|---|
 | **ES-DE + RetroArch** (emulation frontend) | `configs/host/rig/es-de/` | foss-setup (retro-05) | ES-DE `3.4.1` (AUR) + native RetroArch cores; browses the **same** NAS ROM library RomM (mini) manages via a `~/ROMs/<system>` symlink tree into `/mnt/share/Games/romm/roms/`. Consumer check `rig-esde-romm-library`. See `es-de/README.md`. |
+
+## Host stability guards (fix-64, 2026-08-03)
+
+The 2026-08-02 fleet sweep found a cluster of rig stability defects. The guards and
+the **operator poweroff protocol** are documented in the wiki runbook
+`wiki/docs/runbooks/rig-host-stability.md` (power protocol, RTC/Windows note, crash
+hygiene). In short:
+
+- **Poweroff inhibits** — `logind/10-ignore-power-key.conf` (power-key short-press
+  ignored) + `polkit/10-inhibit-desktop-poweroff.rules` (desktop "Shut Down" /
+  `loginctl poweroff` denied). A planned shutdown uses the root CLI only:
+  `sudo systemctl poweroff` (bypasses both). Announce any deliberate rig poweroff.
+- **Clock** — RTC kept in UTC (`set-local-rtc 0`) + `systemd-time-wait-sync.service`
+  enabled so `time-sync.target` blocks until NTP sync; the time-sensitive units
+  (`immich-ml-window@`, `playit-udp-guard`) are ordered `After=time-sync.target`.
+  The durable Windows-side fix (`RealTimeIsUniversal`) is in the runbook.
+- **mDNS / firewall noise** — `resolved/10-disable-mdns.conf` (avahi is the sole
+  mDNS responder) + `avahi/` (`allow-interfaces=enp10s0`) + `ufw/` (silent-drop of
+  benign discovery). See those dirs' READMEs.
+- **GPU CDI** — `nvidia-cdi-refresh.service` regenerates `/etc/cdi/nvidia.yaml`
+  before docker each boot, because `/dev/dri/cardN` numbering is not stable across
+  reboots (a stale `card1` pin blocked llama-swap/comfyui from restarting).
+
+### Per-user unit: `moondeckbuddy.service` (DISABLED, fix-64/SM14)
+
+`~/.config/systemd/user/moondeckbuddy.service` exec'd a MoonDeck AppImage that no
+longer exists, crash-looping every ~10s (76k+ restarts, exit 127). It is now
+`systemctl --user disable`d + stopped. **To restore MoonDeck:** reinstall the
+MoonDeckBuddy AppImage to `~/Applications/`, fix the `ExecStart=` path in the unit,
+then `systemctl --user enable --now moondeckbuddy.service`. Crash-loop class is
+monitored by `rig-no-crashloop-unit`.
 
 ## Drift coverage
 
