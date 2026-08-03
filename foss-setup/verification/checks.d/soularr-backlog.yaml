@@ -1,0 +1,43 @@
+# fix-56 — music acquisition hygiene: keep soularr's failed-import dead-letter
+# from rotting (SM29, a fix-40 regression). soularr never removes a denylist
+# entry (upstream add-only), so without a reconciler the file collects ghosts
+# (albums completed elsewhere) and abandoned (unmonitored) entries until the
+# 3-day nas-soularr-failed-imports-fresh staleness tripwire fires and stays red,
+# and genuinely-unsourceable albums cycle the wanted list forever. The
+# soularr-denylist-reconcile mini timer (configs/host/mini/soularr-reconcile)
+# prunes complete/unmonitored/deleted entries every 6h. These two checks guard
+# that closer: (a) the OUTCOME — no ghost survives — and (b) the closer stays
+# alive. Both run on the mini (which has the Lidarr key + passwordless ssh nas);
+# they READ only. The staleness backstop nas-soularr-failed-imports-fresh
+# (nas-host.yaml, fix-40) and the partial-served guard lidarr-incomplete-albums
+# (media-library-correctness.yaml, fix-28) round out the class.
+checks:
+  # ── SM29 outcome/class · denylist == genuinely-stuck monitored+incomplete only ─
+  # A ghost = a denylist entry whose album is, per live Lidarr, already COMPLETE
+  # (imported elsewhere), UNMONITORED (operator/pipeline gave up), or DELETED.
+  # Any ghost means the reconciler is not keeping the file clean — caught here 6h
+  # to <3 days BEFORE the staleness tripwire would, at the consumer end (the
+  # denylist's meaning), not liveness.
+  - id: soularr-denylist-no-ghosts
+    name: "soularr: failed-import denylist has 0 ghosts (complete/unmonitored/deleted) (fix-56)"
+    host: mini
+    cmd: python3 /opt/verification/bin/soularr-denylist-ghosts.py
+    expect: '^DENYLIST_OK'
+    severity: warn
+    task_id: fix-56
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
+    enabled: true
+
+  # ── SM29 closer liveness · the denylist reconciler timer is alive ──────────
+  # Silent-stop guard: if the timer stops or the last run failed, ghosts will
+  # re-accumulate unseen until the staleness tripwire (up to 3 days later). This
+  # catches it now. Pairs with OnFailure=ntfy on the service itself.
+  - id: soularr-reconcile-timer-healthy
+    name: "soularr denylist reconciler timer active + last run not failed (fix-56)"
+    host: mini
+    cmd: 'systemctl is-active --quiet soularr-denylist-reconcile.timer && [ "$(systemctl show -p Result --value soularr-denylist-reconcile.service)" != failed ] && echo RECONCILE_TIMER_OK || echo RECONCILE_TIMER_BAD'
+    expect: '^RECONCILE_TIMER_OK'
+    severity: warn
+    task_id: fix-56
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
+    enabled: true

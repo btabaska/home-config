@@ -54,26 +54,55 @@ recreating the container with **`network_mode: host`**
 - Resolution liveness itself is separately guarded by `dns-nas-internal` /
   `dns-nas-external` in `dns.yaml`.
 
-## Soularr parked failed imports (M6 / M24)
+## Soularr failed-import denylist + music acquisition hygiene (M6 / M24 / fix-56)
 
 An entry in `/volume1/docker/soularr/failed_imports.json` is a work item
 soularr will **never retry or clean up** — it re-logs "Skipping failed import
-album" every 5-minute cycle forever. The Eminem entry (album 5030) sat there
-5+ days; meanwhile the album had already been imported to 100% by other means,
-so the entry was pure stale state (cleared to `{}` 2026-07-19).
+album" every cycle forever. The upstream image (`add_to_failed_import_denylist`
+in `/app/soularr.py`) is **append-only**: no code path ever removes an entry,
+even after the album is completed elsewhere or unmonitored. The Eminem entry
+(album 5030) sat there 5+ days at 100% imported (fix-40 cleared it by hand);
+by 2026-08-02 the file had re-grown to 9 entries — 3 complete ghosts (Paradise,
+Hybrid Theory, Underclass Hero) + 6 genuinely-stuck — and Camera/Heat Waves had
+aged past the 3-day `nas-soularr-failed-imports-fresh` threshold (SM29).
 
-**When `nas-soularr-failed-imports-fresh` goes red** (`stale>0`): the listed
-album needs a human decision —
+**The closer (fix-56): a mini reconciler, not a manual clear.**
+`soularr-denylist-reconcile` (configs/host/mini/soularr-reconcile, every 6h)
+prunes any denylist entry whose album is, per live Lidarr, **complete /
+unmonitored / deleted**, leaving only genuinely-stuck monitored+incomplete
+albums. Force a run: `sudo systemctl start soularr-denylist-reconcile` on the
+mini. Outcome probe: `soularr-denylist-no-ghosts`. Do **not** hand-edit the JSON.
 
-1. Check the album in Lidarr (`http://192.168.10.4:8686`): if it is already
-   100% on disk, the entry is stale — clear it:
-   `ssh nas 'echo "{}" > /volume1/docker/soularr/failed_imports.json'`
-   (or surgically remove one key with python; the file is btabaska-writable).
-2. If genuinely incomplete: fix the underlying import (see the parked files
-   under seedbox `~/files/slskd/failed_imports/`), import manually via Lidarr,
-   *then* clear the entry.
+**When `nas-soularr-failed-imports-fresh` goes red** (`stale>0`) despite the
+reconciler, the surviving entries are monitored + still-incomplete — a human
+decision:
+
+1. Check the album in Lidarr (`http://192.168.10.4:8686`). If it can be sourced,
+   complete it (a Lidarr AlbumSearch on the torrent path — a **different** source
+   than the Soulseek path soularr failed on); the reconciler prunes it once it
+   goes complete.
+2. If it is unsourceable (soularr has failed it for days), **unmonitor** it
+   (`PUT /api/v1/album/monitor {albumIds, monitored:false}`) — it leaves the
+   wanted list and the reconciler prunes its denylist entry. Files already on
+   disk stay; re-monitor + search to retry later.
 3. `cycling=no` means soularr itself stopped running (log stale >20 min) —
    check the container on the NAS: `sudo /usr/local/bin/docker ps | grep soularr`.
+
+**Junk MusicBrainz releases (SM30).** Bootleg/mislabeled release-groups (e.g.
+Chinese-titled 'albums' under a Western pop artist — `莉查` / `呼啸山庄` /
+`古 惑-狼豪 华版` under Charli xcx) get monitored when an artist is added; soularr
+searches them every cycle and never matches ("N releases failed to find a match
+and are still wanted"). Unmonitor them (same PUT as above) — the monitored flag
+persists across metadata refreshes, so they stay quiet.
+
+**Stuck partials (fix-28 class).** `album_match` requires **all** tracks before
+grabbing, so a partial album (e.g. Born to Die 17/24) came from a flaky Soulseek
+transfer, NOT a low `minimum_filename_match_ratio` — don't tune the ratio to
+"fix" it. Either complete it out-of-band or unmonitor it (files stay on disk;
+`lidarr-incomplete-albums` only flags MONITORED partials). A completed-but-
+importFailed grab stuck in the Lidarr queue ("One or more tracks expected ...
+were not imported" while the album is already 100% on disk) is now auto-reaped
+by the `arr-queue-reconcile` timer (Lidarr added to it in fix-56).
 
 Known leftover (deliberately kept, operator decision 2026-07-19): two orphan
 folders on the seedbox at `~/files/slskd/failed_imports/` — `mgk - Hotel
@@ -166,6 +195,10 @@ Six checks. Five live in `verification/checks.d/nas-host.yaml`: `nas-timezone-ea
 `nas-soularr-failed-imports-fresh`, `nas-md-arrays-healthy`. Two more (fix-55)
 live in `verification/checks.d/nas-io-storm.yaml` — `nas-io-pressure` (class-level:
 NAS 15-min IO-load below threshold) and `arr-sqlite-not-locked` (regression: no
-'database is locked' storm in the last 15 min across lidarr/radarr/whisparr). All
+'database is locked' storm in the last 15 min across lidarr/radarr/whisparr).
+Two more (fix-56) live in `verification/checks.d/soularr-backlog.yaml` —
+`soularr-denylist-no-ghosts` (class/outcome: 0 denylist entries are complete/
+unmonitored/deleted in Lidarr, i.e. the reconciler keeps the dead-letter honest)
+and `soularr-reconcile-timer-healthy` (the reconciler timer is alive). All
 run from mini (`ssh nas` / arr log API), alert to ntfy topic `verification`, and
 are part of the daily sweep (dead-man ping `verification-mini`).

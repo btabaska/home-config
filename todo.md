@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**259/351 done** · **59 open** · **18 deferred** · 15 retired.
+**260/351 done** · **58 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -35,7 +35,6 @@
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
 
 ### media-pipeline
-- [ ] **`fix-56`** Music acquisition hygiene: soularr failed-import backlog cycling, junk MusicBrainz albums grinding every 5 minutes, 3 albums stuck partial _(est 1-3 hrs)_
 - [ ] **`media-09`** fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs _(est 1-2 hrs)_
 - [ ] **`media-10`** Seedbox: retire drained readarr label pair from deluge-reaper _(est 10 min)_ — ⛔ gate: not before 2026-08-04
 - [ ] **`media-13`** Release reclaimed disk pinned by stale 2026-07-02 Btrfs @sharesnap snapshots (volume2/volume3) _(est 20-40 min)_

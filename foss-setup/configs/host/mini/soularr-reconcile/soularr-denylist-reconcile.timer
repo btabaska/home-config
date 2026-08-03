@@ -1,0 +1,14 @@
+[Unit]
+Description=Prune soularr failed-import denylist every 6h (fix-56 dead-letter closer)
+
+[Timer]
+# Every 6h: a ghost (album completed elsewhere) or an unmonitored-album entry is
+# pruned long before the 3-day nas-soularr-failed-imports-fresh staleness
+# threshold would fire, so the denylist stays a live list of genuinely-stuck
+# monitored albums only.
+OnCalendar=00/6:07
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

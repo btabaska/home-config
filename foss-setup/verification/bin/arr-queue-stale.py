@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""fix-54 backstop: flag Sonarr/Radarr import-queue records stuck in a 'warning'
-state longer than STALE_HOURS (default 96h).
+"""fix-54 backstop: flag Sonarr/Radarr/Lidarr import-queue records stuck in a
+'warning' state longer than STALE_HOURS (default 96h). Lidarr added in fix-56.
 
 The arr-queue-reconcile timer (mini, every 4h) auto-drops satisfied/dead-end
 records once they pass 72h, so in steady state nothing should survive to 96h.
@@ -13,7 +13,8 @@ A survivor means one of:
 Either way, look. Probes the arr's live queue (the consumer end), by AGE — the
 count-based sonarr/radarr-queue-stuck checks miss a small-but-ancient pile.
 
-Env: SONARR_API_KEY, RADARR_API_KEY (+ optional *_URL). STALE_HOURS override.
+Env: SONARR_API_KEY, RADARR_API_KEY, LIDARR_API_KEY (+ optional *_URL).
+STALE_HOURS override.
 Output: STALEQ_OK stale=0 checked=N | STALEQ_BAD stale=X: [arr] title (age d); ...
 """
 import json
@@ -25,14 +26,18 @@ from datetime import datetime, timezone
 STALE = float(os.environ.get("STALE_HOURS", "96")) * 3600
 ARRS = [
     ("sonarr", os.environ.get("SONARR_URL", "http://192.168.10.4:8989"),
-     os.environ.get("SONARR_API_KEY")),
+     os.environ.get("SONARR_API_KEY"), "v3"),
     ("radarr", os.environ.get("RADARR_URL", "http://192.168.10.4:7878"),
-     os.environ.get("RADARR_API_KEY")),
+     os.environ.get("RADARR_API_KEY"), "v3"),
+    # fix-56 (SM7): Lidarr queue was unmonitored by this backstop — a Lidarr
+    # importFailed grab (Brat) sat 5 days invisible to it. Lidarr's API is v1.
+    ("lidarr", os.environ.get("LIDARR_URL", "http://192.168.10.4:8686"),
+     os.environ.get("LIDARR_API_KEY"), "v1"),
 ]
 
 
-def queue(base, key):
-    url = (base.rstrip("/") + "/api/v3/queue?pageSize=500"
+def queue(base, ver, key):
+    url = (base.rstrip("/") + f"/api/{ver}/queue?pageSize=500"
            "&includeUnknownSeriesItems=true&includeUnknownMovieItems=true")
     req = urllib.request.Request(url, headers={"X-Api-Key": key})
     with urllib.request.urlopen(req, timeout=30) as r:
@@ -49,12 +54,12 @@ def age_s(added, now):
 def main():
     now = datetime.now(timezone.utc)
     checked, stale = 0, []
-    for name, base, key in ARRS:
+    for name, base, key, ver in ARRS:
         if not key:
             print(f"STALEQ_ERR missing {name.upper()}_API_KEY")
             sys.exit(1)
         try:
-            recs = queue(base, key)
+            recs = queue(base, ver, key)
         except Exception as e:  # noqa: BLE001 — an API failure is a real break
             print(f"STALEQ_ERR {name} {type(e).__name__}: {e}")
             sys.exit(1)

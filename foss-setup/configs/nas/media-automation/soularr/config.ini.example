@@ -24,3 +24,20 @@ download_dir = /home/hd34/btabaska/files/slskd
 
 [Release Preferences]
 # Optional: prefer FLAC, etc. — see Soularr wiki for full options
+
+[Search Settings]
+# failed_import_denylist defaults to True (this is what we want): soularr writes
+# every failed import to /data/failed_imports.json and skips it thereafter, so a
+# known-bad import is not re-grabbed every cycle. THE CATCH (fix-56, fleet-sweep
+# SM29 / a fix-40 regression): the upstream image NEVER removes a denylist entry
+# — not even after the album is later completed via another path or unmonitored —
+# so the file rots into an unbounded dead-letter and the
+# nas-soularr-failed-imports-fresh tripwire eventually fires and stays red.
+# The fix is NOT a config change here; it is an external reconciler on the mini
+# (configs/host/mini/soularr-reconcile, every 6h) that prunes any entry whose
+# album is complete / unmonitored / deleted in Lidarr. Leave the denylist ON;
+# the reconciler keeps it honest. album_match already requires ALL tracks to
+# match before grabbing, so partial albums come from flaky Soulseek downloads,
+# not from a low minimum_filename_match_ratio — don't try to "fix" partials by
+# tuning the ratio.
+#failed_import_denylist = True

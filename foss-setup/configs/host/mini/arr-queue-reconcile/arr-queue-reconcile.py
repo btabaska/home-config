@@ -33,7 +33,8 @@ Idempotent; caps removals per run (MAX_REMOVALS). Prints one summary line.
 Exit 0 on success (even if it removed nothing); non-zero only on an API/config
 error, so OnFailure=ntfy fires on a real break, not the steady state.
 
-Env: SONARR_URL/SONARR_API_KEY, RADARR_URL/RADARR_API_KEY (required),
+Env: SONARR_URL/SONARR_API_KEY, RADARR_URL/RADARR_API_KEY, and (fix-56)
+     LIDARR_URL/LIDARR_API_KEY — any arr with both url+key is reconciled,
      MAX_AGE_HOURS (default 72), MAX_REMOVALS (default 25),
      DRY_RUN (set to 1 to log without deleting),
      HEALTHCHECKS_PING_URL (optional dead-man ping).
@@ -60,6 +61,12 @@ ARRS = []
 for name, uenv, kenv, ver in (
     ("sonarr", "SONARR_URL", "SONARR_API_KEY", "v3"),
     ("radarr", "RADARR_URL", "RADARR_API_KEY", "v3"),
+    # fix-56 (SM7): Lidarr was missing here, so completed-but-importFailed album
+    # grabs ("One or more tracks expected ... were not imported") sat in the queue
+    # forever — Charli XCX Brat stuck 5 days, Daft Punk Homework Remixes. Both
+    # albums were already 100% on disk, so the grab was a redundant duplicate =
+    # SATISFIED (see satisfied() below). Lidarr's API is v1.
+    ("lidarr", "LIDARR_URL", "LIDARR_API_KEY", "v1"),
 ):
     url = os.environ.get(uenv)
     key = os.environ.get(kenv)
@@ -107,13 +114,27 @@ def msgs_of(rec):
 
 
 def satisfied(name, base, ver, key, rec):
-    """True iff the media this record is for already has a file."""
+    """True iff the media this record is for already has all its files.
+
+    Movie/episode: hasFile. Album (Lidarr, fix-56): every track already on disk
+    (trackFileCount >= totalTrackCount) — a full album is the equivalent of
+    hasFile, so a redundant grab that "failed to import" because the tracks
+    already exist is safely droppable. A PARTIAL album is deliberately NOT
+    satisfied, so a stuck-partial is left for a human (or completion) rather than
+    blocklisted away."""
     try:
         if name == "radarr":
             mid = rec.get("movieId")
             if not mid:
                 return False
             return bool(api(base, ver, key, f"movie/{mid}").get("hasFile"))
+        elif name == "lidarr":
+            aid = rec.get("albumId")
+            if not aid:
+                return False
+            st = api(base, ver, key, f"album/{aid}").get("statistics", {}) or {}
+            tot = st.get("totalTrackCount") or st.get("trackCount") or 0
+            return tot > 0 and st.get("trackFileCount", 0) >= tot
         else:
             eid = rec.get("episodeId")
             if not eid:

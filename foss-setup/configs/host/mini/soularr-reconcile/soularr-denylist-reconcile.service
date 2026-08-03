@@ -1,0 +1,10 @@
+[Unit]
+Description=Prune soularr's failed-import denylist against live Lidarr state — fix-40 dead-letter regression closer (fix-56)
+Documentation=file:/usr/local/sbin/soularr-denylist-reconcile.py
+OnFailure=ntfy-notify@%n.service
+
+[Service]
+Type=oneshot
+User=btabaska
+EnvironmentFile=/etc/default/soularr-denylist-reconcile
+ExecStart=/usr/local/sbin/soularr-denylist-reconcile.py
