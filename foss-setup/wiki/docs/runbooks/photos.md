@@ -90,6 +90,95 @@ covered by `nas-immich-backup-freshness`, which measures the outcome rather than
 session-row proxy. Re-pairing the native Immich app (see "Pairing a phone" above) remains a
 user choice / **needs-human** action, not an automated monitor.
 
+## fix-60 (2026-08-02 fleet sweep): four Immich data-hygiene fixes
+
+The sweep found four independent Immich issues (findings SM1, SM36, SL5, SL22, SL29). All
+resolved 2026-08-03; five new checks in `verification/checks.d/nas-services.yaml`:
+
+| id | severity | probes | green means |
+|----|----------|--------|-------------|
+| `immich-user-zero-assets` | warn | `/api/server/statistics` `usageByUser` | **every** user has >0 assets — per-user backup is flowing |
+| `nas-immich-corrupt-mov-quarantined` | warn | `asset_file` preview row for asset `8a5d0a66…` | the crash-looping .mov is still quarantined from transcode |
+| `nas-immich-ffmpeg-nocrash` | warn | `@ffmpeg*core.gz` at `/volume1` root | no Immich ffmpeg transcode crash recurred |
+| `nas-immich-no-future-dates` | warn | assets with `fileCreatedAt > now()+1y` | no bogus future date is hijacking the timeline |
+| `nas-immich-dump-rotation` | warn | count of `immich-*.sql.gz` (≤10) | the keep-N pg-dump rotation is still pruning |
+
+### SM1 — nightly ffmpeg SIGSEGV core dump on one corrupt .mov
+
+`immich_server`'s bundled `jellyfin-ffmpeg` **segfaulted every midnight** decoding one 2021
+iPhone video, dumping a fresh ~23 MB `@ffmpeg…core.gz` to the `/volume1` root (5 consecutive
+nights). Root cause: the asset — `8a5d0a66-9ee4-47d3-a058-c80eea7d53ba`
+(`/data/library/admin/2021/2021-06-28/IMG_3674.mov`, HEVC with a **Frame-Cropping** side
+data block) — crashes the HEVC decoder on Immich's preview command (`-skip_frame nointra …`).
+It never produced a thumbnail, so Immich's nightly `QUEUE_GENERATE_THUMBNAILS(force=false)`,
+which re-queues any asset **missing a preview**, retried it forever. (`ffprobe` reads the file
+fine; a `-c copy` remux would not change the crashing bitstream. The NAS `core_pattern` is a
+pipe to `syno-dump-core.sh`, so `ulimit -c 0` can't reliably suppress the dump — do **not**
+deliberately re-run the crashing command.)
+
+**Quarantine (preserve the asset, stop the loop):** the operator authorization was *stop the
+retry, don't delete*. Rather than move the original aside (which risks Immich auto-trashing a
+now-missing internal asset), the asset was **marked already-thumbnailed** so it drops out of
+the regen queue:
+
+1. Generate a synthetic placeholder preview + thumbnail **inside the container** with ffmpeg's
+   `lavfi color` source (never touches the corrupt file):
+   - `.../thumbs/936853a2…/8a/5d/8a5d0a66…_preview.jpeg` (mjpeg 1440×1080)
+   - `.../thumbs/936853a2…/8a/5d/8a5d0a66…_thumbnail.webp` (webp 250×188)
+2. `INSERT INTO asset_file ("assetId", type, path) VALUES (…,'preview',…),(…,'thumbnail',…)`
+   — the row's existence is what makes the nightly job skip it. Verified the API now serves
+   both (`GET /api/assets/{id}/thumbnail` → 200 image/jpeg + image/webp).
+3. Delete the stale core: `rm /volume1/@ffmpeg…core.gz`.
+
+The original `.mov` is untouched — playback and the asset are intact; only the thumbnail is a
+grey placeholder. **Do NOT run "Regenerate thumbnails" (force) on this asset** until the source
+is repaired/re-encoded — a forced regen deletes the injected preview and re-arms the nightly
+crash. `nas-immich-corrupt-mov-quarantined` guards the preview row; `nas-immich-ffmpeg-nocrash`
+(and `nas-core-dumps` in `nas-host.yaml`) guard for any recurrence. A second, *hidden* video
+(`IMG_2067.MOV`) also lacks a preview but is `visibility=hidden` so it is never re-queued and
+never crashes — left as-is.
+
+### SM36 — a second household user with 0 assets ever (needs-human)
+
+Kaelyn Tabaska (`b6be5585-152e-4330-86d2-f52a397ed706`) has **0 photos / 0 videos** since her
+account was created 2026-07-14 — her phone backup has never flowed, and the global
+`nas-immich-backup-freshness` check structurally can't see it (Brandon's uploads keep it green
+forever). New check `immich-user-zero-assets` asserts **every** user has >0 assets — the
+mandate-1 per-user signal. It also catches a new family member who never backs up, or an
+existing library being wiped. **It is RED today, on purpose** — it is Kaelyn's standing
+onboarding reminder (see "Pairing a phone"). Clearing it requires **her device**: open the
+Immich app, sign in as `kaelyn92@icloud.com`, enable backup. No server-side action can make it
+green — do not disable the check to silence it.
+
+### SL5 — a bogus 4501-01-01 capture date topping the timeline
+
+Asset `a2641009-65a4-4148-b2ee-0d95670b67b5` (`Pic 127.jpg`, from a 2026-07-24 bulk import)
+carried `fileCreatedAt = 4501-01-01` (corrupt EXIF), so it permanently sat at the top of every
+date-descending view. Corrected via the admin-key API (`PUT /api/assets/{id}` with
+`dateTimeOriginal`) to **2025-08-30T16:31:46Z** — the file's `fileModifiedAt`/EXIF `modifyDate`,
+a sane proxy since the true capture date is unrecoverable. Verified: newest-by-date is now a
+real recent asset (`IMG_2121.WEBP`, 2026-07-29) and the future-dated count is 0. Guarded by
+`nas-immich-no-future-dates`.
+
+### SL22 — newest asset 3+ days old (freshness trend)
+
+A trend record, not an incident: uploads paused for a few days (a normal usage lull). Already
+bounded by `nas-immich-backup-freshness` (7-day file-mtime window, unaffected by the SL5 date
+bug) and now sharpened per-user by `immich-user-zero-assets`. A tighter 3-day freshness alert
+was deliberately **not** added — it would false-positive on ordinary gaps and add to alert
+fatigue (fix-61).
+
+### SL29 — pg-dumps accumulating without observed rotation
+
+The nightly `immich-db-dump.sh` (DSM Task Scheduler task 9, 02:30) already had a `find -delete`
+keep-N rotation, but the sweep observed 16 dumps (~254 MB each) piling up in
+`/volume1/docker/immich/backups` and shipping offsite via Hyper Backup. Tightened
+`KEEP_DAYS` **14 → 7** (a week of point-in-time logical dumps is ample — HB's own Smart-Recycle
+versioning in B2 covers deeper history; halves the redundant-full offsite bloat) and pruned to
+8 files. Codified in `foss-setup/scripts/nas/immich-db-dump.sh` (deployed byte-identical to
+`/volume1/scripts/nas/immich-db-dump.sh`). `nas-immich-dump-rotation` alerts if the dir grows
+past 10 files (rotation stopped).
+
 ## If `backup=STALE` fires *after* pairing worked
 
 1. Check the app: Backup screen → stalled uploads, battery-optimization kills
@@ -161,4 +250,5 @@ Re-read release notes, re-verify the Valkey/Postgres digests against that releas
 compose, bump `IMMICH_VERSION` in `.env` (live + repo mirror), `docker compose pull &&
 up -d`, then confirm `/api/server/version`. Postgres major upgrades are **not**
 automatic — never float the DB image. Take a pre-upgrade dump:
-`sudo /volume1/docker/immich/immich-pg-dump.sh`.
+`sudo bash /volume1/scripts/nas/immich-db-dump.sh` (the canonical dump script DSM task 9
+runs; `immich-pg-dump.sh` is deprecated).

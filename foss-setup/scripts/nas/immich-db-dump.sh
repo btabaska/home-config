@@ -5,7 +5,12 @@
 set -euo pipefail
 DOCKER=/usr/local/bin/docker
 OUT_DIR=/volume1/docker/immich/backups
-KEEP_DAYS=14
+# fix-60 (SL29): keep 7 daily full dumps locally. Each ~254MB and shipped offsite
+# by Hyper Backup, so a week of point-in-time logical dumps is ample — HB's own
+# Smart-Recycle versioning in B2 covers deeper history. 7 (was 14) halves the
+# redundant-full offsite bloat the 2026-08-02 sweep flagged. Rotation health is
+# guarded by the nas-immich-dump-rotation check (<=10 files).
+KEEP_DAYS=7
 PING_URL="http://192.168.10.2:8001/ping/df506ce5-202d-4012-a35c-182809d3b77a"
 
 out="${OUT_DIR}/immich-$(date +%F).sql.gz"
