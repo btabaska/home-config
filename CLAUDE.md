@@ -56,13 +56,21 @@ into chat, commits, or docs.** Template: `.handoff-secrets.yaml.example`.
 3. **Live stack is the source of truth for docs** — document what's running, not what was planned.
 4. **Disruptive work → 4–7AM EST window.** Confirm before destructive or user-facing actions.
 
-## Current priority: fleet-sweep remediation (2026-08-02)
+## Current priority: fleet-sweep remediation — COMPLETE (2026-08-02/03)
 
-The `/fleet-sweep` full audit (2026-08-02) produced **`foss-setup/docs/fleet-sweep-2026-08-02.md`**
-(318 findings + evidence, SC/SH/SM/SL/SI ids) and **`docs/fleet-sweep-2026-08-02-worklist.md`**
-(21 root-cause work items = tasks `fix-49`…`fix-69`, wave-ordered). Work them one session each with
-**`/resolve-finding fix-NN`**, starting at `fix-49` (Navidrome library wipeout — active user-facing
-outage). Also escalated: open task `sec-12` (its blast radius now includes ALL OnFailure paging on
-mini being dead + the JWT leaking into the journal daily — see finding SH3). The prior queue
-(2026-07-16 quality-gate `fix-20`…`fix-48`, `docs/quality-gate-2026-07-16.md`) is fully done;
-20 of those closures have regressed and are re-queued inside fix-49…69.
+The `/fleet-sweep` 2026-08-02 audit (**`foss-setup/docs/fleet-sweep-2026-08-02.md`**, 318 findings;
+**`docs/fleet-sweep-2026-08-02-worklist.md`**, 21 clusters = `fix-49`…`fix-69`) has been **fully
+remediated** in an orchestrated drive (one subagent per item; operator waived the 4-7AM window):
+all 22 items — `fix-49`…`fix-69` + escalated `sec-12` (SH3) — are resolved and closed in
+`progress.json` (commits `667e361`…`25567cf`). Final audit-safe run: **343/362 checks pass, 0 crit
+failures** (baseline was 29 fails). The 20 regressed prior-closures are re-fixed and tracked via the
+new `progress.json.reopened` ledger (fix-68). Remaining warn-level residuals are expected/deferred,
+NOT regressions: `edge-plex-version-current` (NAS Plex one build behind → user update, ties to
+`fix-24`), `immich-user-zero-assets` (Kaelyn must enable backup on her own device),
+`sys-docker-subnet-squat` (two more docker squatters → open task `ha-19`), the deferred
+`git-etckeeper-clean`, plus self-healing `/opt/foss-setup` mini/rig clone drift (clears on the next
+ansible-pull) and one Kuma monitor to eyeball on `/status/fleet`. **Open human follow-ups:** schedule
+the pending mini kernel reboot (4-7AM), set Windows `RealTimeIsUniversal` on rig, subscribe a phone
+to the off-mini dead-man + `alert-drill` ntfy topics, and (optional) provide a subsource/OpenSubtitles
+key to broaden Bazarr coverage. Next work is the pre-existing open queue (`ha-19`, `fix-24`,
+`game-*`, `media-09/10/13`, etc.) via **`/build-next`** or **`/resolve-finding`**.
