@@ -125,11 +125,24 @@ Every run writes `/var/lib/verification/reopen-suggestions.json`:
  "failed_checks": [{"id": "...", "task_id": "...", "severity": "..."}]}
 ```
 
-The **AI session-start protocol** consumes this file: at the start of a session
-it reads the list and proposes reopening those tasks in
-`foss-setup/docs/progress.json`. The runner itself **never commits to git by
-design** — reopening a task is a judgment call (flaky check vs. real
-regression) that stays with the human/AI session.
+`task_ids` is the **raw** list of every task a currently-failing check points at
+— not a vetted reopen set. The runner has no tracker access, so it cannot tell a
+done task (a real regression to reopen) from an already-open one (whose failing
+check is already covered) or a stale/orphan task_id.
+
+**The consumer is `scripts/verification/reopen-report.py`** (run by the
+`/fleet-sweep` and `/resolve-finding` commands as their session-start step, not
+an automatic hook). It `ssh`es mini for this file, cross-references
+`docs/progress.json` + `docs/tasks.json`, and splits the ids into *reopen
+candidates* (done + failing), *already open* (covered), *no action*
+(retired/deferred/reopened), and *unknown task_id*. The runner itself **never
+commits to git by design** — reopening a task is a judgment call (flaky check vs.
+real regression) that stays with the human/AI session that ran the report.
+
+> History (fix-61, SM47): these docs previously claimed "the AI session-start
+> protocol consumes this file" automatically. Nothing did — it was write-only for
+> weeks while 21 regressed done-tasks sat unprocessed. `reopen-report.py` is that
+> consumer, made real, and wired into the two commands above.
 
 ## Deploy
 

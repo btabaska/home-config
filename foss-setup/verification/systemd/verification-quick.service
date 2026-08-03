@@ -2,6 +2,10 @@
 Description=Hourly quick verification tier (url checks: rig AI e2e, edge vhosts, DNS)
 Wants=network-online.target
 After=network-online.target docker.service
+# OnFailure paging (fix-61): a real crash/timeout (exit 2+, not a crit-check exit
+# 1 which SuccessExitStatus=1 absorbs) pages the operator directly via ntfy-notify@
+# (sec-12). Belt to the dead-man's suspenders. ([Unit] directive, not [Service].)
+OnFailure=ntfy-notify@%n.service
 
 [Service]
 Type=oneshot

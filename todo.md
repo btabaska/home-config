@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**264/351 done** · **54 open** · **18 deferred** · 15 retired.
+**266/352 done** · **53 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -88,7 +88,6 @@
 - [ ] **`ha-32`** HA ops glue: SSH add-on, git-backed /config, nightly backups verify, checks.d/ha.yaml, Homepage _(est 1 h)_
 
 ### verification
-- [ ] **`fix-61`** Verification framework repair: daily run killed by its own 30-min timeout mid-incident (dead-man dark, no self-page), triage 91% nonfunctional, chronic false-positive + flapping checks _(est 1-3 hrs)_
 - [ ] **`fix-62`** Check quality + coverage batch: 4 structurally-broken checks (plex-version, stash auth, immich-backup 60s find, esde), Stash no-op self-heal page storm, liveness-only quartet, filed monitoring gaps _(est 1-3 hrs)_
 
 ### wiki

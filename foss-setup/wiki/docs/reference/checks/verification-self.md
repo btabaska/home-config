@@ -1,6 +1,6 @@
 # Checks — verification-self
 
-`foss-setup/verification/checks.d/verification-self.yaml` — 5 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/verification-self.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `llm-triage-completion-e2e`
 
@@ -44,6 +44,28 @@ verification: every check-referenced bin script is deployed
 
 ```bash
 /opt/verification/bin/bin-refs-present.sh
+```
+
+## `daily-sweep-completed`
+
+verification: previous daily sweep completed cleanly (not killed/overrun)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-61` · **enabled:** True
+- **expects:** `^SWEEP_OK$`
+
+```bash
+r=$(systemctl show verification.service -p Result --value); ts=$(stat -c %Y /var/lib/verification/results.json 2>/dev/null || echo 0); age=$(( ( $(date +%s) - ts ) / 3600 )); if [ "$r" = success ] && [ "$age" -lt 26 ]; then echo SWEEP_OK; else echo "SWEEP_BAD result=$r results_age_h=$age"; fi
+```
+
+## `triage-verdicts-well-formed`
+
+verify-04 LLM triage: newest run's verdicts are mostly well-formed (not fallbacks)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-61` · **enabled:** True
+- **expects:** `^TRIAGE_WELLFORMED_OK`
+
+```bash
+/opt/verification/bin/triage-wellformed.py
 ```
 
 ## `verification-tree-macos-junk`

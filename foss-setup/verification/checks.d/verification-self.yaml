@@ -58,6 +58,38 @@ checks:
     runbook: wiki/docs/runbooks/verification-self.md
     enabled: true
 
+  # ── fix-61 (SH8) · the daily sweep actually COMPLETED · dead-man for a KILLED
+  # run. SH8's exact gap: on 08-01 the daily verification.service was killed by its
+  # own TimeoutStartSec mid-triage; the Healthchecks dead-man only catches a run
+  # that NEVER STARTS, not one that starts and is killed, so detection lagged ~12h.
+  # This runs inside the daily sweep and asserts the PREVIOUS run's unit Result was
+  # clean and results.json is fresh (<26h) — so a killed/overrun/missed daily is
+  # caught on the next run. Complements the new OnFailure paging (immediate) and
+  # the in-script dead-man ping (which now fires before triage).
+  - id: daily-sweep-completed
+    name: "verification: previous daily sweep completed cleanly (not killed/overrun)"
+    host: mini
+    cmd: 'r=$(systemctl show verification.service -p Result --value); ts=$(stat -c %Y /var/lib/verification/results.json 2>/dev/null || echo 0); age=$(( ( $(date +%s) - ts ) / 3600 )); if [ "$r" = success ] && [ "$age" -lt 26 ]; then echo SWEEP_OK; else echo "SWEEP_BAD result=$r results_age_h=$age"; fi'
+    expect: '^SWEEP_OK$'
+    severity: warn
+    task_id: fix-61
+    runbook: wiki/docs/runbooks/verification-self.md
+    enabled: true
+
+  # ── fix-61 (SH17) · triage verdicts are well-formed · catches the 91%-malformed
+  # class from the OUTPUT the runner wrote (no model call — the live model probe is
+  # llm-triage-completion-e2e above). Fails if too many of the latest triage run's
+  # verdicts are the "did not return valid JSON" fallback.
+  - id: triage-verdicts-well-formed
+    name: "verify-04 LLM triage: newest run's verdicts are mostly well-formed (not fallbacks)"
+    host: mini
+    cmd: /opt/verification/bin/triage-wellformed.py
+    expect: '^TRIAGE_WELLFORMED_OK'
+    severity: warn
+    task_id: fix-61
+    runbook: wiki/docs/runbooks/verification-self.md
+    enabled: true
+
   # ── fix-45 (L62/L91 class) · deploy hygiene: no AppleDouble junk in the live
   # verification tree. A Mac-side scp/rsync once shipped executable ._* files
   # into bin/ (one crashed the runner from checks.d on 2026-07-10); deploy.sh

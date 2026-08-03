@@ -2,6 +2,12 @@
 Description=Homelab continuous verification (checks + LLM triage)
 Wants=network-online.target
 After=network-online.target docker.service
+# OnFailure paging (SH8, fix-61): if the unit itself fails (timeout / crash),
+# page the operator directly — previously OnFailure was empty so a unit death was
+# silent for ~12h until the dead-man's grace window elapsed. ntfy-notify@ (sec-12,
+# proven-deliverable on the `backups` topic) posts a high-priority failure alert.
+# (OnFailure is a [Unit] directive — systemd silently ignores it under [Service].)
+OnFailure=ntfy-notify@%n.service
 
 [Service]
 Type=oneshot
@@ -9,15 +15,24 @@ Type=oneshot
 User=btabaska
 EnvironmentFile=-/etc/verification/env
 ExecStart=/opt/verification/bin/verify-cycle.sh
-# Dead-man: healthchecks "verification-mini" (daily sweep proved it EXECUTED;
-# ntfy on silence). verify-cycle.sh always exits 0 (it reports check state via
-# its results.json, not the unit's exit code), so this ExecStartPost fires on
-# every completed sweep and the check flips "down" only if a sweep never runs.
-# URL from /etc/verification/env as VERIFY_DAILY_PING_URL — was previously only
-# in an etckeeper-tracked drop-in (verification.service.d/healthchecks.conf),
-# so the base unit was not reproducible from git (M53). Now it is.
-ExecStartPost=/usr/bin/curl -fsS -m 10 --retry 3 -o /dev/null ${VERIFY_DAILY_PING_URL}
-TimeoutStartSec=30min
+# Dead-man: healthchecks "verification-mini". The ping is now fired from INSIDE
+# verify-cycle.sh, immediately after the sweep writes a fresh results.json and
+# BEFORE LLM triage — NOT as an ExecStartPost. Why (SH8/SH15, fix-61, 2026-08-02):
+# ExecStartPost only runs on ExecStart *success*, so when the 08-01 triage phase
+# overran the old 30-min TimeoutStartSec and systemd killed the unit mid-triage,
+# the ping was SKIPPED and the dead-man falsely flipped DOWN for ~12h even though
+# the sweep had fully executed. Moving the ping into the script (gated on a
+# successfully-parsed results.json) means a slow/killed triage can never blind
+# the dead-man, while a genuine non-execution still correctly downs it.
+# URL: /etc/verification/env as VERIFY_DAILY_PING_URL (kept out of git).
+#
+# TimeoutStartSec raised 30min -> 60min (SH8): the whole checks+triage run shares
+# one start-timeout, and on a bad fleet day the run is *longest* exactly when it
+# matters most (many failures -> more triage). Triage is separately bounded to
+# 20min inside verify-cycle.sh (VERIFY_TRIAGE_TIMEOUT) so it can't eat the budget;
+# this ceiling is a backstop for the sequential per-check phase (worst ~29min when
+# a whole host is unreachable), not the triage killer.
+TimeoutStartSec=60min
 Nice=10
 
 [Install]

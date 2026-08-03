@@ -44,7 +44,11 @@ The fleet already self-reports; collect it first so lanes verify rather than red
 1. Audit-safe full check run (~8 min, run backgrounded):
    `ssh mini 'mkdir -p /tmp/verify-audit && VERIFICATION_STATE_DIR=/tmp/verify-audit /opt/verification/bin/run-checks.sh --no-notify --json'`
    — never without `VERIFICATION_STATE_DIR` (it would clobber daily state and page ntfy).
-2. While it runs: `/var/lib/verification/{last-summary.md,reopen-suggestions.json,acks.json}` +
+2. While it runs: consume the reopen bridge with
+   `python3 foss-setup/scripts/verification/reopen-report.py` (cross-refs
+   `reopen-suggestions.json` against `progress.json`+`tasks.json` → reopen candidates vs
+   already-open vs unknown task_ids — the real consumer, fix-61/SM47); also read
+   `/var/lib/verification/{last-summary.md,acks.json}` +
    recent `triage-*.md`; Healthchecks API state (anything not `up`, or last_ping > period+grace);
    `systemctl --failed` + failed-timer scan on mini/rig; docker restart counts on all three docker
    hosts; coverage-manifest diffs (reference §6.4); git hygiene (`/opt/stacks` porcelain +

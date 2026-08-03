@@ -239,8 +239,51 @@ def main():
     failed = [r for r in ran if r["status"] == "fail"]
     crit_failed = [r for r in failed if r["severity"] == "crit"]
     failed_ids = {r["id"] for r in failed}
-    new_failures = sorted(failed_ids - prev_failed)
-    recovered = sorted(prev_failed - failed_ids)
+
+    # De-flap (SM23/SM38, fix-61, 2026-08-02): a check may require N consecutive
+    # failing runs before it counts as a PAGING failure, so a fast-tier crit that
+    # self-recovers within one interval never reaches the pager. Overnight the
+    # *-in-plex + dns-mini-internal crit checks flapped 8+ page/recover cycles
+    # (~29 pages in 12h = alert fatigue on the crit channel). Per-check streaks
+    # persist in a sidecar keyed to THIS tier's results file. The threshold applies
+    # only to filtered (scheduled-tier / --host) runs; the daily UNFILTERED sweep
+    # keeps threshold 1 for every check so it stays an immediate once-a-day
+    # backstop. Default threshold 1 everywhere = the pre-fix-61 behaviour.
+    def _threshold(c):
+        if not filtered:
+            return 1
+        return max(1, int(c.get("min_consecutive_fails", 1)))
+    thresholds = {c["id"]: _threshold(c) for c in checks}
+    streak_path = results_path + ".streak.json"
+    try:
+        with open(streak_path) as f:
+            _sstate = json.load(f)
+    except Exception:
+        _sstate = {}
+    prev_streaks = _sstate.get("streaks", {})
+    # First run after deploy (no sidecar): fall back to the prior results' fail
+    # set so rollout doesn't emit a spurious "all NEW" page.
+    prev_confirmed = set(_sstate.get("confirmed", prev_failed))
+    streaks = {}
+    for r in ran:
+        if r["status"] == "fail":
+            streaks[r["id"]] = prev_streaks.get(r["id"], 0) + 1
+    confirmed_failed_ids = {i for i in failed_ids
+                            if streaks.get(i, 0) >= thresholds.get(i, 1)}
+    pending_failed = sorted(failed_ids - confirmed_failed_ids)  # failing, below N
+    try:
+        with open(streak_path, "w") as f:
+            json.dump({"streaks": streaks,
+                       "confirmed": sorted(confirmed_failed_ids)}, f, indent=2)
+    except Exception:
+        pass
+    if pending_failed:
+        print(f"pending (failing but below flap threshold, not paged): "
+              f"{', '.join(pending_failed)}", file=sys.stderr)
+
+    # Transitions + paging are computed against the CONFIRMED set, not raw fails.
+    new_failures = sorted(confirmed_failed_ids - prev_confirmed)
+    recovered = sorted(prev_confirmed - confirmed_failed_ids)
     now = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
     doc = {
         "timestamp": now,
@@ -263,8 +306,16 @@ def main():
                        "failed_checks": [{"id": r["id"], "task_id": r["task_id"],
                                           "severity": r["severity"]}
                                          for r in failed],
-                       "note": "consumed by the AI session-start protocol; "
-                               "the runner never commits to git by design"},
+                       # SM47/SM50 (fix-61): task_ids here are simply every task a
+                       # currently-failing check points at — NOT a vetted reopen
+                       # list. The runner has no tracker access and never commits.
+                       # The real consumer is scripts/verification/reopen-report.py
+                       # (run by /fleet-sweep + /resolve-finding): it cross-refs
+                       # docs/progress.json + tasks.json to split these into
+                       # done-tasks-to-reopen vs already-open vs unknown task_ids.
+                       "note": "task_ids of failing checks (unfiltered); the "
+                               "consumer scripts/verification/reopen-report.py "
+                               "filters by done-status. Runner never commits."},
                       f, indent=2)
 
     # last-summary.md
@@ -304,8 +355,11 @@ def main():
     acks = load_acks()
     page_new = [i for i in new_failures if i not in acks]
     page_recovered = [i for i in recovered if i not in acks]
-    page_failed_ids = {i for i in failed_ids if i not in acks}
-    page_crit = [r for r in crit_failed if r["id"] not in acks]
+    # Only CONFIRMED failures (streak >= threshold) page — a sub-threshold flap
+    # stays out of the pager math entirely (SM23/SM38).
+    page_failed_ids = {i for i in confirmed_failed_ids if i not in acks}
+    page_crit = [r for r in crit_failed
+                 if r["id"] in confirmed_failed_ids and r["id"] not in acks]
     transition = bool(page_new or page_recovered)
     daily_reminder = (not filtered) and bool(page_failed_ids)
     if ((not filtered or args.notify) and not args.no_notify

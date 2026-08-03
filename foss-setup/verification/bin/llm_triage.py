@@ -28,6 +28,21 @@ BASE_URL = os.environ.get("LLM_BASE_URL",
 MODEL = os.environ.get("LLM_MODEL", "qwen3.6-35b-a3b")
 API_KEY = os.environ.get("LLM_API_KEY", "")
 MAX_CHECKS = int(os.environ.get("TRIAGE_MAX_CHECKS", "15"))
+# SH17 (fix-61, 2026-08-02): triage was 91% nonfunctional (68/75 verdicts were the
+# hardcoded fallback) because qwen3.6-35b-a3b is a REASONING model — with the old
+# max_tokens=600 the <think> phase consumed the entire budget and the message
+# `content` came back EMPTY, so every parse failed. This build ignores `/no_think`,
+# so the fix is simply a budget large enough for reasoning + the JSON verdict.
+# Measured live: completion_tokens peaked ~2540 across a representative check set;
+# 4000 gives ~1.5k headroom and each check still returns in 7-17s (15 checks well
+# under the 20-min triage bound). Kept env-tunable so the probe can match it.
+MAX_TOKENS = int(os.environ.get("TRIAGE_MAX_TOKENS", "4000"))
+# Crit-first triage order (SH17 / L43): the day's only failing crit
+# (nas-secret-file-perms) got NO verdict because failed[:MAX_CHECKS] sliced in
+# checks.d file order. Rank crit ahead of warn/info before slicing so the checks
+# that matter always get a verdict; sort is stable, so file order is preserved
+# within a severity.
+SEV_RANK = {"crit": 0, "high": 1, "warn": 2, "info": 3}
 
 DOMAIN_SKILL = {
     "dns": "dns-triage.md",
@@ -54,7 +69,7 @@ def complete(system_prompt, user_prompt):
         "messages": [{"role": "system", "content": system_prompt},
                      {"role": "user", "content": user_prompt}],
         "temperature": 0,
-        "max_tokens": 600,
+        "max_tokens": MAX_TOKENS,
     }).encode()
     req = urllib.request.Request(f"{BASE_URL}/chat/completions", data=body,
                                  headers={"Content-Type": "application/json"})
@@ -66,7 +81,10 @@ def complete(system_prompt, user_prompt):
 
 
 def parse_verdict(text):
-    """Strict-ish JSON extraction: strip code fences, find outermost object."""
+    """Strict-ish JSON extraction: strip reasoning + code fences, find object."""
+    # Strip any reasoning block a build might emit inline before the JSON
+    # (defensive — with MAX_TOKENS headroom the JSON now follows the <think>).
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.S)
     text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text.strip(), flags=re.M)
     m = re.search(r"\{.*\}", text, re.S)
     if not m:
@@ -115,6 +133,9 @@ def main():
     if not failed:
         print("no failed checks — nothing to triage")
         return
+    # Crit-first before capping (SH17/L43): stable sort keeps file order within a
+    # severity, so crits are never starved of a verdict in a high-failure run.
+    failed.sort(key=lambda c: SEV_RANK.get(c.get("severity"), 9))
     failed = failed[:MAX_CHECKS]
 
     skills = {}

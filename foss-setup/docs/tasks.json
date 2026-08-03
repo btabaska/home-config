@@ -10242,6 +10242,29 @@
   "track": "verification"
  },
  {
+  "id": "verify-06",
+  "title": "Import-pipeline + fleet-coverage OUTCOME checks — the consumer-end verification layer",
+  "host": "Ubuntu",
+  "type": "sync",
+  "depends_on": [
+   "verify-01",
+   "verify-02"
+  ],
+  "estimate": "built incrementally 2026-07-10..17",
+  "required": false,
+  "run": 1,
+  "mode": "ai",
+  "summary": "Umbrella task for the 22 continuous-verification checks that probe OUTCOMES and 100% fleet coverage rather than liveness (checks.d/media.yaml + docker-fleet.yaml): the *arr import-pipeline (queue-stuck, pipeline-health, seedbox mount, grabbed-never-imported), the arr->Plex journey (radarr-movies-in-plex, sonarr-tv-in-plex, pinchflat-plex-visible), the Bookshelf->CWA handoff, musicseerr phantom requests, and the blanket container-manifest/health + failed-systemd-unit tripwires. Added across the 2026-07-10..17 incidents; every one carries task_id verify-06, but the task object was never created in tasks.json (the checks referenced it anyway), so those 22 checks could never be reopened or routed through /resolve-finding. Created here (fix-61/SM50) to match the tag the whole fleet already uses; tracker-integrity now validates checks.d task_ids against tasks.json so this class cannot recur.",
+  "steps": [
+   "media.yaml: import-pipeline OUTCOME checks (queue-stuck, indexer redundancy, pipeline-health, seedbox mount, grabbed-never-imported, arr->Plex coverage, bookshelf->cwa copy/ingest, musicseerr phantom).",
+   "docker-fleet.yaml: per-host container-manifest vs coverage/<host>.containers, container health (unhealthy/restart-loop), soularr job-not-crashlooping, failed systemd units — the '100% surface' layer.",
+   "Each probes the CONSUMER end (mandate 1), not container liveness — the class that missed the week's incidents.",
+   "Created as a real done task so failing checks route through the reopen bridge (reopen-report.py) + /resolve-finding (fix-61)."
+  ],
+  "verify": "All 22 checks load with a resolvable task_id; tracker-integrity validates checks.d task_ids against tasks.json (green); reopen-report.py routes their failures by done-status.",
+  "track": "verification"
+ },
+ {
   "id": "retro-01",
   "title": "NAS ROM library layout",
   "track": "gaming",

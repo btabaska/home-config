@@ -43,11 +43,17 @@ change a task: edit `tasks.json`/`progress.json`, then re-run
   not the truth. Export/merge back to `progress.json` and commit.
 - **Reopened ids are intentionally absent from `done`** — a regression means
   the checkmark comes off (dns-02, game-10, nas-08 were all reopened by the
-  2026-07-07 audit, later re-closed). This is automated now (verify-05):
+  2026-07-07 audit, later re-closed). This is semi-automated (verify-05):
   failed checks that carry a `task_id` write
-  `mini:/var/lib/verification/reopen-suggestions.json` and ntfy a summary —
-  session-start protocol is to process that file first. A `retired` block
-  (2026-07-09) holds deliberately-abandoned tasks (the SBOM feature) so
+  `mini:/var/lib/verification/reopen-suggestions.json` and ntfy a summary. That
+  file is the raw "task_ids with a failing check" list; the `/fleet-sweep` and
+  `/resolve-finding` commands consume it via
+  `scripts/verification/reopen-report.py`, which cross-references `progress.json`
+  + `tasks.json` to separate genuine reopen candidates (done + failing) from
+  already-open or unknown task_ids. Reopening stays a human/AI judgment call — the
+  runner never edits the tracker (fix-61 corrected the earlier claim that a
+  session-start hook consumed this file automatically; it did not). A `retired`
+  block (2026-07-09) holds deliberately-abandoned tasks (the SBOM feature) so
   they neither count as done nor look like regressions.
 
 ## How AI sessions work

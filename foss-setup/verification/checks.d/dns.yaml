@@ -5,6 +5,11 @@
 checks:
   - id: dns-mini-internal
     tier: fast
+    # De-flap (SM23, fix-61): a single-UDP-try 3s dig is a crit — one blip false-
+    # paged at 13:15 then recovered. Require 2 consecutive fast-tier failures (~20m)
+    # before paging so a momentary packet loss doesn't hit the crit channel; a real
+    # AdGuard outage still pages one interval later.
+    min_consecutive_fails: 2
     name: "AdGuard (mini) resolves internal name home.tabaska.us"
     host: mini
     cmd: dig +short +time=3 +tries=1 @192.168.10.2 home.tabaska.us

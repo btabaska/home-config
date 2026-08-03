@@ -37,6 +37,11 @@ verified, say so plainly — never claim done.
    that reproduced each issue — start from those.
 4. If root-cause discovery will be read-heavy (many files/hosts), delegate it to an `Explore` or
    `general-purpose` subagent and have it return only the conclusion, to keep this session lean.
+5. Consume the reopen bridge for live regression signal:
+   `python3 foss-setup/scripts/verification/reopen-report.py` — it cross-references the runner's
+   `reopen-suggestions.json` against `progress.json`+`tasks.json` and lists genuine reopen
+   candidates (done tasks with a failing check now) so a fix that regressed a sibling surfaces
+   here rather than sitting silent (fix-61/SM47 made this the real consumer).
 
 ## Step C — align with me BEFORE doing any work
 

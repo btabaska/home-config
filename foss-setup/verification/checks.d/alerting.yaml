@@ -47,7 +47,10 @@ checks:
   - id: alert-healthchecks-checks-defined
     name: "Healthchecks has its dead-man checks (>=6) and ntfy channel"
     host: mini
-    cmd: docker exec healthchecks python3 /opt/healthchecks/manage.py shell -c "from hc.api.models import Check, Channel; print('checks='+str(Check.objects.count()), 'ntfy='+str(Channel.objects.filter(kind='ntfy').count()))"
+    # `shell -v 0` suppresses Django 5.2's "N objects imported automatically"
+    # auto-import banner (SM46, fix-61) so it doesn't become line 1 of the check
+    # output and mask the real payload in last-summary.md / triage input.
+    cmd: docker exec healthchecks python3 /opt/healthchecks/manage.py shell -v 0 -c "from hc.api.models import Check, Channel; print('checks='+str(Check.objects.count()), 'ntfy='+str(Channel.objects.filter(kind='ntfy').count()))"
     # floor, not a fixed count — dead-mans grow with the fleet (10 as of
     # 2026-07-10: +recyclarr, ai-stack-rig, verification-quick, music-mirror).
     expect: 'checks=([6-9]|[1-9][0-9]+) ntfy=[1-9]'
@@ -63,7 +66,11 @@ checks:
   - id: alert-healthchecks-none-down
     name: "no Healthchecks dead-man is in 'down' state"
     host: mini
-    cmd: docker exec healthchecks python3 /opt/healthchecks/manage.py shell -c "from hc.api.models import Check; d=[c.name for c in Check.objects.all() if c.get_status()=='down']; print('down_checks='+(','.join(sorted(d)) if d else 'NONE'))"
+    # `shell -v 0` suppresses Django 5.2's "N objects imported automatically"
+    # auto-import banner (SM46, fix-61): during a genuine dead-man-down crit the
+    # banner was line 1, so last-summary.md and the triage input showed the banner
+    # instead of "down_checks=<which subsystem>" — defeating this check's purpose.
+    cmd: docker exec healthchecks python3 /opt/healthchecks/manage.py shell -v 0 -c "from hc.api.models import Check; d=[c.name for c in Check.objects.all() if c.get_status()=='down']; print('down_checks='+(','.join(sorted(d)) if d else 'NONE'))"
     expect: '^down_checks=NONE$'
     severity: crit
     task_id: sec-03

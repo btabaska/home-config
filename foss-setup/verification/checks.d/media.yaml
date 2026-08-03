@@ -165,6 +165,11 @@ checks:
   # down (never a vacuous pass). crit — archived content invisible to the user.
   - id: pinchflat-plex-visible
     tier: fast
+    # De-flap (SM23/SM38, fix-61): flaps to crit then self-recovers within ~10min
+    # during Plex's nightly maintenance/scan window (8+ page/recover cycles a
+    # night). Require 3 consecutive fast-tier failures (~30min sustained) before
+    # paging; a genuine whole-library ACL/scan break still pages within the window.
+    min_consecutive_fails: 3
     name: "pinchflat: archived YouTube videos are visible in Plex (disk vs library)"
     host: mini
     cmd: >-
@@ -263,6 +268,9 @@ checks:
   # Recent imports (< 6h, by Radarr movieFile.dateAdded) are excluded for Plex scan lag.
   - id: radarr-movies-in-plex
     tier: fast
+    # De-flap (SM23/SM38, fix-61): crit flap during Plex's nightly maintenance
+    # window — require 3 consecutive fast-tier failures (~30min) before paging.
+    min_consecutive_fails: 3
     name: "radarr: imported movies are actually served in Plex (tmdb-id coverage)"
     host: mini
     cmd: >-
@@ -277,6 +285,9 @@ checks:
 
   - id: sonarr-tv-in-plex
     tier: fast
+    # De-flap (SM23/SM38, fix-61): crit flap during Plex's nightly maintenance
+    # window — require 3 consecutive fast-tier failures (~30min) before paging.
+    min_consecutive_fails: 3
     name: "sonarr: imported series are actually served in Plex (tvdb-id coverage)"
     host: mini
     cmd: >-

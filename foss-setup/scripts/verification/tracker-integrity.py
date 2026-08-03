@@ -29,6 +29,7 @@ tracker-count-check.py (fix-43), which checks the generated VIEWS against
 these sources; this checks the sources themselves.
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -64,6 +65,23 @@ for label, clash in (("deferred+done", deferred & done),
                      ("deferred+retired", deferred & retired)):
     if clash:
         errs.append(f"contradictory status {label}: {sorted(clash)}")
+
+# Every task_id referenced by a verification check must resolve to a real task
+# (fix-61 / SM50: 22 checks carried task_id verify-06 which existed nowhere in
+# tasks.json, so their failing checks could never be reopened or routed through
+# /resolve-finding — and this integrity check was blind to it because it only
+# validated progress.json ids, not checks.d task_ids). Regex-scan (no PyYAML dep).
+checks_dir = FOSS / "verification" / "checks.d"
+if checks_dir.is_dir():
+    check_task_ids = set()
+    for yml in sorted(checks_dir.glob("*.y*ml")):
+        for m in re.finditer(r"^\s*task_id:\s*([A-Za-z0-9_-]+)",
+                             yml.read_text(), re.M):
+            check_task_ids.add(m.group(1))
+    orphan_check_ids = sorted(check_task_ids - idset)
+    if orphan_check_ids:
+        errs.append(f"checks.d task_ids with no definition in tasks.json: "
+                    f"{orphan_check_ids}")
 
 meta = prog.get("_meta", {})
 stale = [k for k in ("task_count", "completed_count") if k in meta]

@@ -54,7 +54,7 @@ Healthchecks has its dead-man checks (>=6) and ntfy channel
 - **expects:** `checks=([6-9]|[1-9][0-9]+) ntfy=[1-9]`
 
 ```bash
-docker exec healthchecks python3 /opt/healthchecks/manage.py shell -c "from hc.api.models import Check, Channel; print('checks='+str(Check.objects.count()), 'ntfy='+str(Channel.objects.filter(kind='ntfy').count()))"
+docker exec healthchecks python3 /opt/healthchecks/manage.py shell -v 0 -c "from hc.api.models import Check, Channel; print('checks='+str(Check.objects.count()), 'ntfy='+str(Channel.objects.filter(kind='ntfy').count()))"
 ```
 
 ## `alert-healthchecks-none-down`
@@ -65,7 +65,7 @@ no Healthchecks dead-man is in 'down' state
 - **expects:** `^down_checks=NONE$`
 
 ```bash
-docker exec healthchecks python3 /opt/healthchecks/manage.py shell -c "from hc.api.models import Check; d=[c.name for c in Check.objects.all() if c.get_status()=='down']; print('down_checks='+(','.join(sorted(d)) if d else 'NONE'))"
+docker exec healthchecks python3 /opt/healthchecks/manage.py shell -v 0 -c "from hc.api.models import Check; d=[c.name for c in Check.objects.all() if c.get_status()=='down']; print('down_checks='+(','.join(sorted(d)) if d else 'NONE'))"
 ```
 
 ## `alert-dsm-immich-task-scheduled`
