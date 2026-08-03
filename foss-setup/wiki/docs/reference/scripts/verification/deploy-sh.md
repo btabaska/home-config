@@ -42,6 +42,7 @@ scripts/verification/deploy.sh            # deploy
 
 ## See also
 
+- [`reopen-report.py`](reopen-report-py.md)
 - [`stack-mirror-check.sh`](stack-mirror-check-sh.md)
 - [`tracker-count-check.py`](tracker-count-check-py.md)
 - [`tracker-integrity.py`](tracker-integrity-py.md)

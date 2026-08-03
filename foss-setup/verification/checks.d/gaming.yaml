@@ -97,6 +97,26 @@ checks:
     runbook: wiki/docs/runbooks/game-backups.md
     enabled: true
 
+  # fix-62/SM45: BedrockConnect (mini:19132) is the serverlist entry point console
+  # Bedrock players hit to reach the server, and it had ZERO functional coverage —
+  # only docker liveness (Up N weeks) and the public playit-edge checks above, which
+  # do not traverse this local service. A RakNet serverlist ping (same protocol as
+  # game-playit-bedrock-udp, via the shared mc-bedrock-ping.py) proves the listener
+  # actually answers with its MOTD, catching a wedged RakNet listener that liveness
+  # can't see (mandate 1/2). warn: it's the console-join convenience path, not the
+  # server itself.
+  - id: game-bedrockconnect-serverlist
+    name: "BedrockConnect serverlist answers a RakNet ping on mini:19132 (console-join path, SM45)"
+    host: mini
+    cmd: >-
+      python3 /opt/verification/bin/mc-bedrock-ping.py 127.0.0.1 19132
+      | grep -q 'Join To Open Server List' && echo BEDROCKCONNECT_OK || echo BEDROCKCONNECT_FAIL
+    expect: '^BEDROCKCONNECT_OK$'
+    severity: warn
+    task_id: game-04
+    runbook: wiki/docs/runbooks/game-backups.md
+    enabled: true
+
   # M30 class guard: the register-error signature in the agent log covers ALL
   # UDP tunnels (Palworld has no query protocol to probe directly). The guard
   # self-heals within 10 min; this surfaces that the class recurred at all.

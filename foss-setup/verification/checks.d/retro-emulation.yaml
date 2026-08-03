@@ -18,11 +18,13 @@ checks:
       for core in mesen snes9x mgba gambatte mupen64plus_next dolphin; do
       [ -e "/usr/lib/libretro/${core}_libretro.so" ] || { echo "MISSING-CORE:${core}"; exit 1; };
       done;
-      n=0;
-      for s in gb gba n64 nes snes gc wii; do
+      n=0; empty="";
+      for s in gb gba n64 nes snes gc wii wiiu; do
       c=$(ls "/home/btabaska/ROMs/$s" 2>/dev/null | grep -vi eaDir | wc -l);
+      [ "$c" -eq 0 ] && empty="$empty $s";
       n=$((n+c));
       done;
+      if [ -n "$empty" ]; then echo "PLATFORM-EMPTY:$empty roms=$n"; exit 1; fi;
       if [ "$n" -ge 8000 ]; then echo "ESDE-ROMM-OK roms=$n"; else echo "LIBRARY-THIN roms=$n"; exit 1; fi
     expect: '^ESDE-ROMM-OK'
     severity: warn

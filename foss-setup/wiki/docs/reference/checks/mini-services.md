@@ -1,6 +1,6 @@
 # Checks — mini-services
 
-`foss-setup/verification/checks.d/mini-services.yaml` — 27 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/mini-services.yaml` — 28 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `mini-caddy-running`
 
@@ -37,13 +37,13 @@ docker inspect -f '{{.State.Status}}' adguardhome
 
 ## `mini-paperless`
 
-paperless-ngx answers on :8000
+paperless-ngx renders its login page (app+backend, not just a redirect)
 
 - **host:** `mini` · **severity:** `crit` · **guards task:** `docker-05` · **enabled:** True
-- **expects:** `^302$`
+- **expects:** `^Paperless$`
 
 ```bash
-curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8000/
+curl -sf -m 8 http://localhost:8000/accounts/login/ | grep -o 'Paperless' | head -1
 ```
 
 ## `mini-forgejo`
@@ -103,13 +103,13 @@ curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:3001/
 
 ## `mini-wallabag`
 
-wallabag answers on :8085
+wallabag serves its /api/info application payload (:8085, not just a redirect)
 
 - **host:** `mini` · **severity:** `warn` · **guards task:** `read-07` · **enabled:** True
-- **expects:** `^302$`
+- **expects:** `^"appname":"wallabag"$`
 
 ```bash
-curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8085/
+curl -sf -m 8 http://localhost:8085/api/info | grep -o '"appname":"wallabag"'
 ```
 
 ## `mini-miniflux`
@@ -169,13 +169,13 @@ docker exec miniflux_db nslookup miniflux.app 127.0.0.11 >/dev/null 2>&1 && echo
 
 ## `mini-mealie`
 
-mealie answers on :9000
+mealie backend answers /api/app/about with a version (:9000, not just the SPA)
 
 - **host:** `mini` · **severity:** `warn` · **guards task:** `docker-11` · **enabled:** True
-- **expects:** `^200$`
+- **expects:** `^"version":"v[0-9]`
 
 ```bash
-curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:9000/
+curl -sf -m 8 http://localhost:9000/api/app/about | grep -o '"version":"v[0-9][^"]*"' | head -1
 ```
 
 ## `mini-navidrome`
@@ -202,13 +202,13 @@ curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:5055/
 
 ## `mini-tautulli`
 
-tautulli answers on :8181
+tautulli /status returns application success (:8181, not just a login redirect)
 
 - **host:** `mini` · **severity:** `warn` · **guards task:** `media-02` · **enabled:** True
-- **expects:** `^303$`
+- **expects:** `^"result": "success"$`
 
 ```bash
-curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8181/
+curl -sf -m 8 http://localhost:8181/status | grep -o '"result": "success"'
 ```
 
 ## `mini-beszel`
@@ -286,6 +286,46 @@ wiki->OWUI RAG sync ran clean in the last 26h (homelab-wiki fresh)
 
 ```bash
 st=$(systemctl show wiki-rag-sync.service -p ExecMainStatus --value); age=$(( $(date +%s) - $(stat -c %Y /var/lib/verification/wiki-rag-state.json 2>/dev/null || echo 0) )); echo "exit=$st age_h=$(( age / 3600 ))"; [ "$st" = "0" ] && [ "$age" -lt 93600 ] && echo RAG_FRESH || echo RAG_STALE
+```
+
+## `mini-wiki-rag-retrieval`
+
+OWUI homelab-wiki collection returns real chunks for a retrieval query (RAG consumer end)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
+- **expects:** `^RAG_RETRIEVAL_OK`
+
+```bash
+python3 - <<'PY'
+import json, os, sys, urllib.request
+base = os.environ["OWUI_URL"].rstrip("/")
+hdr = {"Authorization": "Bearer " + os.environ["OWUI_API_KEY"],
+       "Content-Type": "application/json"}
+def call(path, data=None):
+    req = urllib.request.Request(
+        base + path, headers=hdr,
+        data=json.dumps(data).encode() if data is not None else None,
+        method="POST" if data is not None else "GET")
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.load(r)
+try:
+    kl = call("/api/v1/knowledge/")
+    items = kl.get("items", kl if isinstance(kl, list) else [])
+    cid = next((c["id"] for c in items if c.get("name") == "homelab-wiki"), None)
+    if not cid:
+        print("RAG_RETRIEVAL_FAIL no homelab-wiki collection"); sys.exit(1)
+    res = call("/api/v1/retrieval/query/collection",
+               {"collection_names": [cid],
+                "query": "How is LiteLLM configured?", "k": 3})
+    docs = res.get("documents") or []
+    n = len(docs[0]) if docs and isinstance(docs[0], list) else len(docs)
+    print("RAG_RETRIEVAL_OK chunks=%d" % n if n > 0
+          else "RAG_RETRIEVAL_FAIL chunks=0")
+    sys.exit(0 if n > 0 else 1)
+except Exception as e:
+    print("RAG_RETRIEVAL_FAIL " + type(e).__name__ + ":" + str(e)[:80])
+    sys.exit(1)
+PY
 ```
 
 ## `mini-root-fs-writable`

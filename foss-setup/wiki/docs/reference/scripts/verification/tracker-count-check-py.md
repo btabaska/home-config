@@ -24,6 +24,7 @@ Prints TRACKER-COUNTS-OK on success; prints the mismatch and exits 1 otherwise.
 ## See also
 
 - [`deploy.sh`](deploy-sh.md)
+- [`reopen-report.py`](reopen-report-py.md)
 - [`stack-mirror-check.sh`](stack-mirror-check-sh.md)
 - [`tracker-integrity.py`](tracker-integrity-py.md)
 - [`unit-drift-check.sh`](unit-drift-check-sh.md)

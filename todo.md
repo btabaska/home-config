@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**266/352 done** · **53 open** · **18 deferred** · 15 retired.
+**267/352 done** · **52 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -86,9 +86,6 @@
 - [ ] **`ha-28`** Withings Body Cardio scale + BPM Connect (cloud OAuth) _(est 30 min)_
 - [ ] **`ha-31`** Automations pack v1 (git-backed YAML) _(est half day)_
 - [ ] **`ha-32`** HA ops glue: SSH add-on, git-backed /config, nightly backups verify, checks.d/ha.yaml, Homepage _(est 1 h)_
-
-### verification
-- [ ] **`fix-62`** Check quality + coverage batch: 4 structurally-broken checks (plex-version, stash auth, immich-backup 60s find, esde), Stash no-op self-heal page storm, liveness-only quartet, filed monitoring gaps _(est 1-3 hrs)_
 
 ### wiki
 - [ ] **`fix-68`** Tracker/docs truth repair: 20 done tasks failing checks with zero formal reopens, wiki-drift from a same-commit violation, catalog lagging 6 live services, stale-path/plan-era prose _(est 1-3 hrs)_

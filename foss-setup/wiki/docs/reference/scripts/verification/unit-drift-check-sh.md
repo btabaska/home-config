@@ -34,6 +34,7 @@ unit-drift-check.sh <repo-checkout-root>
 ## See also
 
 - [`deploy.sh`](deploy-sh.md)
+- [`reopen-report.py`](reopen-report-py.md)
 - [`stack-mirror-check.sh`](stack-mirror-check-sh.md)
 - [`tracker-count-check.py`](tracker-count-check-py.md)
 - [`tracker-integrity.py`](tracker-integrity-py.md)

@@ -1,6 +1,6 @@
 # Checks — secrets
 
-`foss-setup/verification/checks.d/secrets.yaml` — 4 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/secrets.yaml` — 6 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `nas-health-env-perms`
 
@@ -44,6 +44,28 @@ ntfy denies anonymous publish to homelab-alerts (deny-all intact)
 
 ```bash
 curl -s -o /dev/null -m 8 -w '%{http_code}' -X POST -d probe https://ntfy.tabaska.us/homelab-alerts
+```
+
+## `nas-mylar3-umask-guard`
+
+mylar3 container entrypoint sets umask 077 (fix-53 structural fix intact)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-53` · **enabled:** True
+- **expects:** `^umask=set$`
+
+```bash
+ep=$(printf '%s\n' "$NAS_SUDO_PASSWORD" | ssh -o BatchMode=yes -o ConnectTimeout=10 nas "sudo -S -p '' /usr/local/bin/docker inspect mylar3 --format '{{json .Config.Entrypoint}}'" 2>/dev/null); echo "$ep" | grep -q 'umask 077' && echo umask=set || echo "umask=MISSING ep=${ep:-inspect_failed}"
+```
+
+## `nas-ha-backup-acl`
+
+HA offsite backup tars: only administrators/ha-backup can write/delete (SM42)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-53` · **enabled:** True
+- **expects:** `^backup_open_write_aces=0$`
+
+```bash
+n=$(printf '%s\n' "$NAS_SUDO_PASSWORD" | ssh -o BatchMode=yes -o ConnectTimeout=10 nas "sudo -S -p '' sh -c 'F=\$(ls -1t /volume1/backups/*.tar 2>/dev/null | head -1); /usr/syno/bin/synoacltool -get /volume1/backups; [ -n \"\$F\" ] && /usr/syno/bin/synoacltool -get \"\$F\"'" 2>/dev/null | grep -Ec 'group:(media|users|http|household|docker-service):allow:rwxpdD'); echo "backup_open_write_aces=${n:-query_failed}"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

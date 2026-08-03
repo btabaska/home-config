@@ -37,12 +37,20 @@ checks:
   # encode (500) or a reverted ML config returns no assets and fails. This replaces
   # the old rig-only /ping+encode crits as the user-facing guardian, so taking the
   # rig ML offline by day no longer pages — only a real search outage does.
+  # fix-62/SL21: the old -m 30 had ZERO margin — an identical probe timed out at 30s
+  # under CLIP cold-start (NAS iGPU day fallback) then answered in 13s on retry, so
+  # this crit fast-tier check false-failed on model warm-up latency. Widened to -m 55
+  # with a check-level timeout: 90 (runner default is 60), and min_consecutive_fails: 2
+  # so one cold-start blip never pages crit (fix-61 de-flap; the daily unfiltered sweep
+  # still uses threshold 1 as an immediate backstop).
   - id: immich-smart-search-consumer
     tier: fast
     name: "immich smart search returns results end-to-end (text-encode + vector search, any ML backend)"
     host: mini
+    timeout: 90
+    min_consecutive_fails: 2
     cmd: >-
-      resp=$(curl -s -m 30 -X POST https://immich.tabaska.us/api/search/smart
+      resp=$(curl -s -m 55 -X POST https://immich.tabaska.us/api/search/smart
       -H "x-api-key: $IMMICH_API_KEY" -H 'Content-Type: application/json'
       -d '{"query":"a photo of people outdoors"}' 2>/dev/null);
       printf '%s' "$resp" | grep -q '"id":' && echo SEARCH_OK || echo SEARCH_FAIL

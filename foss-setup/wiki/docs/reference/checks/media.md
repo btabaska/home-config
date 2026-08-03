@@ -1,6 +1,6 @@
 # Checks — media
 
-`foss-setup/verification/checks.d/media.yaml` — 19 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/media.yaml` — 21 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `music-library-dupes`
 
@@ -187,6 +187,28 @@ lidarr artist-monitor reconciler timer active + last run not failed (media-07 gu
 
 ```bash
 systemctl is-active --quiet lidarr-artist-monitor-reconcile.timer && [ "$(systemctl show -p Result --value lidarr-artist-monitor-reconcile.service)" != failed ] && echo RECONCILE_TIMER_OK || echo RECONCILE_TIMER_BAD
+```
+
+## `arr-queue-reconcile-timer-healthy`
+
+arr-queue-reconcile timer active + last run not failed (fix-54 self-clean guard)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-54` · **enabled:** True
+- **expects:** `^RECONCILE_TIMER_OK`
+
+```bash
+systemctl is-active --quiet arr-queue-reconcile.timer && [ "$(systemctl show -p Result --value arr-queue-reconcile.service)" != failed ] && echo RECONCILE_TIMER_OK || echo RECONCILE_TIMER_BAD
+```
+
+## `arr-queue-stale-records`
+
+arr: no import-queue record stuck in warning >96h (fix-54 reconciler backstop)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-54` · **enabled:** True
+- **expects:** `^STALEQ_OK`
+
+```bash
+python3 /opt/verification/bin/arr-queue-stale.py
 ```
 
 ## `seerr-request-rot`

@@ -32,7 +32,7 @@ edge: exposed Plex build not >14 days behind latest Synology release
 - **expects:** `^VERSION_OK:`
 
 ```bash
-WAN=$(curl -s -m 10 https://ifconfig.me); exp=$(ssh -o BatchMode=yes -o ConnectTimeout=10 seedbox "curl -s -m 10 http://$WAN:32400/identity" | grep -oE 'version="[^"]+"' | head -1 | cut -d'"' -f2); curl -s -m 15 https://plex.tv/api/downloads/5.json | EXPOSED="$exp" python3 -c 'import json,os,sys,time; d=json.load(sys.stdin)["nas"]["Synology (DSM 7.2.2+)"]; exp=os.environ["EXPOSED"]; age=(time.time()-d["release_date"])/86400.0; print("VERSION_OK:current" if exp==d["version"] else ("VERSION_OK:grace_%.0fd" % age if age < 14 else "VERSION_STALE:exposed="+exp+"_latest="+d["version"]))'
+WAN=$(curl -s -m 10 https://ifconfig.me); exp=$(ssh -o BatchMode=yes -o ConnectTimeout=10 seedbox "curl -s -m 10 http://$WAN:32400/identity" | grep -oE 'MediaContainer[^>]*' | grep -oE 'version="[^"]+"' | tail -1 | cut -d'"' -f2); curl -s -m 15 https://plex.tv/api/downloads/5.json | EXPOSED="$exp" python3 -c 'import json,os,sys,time; d=json.load(sys.stdin)["nas"]["Synology (DSM 7.2.2+)"]; exp=os.environ["EXPOSED"]; age=(time.time()-d["release_date"])/86400.0; print("VERSION_OK:current" if exp==d["version"] else ("VERSION_OK:grace_%.0fd" % age if age < 14 else "VERSION_STALE:exposed="+exp+"_latest="+d["version"]))'
 ```
 
 ## `edge-plex-manual-port-mapping`

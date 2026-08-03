@@ -1,6 +1,6 @@
 # Checks — seedbox
 
-`foss-setup/verification/checks.d/seedbox.yaml` — 9 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/seedbox.yaml` — 12 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `seedbox-public-lockdown`
 
@@ -79,6 +79,17 @@ seedbox: no torrent 100% done >48h still in a pre-import label
 ~/venvs/deluge/bin/python ~/scripts/deluge-preimport-stuck.py
 ```
 
+## `books-preimport-unimported`
+
+seedbox: no completed books grab stuck >24h in the 'bookshelf' pre-import label (fix-57 SH11)
+
+- **host:** `seedbox` · **severity:** `warn` · **guards task:** `fix-57` · **enabled:** True
+- **expects:** `^BOOKS_PREIMPORT_OK`
+
+```bash
+~/venvs/deluge/bin/python ~/scripts/deluge-bookshelf-preimport.py
+```
+
 ## `seedbox-extracted-reaped`
 
 seedbox: no extracted leftovers older than 7d in ~/media/extracted
@@ -99,6 +110,28 @@ seedbox: no *arr _update/_backup leftovers in ~/tmp
 
 ```bash
 find tmp -maxdepth 1 \( -name '*_update' -o -name '*_backup' \) 2>/dev/null | wc -l
+```
+
+## `deluge-payload-present`
+
+seedbox: no pre-import torrent Seeding-100% with a deleted payload / move_completed wedge (SH2/SH9/SM26)
+
+- **host:** `seedbox` · **severity:** `warn` · **guards task:** `fix-54` · **enabled:** True
+- **expects:** `^PAYLOAD_OK`
+
+```bash
+~/venvs/deluge/bin/python ~/scripts/deluge-payload-audit.py
+```
+
+## `seedbox-quota-headroom`
+
+seedbox: user quota has headroom (< soft limit and >100G to hard) — pre-EDQUOT guard (SM17)
+
+- **host:** `seedbox` · **severity:** `warn` · **guards task:** `fix-54` · **enabled:** True
+- **expects:** `^QUOTA_OK`
+
+```bash
+quota -s | awk '/\/dev\//{u=$2+0;s=$3+0;h=$4+0;hr=h-u; print ((u<s && hr>100)?"QUOTA_OK":"QUOTA_LOW")" headroom_to_hard="hr"G used="u"G soft="s"G hard="h"G"}'
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

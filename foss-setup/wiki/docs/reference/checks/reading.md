@@ -1,16 +1,16 @@
 # Checks — reading
 
-`foss-setup/verification/checks.d/reading.yaml` — 27 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/reading.yaml` — 30 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `cwa-kobo-sync-consumer`
 
-CWA Kobo sync answers valid JSON for both device users (M35 consumer end)
+CWA Kobo sync: 200 + every element an entitlement dict, both device users (M35 consumer end; fix-57 SM32)
 
 - **host:** `mini` · **severity:** `warn` · **guards task:** `fix-38` · **enabled:** True
 - **expects:** `^KOBO_SYNC_OK$`
 
 ```bash
-ok=1; for u in "$CWA_KOBO_SYNC_URL_ADMIN" "$CWA_KOBO_SYNC_URL_KOBO2"; do code=$(curl -s -o /tmp/cwa-kobo-probe.json -m 30 -w '%{http_code}' "$u"); if [ "$code" != "200" ] || ! python3 -c 'import json;json.load(open("/tmp/cwa-kobo-probe.json"))' 2>/dev/null; then ok=0; echo "KOBO_SYNC_FAIL code=$code"; fi; done; rm -f /tmp/cwa-kobo-probe.json; [ "$ok" = 1 ] && echo KOBO_SYNC_OK
+ok=1; for u in "$CWA_KOBO_SYNC_URL_ADMIN" "$CWA_KOBO_SYNC_URL_KOBO2"; do code=$(curl -s -o /tmp/cwa-kobo-probe.json -m 30 -w '%{http_code}' "$u"); res=$(python3 -c 'import json,sys; d=json.load(open("/tmp/cwa-kobo-probe.json")); bad=[x for x in d if not isinstance(x,dict)]; print("BARE:"+";".join(map(str,bad)) if bad else "DICTS_OK")' 2>/dev/null); if [ "$code" != "200" ] || [ "$res" != "DICTS_OK" ]; then ok=0; echo "KOBO_SYNC_FAIL code=$code $res"; fi; done; rm -f /tmp/cwa-kobo-probe.json; [ "$ok" = 1 ] && echo KOBO_SYNC_OK
 ```
 
 ## `cwa-kobo-proxy-intent`
@@ -294,11 +294,31 @@ print(";".join(bad) if bad else "NONE")');
 guard=OK;
 grep -q "PermanentRequestError" /opt/stacks/libreseerr/app.py || guard=NO_PATCH_APP;
 grep -q "adopt_library_book" /opt/stacks/libreseerr/readarr.py || guard=NO_PATCH_READARR;
+grep -q "_retry_empty" /opt/stacks/libreseerr/readarr.py || guard=NO_RETRY_GUARD;
 grep -q "class BookshelfClient(ReadarrClient)" /opt/stacks/libreseerr/bookshelf.py || guard=NO_PATCH_BOOKSHELF;
 docker inspect libreseerr --format '{{json .Config.Cmd}}' | grep -q -- --timeout || guard=NO_GUNICORN_TIMEOUT;
 [ -n "$(docker exec libreseerr printenv NTFY_TOKEN 2>/dev/null)" ] || guard=NO_NTFY_TOKEN;
 if [ "$sig" = NONE ] && [ "$guard" = OK ]; then echo REQUEST_PATH_OK;
 else echo "REQUEST_PATH_BAD sig=$sig guard=$guard"; fi
+```
+
+## `libreseerr-request-flow-health`
+
+libreseerr: no recoverable request failed on a mechanism/transient cause since fix-57 (SM5 request-flow)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-57` · **enabled:** True
+- **expects:** `^REQUEST_FLOW_OK$`
+
+```bash
+res=$(python3 -c '
+import json, re
+reqs = json.load(open("/opt/stacks/libreseerr/data/requests.json"))
+SINCE = "2026-08-03"
+MECH = re.compile("author unresolvable|read timeout|Read timed out|Max retries|ConnectionError|Connection aborted|Server Error|Bad Gateway|Service Unavailable|transient, will retry", re.I)
+bad = [str(r.get("title")) for r in reqs if r.get("status")=="error" and (r.get("created_at") or "")>=SINCE and MECH.search(str(r.get("error") or ""))]
+any_ok = any(r.get("status")=="completed" for r in reqs)
+print("BAD:"+";".join(bad[:5]) if bad else ("NOOK" if not any_ok else "OK"))');
+[ "$res" = "OK" ] && echo REQUEST_FLOW_OK || echo "REQUEST_FLOW_BAD $res"
 ```
 
 ## `hardcover-token-valid`
@@ -423,13 +443,35 @@ python3 /opt/verification/bin/komga-serves.py
 
 ## `suwayomi-feeds-komga`
 
-Suwayomi: API up + NAS output mount writable + Komga Manga library indexes a series (read-18 pipeline consumer end)
+Suwayomi chain: API up + mount writable + container sees real mount + thumbnail 200 + Komga Manga >=2 series (read-18/fix-58 consumer end)
 
 - **host:** `mini` · **severity:** `warn` · **guards task:** `read-18` · **enabled:** True
 - **expects:** `^SUWAYOMI_OK`
 
 ```bash
 python3 /opt/verification/bin/suwayomi-feeds-komga.py
+```
+
+## `komga-manga-indexed-vs-disk`
+
+Komga Manga library indexes the on-disk CBZ (no scan lag) + >=2 series (fix-58 SH12 consumer end)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-58` · **enabled:** True
+- **expects:** `^KOMGA_MANGA_OK`
+
+```bash
+python3 /opt/verification/bin/komga-manga-indexed-vs-disk.py
+```
+
+## `komga-scheduler-live-libraries`
+
+Komga's running scheduler fires 0 scans against a deleted library id (fix-58 SH12 cause catch)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-58` · **enabled:** True
+- **expects:** `^SCHED_OK`
+
+```bash
+n=$(printf '%s\n' "$NAS_SUDO_PASSWORD" | ssh -o BatchMode=yes -o ConnectTimeout=10 nas "sudo -S -p '' /usr/local/bin/docker logs komga --since 168h 2>&1 | awk '/Started ApplicationKt/{c=0} /Library does not exist/{c++} END{print c+0}'" 2>/dev/null); if [ "$n" = "0" ]; then echo "SCHED_OK deadid_errors=0"; else echo "SCHED_BAD deadid_errors=$n (scheduler firing a deleted library id since Komga's current start — restart komga to rebuild)"; fi
 ```
 
 ## `mylar3-feeds-komga`

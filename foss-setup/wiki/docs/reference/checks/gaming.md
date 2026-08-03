@@ -1,6 +1,6 @@
 # Checks — gaming
 
-`foss-setup/verification/checks.d/gaming.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/gaming.yaml` — 8 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `game-amp-backup-fresh`
 
@@ -63,6 +63,17 @@ for _ in range(2):
 print("NO-PONG")
 sys.exit(1)
 PY
+```
+
+## `game-bedrockconnect-serverlist`
+
+BedrockConnect serverlist answers a RakNet ping on mini:19132 (console-join path, SM45)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `game-04` · **enabled:** True
+- **expects:** `^BEDROCKCONNECT_OK$`
+
+```bash
+python3 /opt/verification/bin/mc-bedrock-ping.py 127.0.0.1 19132 | grep -q 'Join To Open Server List' && echo BEDROCKCONNECT_OK || echo BEDROCKCONNECT_FAIL
 ```
 
 ## `game-playit-udp-register-errors`

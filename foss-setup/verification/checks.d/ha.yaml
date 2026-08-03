@@ -238,3 +238,32 @@ checks:
     task_id: ha-04
     runbook: wiki/docs/runbooks/ha-health.md
     enabled: false
+
+  # fix-62/SM44: ha-assist-rig-llm-reachable above only curls rig Ollama /api/tags
+  # (backend liveness) — Ollama up + model listed passes even if the HA conversation
+  # agent conversation.rig_ollama_assist is misconfigured/broken. This is the e2e
+  # consumer check: POST /api/conversation/process TARGETED at the rig-LLM agent
+  # (agent_id) so it can't fall back to the built-in intent handler, and require a
+  # non-error response with non-empty speech — i.e. the LLM actually processed the
+  # prompt and answered. warn (the rig AI-stack SPOF is an accepted condition, like
+  # its sibling). timeout 60 + curl -m 45 covers a cold llama3.2:3b model load.
+  - id: ha-assist-conversation-e2e
+    name: "HA Assist LLM agent answers /api/conversation/process end-to-end (rig Ollama path)"
+    host: mini
+    timeout: 60
+    cmd: >-
+      curl -s -m 45 -X POST http://192.168.10.50:8123/api/conversation/process
+      -H "Authorization: Bearer $HA_TOKEN" -H 'Content-Type: application/json'
+      -d '{"text":"Reply with exactly the word READY and nothing else.","language":"en","agent_id":"conversation.rig_ollama_assist"}'
+      | python3 -c 'import sys,json;
+      d=json.load(sys.stdin);
+      r=d.get("response",{});
+      sp=(((r.get("speech") or {}).get("plain") or {}).get("speech") or "").strip();
+      rt=r.get("response_type");
+      print("ASSIST_E2E_OK type="+str(rt)+" speech="+repr(sp[:40]) if (rt!="error" and sp) else "ASSIST_E2E_FAIL type="+str(rt)+" speech="+repr(sp[:40]))'
+      2>/dev/null || echo ASSIST_E2E_FAIL unreachable
+    expect: '^ASSIST_E2E_OK'
+    severity: warn
+    task_id: ha-12
+    runbook: wiki/docs/runbooks/ha-health.md
+    enabled: true

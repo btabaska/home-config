@@ -10,7 +10,7 @@ immich smart search returns results end-to-end (text-encode + vector search, any
 - **expects:** `^SEARCH_OK$`
 
 ```bash
-resp=$(curl -s -m 30 -X POST https://immich.tabaska.us/api/search/smart -H "x-api-key: $IMMICH_API_KEY" -H 'Content-Type: application/json' -d '{"query":"a photo of people outdoors"}' 2>/dev/null); printf '%s' "$resp" | grep -q '"id":' && echo SEARCH_OK || echo SEARCH_FAIL
+resp=$(curl -s -m 55 -X POST https://immich.tabaska.us/api/search/smart -H "x-api-key: $IMMICH_API_KEY" -H 'Content-Type: application/json' -d '{"query":"a photo of people outdoors"}' 2>/dev/null); printf '%s' "$resp" | grep -q '"id":' && echo SEARCH_OK || echo SEARCH_FAIL
 ```
 
 ## `rig-immich-ml-window`

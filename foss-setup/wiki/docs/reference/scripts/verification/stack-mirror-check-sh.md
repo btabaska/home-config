@@ -47,6 +47,7 @@ stack-mirror-check.sh mirrors|manifest
 ## See also
 
 - [`deploy.sh`](deploy-sh.md)
+- [`reopen-report.py`](reopen-report-py.md)
 - [`tracker-count-check.py`](tracker-count-check-py.md)
 - [`tracker-integrity.py`](tracker-integrity-py.md)
 - [`unit-drift-check.sh`](unit-drift-check-sh.md)

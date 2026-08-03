@@ -139,13 +139,23 @@ checks:
   # observability hardening (2026-07-14): stash had container coverage only. This
   # GraphQL version query proves the app + DB handshake (a static 200 could hide a
   # wedged backend). :9999 is published on the NAS host so mini can reach it.
+  # fix-62/SM9: Stash enabled auth on the GraphQL endpoint ~2026-07-22, so the old
+  # anonymous POST 401'd with a 0-byte body — the check could never pass and, with
+  # no -w http_code and no failure branch, its stored output was EMPTY (zero
+  # operator signal whether the pipe or the service broke). Now it sends the ApiKey
+  # header (env STASH_API_KEY, vault homepage_widgets.stash_api_key) and always
+  # emits an http_code so a 401 (auth regressed) vs 000 (service down) is legible.
   - id: stash-serving
-    name: "stash answers its GraphQL version query (:9999)"
+    name: "stash answers its GraphQL version query with auth (:9999, real consumer end)"
     host: mini
     cmd: >-
-      curl -s -m 8 -X POST http://nas:9999/graphql -H 'Content-Type: application/json'
-      -d '{"query":"{version{version}}"}'
-    expect: '"version":"v[0-9]'
+      code=$(curl -s -m 8 -o /tmp/stash-ver.$$ -w '%{http_code}' -X POST http://nas:9999/graphql
+      -H 'Content-Type: application/json' -H "ApiKey: $STASH_API_KEY"
+      -d '{"query":"{version{version}}"}');
+      body=$(cat /tmp/stash-ver.$$ 2>/dev/null); rm -f /tmp/stash-ver.$$;
+      printf '%s' "$body" | grep -q '"version":"v[0-9]'
+      && echo "stash=ok http=$code" || echo "stash=FAIL http=$code body=${body:0:60}"
+    expect: '^stash=ok '
     severity: warn
     task_id: nas-01
     runbook: wiki/runbooks/nas.md
@@ -212,6 +222,15 @@ checks:
   # signal — it measures the real OUTCOME (fresh assets landing) regardless of
   # WHICH client uploaded them (native mobile app, web drag-drop, CLI). It
   # therefore subsumes the old nas-immich-mobile-paired proxy (retired nas-31).
+  # fix-62/SH14: the old probe did an UNBOUNDED `ssh nas find /volume1/photo/{upload,
+  # library} -mtime -7` over a ~4TB tree — 6m55s wall time on the busy DS920+, so it
+  # exited 124 TIMEOUT every run and the flagship phone-backup dead-man was permanently
+  # DARK (couldn't tell a real stall from its own timeout). Replaced with the same
+  # OUTCOME asserted via the indexed Immich DB (O(1)): `search/metadata createdAfter=
+  # now-7d` returns >0 when a fresh asset landed. Two signals stay separable — assets>0
+  # (library non-empty) and fresh_7d>0 (backup flowing) — so STALE (assets>0, fresh=0),
+  # EMPTY (assets=0) and PROBE_DEAD (api_err/err) are distinct. Completes in ~1s vs 60s
+  # budget; touches no NAS filesystem, so it does not add to the I/O storm (fix-55).
   - id: nas-immich-backup-freshness
     name: "immich library has assets and a file landed in the last 7 days (phone backup flowing)"
     host: mini
@@ -219,10 +238,12 @@ checks:
       t=$(curl -sm 10 -H "x-api-key: $IMMICH_API_KEY" "$IMMICH_URL/api/server/statistics"
       | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d["photos"]+d["videos"])'
       2>/dev/null || echo api_err);
-      f=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas
-      "find /volume1/photo/upload /volume1/photo/library -type f -not -name .immich -mtime -7 2>/dev/null | head -1" 2>/dev/null);
-      [ "$t" != api_err ] && [ "$t" -gt 0 ] && [ -n "$f" ]
-      && echo backup=fresh || echo "backup=STALE assets=$t fresh_file=${f:-none}"
+      since=$(date -u -d "-7 days" +%Y-%m-%dT%H:%M:%SZ);
+      n=$(curl -sm 15 -H "x-api-key: $IMMICH_API_KEY" -H 'Content-Type: application/json'
+      "$IMMICH_URL/api/search/metadata" -d "{\"createdAfter\":\"$since\",\"size\":1}"
+      | python3 -c 'import sys,json;print(json.load(sys.stdin)["assets"]["total"])' 2>/dev/null || echo err);
+      { [ "$t" != api_err ] && [ "$t" -gt 0 ] && [ "$n" != err ] && [ "$n" -gt 0 ]
+      && echo backup=fresh; } || echo "backup=STALE assets=$t fresh_7d=$n"
     expect: '^backup=fresh$'
     severity: warn
     task_id: fix-35

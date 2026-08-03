@@ -1,6 +1,6 @@
 # Checks — ha
 
-`foss-setup/verification/checks.d/ha.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/ha.yaml` — 12 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `ha-http`
 
@@ -121,6 +121,17 @@ HACS integration loaded (community store usable)
 
 ```bash
 curl -s -m 8 -H "Authorization: Bearer $HA_TOKEN" http://192.168.10.50:8123/api/config | grep -c '"hacs"'
+```
+
+## `ha-assist-conversation-e2e`
+
+HA Assist LLM agent answers /api/conversation/process end-to-end (rig Ollama path)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `ha-12` · **enabled:** True
+- **expects:** `^ASSIST_E2E_OK`
+
+```bash
+curl -s -m 45 -X POST http://192.168.10.50:8123/api/conversation/process -H "Authorization: Bearer $HA_TOKEN" -H 'Content-Type: application/json' -d '{"text":"Reply with exactly the word READY and nothing else.","language":"en","agent_id":"conversation.rig_ollama_assist"}' | python3 -c 'import sys,json; d=json.load(sys.stdin); r=d.get("response",{}); sp=(((r.get("speech") or {}).get("plain") or {}).get("speech") or "").strip(); rt=r.get("response_type"); print("ASSIST_E2E_OK type="+str(rt)+" speech="+repr(sp[:40]) if (rt!="error" and sp) else "ASSIST_E2E_FAIL type="+str(rt)+" speech="+repr(sp[:40]))' 2>/dev/null || echo ASSIST_E2E_FAIL unreachable
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

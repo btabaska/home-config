@@ -51,11 +51,16 @@ checks:
     runbook: wiki/runbooks/dns.md
     enabled: true
 
+  # fix-62/SL35: deepened from a bare `/`->302 redirect to a consumer-end probe.
+  # The Django login page is DB/session-backed (rendering it touches the session
+  # store), so a 200 with the "Paperless" title proves the app + backend render,
+  # not just that the reverse proxy answered.
   - id: mini-paperless
-    name: "paperless-ngx answers on :8000"
+    name: "paperless-ngx renders its login page (app+backend, not just a redirect)"
     host: mini
-    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8000/
-    expect: '^302$'
+    cmd: >-
+      curl -sf -m 8 http://localhost:8000/accounts/login/ | grep -o 'Paperless' | head -1
+    expect: '^Paperless$'
     severity: crit
     task_id: docker-05
     runbook: wiki/runbooks/docker.md
@@ -112,11 +117,15 @@ checks:
     runbook: wiki/runbooks/docker.md
     enabled: true
 
+  # fix-62/SL35: deepened from `/`->302 to the app's own /api/info, which returns
+  # a real JSON body from the application layer (appname + version + registration
+  # flag) — proves wallabag itself answers, not just the front controller.
   - id: mini-wallabag
-    name: "wallabag answers on :8085"
+    name: "wallabag serves its /api/info application payload (:8085, not just a redirect)"
     host: mini
-    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8085/
-    expect: '^302$'
+    cmd: >-
+      curl -sf -m 8 http://localhost:8085/api/info | grep -o '"appname":"wallabag"'
+    expect: '^"appname":"wallabag"$'
     severity: warn
     task_id: read-07
     runbook: wiki/runbooks/docker.md
@@ -185,11 +194,15 @@ checks:
     runbook: wiki/docs/runbooks/dns-outage.md
     enabled: true
 
+  # fix-62/SL35: deepened from `/`->200 (the SPA shell, served even if the backend
+  # is wedged) to /api/app/about, which returns a real backend JSON payload
+  # (version + production flags) proving the API layer answers.
   - id: mini-mealie
-    name: "mealie answers on :9000"
+    name: "mealie backend answers /api/app/about with a version (:9000, not just the SPA)"
     host: mini
-    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:9000/
-    expect: '^200$'
+    cmd: >-
+      curl -sf -m 8 http://localhost:9000/api/app/about | grep -o '"version":"v[0-9][^"]*"' | head -1
+    expect: '^"version":"v[0-9]'
     severity: warn
     task_id: docker-11
     runbook: wiki/runbooks/docker.md
@@ -215,11 +228,15 @@ checks:
     runbook: wiki/runbooks/docker.md
     enabled: true
 
+  # fix-62/SL35: deepened from `/`->303 (login redirect) to Tautulli's own /status
+  # health endpoint, which returns a JSON success payload from the application
+  # itself — proving the app route answers, not just the front-end redirect.
   - id: mini-tautulli
-    name: "tautulli answers on :8181"
+    name: "tautulli /status returns application success (:8181, not just a login redirect)"
     host: mini
-    cmd: curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:8181/
-    expect: '^303$'
+    cmd: >-
+      curl -sf -m 8 http://localhost:8181/status | grep -o '"result": "success"'
+    expect: '^"result": "success"$'
     severity: warn
     task_id: media-02
     runbook: wiki/runbooks/docker.md
@@ -327,6 +344,57 @@ checks:
       echo "exit=$st age_h=$(( age / 3600 ))";
       [ "$st" = "0" ] && [ "$age" -lt 93600 ] && echo RAG_FRESH || echo RAG_STALE
     expect: 'RAG_FRESH'
+    severity: warn
+    task_id: ai-01
+    runbook: wiki/runbooks/mini.md
+    enabled: true
+
+  # fix-62/SL46: mini-wiki-rag-fresh above only proves the PRODUCER (the sync timer
+  # ran clean) — it never re-verifies that the synced docs are actually ATTACHED and
+  # RETRIEVABLE. wiki-rag-sync.py skips files whose sha256 matches its local manifest,
+  # so a real detachment (an OWUI upgrade/reset dropping the collection) would be a
+  # permanent silent no-op with mini-wiki-rag-fresh staying green forever. And the
+  # /api/v1/knowledge detail API renders populated collections as files:null, an
+  # observability trap. This is the CONSUMER-end backstop: self-discover the
+  # homelab-wiki collection id by name (fails loudly if the collection vanished) and
+  # run a real retrieval query — >=1 chunk back proves the RAG is genuinely searchable.
+  # Env OWUI_URL + OWUI_API_KEY (vault ai_stack.openwebui_rag_sync_api_key).
+  - id: mini-wiki-rag-retrieval
+    name: "OWUI homelab-wiki collection returns real chunks for a retrieval query (RAG consumer end)"
+    host: mini
+    timeout: 60
+    cmd: |
+      python3 - <<'PY'
+      import json, os, sys, urllib.request
+      base = os.environ["OWUI_URL"].rstrip("/")
+      hdr = {"Authorization": "Bearer " + os.environ["OWUI_API_KEY"],
+             "Content-Type": "application/json"}
+      def call(path, data=None):
+          req = urllib.request.Request(
+              base + path, headers=hdr,
+              data=json.dumps(data).encode() if data is not None else None,
+              method="POST" if data is not None else "GET")
+          with urllib.request.urlopen(req, timeout=30) as r:
+              return json.load(r)
+      try:
+          kl = call("/api/v1/knowledge/")
+          items = kl.get("items", kl if isinstance(kl, list) else [])
+          cid = next((c["id"] for c in items if c.get("name") == "homelab-wiki"), None)
+          if not cid:
+              print("RAG_RETRIEVAL_FAIL no homelab-wiki collection"); sys.exit(1)
+          res = call("/api/v1/retrieval/query/collection",
+                     {"collection_names": [cid],
+                      "query": "How is LiteLLM configured?", "k": 3})
+          docs = res.get("documents") or []
+          n = len(docs[0]) if docs and isinstance(docs[0], list) else len(docs)
+          print("RAG_RETRIEVAL_OK chunks=%d" % n if n > 0
+                else "RAG_RETRIEVAL_FAIL chunks=0")
+          sys.exit(0 if n > 0 else 1)
+      except Exception as e:
+          print("RAG_RETRIEVAL_FAIL " + type(e).__name__ + ":" + str(e)[:80])
+          sys.exit(1)
+      PY
+    expect: '^RAG_RETRIEVAL_OK'
     severity: warn
     task_id: ai-01
     runbook: wiki/runbooks/mini.md
