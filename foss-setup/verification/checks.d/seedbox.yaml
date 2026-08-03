@@ -159,3 +159,41 @@ checks:
     task_id: fix-45
     runbook: wiki/docs/runbooks/fleet-hygiene.md
     enabled: true
+
+  # ── fix-54 (SH2/SH9/SM26) · payload-deleted-under-seed + move_completed wedge ─
+  # The 2026-08-02 sweep found two grabs "Seeding 100%" in deluge whose on-disk
+  # payload had been dropped (quota EDQUOT), so Sonarr looped "path does not
+  # exist" for 3-4 days, plus a HotD grab stuck 100%-but-Downloading (move_completed
+  # never fired -> file stranded in ~/files/ root, invisible to /seedbox/tv). This
+  # probes deluge's own claim against disk truth for the IMPORT-PIPELINE population
+  # (pre-import labels; empty-label for the wedge), catching the exact class at the
+  # SOURCE before the arr ever loops. Regression + class check.
+  - id: deluge-payload-present
+    name: "seedbox: no pre-import torrent Seeding-100% with a deleted payload / move_completed wedge (SH2/SH9/SM26)"
+    host: seedbox
+    cmd: ~/venvs/deluge/bin/python ~/scripts/deluge-payload-audit.py
+    expect: '^PAYLOAD_OK'
+    severity: warn
+    task_id: fix-54
+    runbook: wiki/docs/reference/seedbox/deluge-queue-hygiene.md
+    enabled: true
+
+  # ── fix-54 (SM17) · quota-headroom guard — the ROOT CAUSE tripwire ───────────
+  # The btabaska user quota (soft 2862G / hard 2909G), not the 17T disk, is the
+  # binding constraint. At 88-94% full deluge hit [Errno 122] Disk quota exceeded,
+  # which both dropped payloads under live torrents AND blocked deluge persisting
+  # its Post-Import label relabel (stuck pre-import churn). This fires BEFORE the
+  # quota forces EDQUOT: fail if usage has crossed the soft limit OR headroom to
+  # the hard limit falls under 100G. Durable reclaim is media-09 (~200G RARs) /
+  # media-10 (readarr labels) — see runbook.
+  - id: seedbox-quota-headroom
+    name: "seedbox: user quota has headroom (< soft limit and >100G to hard) — pre-EDQUOT guard (SM17)"
+    host: seedbox
+    cmd: >-
+      quota -s | awk '/\/dev\//{u=$2+0;s=$3+0;h=$4+0;hr=h-u;
+      print ((u<s && hr>100)?"QUOTA_OK":"QUOTA_LOW")" headroom_to_hard="hr"G used="u"G soft="s"G hard="h"G"}'
+    expect: '^QUOTA_OK'
+    severity: warn
+    task_id: fix-54
+    runbook: wiki/docs/reference/seedbox/deluge-queue-hygiene.md
+    enabled: true

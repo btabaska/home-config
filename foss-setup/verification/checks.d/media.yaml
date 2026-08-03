@@ -363,6 +363,37 @@ checks:
     enabled: true
 
   # ---------------------------------------------------------------------------
+  # fix-54 (SH2/SH9/SM4): the queue self-clean GENERATOR-CLOSER. Sonarr looped
+  # 3-4 days on grabs whose payload vanished (quota EDQUOT), while stale
+  # "not-an-upgrade" / wrong-map records piled up (16-17 stuck) with nothing
+  # removing them. arr-queue-reconcile (mini timer, every 4h) now drops
+  # satisfied/dead-end records >72h. These guard the closer: (a) it stays alive,
+  # (b) nothing outlives it to 96h.
+  # ---------------------------------------------------------------------------
+  - id: arr-queue-reconcile-timer-healthy
+    name: "arr-queue-reconcile timer active + last run not failed (fix-54 self-clean guard)"
+    host: mini
+    cmd: 'systemctl is-active --quiet arr-queue-reconcile.timer && [ "$(systemctl show -p Result --value arr-queue-reconcile.service)" != failed ] && echo RECONCILE_TIMER_OK || echo RECONCILE_TIMER_BAD'
+    expect: '^RECONCILE_TIMER_OK'
+    severity: warn
+    task_id: fix-54
+    runbook: wiki/docs/reference/seedbox/deluge-queue-hygiene.md
+    enabled: true
+
+  # AGE-based backstop the count-based *-queue-stuck checks miss: any warning
+  # record older than 96h = the reconciler died or left a fileless wrong-map for
+  # a human. Probes the arr's live queue (consumer end).
+  - id: arr-queue-stale-records
+    name: "arr: no import-queue record stuck in warning >96h (fix-54 reconciler backstop)"
+    host: mini
+    cmd: python3 /opt/verification/bin/arr-queue-stale.py
+    expect: '^STALEQ_OK'
+    severity: warn
+    task_id: fix-54
+    runbook: wiki/docs/reference/seedbox/deluge-queue-hygiene.md
+    enabled: true
+
+  # ---------------------------------------------------------------------------
   # Request-layer rot (added 2026-07-17, fix-26 / H4 H15 M12 M36): the request
   # dashboards (seerr, libreseerr) lying about what the backend will deliver.
   # Four audited shapes: seerr request whose sonarr series was deleted after the

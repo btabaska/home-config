@@ -1,0 +1,10 @@
+[Unit]
+Description=Self-clean stale Sonarr/Radarr import-queue records (fix-54 — the 3-4 day path-does-not-exist / not-an-upgrade wedge generator)
+Documentation=file:/usr/local/sbin/arr-queue-reconcile.py
+OnFailure=ntfy-notify@%n.service
+
+[Service]
+Type=oneshot
+User=btabaska
+EnvironmentFile=/etc/default/arr-queue-reconcile
+ExecStart=/usr/local/sbin/arr-queue-reconcile.py

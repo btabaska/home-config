@@ -1,0 +1,13 @@
+[Unit]
+Description=Reconcile stale Sonarr/Radarr import-queue records every 4h (fix-54 wedge self-clean)
+
+[Timer]
+# Every 4h: a stale (>72h) satisfied/dead-end record is dropped well before the
+# hourly sonarr/radarr-queue-stuck + arr-queue-stale-records tripwires would page
+# on an accumulating pile. RandomizedDelay keeps it off the top-of-hour arr load.
+OnCalendar=00/4:17
+Persistent=true
+RandomizedDelaySec=180
+
+[Install]
+WantedBy=timers.target

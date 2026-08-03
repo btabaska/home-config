@@ -112,6 +112,24 @@ ssh seedbox '~/venvs/deluge/bin/python ~/scripts/deluge-reaper.py'
 !!! note "Validated after the fix-25 widening (2026-07-17)"
     The widened reaper's dry-run reports all eleven labels and `0 eligible` (that morning's cron had already reaped the first ≥14d item, a 37.4 GB Simpsons pack). Post-relabel label counts: `sonarr-imported`=341, `radarr-imported`=17, `lidarr-imported`=10, `readarr-imported`=7, `radarr`=3 (in-flight recovery grabs) — no residue in any other pre-import label. The `deluge-preimport-stuck` check runs green (`PREIMPORT_OK`).
 
+## fix-54 (2026-08-02): quota EDQUOT dropped payloads + the 3–4 day import stall
+
+The 2026-08-02 fleet sweep found Sonarr looping **"Import failed, path does not exist"** every few minutes for 3–4 days on two grabs that Deluge still reported *"Seeding 100%"* — but whose on-disk payload was **gone**. Root cause is **not** the reaper (log-proven: it only reaps ≥14d torrents and removes the whole torrent; these were 4d old and still present). It is the **user quota**.
+
+**The binding constraint is the quota, not the 17 TB disk.** `quota -s` for `btabaska`: soft `2862G` / hard `2909G`, sitting at 88–94% full. At that fill `deluged.log` fills with `[Errno 122] Disk quota exceeded`, which causes two silent failures:
+
+1. **Payload dropped under a live "Seeding" torrent** (SH2/SH9) — data can't be written/kept, but Deluge keeps claiming Seeding from stale state (no recheck), so the arr polls `/seedbox/tv/<name>` forever. All wedged episodes were already satisfied in the library from an alternate release → the wedges were **redundant duplicate grabs**; cleared (removed + blocklisted), no re-grab needed.
+2. **`label.conf` write fails under EDQUOT** → Deluge can't persist a Post-Import Category relabel → completed torrents stay in a pre-import label (`sonarr`) → `deluge-preimport-stuck` churn (SM28). Also strands lost-label grabs at `~/files/` root (SM26 `move_completed` wedge, e.g. HotD S02E07 100%-but-Downloading).
+
+**Guards added (fix-54):**
+
+- **`deluge-payload-audit.py`** (`~/scripts/`, check `deluge-payload-present`) — probes Deluge's Seeding claim against disk truth for the **import-pipeline population** (pre-import labels; empty-label for the wedge). Fails on any pre-import torrent Seeding 100% with a missing payload, or a 100%-but-Downloading `move_completed` wedge. Catches the class at the source before the arr loops. `-imported` torrents are out of scope (they routinely lose their seedbox copy to reaping — a seeding-ratio concern, not an import break).
+- **`seedbox-quota-headroom`** (inline `quota -s` awk) — the **root-cause tripwire**. Fails when usage crosses the soft limit *or* headroom-to-hard drops under 100 G, i.e. **before** EDQUOT forces the next payload drop. Durable reclaim of the structural over-commit is `media-09` (~200 G un-extracted RARs) + `media-10` (retire readarr labels).
+- **`arr-queue-reconcile`** (mini systemd timer, every 4h; `configs/host/mini/arr-queue-reconcile/`) — the **self-clean generator-closer**. Removes Sonarr/Radarr queue records stuck `warning` >72h that are either already **satisfied** (redundant dup → remove+blocklist, no re-grab) or a terminal **dead-end** (`No files found` / `path does not exist` / `Not an upgrade` → remove+blocklist and let the arr re-search). Still-fileless **wrong-series/movie maps** ("matched … by ID") are deliberately **left for a human**. Guarded by `arr-queue-reconcile-timer-healthy`; `arr-queue-stale-records` is the age-based backstop (anything `warning` >96h = the closer died or a wrong-map needs attention).
+
+!!! note "Validated (2026-08-02)"
+    After clearing the wedges, `sonarr-queue-stuck` dropped 16→5 and `radarr-queue-stuck` 9→0; `media-arr-file-quality` is `WATCHABLE_OK bad=0` (Leverage S05 samples + a John Wick sample purged, real files re-adopted). Audit-safe run: `deluge-payload-present` = `PAYLOAD_OK checked=78`, `seedbox-quota-headroom` = `QUOTA_OK headroom_to_hard=189G`, `arr-queue-reconcile-timer-healthy` = `RECONCILE_TIMER_OK`, `arr-queue-stale-records` = `STALEQ_OK`. ~24 GB freed on the seedbox by removing the confirmed-redundant wedged/stale torrents (Better.Off.Ted, A.Knight S01E03, HotD S02E07/S03E05/S03E06, Jackass, Passengers). Residual (out of scope, → fix-55/56): ~196 already-`-imported` torrents seed with no on-disk copy (quota cleanup), a ratio concern only.
+
 ---
 
 [← Seedbox & music reference](index.md)
