@@ -38,6 +38,18 @@ services:
       - /volume1/docker/calibre-web-automated/config:/config
       - /volume1/docker/calibre-web-automated/ingest:/cwa-book-ingest
       - /volume1/books:/calibre-library
+      # fix-57 SM32 (2026-08-02): shadow-patched cps/kobo.py. Upstream
+      # generate_sync_response did `sync_results += store_response.json()` with no
+      # type-check; when the Kobo store leg returns an error object
+      # ({"ResponseStatus":...}) instead of a list (missing/expired device store
+      # auth, or a non-device sync probe), `+=` iterated the dict keys and injected
+      # a bare 'ResponseStatus' STRING into the device sync payload for BOTH
+      # devices. The shadow only merges a real list and logs the store failure.
+      # Pinned to the v4.0.7 image digest above — RE-DERIVE ./patches/kobo.py from
+      # the container's cps/kobo.py on any image bump (the digest is guarded by
+      # check cwa-image-digest-pinned; contamination is caught by the all-dicts
+      # assertion in cwa-kobo-sync-consumer). See runbooks/reading-cwa.md.
+      - /volume1/docker/calibre-web-automated/patches/kobo.py:/app/calibre-web-automated/cps/kobo.py:ro
     ports:
       - '8083:8083'
     restart: always

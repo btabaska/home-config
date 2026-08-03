@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import time
 import unicodedata
 from typing import Optional
 
@@ -13,6 +14,51 @@ logger = logging.getLogger(__name__)
 # Readarr lookup latency exceeds 15 s under burst load (fix-48 B9: 4 of the 13
 # 2026-07-18 request failures were read timeouts at the old hard-coded 15 s).
 LOOKUP_TIMEOUT = int(os.environ.get("READARR_TIMEOUT", "60"))
+
+# ── rg-hc refresh-herd resilience (fix-57 SM5) ───────────────────────────────
+# rreading-glasses (Hardcover mode) fires a background full-catalog refresh the
+# first time any author is touched; while it runs, /author/lookup and
+# /book/lookup intermittently return [] OR a transient 429/5xx even though the
+# record exists and warms into cache moments later (hardcover-rg-hc-quirks:
+# "author/lookup intermittently return [] under quota pressure — retry loop,
+# don't trust one empty result"). A single empty response used to become a
+# PERMANENT request error: 'Le Morte d'Arthur' by Thomas Malory errored
+# "author unresolvable" on 2026-07-28, yet a re-probe on 2026-08-02 resolved
+# the author on the first attempt. Retry empty/transient lookups a few times
+# with linear backoff before giving up; genuine 4xx (not 429) stay permanent.
+LOOKUP_RETRIES = int(os.environ.get("LOOKUP_RETRIES", "3"))
+LOOKUP_RETRY_BACKOFF = float(os.environ.get("LOOKUP_RETRY_BACKOFF", "2.0"))
+
+
+def _retry_empty(fn, what: str, retries: int = None, backoff: float = None):
+    """Call fn(); retry when it returns a falsy/empty result or raises a
+    transient transport error (timeout / conn drop / 429 / 5xx — the rg-hc
+    refresh-herd class). Non-empty results return immediately; a genuine 4xx
+    (other than 429) is permanent and re-raised at once. Returns the last
+    (empty) result if every attempt was empty; re-raises the last transient
+    error if every attempt raised without ever succeeding."""
+    retries = LOOKUP_RETRIES if retries is None else retries
+    backoff = LOOKUP_RETRY_BACKOFF if backoff is None else backoff
+    last_exc = None
+    last_res = []
+    for attempt in range(retries):
+        try:
+            last_res = fn()
+            if last_res:
+                return last_res
+            last_exc = None
+        except requests.exceptions.RequestException as e:
+            status = getattr(getattr(e, "response", None), "status_code", None)
+            if status is not None and 400 <= status < 500 and status != 429:
+                raise  # genuine client error — retrying cannot help
+            last_exc = e
+        if attempt < retries - 1:
+            logger.info("Retrying %s (attempt %d/%d): %s", what, attempt + 2,
+                        retries, "empty" if last_exc is None else str(last_exc)[:80])
+            time.sleep(backoff * (attempt + 1))
+    if last_exc is not None:
+        raise last_exc
+    return last_res
 
 
 def _norm_name(s: str) -> str:
@@ -77,13 +123,19 @@ class ReadarrClient:
         resp.raise_for_status()
         return resp.json()
 
-    def search_books(self, query: str) -> list:
-        """Search for books using the Readarr lookup endpoint."""
+    def _search_books_once(self, query: str) -> list:
         resp = self.session.get(
             self._url("/book/lookup"), params={"term": query}, timeout=LOOKUP_TIMEOUT
         )
         resp.raise_for_status()
         return resp.json()
+
+    def search_books(self, query: str) -> list:
+        """Search for books using the Readarr lookup endpoint. Retries the
+        transient empty/429/5xx rg-hc refresh-herd window (fix-57 SM5) so a
+        recoverable book is not mis-classified as a permanent 'not found'."""
+        return _retry_empty(lambda: self._search_books_once(query),
+                            f"book/lookup '{query}'")
 
     def lookup_by_isbn(self, isbn: str) -> list:
         """Look up a book in Readarr by ISBN."""
@@ -93,13 +145,20 @@ class ReadarrClient:
         resp.raise_for_status()
         return resp.json()
 
-    def lookup_author(self, name: str) -> list:
-        """Look up an author in Readarr by name."""
+    def _lookup_author_once(self, name: str) -> list:
         resp = self.session.get(
             self._url("/author/lookup"), params={"term": name}, timeout=LOOKUP_TIMEOUT
         )
         resp.raise_for_status()
         return resp.json()
+
+    def lookup_author(self, name: str) -> list:
+        """Look up an author in Readarr by name. Retries the transient
+        empty/429/5xx rg-hc refresh-herd window (fix-57 SM5): a single empty
+        author/lookup used to make resolve_author return None => a permanent
+        'author unresolvable' request error (e.g. Le Morte d'Arthur)."""
+        return _retry_empty(lambda: self._lookup_author_once(name),
+                            f"author/lookup '{name}'")
 
     def get_authors(self) -> list:
         """Get all library authors (Bookshelf's /book LIST omits the embedded

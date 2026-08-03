@@ -27,6 +27,7 @@ Calibre-Web-Automated (CWA) is the ebook library and reading server running as t
 | `calibre-web-automated` | `/volume1/docker/calibre-web-automated/config:/config` |
 | `calibre-web-automated` | `/volume1/docker/calibre-web-automated/ingest:/cwa-book-ingest` |
 | `calibre-web-automated` | `/volume1/books:/calibre-library` |
+| `calibre-web-automated` | `/volume1/docker/calibre-web-automated/patches/kobo.py:/app/calibre-web-automated/cps/kobo.py:ro` |
 
 ## Troubleshooting
 

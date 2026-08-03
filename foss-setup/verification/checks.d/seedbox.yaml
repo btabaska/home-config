@@ -130,6 +130,25 @@ checks:
     runbook: wiki/docs/reference/seedbox/deluge-queue-hygiene.md
     enabled: true
 
+  # ── books lost-import alarm (fix-57 SH11 class) ──────────────────────────────
+  # Consumer-end sibling of deluge-preimport-stuck, tightened for the books lane:
+  # a completed grab still in the plain 'bookshelf' label >24h has NOT been
+  # imported (the relabel-imported job only moves VERIFIED-imported torrents to
+  # 'bookshelf-imported'). 'Adrift - K. T. Konkoly' sat here ~306h — an orphaned
+  # readarr-era grab whose indie author has no Hardcover metadata, so Bookshelf
+  # could never track it: invisible to books-pipeline-lost-imports (compares only
+  # Bookshelf-records-with-files vs Calibre) and lost in the 48h all-labels noise
+  # of deluge-preimport-stuck. Books-only + 24h surfaces a lost book within a day.
+  - id: books-preimport-unimported
+    name: "seedbox: no completed books grab stuck >24h in the 'bookshelf' pre-import label (fix-57 SH11)"
+    host: seedbox
+    cmd: ~/venvs/deluge/bin/python ~/scripts/deluge-bookshelf-preimport.py
+    expect: '^BOOKS_PREIMPORT_OK'
+    severity: warn
+    task_id: fix-57
+    runbook: wiki/docs/runbooks/books-imports.md
+    enabled: true
+
   # ── fix-45 (M8 regression) · extracted-leftover reaper actually reaping ──────
   # 139G of already-imported post-extract copies accumulated in ~/media/extracted
   # because the deluge-reaper only covers torrents in ~/files. A daily 05:30 cron

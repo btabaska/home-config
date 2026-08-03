@@ -140,6 +140,25 @@ KOSync progress PUT/GET.
 |---|---|
 | image | `ghcr.io/new-usemame/calibre-web-nextgen:v4.0.7@sha256:89899edd…` (digest-pinned) |
 | `config_kobo_proxy` | `1` — ENABLED is documented intent (vault `cwa.store_passthrough`) |
+| `cps/kobo.py` | **shadow-patched** (fix-57 SM32): `configs/nas/calibre-web-automated/patches/kobo.py` bind-mounted read-only over `/app/…/cps/kobo.py`. RE-DERIVE on any image bump. |
+
+## Kobo sync payload carried a bare string `'ResponseStatus'` (fix-57 SM32)
+
+A GET of either device sync URL returned an 82-element JSON list = 81 entitlement dicts **+
+one bare string `'ResponseStatus'`**, identically on both devices, while `cwa-kobo-sync-consumer`
+stayed green (it only asserted 200 + parseable JSON). Root cause, proven from the deployed
+`cps/kobo.py` `generate_sync_response`: with store passthrough on (`config_kobo_proxy=1`), it
+merges the official Kobo store's sync results via `sync_results += store_response.json()` —
+but when the forwarded request lacks valid Kobo-**store** device auth (an expired/never-authed
+device, or any non-device probe like the check itself), the store returns an **error object**
+`{"ResponseStatus": {...}}` instead of a list, so `+=` iterates the dict's KEYS and injects the
+bare string into the device payload. The local library sync itself is fine — only the store leg
+errors. Fix: the shadow-patched `kobo.py` type-checks `store_sync_results` and only merges a real
+list (logging a warning otherwise), so a store error can no longer poison the array; store
+passthrough stays enabled per documented intent. `cwa-kobo-sync-consumer` now also asserts **every
+element is a dict**, which catches recurrence and doubles as the tripwire if a future image bump
+makes the shadow stale. The 20–30 s sync latency the audit saw is the blocking store round-trip
+under load, not the merge bug.
 | `NETWORK_SHARE_MODE` | `false` in live compose **and** repo mirror (reconciled fix-38) |
 | `auto_ingest_automerge` | `overwrite` in `cwa.db` since 2026-07-20 (media-08; guarded by `cwa-ingest-automerge-guard`) |
 | `koreader_sync_enabled` | `1` in `cwa.db` since 2026-07-28 (read-15; creates `book_format_checksums` in metadata.db, guarded by `cwa-koreader-sync-consumer`) — KOReader device wiring is human task read-06 |

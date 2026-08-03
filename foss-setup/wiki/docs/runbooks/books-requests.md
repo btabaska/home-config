@@ -104,6 +104,28 @@ rreading-glasses' `Emily 1818-1848 Bronte&#776;`, both match plain "Emily Bronte
   falsely-completed). Audits against the backend named in libreseerr's own
   `data/config.json`; requests created before the bmig-04 cutover are counted as
   `legacy_skipped` until bmig-05 cleans them.
+- `libreseerr-request-flow-health` (fix-57 SM5): flags any request created since the fix
+  whose error is a **mechanism/transient** cause (author-unresolvable, read-timeout, 5xx,
+  connection) — a recoverable book that silently failed and should have flowed. It
+  deliberately does NOT alarm on correct **guard refusals** (title/author-mismatch,
+  derivative, genuinely-not-in-Hardcover), so the public-domain-classics batch that dominated
+  the 2026-08-02 error backlog (Homer/Brontë/Austen/Malory — a real Hardcover coverage gap the
+  guard correctly refuses) does not make it permanently red.
+
+## rg-hc refresh-herd: a transient empty must not become a permanent error (fix-57 SM5)
+
+rreading-glasses (Hardcover mode) fires a background full-catalog refresh the first time any
+author is touched; during it the ~60/min quota saturates and `/author/lookup` + `/book/lookup`
+intermittently return `[]` or a 429/5xx even for warm records (it self-heals as the cache
+warms). `readarr.py` used to treat a single empty as PERMANENT — `resolve_author` returned
+`None` → the request errored **"author unresolvable"** (this is how 'Le Morte d'Arthur' failed
+on 07-28 while resolving fine on 08-02). Both `search_books` and `lookup_author` now retry
+empty/transient responses via `_retry_empty` (`LOOKUP_RETRIES=3`, `LOOKUP_RETRY_BACKOFF=2s`;
+a genuine non-429 4xx stays permanent). For the classics coverage gap itself — Hardcover
+returning study guides / coloring books / foreign editions instead of the canonical
+public-domain work — see the libreseerr service page troubleshooter: do NOT force these in
+(that revives the C1/C4 degraded-record class); acquire the ebook manually (Bookshelf
+interactive search, or Standard Ebooks / Gutenberg → CWA ingest).
 
 ## Note (historical): 6-hourly "Invalid request Validation failed" bursts in the readarr-era log
 

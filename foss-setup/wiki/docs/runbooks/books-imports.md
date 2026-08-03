@@ -89,3 +89,37 @@ Bookshelf's Connect config) logged a path-resolution error: a requested book nev
 reached CWA. Log: `/volume1/docker/bookshelf/config/logs/readarr-copy-to-cwa-ingest.log`.
 The historical cause was `xargs` stripping apostrophes (fixed 2026-07-13); any new error
 means a new path shape — fix the script in `configs/nas/` and mirror live.
+
+## If `books-preimport-unimported` fails (a completed grab never reached the library)
+
+A torrent finished 100% but is still in the plain **`bookshelf`** deluge label >24h — it
+was never imported (the relabel-imported job only promotes VERIFIED-imported torrents to
+`bookshelf-imported`). This is the **fix-57 SH11** class: `Adrift - K. T. Konkoly.epub` sat
+here ~306h, an orphaned **readarr-era** grab (readarr used Goodreads metadata, which had the
+book) left behind when readarr was decommissioned on bmig-05 day. Its indie author has **no
+Hardcover entry**, so the Hardcover-backed Bookshelf can never create a record for it — the
+book has no home in the arr-based pipeline and is invisible to `books-pipeline-lost-imports`.
+
+Recover it **directly into Calibre**, bypassing Bookshelf:
+
+1. Stream the epub from the seedbox into the CWA ingest folder (SFTP/scp is disabled on the
+   NAS; the ssh user `btabaska` is uid 1026 = CWA's PUID, so no sudo is needed and the file
+   lands owned correctly):
+   ```
+   ssh seedbox 'cat "/home/hd34/btabaska/files/<Title> - <Author>.epub"' \
+     | ssh nas 'cat > "/volume1/docker/calibre-web-automated/ingest/<Title> - <Author>.epub"'
+   ```
+2. CWA auto-ingest imports it within ~20s (ingest folder drains, book count +1). Verify by
+   title + **byte size** (CWA rewrites the OPF on import, so the epub grows a few bytes — a
+   near-identical size proves it is the same content, not a cross-wired different book) and
+   confirm a KEPUB is servable so the Kobo gets it:
+   ```
+   ssh nas 'sudo /usr/local/bin/docker exec calibre-web-automated sqlite3 /calibre-library/metadata.db \
+     "select id,title,uuid from books where title like \"%<word>%\";"'
+   ```
+   A brand-new book (not in `kobo_synced_books`) auto-offers on the next device sync as a
+   NewEntitlement — no synced-books nudge needed (see reading-cwa.md for the phantom-row case).
+3. Relabel the orphan torrent `bookshelf` → `bookshelf-imported` so it clears the pre-import
+   alarm and ages out via the reaper (the relabel-imported script skips it — no Bookshelf
+   history): connect to deluge RPC on the seedbox and `client.label.set_torrent(hash,
+   "bookshelf-imported")`.

@@ -14,15 +14,24 @@ checks:
   # This is the exact regression the 07-09 passthrough disable was protecting
   # against (kobo2's sync stalling). Runs the proxied books.tabaska.us path a
   # real device uses, and requires parseable JSON, not just a 200.
+  # fix-57 SM32 (2026-08-02): upgraded from "200 + parseable JSON" to also assert
+  # EVERY sync element is an entitlement DICT. The old check passed while the
+  # payload for BOTH devices carried a bare string 'ResponseStatus' — the upstream
+  # Kobo store returns an error OBJECT (not a list) when the forwarded request has
+  # no valid device store auth, and `sync_results += store_response.json()`
+  # iterated the dict's keys into the array. The shadow-patched cps/kobo.py (see
+  # configs/nas/calibre-web-automated/patches/kobo.py) now type-checks before
+  # merging; this assertion catches any recurrence AND doubles as the tripwire if
+  # a future CWA image bump makes the shadow stale (contamination returns).
   - id: cwa-kobo-sync-consumer
-    name: "CWA Kobo sync answers valid JSON for both device users (M35 consumer end)"
+    name: "CWA Kobo sync: 200 + every element an entitlement dict, both device users (M35 consumer end; fix-57 SM32)"
     host: mini
     cmd: >-
       ok=1;
       for u in "$CWA_KOBO_SYNC_URL_ADMIN" "$CWA_KOBO_SYNC_URL_KOBO2"; do
       code=$(curl -s -o /tmp/cwa-kobo-probe.json -m 30 -w '%{http_code}' "$u");
-      if [ "$code" != "200" ] || ! python3 -c 'import json;json.load(open("/tmp/cwa-kobo-probe.json"))' 2>/dev/null;
-      then ok=0; echo "KOBO_SYNC_FAIL code=$code"; fi; done;
+      res=$(python3 -c 'import json,sys; d=json.load(open("/tmp/cwa-kobo-probe.json")); bad=[x for x in d if not isinstance(x,dict)]; print("BARE:"+";".join(map(str,bad)) if bad else "DICTS_OK")' 2>/dev/null);
+      if [ "$code" != "200" ] || [ "$res" != "DICTS_OK" ]; then ok=0; echo "KOBO_SYNC_FAIL code=$code $res"; fi; done;
       rm -f /tmp/cwa-kobo-probe.json; [ "$ok" = 1 ] && echo KOBO_SYNC_OK
     expect: '^KOBO_SYNC_OK$'
     severity: warn
@@ -446,6 +455,7 @@ checks:
       guard=OK;
       grep -q "PermanentRequestError" /opt/stacks/libreseerr/app.py || guard=NO_PATCH_APP;
       grep -q "adopt_library_book" /opt/stacks/libreseerr/readarr.py || guard=NO_PATCH_READARR;
+      grep -q "_retry_empty" /opt/stacks/libreseerr/readarr.py || guard=NO_RETRY_GUARD;
       grep -q "class BookshelfClient(ReadarrClient)" /opt/stacks/libreseerr/bookshelf.py || guard=NO_PATCH_BOOKSHELF;
       docker inspect libreseerr --format '{{json .Config.Cmd}}' | grep -q -- --timeout || guard=NO_GUNICORN_TIMEOUT;
       [ -n "$(docker exec libreseerr printenv NTFY_TOKEN 2>/dev/null)" ] || guard=NO_NTFY_TOKEN;
@@ -454,6 +464,40 @@ checks:
     expect: '^REQUEST_PATH_OK$'
     severity: warn
     task_id: fix-48
+    runbook: wiki/docs/runbooks/books-requests.md
+    enabled: true
+
+  # fix-57 SM5 (2026-08-02): the mandate-1 gap — 12 of 30 libreseerr requests sat
+  # in error state and the last success was 2026-07-20, yet every liveness/guard
+  # check stayed green (none looked at request OUTCOMES). MOST of those 12 were
+  # public-domain classics (Homer/Brontë/Austen/Malory) that Hardcover genuinely
+  # mis-carries — the fix-48 guard CORRECTLY refuses to add a degraded record, so
+  # flagging every error would be permanently-red noise. What IS actionable is a
+  # RECOVERABLE request failing on a mechanism/transient cause: 'Le Morte d'Arthur'
+  # errored "author unresolvable" because resolve_author took a single quota/
+  # refresh-herd empty as permanent (now retried with backoff, fix-57). This check
+  # flags any request created on/after the fix date whose error matches the
+  # mechanism/transient class — a new one means the retry/timeout hardening
+  # regressed and a book that should have flowed silently failed. Guard refusals
+  # (title/author mismatch, derivative, genuinely-not-in-Hardcover) are WAI and
+  # deliberately NOT matched. Also asserts the pipeline has ever completed a
+  # request (sanity). Consumer end = the persisted request outcomes on disk.
+  - id: libreseerr-request-flow-health
+    name: "libreseerr: no recoverable request failed on a mechanism/transient cause since fix-57 (SM5 request-flow)"
+    host: mini
+    cmd: |-
+      res=$(python3 -c '
+      import json, re
+      reqs = json.load(open("/opt/stacks/libreseerr/data/requests.json"))
+      SINCE = "2026-08-03"
+      MECH = re.compile("author unresolvable|read timeout|Read timed out|Max retries|ConnectionError|Connection aborted|Server Error|Bad Gateway|Service Unavailable|transient, will retry", re.I)
+      bad = [str(r.get("title")) for r in reqs if r.get("status")=="error" and (r.get("created_at") or "")>=SINCE and MECH.search(str(r.get("error") or ""))]
+      any_ok = any(r.get("status")=="completed" for r in reqs)
+      print("BAD:"+";".join(bad[:5]) if bad else ("NOOK" if not any_ok else "OK"))');
+      [ "$res" = "OK" ] && echo REQUEST_FLOW_OK || echo "REQUEST_FLOW_BAD $res"
+    expect: '^REQUEST_FLOW_OK$'
+    severity: warn
+    task_id: fix-57
     runbook: wiki/docs/runbooks/books-requests.md
     enabled: true
 
