@@ -64,7 +64,7 @@ This means the original **dns-02** rollout (deploy the NAS secondary + mirror re
 
 ## dns-02 — NAS secondary AdGuard (deployed)
 
-- Deployed from `configs/docker-stack/stacks/adguard-nas/` on the NAS (Container Manager),
+- Deployed from `configs/nas/adguard-nas/` on the NAS (Container Manager),
   image pinned to `adguard/adguardhome:v0.107.77`, container `adguardhome-nas`, LAN IP
   `192.168.10.4` (eth1; same subnet as mini).
 - **Upstream:** public DoT (e.g. `tls://1.1.1.1`, `tls://9.9.9.9`) — **not** mini Unbound.

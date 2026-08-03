@@ -37,6 +37,7 @@ Usage:
 
 ## See also
 
+- [`catalog-vhost-parity.py`](catalog-vhost-parity-py.md)
 - [`deploy.sh`](deploy-sh.md)
 - [`stack-mirror-check.sh`](stack-mirror-check-sh.md)
 - [`tracker-count-check.py`](tracker-count-check-py.md)

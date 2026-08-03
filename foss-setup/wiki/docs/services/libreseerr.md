@@ -7,7 +7,7 @@ Libreseerr — book request portal (Readarr / Bookshelf / LazyLibrarian)
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://libreseerr.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/libreseerr/compose.yaml` |
-| **Notes** | Book request portal (feeds Readarr). Container port 5000. |
+| **Notes** | Book request portal (feeds Bookshelf, the Readarr fork). Container port 5000. Being superseded by shelfmark. |
 | **Upstream docs** | <https://github.com/zamnzim/Libreseerr> |
 
 ## About

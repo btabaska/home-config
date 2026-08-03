@@ -43,10 +43,13 @@ the map.
 
 ## External-repo units (pointers, not copies)
 
-Two rig units are owned by the separate **`local-ai-tooling`** repo
-(`github.com/btabaska/local-ai-tooling`, checked out on the rig at
-`~/Documents/GitHub/local-ai-tooling/`). Mirroring them here would create cross-repo drift, so
-this repo only points at where they live:
+Two rig units are owned by the separate **`local-ai-tooling`** repo. Since
+ai-02..07 (2026-07-29) that repo is **dual-remoted, not GitHub-only** —
+`github.com/btabaska/local-ai-tooling` **and** a self-hosted Forgejo mirror on
+the mini; every change must **push BOTH** (via the dedicated `id_forgejo` key),
+guarded by the `ai-tooling-clean-pushed` tripwire. It is checked out on the rig
+at `~/Documents/GitHub/local-ai-tooling/`. Mirroring its units here would create
+cross-repo drift, so this repo only points at where they live:
 
 - **`fleet-mcp.service`** — read-only fleet-inspection MCP server (ai-01). The unit's own header
   says `Install: sudo cp ops/fleet-mcp.service /etc/systemd/system/`; `ExecStart` runs

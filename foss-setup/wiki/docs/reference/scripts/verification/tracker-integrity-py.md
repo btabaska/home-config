@@ -45,6 +45,7 @@ these sources; this checks the sources themselves.
 
 ## See also
 
+- [`catalog-vhost-parity.py`](catalog-vhost-parity-py.md)
 - [`deploy.sh`](deploy-sh.md)
 - [`reopen-report.py`](reopen-report-py.md)
 - [`stack-mirror-check.sh`](stack-mirror-check-sh.md)

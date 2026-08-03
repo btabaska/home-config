@@ -23,6 +23,7 @@ Prints TRACKER-COUNTS-OK on success; prints the mismatch and exits 1 otherwise.
 
 ## See also
 
+- [`catalog-vhost-parity.py`](catalog-vhost-parity-py.md)
 - [`deploy.sh`](deploy-sh.md)
 - [`reopen-report.py`](reopen-report-py.md)
 - [`stack-mirror-check.sh`](stack-mirror-check-sh.md)

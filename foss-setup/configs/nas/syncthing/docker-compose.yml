@@ -6,8 +6,10 @@
 # the shared dependency for game-12 save-sync (rides this hub).
 #
 # NO CLOUD: peers connect over the LAN by static address (tcp://<ip>:22000).
-# Global-discovery/relays stay as harmless fallback — file data never leaves
-# the LAN (verified: connection type "tcp (LAN)").
+# Global discovery and relays are DISABLED fleet-wide (globalAnnounceEnabled=false,
+# relaysEnabled=false) — there is NO cloud fallback path. Do NOT re-enable them:
+# relayed traffic would leave the LAN and the syncthing-hub-mesh-direct check
+# forbids it (verified: connection type "tcp (LAN)").
 #
 # SECURITY: LAN/Tailscale-only. GUI :8384 has admin auth (vault
 # syncthing.gui_user / syncthing.nas_gui_password). No public Caddy vhost.

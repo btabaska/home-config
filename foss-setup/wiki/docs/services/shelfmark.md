@@ -7,6 +7,7 @@ Shelfmark — book search/request/download frontend (replaces libreseerr+Bookshe
 | **Host** | [nas](../hosts/nas.md) |
 | **URL** | https://shelfmark.tabaska.us |
 | **Source** | `foss-setup/configs/nas/shelfmark/docker-compose.yml` |
+| **Notes** | Book search/request/download frontend (calibrain/shelfmark) — the successor to libreseerr+bookshelf+rreading-glasses. Downloads land directly in the CWA ingest folder. LAN/Tailscale only. |
 
 ## Containers
 

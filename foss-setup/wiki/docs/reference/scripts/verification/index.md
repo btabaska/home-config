@@ -1,9 +1,10 @@
 # verification scripts
 
-`foss-setup/scripts/verification/` — 6 script(s).
+`foss-setup/scripts/verification/` — 7 script(s).
 
 | Script | Role |
 |---|---|
+| [`catalog-vhost-parity.py`](catalog-vhost-parity-py.md) | catalog-vhost-parity.py (fix-68 / SM49) — class check for catalog-vs-live drift. |
 | [`deploy.sh`](deploy-sh.md) | Deploy the verification suite to mini:/opt/verification — reproducibly, from git. |
 | [`reopen-report.py`](reopen-report-py.md) | reopen-report.py (fix-61 / SM47) — the REAL consumer of the reopen bridge. |
 | [`stack-mirror-check.sh`](stack-mirror-check-sh.md) | repo↔live drift guard for the mini compose fleet |

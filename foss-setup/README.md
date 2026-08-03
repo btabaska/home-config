@@ -36,13 +36,14 @@ foss-setup/
 │   ├── network/               # UniFi VLAN/firewall/mDNS plans + SSH access (Tailscale SSH ACL, ssh config)
 │   ├── ansible/               # fleet maintenance: inventory + patch/reboot/audit playbooks
 │   ├── docker-stack/          # the Mac mini stack; mirrors /opt/stacks 1:1 (Dockge)
-│   │   ├── stacks/<svc>/       # seerr, miniflux, navidrome, caddy, adguard, dockge,
-│   │   │                       #   beszel, uptime-kuma, ntfy, diun
+│   │   ├── stacks/<svc>/       # ~35 stacks / 46 live containers: seerr, miniflux,
+│   │   │                       #   navidrome, caddy, adguard, homepage, forgejo,
+│   │   │                       #   healthchecks, journaling, romm, paperless-ngx, …
 │   │   └── alternatives/       # pihole (vs adguard), dockhand (vs dockge)
 │   ├── nas/                   # Synology containers: immich, calibre-web-automated + backup
 │   ├── homeassistant/         # HA config, automations, Midea/Nest setup, backups
 │   ├── seedbox/               # *arr wiring, rclone, provider comparison, decommission
-│   ├── inventory/             # SBOM/inventory layer (Phase 4): inventory.md, Dependency-Track Homepage widget, etckeeper + restore-runbook template
+│   ├── inventory/             # config-inventory layer: inventory.md, per-host manifests, etckeeper + restore-runbook template (SBOM/Dependency-Track retired 2026-07-11)
 │   └── git/                   # Forgejo (self-hosted forge) + repo-structure + secrets
 ├── scripts/                   # IMPERATIVE, idempotent (set -euo pipefail) setup
 │   ├── network/               # tailscale install / verify-direct / connectivity
@@ -51,8 +52,8 @@ foss-setup/
 │   ├── backup/                # restic, borgmatic, restore-test
 │   ├── media/                 # seedbox sync, iPod tools, tailscale verify
 │   ├── reading/               # KOReader/CWA/Wallabag wiring, syncthing
-│   ├── inventory/             # SBOM generation/export: Syft+Grype, manifest exports, the SBOM systemd timer/units
-│   └── gaming/                # WoL, GPU power tune, Apollo (Sunshine fork), LinuxGSM
+│   ├── inventory/             # manifest generation/export (per-host compose-image + package manifests); SBOM/Syft+Grype pipeline retired 2026-07-11
+│   └── gaming/                # WoL, GPU power tune, Apollo (Sunshine fork); game servers run under AMP on the rig
 ```
 
 **Two kinds of content, deliberately separated:**
@@ -127,8 +128,9 @@ Do a phase before starting the next — each one leaves you strictly better off.
   in Git** via Forgejo (`configs/git/`), and **fleet maintenance with Ansible**
   (`configs/ansible/`) to patch/reboot/audit every box in one command. This is
   where the whole repo becomes rebuildable.
-- **Phase 5 — Play.** Game servers (LinuxGSM/Pelican) and Apollo + Moonlight
-  streaming (Apollo is a maintained Sunshine fork — headless/virtual-display +
+- **Phase 5 — Play.** Game servers (AMP — Minecraft Java+Bedrock, Palworld,
+  Terraria — running 24/7 on the rig with public playit paths) and Apollo +
+  Moonlight streaming (Apollo is a maintained Sunshine fork — headless/virtual-display +
   per-client perms suit the 24/7 rig), with GPU/idle-power tuning (`scripts/gaming/`;
   Wake-on-LAN stays set up as recovery tooling only).
 

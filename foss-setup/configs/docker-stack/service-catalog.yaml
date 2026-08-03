@@ -51,6 +51,14 @@ services:
     on_demand: false
     ui: false
     notes: Plex collections/metadata batch job — no web UI, runs on schedule.
+  - name: bgutil-pot
+    category: Media
+    host: mini
+    port: 4416
+    url: null
+    on_demand: false
+    ui: false
+    notes: YouTube PO-token provider for yt-dlp — MeTube/Pinchflat point at http://bgutil-pot:4416 to beat the 403 JS/GVS challenge. Internal, no UI, no Caddy vhost.
 
   # --- Requests ---------------------------------------------------------------
   - name: seerr
@@ -73,7 +81,14 @@ services:
     port: 8789
     url: https://libreseerr.tabaska.us
     on_demand: false
-    notes: Book request portal (feeds Readarr). Container port 5000.
+    notes: Book request portal (feeds Bookshelf, the Readarr fork). Container port 5000. Being superseded by shelfmark.
+  - name: shelfmark
+    category: Requests
+    host: nas
+    port: 8084
+    url: https://shelfmark.tabaska.us
+    on_demand: false
+    notes: Book search/request/download frontend (calibrain/shelfmark) — the successor to libreseerr+bookshelf+rreading-glasses. Downloads land directly in the CWA ingest folder. LAN/Tailscale only.
 
   # --- Media Automation -------------------------------------------------------
   - name: sonarr
@@ -100,10 +115,17 @@ services:
   - name: readarr
     category: Media Automation
     host: nas
-    port: 8787
-    url: https://readarr.tabaska.us
+    port: null
+    url: null
     on_demand: false
-    notes: Book automation.
+    notes: "DECOMMISSIONED 2026-07-20 (bmig-05) — replaced by bookshelf (the maintained Readarr fork) on NAS :8790; Caddy vhost removed, readarr.tabaska.us returns 000. Row kept for history."
+  - name: bookshelf
+    category: Media Automation
+    host: nas
+    port: 8790
+    url: https://bookshelf.tabaska.us
+    on_demand: false
+    notes: Book automation — the maintained Readarr fork (pennydreadful/bookshelf), replaces readarr. Metadata via rreading-glasses; downloads feed the CWA ingest folder. Container port 8787.
   - name: prowlarr
     category: Media Automation
     host: nas
@@ -439,6 +461,21 @@ services:
     notes: RomM retro-game library (container port 8080; mariadb sidecar).
 
   # --- Infrastructure & Ops --------------------------------------------------------
+  - name: syncthing
+    category: Infrastructure & Ops
+    host: nas
+    port: 8384
+    url: https://syncthing.tabaska.us
+    on_demand: false
+    notes: Local-first file-sync hub (foss-03) — NAS hub + mini/rig mesh nodes. GUI admin-auth'd, LAN/Tailscale only; relays + global discovery are DISABLED fleet-wide (no cloud path). Mini node mirror = configs/docker-stack/stacks/syncthing-node.
+  - name: bug-triage-evidence
+    category: Infrastructure & Ops
+    host: mini
+    port: 8410
+    url: null
+    on_demand: false
+    ui: false
+    notes: Bug-intake evidence server (bug-01) — INTERNAL only, reached by n8n by container name on the edge network. No UI, no Caddy vhost.
   - name: homepage
     category: Infrastructure & Ops
     host: mini
@@ -550,6 +587,13 @@ services:
     url: https://stash.tabaska.us
     on_demand: false
     notes: Adult media organizer. LAN/Tailscale only. No API key in vault — no widget.
+  - name: whisparr
+    category: Private
+    host: nas
+    port: 6969
+    url: https://whisparr.tabaska.us
+    on_demand: false
+    notes: Adult-scene automation (Whisparr v2, seed-13). LAN/Tailscale only. Feeds a dedicated Stash sub-library; Prowlarr syncs adult-capable indexers only.
 
 # Dead / not running (vhosts commented out in the Caddyfile):
 #   tdarr   — REMOVED FROM PLAN 2026-07-08: re-encoding conflicts with TRaSH quality

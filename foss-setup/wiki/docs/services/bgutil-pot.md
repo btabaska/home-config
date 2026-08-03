@@ -7,6 +7,7 @@ bgutil PO-token provider — generates YouTube PO tokens so yt-dlp (MeTube,
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | — (no web UI / not proxied) |
 | **Source** | `foss-setup/configs/docker-stack/stacks/bgutil-pot/compose.yaml` |
+| **Notes** | YouTube PO-token provider for yt-dlp — MeTube/Pinchflat point at http://bgutil-pot:4416 to beat the 403 JS/GVS challenge. Internal, no UI, no Caddy vhost. |
 | **Upstream docs** | <http://bgutil-pot:4416.> |
 
 ## About

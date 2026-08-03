@@ -291,6 +291,30 @@ checks:
     runbook: wiki/docs/runbooks/git-hygiene.md
     enabled: true
 
+  # fix-68 (SM49 class): the service catalog (configs/docker-stack/service-catalog.yaml)
+  # is the home-surface source of truth AND feeds gen-wiki-services (URL+category), but
+  # it lagged the live edge — 6 user-facing services had live Caddy vhosts with no
+  # catalog row and retired readarr kept a live-looking row with a dead URL. This proves
+  # catalog<->live-edge parity BOTH directions: a live <name>.{$DOMAIN} vhost with no
+  # catalog entry (a missing row), and a catalog url whose vhost is gone and the row is
+  # not annotated DECOMMISSIONED (the dead-URL / readarr class). Judged against the live
+  # Caddyfile (piped via sudo; runner reads it on /dev/stdin, never runs python as root)
+  # + the fetched origin/main clone's catalog, so it self-updates with the repo.
+  - id: catalog-vhost-parity
+    name: "service catalog matches the live Caddy edge (no missing rows / dead URLs)"
+    host: mini
+    cmd: >-
+      D=/var/lib/verification/wiki-drift-repo;
+      { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } &&
+      git -C "$D" fetch -q origin main &&
+      git -C "$D" reset --hard -q FETCH_HEAD &&
+      sudo cat /opt/stacks/caddy/caddy/Caddyfile | python3 "$D/foss-setup/scripts/verification/catalog-vhost-parity.py" /dev/stdin "$D/foss-setup/configs/docker-stack/service-catalog.yaml"
+    expect: CATALOG-VHOST-PARITY-OK
+    severity: warn
+    task_id: fix-68
+    runbook: wiki/docs/runbooks/git-hygiene.md
+    enabled: true
+
   # fix-65 (SM16): the rig rebuildability loop had a silent-partial-failure — the
   # deploy copied export-manifests.sh to /opt/scripts/inventory/ but NOT its
   # sibling gen-inventory-md.sh, so the weekly export skipped the inventory.md

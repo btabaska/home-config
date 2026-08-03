@@ -19,7 +19,7 @@ Man-pages for every operational script in `foss-setup/scripts/`, generated from 
 | **secrets** | 1 | [open](secrets/index.md) |
 | **Host setup** | 5 | [open](setup/index.md) |
 | **Uptime Kuma** | 4 | [open](uptime-kuma/index.md) |
-| **verification** | 6 | [open](verification/index.md) |
+| **verification** | 7 | [open](verification/index.md) |
 | **wiki** | 1 | [open](wiki/index.md) |
 
-_Total: 83 scripts across 17 categories._
+_Total: 84 scripts across 17 categories._

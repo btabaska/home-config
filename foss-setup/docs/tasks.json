@@ -8065,7 +8065,7 @@
   "steps": [
    "✓ Resolved: NAS secondary AdGuard is up and answering on 192.168.10.4 (:53 + :3000), *.tabaska.us rewrites mirrored, admin password rotated (vault: adguard_nas). Covered by the dns verification checks.",
    "Read configs/network/dns-resilience-plan.md — secondary must **not** depend on mini Unbound.",
-   "Copy stack: `scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/adguard-nas nas:/tmp/adguard-nas`",
+   "Copy stack: `scp -r ~/Documents/Home/foss-setup/configs/nas/adguard-nas nas:/tmp/adguard-nas`",
    "`ssh nas 'sudo mkdir -p /volume1/docker/adguard-nas && sudo rsync -a /tmp/adguard-nas/ /volume1/docker/adguard-nas/'`",
    "Container Manager → Project → create from compose at /volume1/docker/adguard-nas/compose.yaml → Start.",
    "First-run wizard at http://192.168.10.4:3000 — upstream: `tls://1.1.1.1` and `tls://9.9.9.9` (DoT).",
@@ -8074,14 +8074,14 @@
    "Test: `dig @192.168.10.4 google.com +short` and `dig @192.168.10.4 home.tabaska.us +short`."
   ],
   "commands": [
-   "scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/adguard-nas nas:/tmp/adguard-nas",
+   "scp -r ~/Documents/Home/foss-setup/configs/nas/adguard-nas nas:/tmp/adguard-nas",
    "ssh nas 'sudo rsync -a /tmp/adguard-nas/ /volume1/docker/adguard-nas/'",
    "dig @192.168.10.4 google.com +short",
    "dig @192.168.10.4 home.tabaska.us +short"
   ],
   "files": [
-   "configs/docker-stack/stacks/adguard-nas/compose.yaml",
-   "configs/docker-stack/stacks/adguard-nas/README.md",
+   "configs/nas/adguard-nas/compose.yaml",
+   "configs/nas/adguard-nas/README.md",
    "configs/network/dns-resilience-plan.md"
   ],
   "docs": [
@@ -12099,7 +12099,7 @@
   "steps": [
    "Reproduce: dig +time=3 @192.168.10.4 example.com from mini",
    "Check adguardhome-nas logs + upstream DNS config (DoT/DoH endpoint dead? egress blocked?)",
-   "Fix + confirm dns-nas-external green; codify any config change in configs/docker-stack/stacks/adguard-nas mirror"
+   "Fix + confirm dns-nas-external green; codify any config change in configs/nas/adguard-nas mirror"
   ],
   "verify": "dns-nas-external passes 3 consecutive scheduled runs; external names resolve via 192.168.10.4."
  },

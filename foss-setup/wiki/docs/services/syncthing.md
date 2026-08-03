@@ -5,8 +5,9 @@ Syncthing v2 — local-first file-sync HUB on the NAS (foss-03)
 | | |
 |---|---|
 | **Host** | [nas](../hosts/nas.md) |
-| **URL** | http://192.168.10.4:8384 (hub GUI; LAN/Tailscale-only, admin auth) |
+| **URL** | https://syncthing.tabaska.us |
 | **Source** | `foss-setup/configs/nas/syncthing/docker-compose.yml` |
+| **Notes** | Local-first file-sync hub (foss-03) — NAS hub + mini/rig mesh nodes. GUI admin-auth'd, LAN/Tailscale only; relays + global discovery are DISABLED fleet-wide (no cloud path). Mini node mirror = configs/docker-stack/stacks/syncthing-node. |
 
 ## About
 

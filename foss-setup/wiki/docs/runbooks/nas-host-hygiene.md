@@ -43,7 +43,7 @@ All ~52k queries/day were attributed to `172.23.0.1` — the docker bridge
 gateway — because port 53 was published from a bridge network. Per-client
 stats, client-specific rules and querylog forensics were impossible. Fixed by
 recreating the container with **`network_mode: host`**
-(`configs/docker-stack/stacks/adguard-nas/compose.yaml`, mirrored live at
+(`configs/nas/adguard-nas/compose.yaml`, mirrored live at
 `/volume1/docker/adguard-nas/`).
 
 - **Check:** `nas-adguard-client-attribution` — digs the canary

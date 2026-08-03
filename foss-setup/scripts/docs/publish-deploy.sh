@@ -27,6 +27,21 @@ cd "${ROOT}"
 echo "[publish] linting the secrets vault..."
 python3 "${ROOT}/foss-setup/scripts/secrets/vault-lint.py"
 
+# fix-68 (SM48 / wiki-05): same-commit regen gate. ai-04's commit 554c560 added a
+# check without regenerating its wiki page, so the published wiki drifted and the
+# wiki-drift check went red for days. Fail the publish BEFORE it reaches the
+# remotes if HEAD's committed sources don't match a fresh regeneration, and if the
+# tracker sources are incoherent. This makes "commit a source without regenerating"
+# unpushable rather than caught a day later by the mini runner.
+echo "[publish] tracker-integrity gate..."
+python3 "${ROOT}/foss-setup/scripts/verification/tracker-integrity.py"
+echo "[publish] wiki-drift (same-commit) gate — regenerating HEAD in a throwaway worktree..."
+if ! bash "${ROOT}/foss-setup/scripts/wiki/wiki-drift-check.sh"; then
+  echo "[publish] ABORT: wiki drift or tooling error — regenerate (gen-*.py or build-wiki.sh)" >&2
+  echo "[publish]        and commit the result in the SAME commit as the source change, then re-run." >&2
+  exit 1
+fi
+
 echo "[publish] pushing main to origin (GitHub)..."
 git push origin main
 

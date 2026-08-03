@@ -72,7 +72,6 @@ nav:
       - Documents & Life:
           - paperless-ngx: services/paperless-ngx.md
       - Files & Sync:
-          - syncthing: services/syncthing.md
           - syncthing-node: services/syncthing-node.md
       - Infrastructure & Ops:
           - beszel: services/beszel.md
@@ -85,6 +84,7 @@ nav:
           - ntfy: services/ntfy.md
           - scrutiny: services/scrutiny.md
           - scrutiny-collector: services/scrutiny-collector.md
+          - syncthing: services/syncthing.md
           - unbound: services/unbound.md
           - uptime-kuma: services/uptime-kuma.md
       - Life:
@@ -92,6 +92,7 @@ nav:
           - mealie: services/mealie.md
           - meme-review: services/meme-review.md
       - Media:
+          - bgutil-pot: services/bgutil-pot.md
           - jellyfin: services/jellyfin.md
           - kometa: services/kometa.md
           - metube: services/metube.md
@@ -124,8 +125,6 @@ nav:
           - libreseerr: services/libreseerr.md
           - musicseerr: services/musicseerr.md
           - seerr: services/seerr.md
-      - Uncategorized:
-          - bgutil-pot: services/bgutil-pot.md
           - shelfmark: services/shelfmark.md
       # END GENERATED SERVICES NAV
   - Runbooks:
@@ -406,6 +405,7 @@ nav:
           - seed-status-page.sh: reference/scripts/uptime-kuma/seed-status-page-sh.md
       - verification:
           - Index: reference/scripts/verification/index.md
+          - catalog-vhost-parity.py: reference/scripts/verification/catalog-vhost-parity-py.md
           - deploy.sh: reference/scripts/verification/deploy-sh.md
           - reopen-report.py: reference/scripts/verification/reopen-report-py.md
           - stack-mirror-check.sh: reference/scripts/verification/stack-mirror-check-sh.md

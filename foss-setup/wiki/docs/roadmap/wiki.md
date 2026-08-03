@@ -6,7 +6,7 @@
 |---|---|---|---|
 | `fix-43` | Repo junk & dead-path cleanup (tracked pycache, stale root files, worktree, retired-service remnants) | ✅ done | 1-3 hrs |
 | `fix-44` | Tracker + wiki drift cleanup (stale generated pages, orphan ids, arithmetic, recurring wiki-drift red) | ✅ done | 1-3 hrs |
-| `fix-68` | Tracker/docs truth repair: 20 done tasks failing checks with zero formal reopens, wiki-drift from a same-commit violation, catalog lagging 6 live services, stale-path/plan-era prose | ⬜ open | 1-3 hrs |
+| `fix-68` | Tracker/docs truth repair: 20 done tasks failing checks with zero formal reopens, wiki-drift from a same-commit violation, catalog lagging 6 live services, stale-path/plan-era prose | ✅ done | 1-3 hrs |
 | `wiki-01` | MkDocs Material scaffold at foss-setup/wiki | ✅ done | 45 min |
 | `wiki-02` | Wiki generators — service/script/host pages from repo sources | ✅ done | 2 hr |
 | `wiki-03` | Core runbooks — the seven operations you'll actually need | ✅ done | 2 hr |

@@ -9,7 +9,7 @@ The whole point: recovery is **`git clone` → fill in `.env` → `docker compos
 The repo is self-hosted on **Forgejo** (see `foss-setup/configs/git/docker-compose.yml`) on the Mac mini, **and** mirrored to a **private GitHub repo**. Self-hosting keeps everything on your own metal; the private GitHub repo is the zero-maintenance off-site copy. Forgejo is primary, the GitHub mirror is the off-site copy (Forgejo can push-mirror automatically). This is the belt-and-suspenders setup.
 
 !!! note "Validated against live repo (2026-07-14)"
-    `git remote -v` at repo root (`/Users/brandontabaska/Documents/Home`) confirms **two remotes**, exactly the dual-remote model this doc prescribes:
+    `git remote -v` at repo root (`/Users/brandontabaska/GitHub/Home`) confirms **two remotes**, exactly the dual-remote model this doc prescribes:
     ```
     forgejo  git@forgejo:home/homelab.git      (fetch/push)
     origin   git@github.com:btabaska/home-config.git  (fetch/push)
@@ -20,7 +20,7 @@ The repo is self-hosted on **Forgejo** (see `foss-setup/configs/git/docker-compo
 
 ## Recommended layout
 
-The actual repo is the model. Note the real on-disk shape differs slightly from the idealized tree in the source: the git root is `/Users/brandontabaska/Documents/Home` (a `Home` monorepo) and the homelab lives in `foss-setup/` inside it.
+The actual repo is the model. Note the real on-disk shape differs slightly from the idealized tree in the source: the git root is `/Users/brandontabaska/GitHub/Home` (a `Home` monorepo) and the homelab lives in `foss-setup/` inside it.
 
 The idealized shape that makes "rebuild in an hour" real:
 
@@ -102,7 +102,7 @@ Three categories, three fates:
 
 !!! note "Validated against live repo (2026-07-14)"
     The `.env.example` convention is real and pervasive: **45** `*.example` files exist under `foss-setup/configs/` (e.g. `configs/git/.env.example`, `configs/nas/immich/.env.example`, `configs/seedbox/.env.example`, `configs/gaming/palworld/.env.example`).
-    The actual repo-root `.gitignore` (`/Users/brandontabaska/Documents/Home/.gitignore`) is stricter than the template above — it also ignores the handoff secrets file and the migration snapshot:
+    The actual repo-root `.gitignore` (`/Users/brandontabaska/GitHub/Home/.gitignore`) is stricter than the template above — it also ignores the handoff secrets file and the migration snapshot:
     ```gitignore
     # macOS
     .DS_Store

@@ -46,6 +46,7 @@ stack-mirror-check.sh mirrors|manifest
 
 ## See also
 
+- [`catalog-vhost-parity.py`](catalog-vhost-parity-py.md)
 - [`deploy.sh`](deploy-sh.md)
 - [`reopen-report.py`](reopen-report-py.md)
 - [`tracker-count-check.py`](tracker-count-check-py.md)

@@ -129,7 +129,7 @@ ssh mini 'sudo mkdir -p /mnt/nas/music && grep -q /mnt/nas/music /etc/fstab || \
   echo "192.168.10.4:/volume1/music /mnt/nas/music nfs defaults,_netdev 0 0" | sudo tee -a /etc/fstab'
 ssh mini 'sudo mount -a && ls /mnt/nas/music'
 
-scp -r ~/Documents/Home/foss-setup/configs/docker-stack/stacks/musicseerr mini:/tmp/musicseerr
+scp -r ~/GitHub/Home/foss-setup/configs/docker-stack/stacks/musicseerr mini:/tmp/musicseerr
 ssh mini 'sudo mkdir -p /opt/stacks/musicseerr && sudo rsync -a /tmp/musicseerr/ /opt/stacks/musicseerr/'
 ssh mini 'cd /opt/stacks/musicseerr && cp -n .env.example .env'
 ssh mini 'cd /opt/stacks/musicseerr && docker compose up -d'
@@ -163,8 +163,8 @@ Test: request a small album → appears in **NAS Lidarr Activity** → not on Be
 **Use the native binary** — rootless Docker on Bytesized cannot expose peer port 50300.
 
 ```bash
-scp ~/Documents/Home/foss-setup/scripts/media/install-slskd-native.sh seedbox:~/
-scp ~/Documents/Home/foss-setup/configs/seedbox/slskd-native.example.env seedbox:~/slskd-native/.env
+scp ~/GitHub/Home/foss-setup/scripts/media/install-slskd-native.sh seedbox:~/
+scp ~/GitHub/Home/foss-setup/configs/seedbox/slskd-native.example.env seedbox:~/slskd-native/.env
 ssh seedbox 'chmod 600 ~/slskd-native/.env && bash ~/install-slskd-native.sh'
 ```
 

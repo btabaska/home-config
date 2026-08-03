@@ -42,6 +42,7 @@ scripts/verification/deploy.sh            # deploy
 
 ## See also
 
+- [`catalog-vhost-parity.py`](catalog-vhost-parity-py.md)
 - [`reopen-report.py`](reopen-report-py.md)
 - [`stack-mirror-check.sh`](stack-mirror-check-sh.md)
 - [`tracker-count-check.py`](tracker-count-check-py.md)

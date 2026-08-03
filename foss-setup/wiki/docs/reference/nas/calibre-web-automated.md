@@ -51,7 +51,7 @@ Synology SSH often breaks `scp`/`rsync` with `subsystem request failed`. Use a *
 
 ```bash
 # Transfer (no scp)
-cd ~/Documents/Home/foss-setup/configs/nas
+cd ~/GitHub/Home/foss-setup/configs/nas
 tar czf - calibre-web-automated | ssh nas 'tar xzf - -C /tmp/'
 
 # PUID/PGID — must match share owner (id btabaska → 1026:100)

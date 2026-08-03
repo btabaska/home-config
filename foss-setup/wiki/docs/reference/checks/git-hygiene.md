@@ -1,6 +1,6 @@
 # Checks — git-hygiene
 
-`foss-setup/verification/checks.d/git-hygiene.yaml` — 15 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/git-hygiene.yaml` — 16 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `git-stacks-clean`
 
@@ -154,6 +154,17 @@ dual-remoted repos: Forgejo mirror == GitHub mirror (both directions)
 
 ```bash
 df_f=$(git ls-remote forgejo:home/dotfiles main | awk 'NR==1{print $1}') && df_g=$(git ls-remote https://github.com/btabaska/dotfiles main | awk 'NR==1{print $1}') && ai_f=$(git ls-remote forgejo:home/local-ai-tooling main | awk 'NR==1{print $1}') && ai_g=$(git ls-remote https://github.com/btabaska/local-ai-tooling main | awk 'NR==1{print $1}') && echo "dotfiles f=${df_f:0:12} g=${df_g:0:12} | local-ai-tooling f=${ai_f:0:12} g=${ai_g:0:12}" && { [ -n "$df_f" ] && [ "$df_f" = "$df_g" ] && [ -n "$ai_f" ] && [ "$ai_f" = "$ai_g" ]; } && echo DUAL-REMOTE-PARITY-OK
+```
+
+## `catalog-vhost-parity`
+
+service catalog matches the live Caddy edge (no missing rows / dead URLs)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-68` · **enabled:** True
+- **expects:** `CATALOG-VHOST-PARITY-OK`
+
+```bash
+D=/var/lib/verification/wiki-drift-repo; { git -C "$D" rev-parse --git-dir >/dev/null 2>&1 || { rm -rf "$D"; git clone -q forgejo:home/homelab "$D"; }; } && git -C "$D" fetch -q origin main && git -C "$D" reset --hard -q FETCH_HEAD && sudo cat /opt/stacks/caddy/caddy/Caddyfile | python3 "$D/foss-setup/scripts/verification/catalog-vhost-parity.py" /dev/stdin "$D/foss-setup/configs/docker-stack/service-catalog.yaml"
 ```
 
 ## `export-manifests-inventory-fresh`
