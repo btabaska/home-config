@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**262/351 done** · **56 open** · **18 deferred** · 15 retired.
+**263/351 done** · **55 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -40,7 +40,6 @@
 - [ ] **`media-13`** Release reclaimed disk pinned by stale 2026-07-02 Btrfs @sharesnap snapshots (volume2/volume3) _(est 20-40 min)_
 
 ### media-polish
-- [ ] **`fix-59`** Bazarr has ZERO subtitle providers enabled — 2868 wanted episodes can never fetch while the check stays green (media-12 regression) _(est 1-3 hrs)_
 - [ ] **`fix-67`** Small-pipeline regression batch: kometa IMDb 403s (29 errors), pinchflat bot-check strandings, CWA cover, edited-memo journaling hole, bug-intake residue, syncthing hub inotify, Terraria tile _(est 1-3 hrs)_
 
 ### ops

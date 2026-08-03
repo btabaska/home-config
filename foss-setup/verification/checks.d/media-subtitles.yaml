@@ -1,23 +1,39 @@
-# Bazarr — subtitle *arr consumer-end probe (media-12, 2026-07-28).
-# Bazarr is only useful if it is actually SYNCED to the arrs and can compute
-# missing subtitles for real media — "container Up / 200 OK" says none of that.
-# This probes the CONSUMER end from the mini runner: it authenticates with the
-# Bazarr API key, requires the movie library to be non-empty (i.e. Bazarr pulled
-# Radarr's movies over the API, not just started), and requires BOTH the Sonarr
-# AND Radarr SignalR live-connections to report LIVE (Bazarr is actively wired to
-# both arrs, so new grabs get subtitle jobs). If either arr link drops or the
-# sync breaks, this fails even though the container stays green.
+# Bazarr — subtitle *arr consumer-end probe (media-12 2026-07-28; hardened fix-59 2026-08-03).
+# Bazarr is only useful if it is actually SYNCED to the arrs AND can actually
+# OBTAIN subtitles — "container Up / 200 OK" says none of that, and neither does
+# arr-sync alone. The 2026-08-02 fleet sweep (finding SH7 / fix-59) caught the gap:
+# Bazarr had enabled_providers=[], /api/providers empty, and download history total=0
+# (no subtitle had EVER been fetched) against a 2868-episode + 29-movie backlog, yet
+# the arr-sync check below stayed green. That is the mandate-1 liveness-vs-reality gap.
+#
+# WHY the providers vanished (root cause, fix-59): media-12 (2026-07-28) enabled
+# Podnapisi, but fix-38 that same day digest-pinned Bazarr to v1.6.0-ls356 (build
+# 2026-07-21) — a version that REMOVED the Podnapisi provider entirely (config.py runs
+# settings.unset('PODNAPISI'), comment "this provider doesn't exist anymore"; the
+# provider module is gone). On next startup Bazarr reconciled the unknown provider out
+# of enabled_providers -> [] -> silent total subtitle outage.
+#
+# CURRENT providers (fix-59): the operator-named "subsource" turned out to REQUIRE an
+# api_key in this build (subsource.py raises ConfigurationError 'Api_key must be
+# specified'; no such key in the vault), so it is NOT anonymous. The genuinely
+# anonymous (no-account, no-key) providers enabled are:
+#   - gestdown     (Addic7ed API) — English TV, covers the ~99% TV backlog. Proven
+#                    2026-08-03: The Musketeers S03E10 .en.srt landed (score 86.94%).
+#   - yifysubtitles — English movies, covers the movie backlog.
+# Neither needs a vault credential. If you later want higher coverage/quality, add an
+# OpenSubtitles.com account (needs a registered login -> vault) or a subsource API key —
+# both are handoff items, not required for the pipeline to work.
 #
 # Secret: BAZARR_API_KEY in mini /etc/verification/env (vault homepage_widgets.bazarr_key —
 # Bazarr Settings > General API key). Bazarr listens on the NAS at 192.168.10.4:6767,
-# reachable from the mini over the LAN.
-#
-# NOTE on providers: the sole enabled provider is Podnapisi (free, no account — no
-# OpenSubtitles.com credentials exist in the vault). Podnapisi rate-limits by IP, so a
-# provider-search probe would self-throttle and false-alarm; provider auth is therefore
-# NOT asserted here (it was proven at deploy time: 27 real candidates returned for a real
-# movie). Add an OpenSubtitles.com account later for redundancy (handoff item).
+# reachable from the mini over the LAN. No provider SEARCH is triggered by these checks
+# (that would self-throttle the free providers); they read config + provider status +
+# history counters only, so they are rate-limit-safe to run on the daily/quick tiers.
 checks:
+  # ── media-12 · arr sync liveness (the layer that was NOT enough) ──────────
+  # Requires the movie library non-empty (Bazarr pulled Radarr's movies over the API)
+  # and BOTH the Sonarr AND Radarr SignalR live-connections LIVE. Kept as the sync
+  # layer, but on its own it CANNOT see an empty/dead provider set (see fix-59 below).
   - id: bazarr-synced-from-arrs
     name: "bazarr: synced from Radarr + both arr SignalR links LIVE (consumer end)"
     host: mini
@@ -31,5 +47,39 @@ checks:
     expect: '^BAZARR_OK movies=[1-9][0-9]* series=[0-9]+ sonarr=LIVE radarr=LIVE$'
     severity: warn
     task_id: media-12
+    runbook: wiki/docs/runbooks/verification.md
+    enabled: true
+
+  # ── fix-59 · Bazarr can actually OBTAIN subtitles (the mandate-1 wedge) ───
+  # This is the check that would have caught SH7. It asserts the three things arr-sync
+  # cannot see, all from cheap read-only counters (no provider search):
+  #   1. enabled_providers >= 1   — the exact regression state was [] (providers removed
+  #                                  by a version bump, reconciled to empty, silently).
+  #   2. >= 1 provider status 'Good' — a provider can be enabled yet dead: subsource sat
+  #                                  enabled-but-throttled with ConfigurationError. If the
+  #                                  sole provider dies/throttles, 'Good' drops to 0 here —
+  #                                  the "fetching capability broke" signal over time.
+  #   3. episode+movie download history total >= 1 — the finding's smoking gun was total=0
+  #                                  (no subtitle EVER fetched). This is the consumer-end
+  #                                  throughput floor: the pipeline has actually produced a
+  #                                  real subtitle on disk, not just claimed to be wired.
+  # Fails (green->red) if providers go empty again, if every provider is throttled/dead,
+  # or if nothing has ever been fetched — the whole SH7 class, not just this one bug.
+  - id: bazarr-providers-can-fetch
+    name: "bazarr: >=1 enabled provider healthy AND subtitles have actually been fetched (fix-59 consumer end)"
+    host: mini
+    cmd: >-
+      python3 -c "import os,json,urllib.request as u;
+      h={'X-API-KEY':os.environ['BAZARR_API_KEY']};
+      g=lambda p: json.load(u.urlopen(u.Request('http://192.168.10.4:6767'+p,headers=h),timeout=25));
+      ep=g('/api/system/settings')['general']['enabled_providers'];
+      pr=g('/api/providers').get('data',[]);
+      good=[d for d in pr if d.get('status')=='Good'];
+      fetched=g('/api/episodes/history?start=0&length=1').get('total',0)+g('/api/movies/history?start=0&length=1').get('total',0);
+      ok=(len(ep)>=1 and len(good)>=1 and fetched>=1);
+      print('BAZARR_SUBS_OK providers=%d good=%d fetched=%d' % (len(ep),len(good),fetched) if ok else 'BAZARR_SUBS_FAIL providers=%d good=%d fetched=%d enabled=%s' % (len(ep),len(good),fetched,ep))"
+    expect: '^BAZARR_SUBS_OK providers=[1-9][0-9]* good=[1-9][0-9]* fetched=[1-9][0-9]*$'
+    severity: warn
+    task_id: fix-59
     runbook: wiki/docs/runbooks/verification.md
     enabled: true

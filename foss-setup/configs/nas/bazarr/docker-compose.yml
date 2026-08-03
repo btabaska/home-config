@@ -9,9 +9,14 @@
 #        the paths are byte-identical to what the arrs hand it over the API.
 # Wiring: Settings > Sonarr  -> http://192.168.10.4:8989 (arr_api_keys.sonarr)
 #         Settings > Radarr  -> http://192.168.10.4:7878 (arr_api_keys.radarr)
-#         Settings > Providers-> OpenSubtitles.com (vault subtitle_providers.opensubtitles_*)
-#                                + Podnapisi (no-account, free) as a fallback.
-#         Languages profile   -> English, cutoff score set so it stops once a good match lands.
+#         Settings > Providers-> gestdown (Addic7ed API, free/no-account) for TV
+#                                + yifysubtitles (free/no-account) for movies.
+#            fix-59 (2026-08-03): do NOT re-add Podnapisi (REMOVED from Bazarr v1.6.0+)
+#            or subsource (now REQUIRES an api_key the vault lacks). Provider config
+#            lives in the /config volume (config.yaml), NOT in this compose, so after a
+#            /config rebuild re-enable gestdown+yifysubtitles via the API/UI; the
+#            verification check `bazarr-providers-can-fetch` tripwires an empty/dead set.
+#         Languages profile   -> English (id 1), default for series + movies.
 # uid  : PUID=1026/PGID=100 (btabaska:users) — MUST match Sonarr/Radarr so the subs Bazarr
 #        writes next to each video stay co-owned and the arrs/players can read them.
 # Front: bazarr.tabaska.us -> mini Caddy reverse_proxy {$NAS_IP}:6767 (import local_tls).
