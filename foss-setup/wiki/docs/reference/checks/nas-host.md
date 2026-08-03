@@ -1,6 +1,6 @@
 # Checks — nas-host
 
-`foss-setup/verification/checks.d/nas-host.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/nas-host.yaml` — 8 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `nas-timezone-eastern`
 
@@ -77,6 +77,17 @@ NAS: no .DS_Store/AppleDouble junk in /volume1/docker
 
 ```bash
 find /volume1/docker -maxdepth 3 \( -name '._*' -o -name '.DS_Store' \) -type f 2>/dev/null | wc -l
+```
+
+## `nas-syslog-geo-filter-present`
+
+NAS: synologand geo-lookup flood filter present in /usr/local syslog-ng (SL1)
+
+- **host:** `nas` · **severity:** `warn` · **guards task:** `fix-69` · **enabled:** True
+- **expects:** `GEO_FILTER_OK$`
+
+```bash
+d=/usr/local/etc/syslog-ng/patterndb.d; f=0; [ -f "$d/synologand-geo.conf" ] && f=$((f+1)); [ -f "$d/include/not2msg/synologand_geo" ] && f=$((f+1)); echo "geo_filter_files=$f/2"; [ "$f" -eq 2 ] && echo GEO_FILTER_OK || echo GEO_FILTER_MISSING
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

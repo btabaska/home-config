@@ -139,3 +139,27 @@ checks:
     task_id: fix-45
     runbook: wiki/docs/runbooks/fleet-hygiene.md
     enabled: true
+
+  # ── fix-69 (SL1) regression · synologand geo-lookup flood stays filtered ────
+  # synologand logged "abnormal_login.cpp:112 Failed to get the info whose ip
+  # address is [100.x.x.x]" on every tailnet (CGNAT) login — 7-8k benign
+  # geo-lookup-miss lines per /var/log/messages file, drowning real DSM signal.
+  # Fixed 2026-08-03 with a syslog-ng not2msg filter under the PERSISTENT
+  # /usr/local path (survives DSM updates). A DSM major upgrade regenerating that
+  # tree is the realistic drift path, so this pins both filter files present
+  # (world-readable, no sudo). Both gone => the flood is back; re-deploy from
+  # foss-setup/configs/nas/syslog-ng/ + syslog-ng-ctl reload (see runbook).
+  - id: nas-syslog-geo-filter-present
+    name: "NAS: synologand geo-lookup flood filter present in /usr/local syslog-ng (SL1)"
+    host: nas
+    cmd: >-
+      d=/usr/local/etc/syslog-ng/patterndb.d;
+      f=0; [ -f "$d/synologand-geo.conf" ] && f=$((f+1));
+      [ -f "$d/include/not2msg/synologand_geo" ] && f=$((f+1));
+      echo "geo_filter_files=$f/2";
+      [ "$f" -eq 2 ] && echo GEO_FILTER_OK || echo GEO_FILTER_MISSING
+    expect: 'GEO_FILTER_OK$'
+    severity: warn
+    task_id: fix-69
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
+    enabled: true

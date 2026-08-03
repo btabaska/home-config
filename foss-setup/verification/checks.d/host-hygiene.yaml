@@ -106,14 +106,17 @@ checks:
   # (running or stopped) was created from, except the documented allowlist:
   # backups (non-container), wiki (caddy-served build artifact), frigate
   # (staged, deliberately NOT deployed), recyclarr (one-shot `compose run`
-  # config dir). Catches the L2/L72/L85 rot: retired services leaving .env-only
+  # config dir), meme-review (staged app deliberately RETAINED at its 2026-07-28
+  # decommission — data kept on purpose, still mirrored in the repo; fix-69/SM51
+  # aligned this allowlist with that retention decision so the warn stops being
+  # standing noise). Catches the L2/L72/L85 rot: retired services leaving .env-only
   # dirs behind (litellm/tdarr/maintainerr/dependency-track) and Mac-side
   # AppleDouble junk (._litellm).
   - id: stacks-orphan-dirs
     name: "/opt/stacks has no container-less dirs off-allowlist and no macOS junk"
     host: mini
     cmd: >-
-      allow=" backups wiki frigate recyclarr "; bad="";
+      allow=" backups wiki frigate recyclarr meme-review "; bad="";
       wds=$(docker ps -a --format '{{.Label "com.docker.compose.project.working_dir"}}');
       for d in /opt/stacks/*/; do n=$(basename "$d");
       case "$allow" in *" $n "*) continue;; esac;
@@ -124,5 +127,79 @@ checks:
     expect: '^orphans=NONE junk=NONE$'
     severity: warn
     task_id: fix-43
+    runbook: wiki/docs/runbooks/host-hygiene.md
+    enabled: true
+
+  # ── fix-69 (SL40+SL41) class · /tmp + verification-state scratch hygiene ──
+  # Past agent sessions left 53+ scratch files in mini /tmp older than 7 days —
+  # python probes, json dumps, and TWO world-readable session-cookie files
+  # (ls.cookies, romm-cookies.txt) — plus 12+ stale ad-hoc results-<suite>.json
+  # in /var/lib/verification whose internal timestamps had rotted (the live
+  # timers only refresh results.json + results-tier-fast/url/docker-fleet/media).
+  # This sweep fails on: (a) any auth-material file in /tmp (cookies/*.pem/id_*),
+  # (b) an excess of >7d-old agent scratch in /tmp (threshold 10 — a little churn
+  # is normal, a pile is not), (c) any results-*.json side file older than 14d
+  # (well beyond the slowest tier cadence, so live outputs never trip it). Catches
+  # the session-cookie/stale-artifact accumulation class at the consumer end —
+  # the state dir a future auditor actually reads.
+  - id: mini-scratch-hygiene
+    name: "mini: no auth-material or aged scratch piling up in /tmp or the verification state dir (SL40/SL41)"
+    host: mini
+    cmd: >-
+      secrets=$(find /tmp -maxdepth 1 \( -name '*.cookies' -o -name '*cookies*.txt' -o -name '*.pem' -o -name 'id_*' \) 2>/dev/null | wc -l);
+      scratch=$(find /tmp -maxdepth 1 -mtime +7 \( -type f -o -type d \) ! -path /tmp ! -name '.*-unix' ! -name 'systemd-private-*' ! -name 'tmux-*' 2>/dev/null | wc -l);
+      stale=$(for f in /var/lib/verification/results-*.json; do case "$f" in *.streak.json) continue;; esac; python3 -c "import json,sys,datetime,os; t=json.load(open(sys.argv[1])).get('timestamp'); age=(datetime.datetime.now(datetime.timezone.utc)-datetime.datetime.fromisoformat(t).astimezone(datetime.timezone.utc)).days; print(os.path.basename(sys.argv[1])) if age>14 else None" "$f" 2>/dev/null; done | grep -c .);
+      echo "secrets=$secrets scratch7d=$scratch staleresults14d=$stale";
+      [ "$secrets" -eq 0 ] && [ "$scratch" -le 10 ] && [ "$stale" -eq 0 ] && echo HYGIENE_OK || echo HYGIENE_DIRTY
+    expect: 'HYGIENE_OK$'
+    severity: warn
+    task_id: fix-69
+    runbook: wiki/docs/runbooks/host-hygiene.md
+    enabled: true
+
+  # ── fix-69 (SL18) regression · orphaned host unpackerr stays retired ─────
+  # A deb-packaged unpackerr host service (PID 756, installed 2024) polled the
+  # arrs at 192.168.1.2 (a dead subnet — the fleet is 192.168.10.0/24) every
+  # ~2min for weeks, erroring into the journal and carrying cleartext arr keys,
+  # while the REAL extractor is the NAS container unpackerr. Retired 2026-08-03
+  # (apt purge + drop-in removed). Red if a host-level unpackerr unit, process,
+  # or package ever reappears on the mini.
+  - id: unpackerr-host-retired
+    name: "mini: no host-level unpackerr unit/process/package (SL18 — NAS container is the real one)"
+    host: mini
+    cmd: >-
+      u=$(systemctl list-unit-files unpackerr.service --no-legend 2>/dev/null | grep -c .);
+      p=$(pgrep -x unpackerr 2>/dev/null | grep -c .);
+      k=$(dpkg -l unpackerr 2>/dev/null | awk '$1=="ii"' | grep -c .);
+      echo "unit=$u proc=$p pkg=$k";
+      [ "$u" -eq 0 ] && [ "$p" -eq 0 ] && [ "$k" -eq 0 ] && echo UNPACKERR_RETIRED || echo UNPACKERR_BACK
+    expect: 'UNPACKERR_RETIRED$'
+    severity: warn
+    task_id: fix-69
+    runbook: wiki/docs/runbooks/host-hygiene.md
+    enabled: true
+
+  # ── fix-69 (SL7) class · a required reboot must not be deferred forever ──
+  # The mini ran 25 days on 5.15.0-185 while 5.15.0-186 + libc6 security updates
+  # sat installed-but-inactive behind /var/run/reboot-required, unnoticed. A mini
+  # reboot is a fleet-wide outage (it hosts DNS/Caddy/alerting/verification), so
+  # it is DELIBERATELY operator-scheduled for the 4-7AM window, NOT automated — but
+  # a reboot pending across >45 days of uptime means the schedule slipped and the
+  # installed kernel/libc security fixes are stale. Deferral is measured by UPTIME
+  # (a reboot clears both /var/run/reboot-required and uptime; the file's own mtime
+  # would reset on every new reboot-requiring package and under-report). Warn (never
+  # crit) so it nudges without paging nightly. Runbook has the safe drain-order
+  # procedure + the ubuntu-pro-client conffile step.
+  - id: mini-reboot-not-stale
+    name: "mini: no kernel/libc reboot pending across >45d uptime (SL7 — schedule it in the 4-7AM window)"
+    host: mini
+    cmd: >-
+      if [ ! -e /var/run/reboot-required ]; then echo "reboot_pending=no uptime_days=0"; echo REBOOT_OK;
+      else up=$(awk '{printf "%d", $1/86400}' /proc/uptime);
+      echo "reboot_pending=yes uptime_days=$up";
+      [ "$up" -le 45 ] && echo REBOOT_OK || echo REBOOT_STALE; fi
+    expect: 'REBOOT_OK$'
+    severity: warn
+    task_id: fix-69
     runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true

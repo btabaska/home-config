@@ -103,4 +103,58 @@ grace window does.
 
 | check | what failing means | fix |
 |---|---|---|
-| `stacks-orphan-dirs` | A top-level `/opt/stacks` dir maps to no container in any state and isn't on the allowlist (`backups`, `wiki`, `frigate`, `recyclarr`), or `._*`/`.DS_Store` junk landed from a Mac-side copy | Retiring a service must remove its stack dir in the same session — archive data first (precedent: `maintainerr` → `/opt/stacks/backups/maintainerr-data-2026-07-19.tar.gz`). Only extend the allowlist for deliberate non-container dirs, with a comment saying why |
+| `stacks-orphan-dirs` | A top-level `/opt/stacks` dir maps to no container in any state and isn't on the allowlist (`backups`, `wiki`, `frigate`, `recyclarr`, `meme-review`), or `._*`/`.DS_Store` junk landed from a Mac-side copy | Retiring a service must remove its stack dir in the same session — archive data first (precedent: `maintainerr` → `/opt/stacks/backups/maintainerr-data-2026-07-19.tar.gz`). Only extend the allowlist for deliberate non-container dirs, with a comment saying why |
+
+> **fix-69 / SM51:** `meme-review` was added to the allowlist because its data was
+> **deliberately retained** at the 2026-07-28 decommission (dir still mirrored in the
+> repo). The check and the retention decision now agree instead of warning daily.
+
+## fix-69 · fleet-hygiene batch (2026-08-03)
+
+A batch of low-severity cleanups from the 2026-08-02 fleet sweep. mini-side items
+and their guards:
+
+| check | what failing means | fix |
+|---|---|---|
+| `mini-scratch-hygiene` (SL40/SL41) | Auth-material in `/tmp` (`*.cookies`/`*.pem`/`id_*`), a pile (>10) of >7-day-old agent scratch in `/tmp`, or a `results-*.json` side file in `/var/lib/verification` older than 14 days | Clean it: `find /tmp -maxdepth 1 -mtime +7 ! -name '.*-unix' ! -name 'systemd-private-*' ! -name 'tmux-*' -exec rm -rf {} +` (use `sudo` for root-owned scratch). Delete stale `results-*.json` — only `results.json` + `results-{tier-fast,url,docker-fleet,media}.json` are refreshed by timers; all other side files are ad-hoc leftovers. **Never leave session cookies in `/tmp`.** |
+| `unpackerr-host-retired` (SL18) | A host-level `unpackerr` unit/process/package reappeared on the mini | It should not exist — the extractor is the NAS container. Purge again (`sudo apt-get purge unpackerr`); see `configs/host/mini/unpackerr-retired/`. |
+| `mini-reboot-not-stale` (SL7) | A kernel/libc reboot has been pending across >45 days of uptime | Schedule the reboot in the 4–7AM window — see the procedure below |
+
+### SL6 · stale `snap-lxd-*.mount` failed unit
+
+A snap `lxd` refresh (rev 38800 → 40338) left the old revision's `.mount` unit
+`LOAD=not-found ACTIVE=failed`, reddening `sys-failed-units` (glue-03) and
+`systemd-failed-mini` (verify-06). It is cosmetic snap cruft — clear it:
+
+```sh
+sudo systemctl reset-failed snap-lxd-<rev>.mount
+```
+
+Recurs on future snap refreshes; the existing failed-units checks catch it.
+
+### SL7 · PENDING OPERATOR ACTION — kernel/libc reboot of the mini
+
+`/var/run/reboot-required` lists `linux-image-5.15.0-186-generic`, `linux-base`,
+`libc6` — installed by unattended-upgrades but **inactive until a reboot** (the
+mini was 25 days up on `5.15.0-185`). **This reboot is deliberately NOT automated
+and was NOT performed by fix-69**: the mini hosts DNS (unbound/AdGuard path),
+Caddy (every `*.tabaska.us` vhost), the ntfy alerting plane, and the verification
+runner — a reboot is a **fleet-wide outage**. Schedule it, in the **4–7AM EST**
+window, confirming with the operator first.
+
+**Safe procedure (operator, 4–7AM):**
+
+1. First clear the blocker: `ubuntu-pro-client` is held with a conffile prompt.
+   `sudo apt-get install -o Dpkg::Options::="--force-confold" ubuntu-pro-client`
+   (keep the local config), or resolve the prompt interactively.
+2. Announce/confirm: alerting + DNS + Caddy go down for ~2–3 min. Nothing else in
+   the fleet should be mid-critical-write (check no restic/backup/immich-dump job
+   is running: `systemctl list-timers`).
+3. `sudo reboot`. Docker restarts the 38 containers via their restart policies.
+4. Come-up checks: `uname -r` shows `5.15.0-186`; `/var/run/reboot-required` gone;
+   `docker ps` count back to manifest; run the fast tier
+   `VERIFICATION_STATE_DIR=/tmp/verify-audit /opt/verification/bin/run-checks.sh
+   --no-notify --tier fast` and confirm the crit user-facing checks are green.
+5. Optionally clear the 95 pending non-security upgrades in the same window.
+
+`mini-reboot-not-stale` warns (never crit) if this slips past 45 days of uptime.

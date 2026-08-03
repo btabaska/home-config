@@ -64,9 +64,17 @@ assert, sonarr→Deluge e2e test, slskd LoggedIn e2e, service manifest). Runbook
 ## Disk hygiene (2026-07-19, quality-gate M8/L8/L93/L10)
 
 - **deluged now logs** (L10): `~/.startup/deluge` launches deluged with
-  `-l ~/.config/deluge/deluged.log -L warning` (previously no `--logfile` → 0-byte log,
+  `-l ~/.config/deluge/deluged.log` (previously no `--logfile` → 0-byte log,
   daemon errors went nowhere). Mirrored in `startup/deluge`. Restart verified lossless:
   378 torrents before and after.
+- **deluged log flood bounded** (fix-69 / SM18, 2026-08-03): the log had ballooned to
+  36MB, ~99% one libtorrent `outstanding_request_limit_reached` performance WARNING at
+  ~1.1/sec (drowning real ERRORs, eating quota). Two changes: (1) launcher log level
+  `-L warning` → **`-L error`** in `startup/deluge` (source-quiet — applies on next
+  deluged restart; still logs ERROR+); (2) a daily `logrotate` (`copytruncate`, keep 5
+  compressed, `size 20M`) via `~/.config/logrotate/deluged.conf` + a `crontab` line —
+  the forced first run reclaimed the 36MB (→ 568KB gz). Mirror: `logrotate/deluged.conf`.
+  Guard: `seedbox-deluged-log-bounded` (fix-69).
 - **`~/media/extracted` is transient** (M8): filebot/post-extract copies land there; the
   arrs import by *copy*, so once imported the NAS owns the file and the seedbox copy is
   junk (139G of it on 2026-07-19). A daily cron reaps files >7 days old and prunes empty
@@ -83,7 +91,16 @@ assert, sonarr→Deluge e2e test, slskd LoggedIn e2e, service manifest). Runbook
 ```cron
 0 5 * * * ~/venvs/deluge/bin/python ~/scripts/deluge-reaper.py --live >/dev/null 2>>~/logs/deluge-reaper.err
 30 5 * * * find /home/hd34/btabaska/media/extracted -type f -mtime +7 -delete; find /home/hd34/btabaska/media/extracted -mindepth 1 -type d -empty -delete
+20 4 * * * /usr/sbin/logrotate -s ~/.config/logrotate/deluged.state ~/.config/logrotate/deluged.conf >/dev/null 2>&1
 ```
+
+## Dead rootless-docker experiment removed (2026-08-03, fix-69 / SL44)
+
+A rootless-docker experiment that gracefully shut down 2026-07-08 left `~/docker`,
+`~/.docker`, and a 59KB `~/.dockerd-rootless.log` in the home dir (no `dockerd`
+running; boot launcher `~/.startup-disabled`). All three removed. The `~/apps/syncthing`
+tree (incl. the old `syncthing.old` binary) was already gone with the fix-52 syncthing
+retirement above. Nothing to codify — the home dir is otherwise all live tooling.
 
 ## Files here
 
@@ -91,7 +108,10 @@ assert, sonarr→Deluge e2e test, slskd LoggedIn e2e, service manifest). Runbook
   `systemctl --user enable <unit>`; needs `XDG_RUNTIME_DIR=/run/user/$(id -u)` and
   `DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus` over plain ssh)
 - `bin/start-slskd.sh` → live `~/bin/slskd/start-slskd.sh`
-- `startup/deluge` → live `~/.startup/deluge`
+- `startup/deluge` → live `~/.startup/deluge` (deluged `-L error` since fix-69; a
+  `deluge.bak-fix69` of the `-L warning` version is kept on-host)
+- `logrotate/deluged.conf` → live `~/.config/logrotate/deluged.conf` (fix-69 / SM18 —
+  daily copytruncate rotation of `deluged.log`; cron line in the manifest above)
 - `slskd-native/slskd.yml` → live `~/slskd-native/slskd.yml` (no secrets; creds in `.env`)
 - `slskd-native/.env.example` → live `~/slskd-native/.env` (values in vault `soulseek.*`)
 - `deluge-reaper.py` — queue hygiene cron (connects to `127.0.0.1:3254`, unaffected).

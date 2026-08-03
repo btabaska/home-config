@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **357 checks across 40 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **362 checks across 40 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -14,7 +14,7 @@ Every acceptance/regression check the fleet runs — **357 checks across 40 doma
 | [gaming](gaming.md) | 8 | 3 | 5 |
 | [git-hygiene](git-hygiene.md) | 16 | 0 | 16 |
 | [ha](ha.md) | 12 | 2 | 10 |
-| [host-hygiene](host-hygiene.md) | 7 | 0 | 7 |
+| [host-hygiene](host-hygiene.md) | 10 | 0 | 10 |
 | [ipod-abs-sync](ipod-abs-sync.md) | 1 | 0 | 1 |
 | [journaling](journaling.md) | 12 | 3 | 9 |
 | [lan-exposure](lan-exposure.md) | 4 | 0 | 4 |
@@ -27,7 +27,7 @@ Every acceptance/regression check the fleet runs — **357 checks across 40 doma
 | [meme-review](meme-review.md) | 3 | 2 | 1 |
 | [mini-services](mini-services.md) | 28 | 9 | 19 |
 | [monitoring-coverage](monitoring-coverage.md) | 9 | 1 | 8 |
-| [nas-host](nas-host.md) | 7 | 1 | 6 |
+| [nas-host](nas-host.md) | 8 | 1 | 7 |
 | [nas-io-storm](nas-io-storm.md) | 2 | 0 | 2 |
 | [nas-services](nas-services.md) | 24 | 3 | 21 |
 | [network](network.md) | 1 | 0 | 1 |
@@ -38,11 +38,11 @@ Every acceptance/regression check the fleet runs — **357 checks across 40 doma
 | [rig-host-stability](rig-host-stability.md) | 6 | 0 | 6 |
 | [rig-immich-ml](rig-immich-ml.md) | 5 | 1 | 4 |
 | [secrets](secrets.md) | 6 | 3 | 3 |
-| [seedbox](seedbox.md) | 12 | 5 | 7 |
+| [seedbox](seedbox.md) | 13 | 5 | 8 |
 | [soularr-backlog](soularr-backlog.md) | 2 | 0 | 2 |
 | [sync](sync.md) | 3 | 0 | 3 |
 | [system](system.md) | 10 | 5 | 5 |
 | [verification-env-integrity](verification-env-integrity.md) | 2 | 2 | 0 |
 | [verification-self](verification-self.md) | 7 | 0 | 7 |
 
-_Total: 357 checks._
+_Total: 362 checks._

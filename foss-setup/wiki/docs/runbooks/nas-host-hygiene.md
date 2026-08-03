@@ -188,11 +188,36 @@ There is **no blkio bandwidth cap available** — the Synology kernel stubs the
 blkio controller (no throttle/accounting cgroup files), so workload reduction is
 the only lever.
 
+## fix-69 · DSM log flood + ghost scheduled task (2026-08-03)
+
+### SL1 · synologand geo-lookup flood in `/var/log/messages`
+
+`synologand` logged `abnormal_login.cpp:112 Failed to get the info whose ip address
+is [100.x.x.x]` on **every** tailnet (CGNAT) login — 7–8k benign geo-lookup-miss
+lines per `/var/log/messages`, drowning real DSM signal. Fixed with a syslog-ng
+`not2msg` filter under the **persistent** `/usr/local/etc/syslog-ng/patterndb.d/`
+tree (survives DSM updates): `synologand-geo.conf` (filter def) +
+`include/not2msg/synologand_geo` (exclude-from-messages). It matches **only** that
+benign message — real `AbnormalAccess` alerts are untouched. Deploy/re-apply steps
+and the two files live in `configs/nas/syslog-ng/`. Reload with
+`syslog-ng --syntax-only && syslog-ng-ctl reload`. Guard:
+`nas-syslog-geo-filter-present` (both files must exist). If a DSM major upgrade
+wipes them, `GEO_FILTER_MISSING` fires → re-deploy from the repo mirror.
+
+### SL2 · zero-byte ghost scheduled task `6.task`
+
+`/usr/syno/etc/synoschedule.d/root/6.task` was 0 bytes (no name/schedule/command,
+mtime Jul 7) with no `6.backup` dir — a corrupt scheduler slot that could never
+run (DSM leaves a `N.backup` dir when a real task is deleted; slots 7/8 show that
+pattern). Removed the empty file (nothing to preserve). The other 14 root tasks
+are intact and named.
+
 ## Verification
 
-Six checks. Five live in `verification/checks.d/nas-host.yaml`: `nas-timezone-eastern`,
+Seven checks. Six live in `verification/checks.d/nas-host.yaml`: `nas-timezone-eastern`,
 `fleet-timezone-consistent`, `nas-adguard-client-attribution`,
-`nas-soularr-failed-imports-fresh`, `nas-md-arrays-healthy`. Two more (fix-55)
+`nas-soularr-failed-imports-fresh`, `nas-md-arrays-healthy`,
+`nas-syslog-geo-filter-present` (fix-69/SL1). Two more (fix-55)
 live in `verification/checks.d/nas-io-storm.yaml` — `nas-io-pressure` (class-level:
 NAS 15-min IO-load below threshold) and `arr-sqlite-not-locked` (regression: no
 'database is locked' storm in the last 15 min across lidarr/radarr/whisparr).

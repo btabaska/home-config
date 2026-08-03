@@ -88,9 +88,19 @@ Documented here so future audits don't re-flag them:
 - **/volume1 interim growth** (~790 GiB observed mid-cleanup 2026-07-19) and
   **seedbox +760G ROM-collection torrents** (added 18:39–19:11 the same day) —
   operator activity, not junk; noted for capacity awareness.
-- **deluged.log now chatty** (libtorrent performance warnings from the big ROM
-  torrents; 17.9MB in its first hours) — logging was newly enabled (L10);
-  trim/rotate if it grows past a few hundred MB.
+- **deluged.log flood — RESOLVED (fix-69 / SM18, 2026-08-03).** The libtorrent
+  `outstanding_request_limit_reached` performance WARNING (~1.1/sec from heavy
+  seeding) had grown the log to 36MB, ~99% that one line. Two fixes: launcher log
+  level `-L warning` → `-L error` (`~/.startup/deluge`, source-quiet on next deluged
+  restart) + a daily `logrotate` (`copytruncate`, keep 5 gz, `size 20M`) at
+  `~/.config/logrotate/deluged.conf` (crontab 04:20). Guard:
+  `seedbox-deluged-log-bounded` (<50M). Mirror: `configs/host/seedbox/logrotate/`.
+
+- **seedbox dead rootless-docker artifacts — REMOVED (fix-69 / SL44, 2026-08-03).**
+  A rootless-docker experiment (gracefully shut down 2026-07-08) left `~/docker`,
+  `~/.docker`, `~/.dockerd-rootless.log` behind; all removed (`dockerd` not running,
+  boot launcher already disabled). The `~/apps/syncthing` tree left over from the
+  same era was already gone with the fix-52 syncthing retirement.
 - **wiki-rag-sync file leak (L39 root cause)** — `scripts/ai/wiki-rag-sync.py`
   removes replaced files from the knowledge collection but never calls
   `DELETE /api/v1/files/{id}`, so every changed wiki page leaks a file row +

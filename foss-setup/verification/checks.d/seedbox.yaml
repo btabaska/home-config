@@ -216,3 +216,24 @@ checks:
     task_id: fix-54
     runbook: wiki/docs/reference/seedbox/deluge-queue-hygiene.md
     enabled: true
+
+  # ── fix-69 (SM18) log-flood guard · deluged.log stays bounded ────────────
+  # deluged.log ballooned to 36MB, ~99% one libtorrent performance WARNING
+  # ("outstanding_request_limit_reached") at ~1.1/sec — eating the tight user
+  # quota and drowning real ERROR lines. Fixed 2026-08-03: launcher switched
+  # -L warning -> -L error (~/.startup/deluge, source-quiet on next restart) +
+  # a daily copytruncate logrotate (~/.config/logrotate/deluged.conf, cron 04:20,
+  # size 20M). This fails if the LIVE log grows past 50M — i.e. rotation died or
+  # the flood returned before the next restart picks up -L error.
+  - id: seedbox-deluged-log-bounded
+    name: "seedbox: deluged.log stays under 50M (rotation alive / no libtorrent flood) (SM18)"
+    host: seedbox
+    cmd: >-
+      b=$(stat -c %s ~/.config/deluge/deluged.log 2>/dev/null || echo 0);
+      mb=$(( b / 1048576 )); echo "deluged_log=${mb}M";
+      [ "$b" -lt 52428800 ] && echo LOG_BOUNDED || echo LOG_FLOOD
+    expect: 'LOG_BOUNDED$'
+    severity: warn
+    task_id: fix-69
+    runbook: wiki/docs/runbooks/fleet-hygiene.md
+    enabled: true

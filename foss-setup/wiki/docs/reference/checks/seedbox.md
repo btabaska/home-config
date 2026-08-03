@@ -1,6 +1,6 @@
 # Checks — seedbox
 
-`foss-setup/verification/checks.d/seedbox.yaml` — 12 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/seedbox.yaml` — 13 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `seedbox-public-lockdown`
 
@@ -132,6 +132,17 @@ seedbox: user quota has headroom (< soft limit and >100G to hard) — pre-EDQUOT
 
 ```bash
 quota -s | awk '/\/dev\//{u=$2+0;s=$3+0;h=$4+0;hr=h-u; print ((u<s && hr>100)?"QUOTA_OK":"QUOTA_LOW")" headroom_to_hard="hr"G used="u"G soft="s"G hard="h"G"}'
+```
+
+## `seedbox-deluged-log-bounded`
+
+seedbox: deluged.log stays under 50M (rotation alive / no libtorrent flood) (SM18)
+
+- **host:** `seedbox` · **severity:** `warn` · **guards task:** `fix-69` · **enabled:** True
+- **expects:** `LOG_BOUNDED$`
+
+```bash
+b=$(stat -c %s ~/.config/deluge/deluged.log 2>/dev/null || echo 0); mb=$(( b / 1048576 )); echo "deluged_log=${mb}M"; [ "$b" -lt 52428800 ] && echo LOG_BOUNDED || echo LOG_FLOOD
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
