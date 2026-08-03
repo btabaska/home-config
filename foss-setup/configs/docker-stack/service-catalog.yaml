@@ -306,6 +306,13 @@ services:
     url: https://booklogr.tabaska.us
     on_demand: false
     notes: Personal reading tracker / library. Two containers & vhosts — React SPA at booklogr.tabaska.us (web, container :80) + Flask API at booklogr-api.tabaska.us (api, container :5000). Edge-only (no host port); SQLite.
+  - name: trilium
+    category: Reading & Docs
+    host: mini
+    port: 8080
+    url: https://trilium.tabaska.us
+    on_demand: false
+    notes: Self-hosted notes / knowledge base (TriliumNext). Obsidian-replacement trial (read-27). Edge-only (no host port); single-user login set in the first-run wizard; all state in SQLite under ./data.
 
   # --- Life ---------------------------------------------------------------------
   - name: mealie

@@ -120,6 +120,7 @@ nav:
           - komga: services/komga.md
           - miniflux: services/miniflux.md
           - mylar3: services/mylar3.md
+          - trilium: services/trilium.md
           - wallabag: services/wallabag.md
       - Requests:
           - libreseerr: services/libreseerr.md
@@ -157,6 +158,7 @@ nav:
       - Reading / CWA (Kobo sync, fork image, library hygiene): runbooks/reading-cwa.md
       - Audiobookshelf (audiobooks + podcasts, non-root port trap): runbooks/audiobookshelf.md
       - Komga (comics + manga reader, JVM / OPDS / page-stream): runbooks/komga.md
+      - Trilium (self-hosted notes / Obsidian-replacement trial): runbooks/notes-trilium.md
       - Books — language & edition correctness (foreign records / grab guard / pinning): runbooks/books-language.md
       - Books — import completion & file↔record correctness (cross-wired packs / dead-ends / EPUB-first): runbooks/books-imports.md
       - Books — request-path robustness (Libreseerr errors / retries / ntfy): runbooks/books-requests.md
@@ -280,6 +282,7 @@ nav:
       - nas-io-storm: reference/checks/nas-io-storm.md
       - nas-services: reference/checks/nas-services.md
       - network: reference/checks/network.md
+      - notes: reference/checks/notes.md
       - power-journal: reference/checks/power-journal.md
       - reading: reference/checks/reading.md
       - retro-emulation: reference/checks/retro-emulation.md
@@ -384,6 +387,10 @@ nav:
           - tailscale-ssh-enable.sh: reference/scripts/network/tailscale-ssh-enable-sh.md
           - tailscale-verify-direct.sh: reference/scripts/network/tailscale-verify-direct-sh.md
           - zbf-isolation-verify.sh: reference/scripts/network/zbf-isolation-verify-sh.md
+      - notes-trial:
+          - Index: reference/scripts/notes-trial/index.md
+          - strip-trilium-config.py: reference/scripts/notes-trial/strip-trilium-config-py.md
+          - teardown-trilium.sh: reference/scripts/notes-trial/teardown-trilium-sh.md
       - Reading stack:
           - Index: reference/scripts/reading/index.md
           - syncthing-setup-cachyos.sh: reference/scripts/reading/syncthing-setup-cachyos-sh.md

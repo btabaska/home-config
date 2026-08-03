@@ -753,6 +753,18 @@ services:
       After moving/reprovisioning, Tautulli shows no users/libraries or can't reach Plex.
     fix: |-
       Plex is not configured via env — re-run the connection in the web UI (Settings > Plex Media Server) and re-authenticate to mint a fresh Plex token, which is persisted in `/opt/stacks/tautulli/config`. Verify the container is up with `ssh mini 'cd /opt/stacks/tautulli && docker compose ps'`.
+- name: trilium
+  about: |-
+    Trilium (TriliumNext) is a self-hosted hierarchical note-taking / personal knowledge-base app, deployed as an Obsidian-replacement trial (read-27, 2026-08-03) — `triliumnext/trilium:v0.104.1` on the Mac mini (`/opt/stacks/trilium`), reached only through Caddy at https://trilium.tabaska.us on the shared external `edge` network. No host port is published: Caddy is the sole listener (LAN/tailnet posture). It is a single-user app — the login (which also encrypts "protected notes") is created in the app's first-run setup wizard, not via env. The one config value is `TRILIUM_NETWORK_TRUSTEDREVERSEPROXY=uniquelocal`, which makes Trilium trust the mini's Caddy proxy for correct client IPs and https URL generation. ALL state — the SQLite `document.db`, `config.ini`, sessions, and Trilium's own automatic backups — lives in the single bind-mounted `./data` (`/home/node/trilium-data` in-container), which makes the trial fully revertable: stop the container and delete that one directory (helper: `scripts/notes-trial/teardown-trilium.sh`). An existing Obsidian vault is brought in as a one-time snapshot import (zip the vault, then in Trilium use Import into note with the Obsidian importer) — it is a snapshot, not a live vault reader.
+  troubleshoot:
+  - symptom: |-
+      Container crash-loops at startup with 'Fatal error during Trilium server startup: TypeError: invalid IP address: true'.
+    fix: |-
+      This build passes the trustedReverseProxy config value straight to Express `trust proxy`, which parses a STRING as an IP/CIDR list, so the literal value `true` is rejected. Set `TRILIUM_NETWORK_TRUSTEDREVERSEPROXY` to an Express preset such as `uniquelocal` (trusts private ranges, which covers Caddy's IP on the docker `edge` bridge) rather than `true`.
+  - symptom: |-
+      https://trilium.tabaska.us shows 'DB not initialized, please visit setup page'.
+    fix: |-
+      Expected on a fresh deploy — open the URL in a browser and complete the first-run setup wizard (choose a fresh document, set a username + password). State then persists in `./data` across restarts.
 - name: unbound
   about: |-
     Unbound is a recursive, validating, DNSSEC-aware DNS resolver running as the `mvance/unbound:1.22.0` container on `mini` (`/opt/stacks/unbound`), acting as the private upstream for AdGuard Home. Instead of AdGuard forwarding queries to Google/Cloudflare, it points its upstream at this resolver (`unbound:5335`), which then queries the DNS root and authoritative servers directly and validates DNSSEC itself, so no third-party resolver ever sees the household's queries. Reachability is container-to-container over the external `edge` bridge (both AdGuard and Unbound sit on it and address each other by container name); the `127.0.0.1:5335` host port is optional and exists only for host-side testing (`drill -p 5335 example.com @127.0.0.1`). Config is bind-mounted from `./unbound/unbound.conf` — RFC1918-only `access-control`, `prefetch`/`prefetch-key`, `serve-expired`, and `edns-buffer-size: 1232`. A healthcheck resolves `cloudflare.com` via drill every 30s; it is currently Up and healthy.

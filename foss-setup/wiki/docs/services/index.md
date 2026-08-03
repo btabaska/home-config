@@ -1,6 +1,6 @@
 # Services
 
-51 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+52 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 
@@ -117,6 +117,7 @@
 | [komga](komga.md) | nas | https://komga.tabaska.us |
 | [miniflux](miniflux.md) | mini | https://rss.tabaska.us |
 | [mylar3](mylar3.md) | nas | https://mylar.tabaska.us |
+| [trilium](trilium.md) | mini | https://trilium.tabaska.us |
 | [wallabag](wallabag.md) | mini | https://wallabag.tabaska.us |
 
 ## Requests

@@ -12846,6 +12846,41 @@
   "pitfalls": "The SPA runs in the BROWSER, so BL_API_ENDPOINT must be the EXTERNAL API URL, not an internal container name — and it is baked in at web-container start (redeploy after changing it). API has no /api prefix (routes are /v1/...; health is GET /). Registration is gated by AUTH_ALLOW_REGISTRATION via a @disable_route decorator."
  },
  {
+  "id": "read-27",
+  "track": "reading",
+  "title": "Trial-deploy TriliumNext (self-hosted notes / knowledge base) on the mini as an Obsidian-replacement candidate + Homepage tile",
+  "summary": "Evaluate a self-hosted Obsidian replacement. Logseq was investigated and DROPPED (browser web-hosting stores the graph client-side with no server graph/login and is ~1yr frozen; the real Logseq path is the desktop app + Syncthing, not a browser tile). Trilium (TriliumNext) is a first-class self-hosted web app: official image, built-in single-user login, one data dir, first-class reverse-proxy + Obsidian-vault zip import. Deployed on the mini behind Caddy at trilium.tabaska.us with a tile in the Life Apps group. Fully revertable via scripts/notes-trial/teardown-trilium.sh (all state lives in /opt/stacks/trilium/data).",
+  "host": "mini",
+  "type": "sync",
+  "mode": "ai-vault",
+  "run": 4,
+  "required": false,
+  "depends_on": [],
+  "estimate": "1 hr",
+  "files": [
+   "configs/docker-stack/stacks/trilium/",
+   "configs/docker-stack/stacks/caddy/caddy/Caddyfile",
+   "configs/docker-stack/stacks/homepage/config/services.yaml",
+   "configs/docker-stack/service-catalog.yaml",
+   "configs/docker-stack/service-enrichment.yaml",
+   "verification/checks.d/notes.yaml",
+   "verification/coverage/mini.containers",
+   "scripts/uptime-kuma/seed-monitors.sh",
+   "scripts/uptime-kuma/seed-status-page.sh",
+   "scripts/notes-trial/teardown-trilium.sh",
+   "wiki/docs/runbooks/notes-trilium.md"
+  ],
+  "steps": [
+   "Deploy trilium stack on the mini (/opt/stacks/trilium): triliumnext/trilium:v0.104.1, edge network, ./data:/home/node/trilium-data, TRILIUM_NETWORK_TRUSTEDREVERSEPROXY=uniquelocal (NOT true), no host port. Image ships its own healthcheck.",
+   "Caddy vhost trilium.tabaska.us -> trilium:8080 (import local_tls; DNS-01 wildcard cert auto-issues).",
+   "Homepage tile in the Life Apps group (icon trilium.png, siteMonitor http://trilium:8080).",
+   "Catalog + enrichment prose; consumer-end check trilium-web-serves-app (curl https://trilium.tabaska.us = 200 + body has Trilium) in checks.d/notes.yaml; trilium added to coverage/mini.containers; Kuma 'Edge Trilium (vhost)' monitor on the fleet status page (seed-monitors.sh + seed-status-page.sh).",
+   "Mirror compose to repo, commit both /opt/stacks and foss-setup, publish-deploy.sh, rebuild wiki. Operator imports the Obsidian vault via the in-app Obsidian zip importer."
+  ],
+  "verify": "trilium.tabaska.us reachable with a valid cert and serves the Trilium app shell; first-run setup wizard creates a login that persists across a container restart; trilium-web-serves-app green + trilium in coverage/mini.containers; Homepage shows Trilium in Life Apps; Kuma 'Edge Trilium (vhost)' up.",
+  "pitfalls": "TRILIUM_NETWORK_TRUSTEDREVERSEPROXY must be an Express preset (uniquelocal) or an IP/CIDR, NOT the literal 'true' — this build passes it straight to Express `trust proxy`, which parses a string as an IP and crash-loops with 'invalid IP address: true'. NEVER pin :latest (minor bumps migrate the SQLite schema). All state is in ./data; the trial reverts by deleting that one dir. Trilium imports an Obsidian vault as a one-time snapshot, not a live reader — re-importing duplicates notes."
+ },
+ {
   "id": "journal-01",
   "host": "mini",
   "mode": "ai",
