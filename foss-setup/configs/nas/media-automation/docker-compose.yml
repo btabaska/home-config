@@ -178,10 +178,24 @@ services:
     user: ${PUID:?set PUID in .env}:${PGID:?set PGID in .env}
     environment:
       TZ: ${TZ:-America/New_York}
-      SCRIPT_INTERVAL: ${SOULARR_INTERVAL:-300}
+      # fix-55 (2026-08-02): 300 -> 900. During the NAS 'database is locked' storm soularr's
+      # upstream wrapper re-ran every 5 min, each cycle hitting a DB-locked Lidarr, getting a
+      # 500 -> pyarr PyarrServerError -> 'Fatal error! Exiting' (SH10), doing no work and
+      # re-loading Lidarr. The container never actually dies (restart:always + the image's
+      # own loop re-runs), and the per-run fatal-exit lives in the upstream image (no retry
+      # knob), so resilience here = (a) the bitmagnet throttle above eliminates the 500 source
+      # and (b) a longer interval cuts the failed-cycle churn/load ~3x. Music acquisition is
+      # not latency-sensitive. (fix-56 owns the wanted-list/backlog hygiene.)
+      SCRIPT_INTERVAL: ${SOULARR_INTERVAL:-900}
     volumes:
       - ${DOCKER_ROOT:-/volume1/docker}/soularr:/data
       - *seedbox-mount
+    # fix-55: bound soularr's docker log (the soularr-not-crashlooping check greps it) + json-file.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     # No host port — headless cron-like bridge.
 
   # ----------------------------------------------------------------------------

@@ -105,11 +105,67 @@ What makes it survivable is *noticing immediately*:
   verify the latest Hyper Backup integrity, and do not reboot the NAS until
   you know which disk is failing.
 
+## I/O pressure + arr SQLite 'database is locked' storm (fix-55)
+
+The symptom: several NAS arrs (radarr / lidarr / whisparr / prowlarr / bookshelf
+— **not** sonarr) log recurring `database is locked` at once, their scheduled
+tasks (RefreshMonitoredDownloads, ImportListSync, vacuum) fail, their APIs 500,
+soularr fatal-exits every cycle, the mini `lidarr-artist-monitor-reconcile` unit
+flaps, CWA's container healthcheck times out, and `docker logs` / `docker system
+df` hang for minutes. Every one of those looks green at the container level.
+
+**Root cause is not per-app corruption — it is NAS-wide disk I/O saturation.**
+Under sustained pressure the arrs' SQLite `fsync` runs slower than their
+`busy_timeout`, so a writer holds the write lock too long and other writers get
+`SQLITE_BUSY`. The arrs expose **no** `busy_timeout` knob (config.xml carries
+only `LogLevel`) and their DB files are already `nodatacow` (`lsattr` shows `C`),
+so the remedy is to **remove the I/O pressure, not tune SQLite**.
+
+Diagnose (light, sequential — do not pile parallel heavy reads onto an already
+saturated NAS):
+
+- **Is it saturated?** `ssh nas uptime` → Synology splits the load average into
+  `[IO: 1m, 5m, 15m CPU: …]`. Read the **15-min IO** figure. Quiet baseline is
+  ~2.8; the fix-55 storm sat at 17-22. This is what `nas-io-pressure` watches
+  (threshold 12).
+- **Rule out a scrub / resync:** `sudo sh -c 'cat /proc/mdstat; btrfs scrub
+  status /volume1'` — a real resync/scrub is expected transient load, not this.
+- **Find the hog (blkio accounting is compiled out on DSM, and `docker stats`
+  hangs)** — sample `/proc/<pid>/io` twice and diff, mapping each pid to its
+  container via `/proc/<pid>/cgroup` (`…/docker/<id>`). In fix-55 the steady
+  writers were: `btrfs-cleaner` (CoW GC, ~4.7 MB/s — downstream of everything
+  else), **bitmagnet-postgres** (~3 MB/s — the always-on DHT crawler), and
+  `dockerd` (~1.2 MB/s — the Synology `db` log driver writing per-container
+  `log.db`). `synoimgbkptool` spikes are a transient nightly DSM backup.
+
+Fixes applied by fix-55 (all codified in the repo mirrors):
+
+- **bitmagnet DHT crawler throttled:** `DHT_CRAWLER_SCALING_FACTOR=3` (default 10)
+  in `configs/nas/bitmagnet/docker-compose.yml` — ~3x less Postgres write I/O
+  while still ingesting thousands/30min. (Env→config mapping has **no** prefix:
+  it is `DHT_CRAWLER_SCALING_FACTOR`, not `BITMAGNET_*`.)
+- **json-file log caps** (`max-size: 10m`, `max-file: 3`) on bitmagnet / CWA /
+  soularr — replaces Synology's `db` driver so `docker logs` is fast + bounded
+  (fixes the CWA logs hang) and cuts dockerd's write load.
+- **CWA healthcheck relaxed** (`/login`, 60s/20s/5/120s) so load latency no
+  longer flips it `unhealthy`.
+- **soularr `SCRIPT_INTERVAL` 300→900** to cut failed-cycle churn (its per-run
+  fatal-exit is upstream image behaviour with no retry knob; eliminating the arr
+  500s is what stops it).
+- **mini `lidarr-artist-monitor-reconcile.py`** now retries transient 5xx with
+  backoff instead of `exit 1` on the first one.
+
+There is **no blkio bandwidth cap available** — the Synology kernel stubs the
+blkio controller (no throttle/accounting cgroup files), so workload reduction is
+the only lever.
+
 ## Verification
 
-All five checks live in `verification/checks.d/nas-host.yaml` (deployed to
-mini `/opt/verification/checks.d/`), run unprivileged (no passwordless sudo on
-DSM), alert to ntfy topic `verification`, and are part of the daily sweep
-(dead-man ping `verification-mini`): `nas-timezone-eastern`,
+Six checks. Five live in `verification/checks.d/nas-host.yaml`: `nas-timezone-eastern`,
 `fleet-timezone-consistent`, `nas-adguard-client-attribution`,
-`nas-soularr-failed-imports-fresh`, `nas-md-arrays-healthy`.
+`nas-soularr-failed-imports-fresh`, `nas-md-arrays-healthy`. Two more (fix-55)
+live in `verification/checks.d/nas-io-storm.yaml` — `nas-io-pressure` (class-level:
+NAS 15-min IO-load below threshold) and `arr-sqlite-not-locked` (regression: no
+'database is locked' storm in the last 15 min across lidarr/radarr/whisparr). All
+run from mini (`ssh nas` / arr log API), alert to ntfy topic `verification`, and
+are part of the daily sweep (dead-man ping `verification-mini`).

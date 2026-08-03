@@ -6,7 +6,7 @@
 |---|---|---|---|
 | `fix-31` | Restore UPS/NUT power-loss protection (or cleanly retire the dead client) | ✅ done | 1-3 hrs |
 | `fix-40` | NAS host hygiene: timezone drift, soularr parked import, core dumps, junk files, single-disk note | ✅ done | 1-3 hrs |
-| `fix-55` | NAS chronic I/O pressure + SQLite 'database is locked' storm degrading 5 arr apps, killing soularr, hanging docker CLI and healthchecks | ⬜ open | 1-3 hrs |
+| `fix-55` | NAS chronic I/O pressure + SQLite 'database is locked' storm degrading 5 arr apps, killing soularr, hanging docker CLI and healthchecks | ✅ done | 1-3 hrs |
 | `glue-01` | UPS power resilience: NUT netclient on Ubuntu listening to the NAS UPS | ⏸️ deferred | 30-45 min |
 | `nas-00a` | Pre-flight: audit three Basic volumes and map library paths | ✅ done | 1–2 hrs |
 | `nas-00b` | Prepare vol2 & vol3 Basic pools (wipe only if unorganized) | ✅ done | 30 min |

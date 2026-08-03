@@ -37,10 +37,28 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - TZ=America/New_York
+      # fix-55 (2026-08-02): throttle the DHT crawler. Default scaling_factor=10 ran the
+      # crawler flat-out, making bitmagnet-postgres the #2 steady disk writer on the NAS
+      # (~3 MB/s, 1.78M-torrent / 13 GB DB) and a top contributor to the chronic I/O
+      # saturation that starves the arrs' SQLite (fsync > busy_timeout -> "database is
+      # locked" 500s). fix-50 only demoted bitmagnet to interactive-only in Prowlarr; the
+      # crawl RATE was untouched. This index is a manual/interactive fallback (fix-50), so a
+      # slower fill is fine; 3 still ingests hundreds/30min (keeps bitmagnet-dht-ingesting green).
+      # NB: bitmagnet maps env->config as UPPERCASE(path) with dots->underscores and NO prefix
+      # (e.g. postgres.host <- POSTGRES_HOST), so this is DHT_CRAWLER_SCALING_FACTOR, not BITMAGNET_*.
+      - DHT_CRAWLER_SCALING_FACTOR=3
     command:                              # run everything: DHT crawler + queue + HTTP/Torznab server
       - worker
       - run
       - --all
+    # fix-55: cap the chatty DHT-worker log and force json-file. Synology's default `db`
+    # log driver makes `docker logs` hang for minutes under I/O load (SM31 class); json-file
+    # with rotation keeps logs bounded + `docker logs` fast, and cuts dockerd's own write load.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       postgres:
         condition: service_healthy

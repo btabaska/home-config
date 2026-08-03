@@ -1,0 +1,44 @@
+# NAS I/O-pressure + arr SQLite-lock storm — the consumer-end tripwire that was missing (fix-55, 2026-08-02).
+#
+# Root cause the fleet sweep found (SH1/SH10/SM35/SM31/SM52/SM10/SM11): the DS920+ was chronically
+# I/O-saturated (15-min IO-load 17-22 vs a ~2.8 quiet baseline), dominated by bitmagnet's always-on
+# DHT crawler writing ~3 MB/s to a 1.78M-row Postgres, btrfs-cleaner GC, and unbounded Synology `db`
+# docker logs. Under that load the arrs' SQLite fsync ran slower than their busy_timeout, so writers
+# hit SQLITE_BUSY -> 'database is locked' -> failed scheduled tasks + API 500s -> soularr fatal-exits,
+# the mini lidarr-reconcile unit flapped, and CWA's 3s healthcheck timed out. Every one of those
+# consumers looked green at the container level; nothing measured the pressure itself. These two checks
+# do — one class-level (I/O saturation, catches ANY future hog) and one regression (the lock storm).
+#
+# The blkio cgroup controller is compiled out on the Synology kernel (no throttle/accounting files), so
+# there is no bandwidth-throttle knob — the fix reduced the WORKLOAD (bitmagnet DHT_CRAWLER_SCALING_FACTOR
+# 10->3, json-file log caps) rather than capping I/O. Remediation runbook: wiki/docs/runbooks/nas-host-hygiene.md.
+checks:
+  # CLASS tripwire: sustained NAS I/O saturation, read from Synology's I/O-split load average
+  # (`uptime` [IO: 1m, 5m, 15m]). Uses the 15-MIN figure so a momentary transcode/backup/probe
+  # spike does not page; fires before saturation starves the arrs' SQLite. Threshold 12 sits well
+  # above normal media use and well below the 17-22 storm.
+  - id: nas-io-pressure
+    name: "NAS: 15-min I/O-load below threshold (not saturated — the fix-55 storm signal)"
+    host: mini
+    timeout: 30
+    cmd: python3 /opt/verification/bin/nas-io-storm-probe.py io
+    expect: 'status=OK'
+    severity: warn
+    task_id: fix-55
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
+    enabled: true
+
+  # REGRESSION guard for the exact bug: count 'database is locked' errors the NAS arrs logged in
+  # the last 15 min (consumer end — the arr log API, the same surface musicseerr/soularr 500 against).
+  # A storm makes every recent error a lock; the quiet state is ~0. Tolerates a couple of transient
+  # locks (max 5) so it does not flap on isolated contention.
+  - id: arr-sqlite-not-locked
+    name: "NAS arrs: no SQLite 'database is locked' storm in the last 15min (lidarr/radarr/whisparr)"
+    host: mini
+    timeout: 40
+    cmd: python3 /opt/verification/bin/nas-io-storm-probe.py locks
+    expect: 'status=OK'
+    severity: warn
+    task_id: fix-55
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
+    enabled: true

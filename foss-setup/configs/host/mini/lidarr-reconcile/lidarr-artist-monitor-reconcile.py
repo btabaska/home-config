@@ -32,20 +32,47 @@ steady state of "nothing to do").
 import json
 import os
 import sys
+import time
+import urllib.error
 import urllib.request
 
 BASE = os.environ.get("LIDARR_URL", "http://192.168.10.4:8686").rstrip("/") + "/api/v1"
 KEY = os.environ.get("LIDARR_API_KEY")
 
+# fix-55 (2026-08-02): tolerate transient Lidarr 5xx. Under the NAS 'database is locked'
+# storm (fix-55/SH1/SH10) Lidarr intermittently 500s a single request; this unit used to
+# exit 1 on the first one (SM11 — 10 failures/7 days, each firing OnFailure=ntfy-notify@),
+# even though the very next run succeeds. Retry the failing call with backoff so a transient
+# lock clears mid-run; a genuine outage (all tries 5xx / unreachable) still raises -> exit 1.
+RETRY_STATUS = {500, 502, 503, 504}
+MAX_TRIES = 4  # attempts 1-3 back off (2s,4s,8s) then a final attempt; ~14s worst case
+
 
 def api(path, method="GET", body=None):
     data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(
-        BASE + path, data=data, method=method,
-        headers={"X-Api-Key": KEY, "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        raw = r.read()
-        return json.loads(raw) if raw else None
+    last = None
+    for attempt in range(1, MAX_TRIES + 1):
+        req = urllib.request.Request(
+            BASE + path, data=data, method=method,
+            headers={"X-Api-Key": KEY, "Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                raw = r.read()
+                return json.loads(raw) if raw else None
+        except urllib.error.HTTPError as e:
+            last = e
+            if e.code in RETRY_STATUS and attempt < MAX_TRIES:
+                time.sleep(min(2 ** attempt, 15))
+                continue
+            raise
+        except urllib.error.URLError as e:  # connection reset/timeout under load
+            last = e
+            if attempt < MAX_TRIES:
+                time.sleep(min(2 ** attempt, 15))
+                continue
+            raise
+    if last:  # pragma: no cover — loop always returns or raises above
+        raise last
 
 
 def main():
