@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **348 checks across 40 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **350 checks across 40 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -12,7 +12,7 @@ Every acceptance/regression check the fleet runs — **348 checks across 40 doma
 | [edge](edge.md) | 6 | 1 | 5 |
 | [game-saves](game-saves.md) | 2 | 0 | 2 |
 | [gaming](gaming.md) | 8 | 3 | 5 |
-| [git-hygiene](git-hygiene.md) | 13 | 0 | 13 |
+| [git-hygiene](git-hygiene.md) | 15 | 0 | 15 |
 | [ha](ha.md) | 12 | 2 | 10 |
 | [host-hygiene](host-hygiene.md) | 7 | 0 | 7 |
 | [ipod-abs-sync](ipod-abs-sync.md) | 1 | 0 | 1 |
@@ -45,4 +45,4 @@ Every acceptance/regression check the fleet runs — **348 checks across 40 doma
 | [verification-env-integrity](verification-env-integrity.md) | 2 | 2 | 0 |
 | [verification-self](verification-self.md) | 7 | 0 | 7 |
 
-_Total: 348 checks._
+_Total: 350 checks._

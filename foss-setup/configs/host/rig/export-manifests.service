@@ -7,6 +7,7 @@
 #   sudo cp export-manifests.service /etc/systemd/system/
 #   sudo cp foss-setup/scripts/inventory/export-manifests.timer /etc/systemd/system/
 #   sudo cp foss-setup/scripts/inventory/export-manifests.sh /opt/scripts/inventory/
+#   sudo cp foss-setup/scripts/inventory/gen-inventory-md.sh /opt/scripts/inventory/   # fix-65: was OMITTED on rig -> inventory.md refresh silently skipped for weeks
 #   sudo systemctl daemon-reload && sudo systemctl enable --now export-manifests.timer
 #
 # The manifests land in /opt/foss-setup/foss-setup/hosts/cachyos/ — an AI

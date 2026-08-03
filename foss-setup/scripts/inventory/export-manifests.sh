@@ -118,11 +118,20 @@ if [[ -n "${USER_HOME}" && -d "${USER_HOME}/.config/systemd/user" ]]; then
 fi
 
 # --- Regenerate the readable inventory -------------------------------------------
-if [[ -x "${SCRIPT_DIR}/gen-inventory-md.sh" ]]; then
+# fix-65 (SM16): a `[[ -x ]]` gate silently skipped the inventory refresh on the
+# rig for weeks (exit 0) because the deploy copied THIS script to
+# /opt/scripts/inventory/ but not its sibling gen-inventory-md.sh — a
+# silent-partial-failure (taxonomy #6). Tolerate a lost +x bit by invoking
+# through bash when the helper is merely present, and make a genuinely-missing
+# helper a LOUD, non-zero failure (ERR trap -> ntfy + the dead-man goes red)
+# instead of a quiet skip. The helper always ships alongside this script; if it
+# is gone, that is a deploy bug worth paging on.
+if [[ -f "${SCRIPT_DIR}/gen-inventory-md.sh" ]]; then
   log "Regenerating inventory.md."
-  "${SCRIPT_DIR}/gen-inventory-md.sh"
+  bash "${SCRIPT_DIR}/gen-inventory-md.sh"
 else
-  warn "gen-inventory-md.sh not executable/found; skipping inventory.md refresh."
+  warn "gen-inventory-md.sh MISSING from ${SCRIPT_DIR} — inventory.md NOT refreshed (deploy bug: copy it alongside export-manifests.sh)."
+  exit 1
 fi
 
 log "Done. Review + commit ${OUT_DIR} to keep ${HOST} reproducible."

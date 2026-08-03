@@ -48,9 +48,25 @@
   failed_when: false
   check_mode: false
 
+# fix-65 (SM40/SL8): the chezmoi task runs `become: false` as the invoking user,
+# but site.yml's play-level `become: true` gathers facts as root, so
+# `ansible_env.HOME` resolves to /root — the guard checked /root/.local/share/
+# chezmoi/.git (never exists) while the real source lives under the run-user's
+# home, so `chezmoi init --apply` re-fired on EVERY nightly pull, reporting a
+# phantom `changed` that pinned ansible-site-converged-mini red (masking real
+# drift) and force-re-applied dotfiles nightly. Resolve the invoking user's
+# passwd home in the same become:false context the chezmoi task runs in, and
+# guard on THAT — so the guard and the applier agree on one home.
+- name: Resolve the unprivileged run-user home for the chezmoi guard (fix-65)
+  become: false
+  ansible.builtin.shell: 'getent passwd "$(id -un)" | cut -d: -f6'
+  register: chezmoi_home
+  changed_when: false
+  check_mode: false
+
 - name: Apply dotfiles with chezmoi (glue-04)
   become: false
   when: dotfiles_repo.rc == 0
   ansible.builtin.command:
     cmd: "chezmoi init --apply {{ chezmoi_repo }}"
-    creates: "{{ ansible_env.HOME }}/.local/share/chezmoi/.git"
+    creates: "{{ chezmoi_home.stdout }}/.local/share/chezmoi/.git"

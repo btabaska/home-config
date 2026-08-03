@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**269/352 done** · **50 open** · **18 deferred** · 15 retired.
+**270/352 done** · **49 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -41,9 +41,6 @@
 
 ### media-polish
 - [ ] **`fix-67`** Small-pipeline regression batch: kometa IMDb 403s (29 errors), pinchflat bot-check strandings, CWA cover, edited-memo journaling hole, bug-intake residue, syncthing hub inotify, Terraria tile _(est 1-3 hrs)_
-
-### ops
-- [ ] **`fix-65`** Config control-plane drift: local-ai-tooling Forgejo 16 commits behind (ai-03 regression), ansible perpetual changed=1 root-caused, Mac ssh-config 3-layer drift where an apply would delete live aliases _(est 1-3 hrs)_
 
 ### photos
 - [ ] **`nas-08b`** Import mirrorless-camera SD card into Immich via immich-go (+ pbak option) _(est 30 min)_

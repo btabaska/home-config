@@ -93,9 +93,17 @@
 #     per-OS filenames into hosts/<box>/ — pkglist.apt-manual.txt on Debian/Ubuntu
 #     and pkglist.pacman-explicit.txt on Arch/CachyOS — NOT a generic pkglist.txt.
 #     We pick the right one by ansible_os_family.
+#
+#     fix-65 (SM16): the manifest lives at REPO-ROOT hosts/<box>/, but `lookup('file')`
+#     resolves relative paths against the PLAYBOOK dir (configs/ansible/) + role/files
+#     dirs — never repo-root — so a bare "hosts/<box>/..." was unresolvable and the
+#     lookup WARNed + returned an empty list on EVERY pull (mini + rig), silently
+#     disabling package convergence entirely. Anchor on {{ playbook_dir }} (= the
+#     abspath of configs/ansible/, valid under both ansible-pull and push) and climb
+#     two levels to the repo root so the manifest actually loads.
 - name: Resolve the per-OS package manifest path (sbom-04)
   ansible.builtin.set_fact:
-    base_pkglist_path: "hosts/{{ inventory_hostname }}/{{ 'pkglist.apt-manual.txt' if ansible_os_family == 'Debian' else 'pkglist.pacman-explicit.txt' }}"
+    base_pkglist_path: "{{ playbook_dir }}/../../hosts/{{ inventory_hostname }}/{{ 'pkglist.apt-manual.txt' if ansible_os_family == 'Debian' else 'pkglist.pacman-explicit.txt' }}"
 
 # errors='warn' so a MISSING/MISNAMED manifest emits a visible warning + empty list
 # (rather than silently masking a real path bug via ignore_errors). A genuinely

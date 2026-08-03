@@ -18,6 +18,8 @@ silently reverts it. The 2026-07-16 quality gate found four flavors of this
 | `manifest-image-purity` | `hosts/macmini/compose-images.txt` lists an image name no live top-level compose pins (phantom/pollution), or a live image name is missing from it |
 | `tracker-integrity` | the tracker JSON **sources** are incoherent: an orphan status id, a duplicate task id, a contradictory status combo, or the retired `_meta` count fields crept back (M46 class) |
 | `ai-tooling-clean-pushed` | the rig's `local-ai-tooling` checkout (the AI stack's second control plane) has uncommitted changes, **or** its `HEAD` isn't on **both** the `origin` (github) and `forgejo` remotes — committed-but-unpushed, or pushed-to-github-only (ai-03) |
+| `dual-remote-mirror-parity` | a dual-remoted repo's **Forgejo** and **GitHub** mirrors are at different commits — in **either** direction. Compares the two remotes directly (`dotfiles`, `local-ai-tooling`) with no local checkout, so it catches Forgejo-behind-GitHub (SH16) *and* GitHub-behind-Forgejo (SL28), and covers `dotfiles` which had no guard before (fix-65) |
+| `export-manifests-inventory-fresh` | the rig's weekly `export-manifests` skipped the `inventory.md` refresh under exit 0 — either `/opt/scripts/inventory/gen-inventory-md.sh` is missing (the deploy omitted it) or the last run logged the skip instead of "Regenerating inventory.md" (fix-65 / SM16) |
 
 `stack-mirror-drift` and `manifest-image-purity` judge live state against a
 fetched clone of `origin/main` HEAD (cache: `/var/lib/verification/wiki-drift-repo`,
@@ -104,6 +106,47 @@ git push origin --tags && git push forgejo --tags   # when tags change
 Verify the forgejo user key with `ssh -T forgejo` ("rig-workstation"). An
 unreachable rig / broken key fails the check (non-zero, no sentinel) — that is a
 real incident, not a false page.
+
+## fix-65 · config control-plane drift reconciliation (2026-08-02)
+
+The 2026-08-02 fleet sweep found the control plane silently out of sync across
+three repos and the ansible convergence loop:
+
+- **`dual-remote-mirror-parity`** — `ai-tooling-clean-pushed` only checked
+  `local-ai-tooling` from the *rig checkout's* HEAD, so it missed the mirror-vs-mirror
+  gaps entirely: `local-ai-tooling`'s Forgejo mirror sat **16 commits behind** GitHub
+  (SH16 — the whole ai-10 arc existed only in the cloud), and `dotfiles`' GitHub
+  mirror sat **2 behind** Forgejo (SL28). The new check compares the two remotes
+  directly on mini (`git ls-remote forgejo:home/<r> main` vs
+  `https://github.com/btabaska/<r>`), failing on any inequality either way. Fix a
+  red by pushing the lagging remote (`git push <remote> main`) — for
+  `local-ai-tooling` from the rig with the `id_forgejo` user key; for `dotfiles`
+  from the Mac chezmoi source (`chezmoi git -- push origin main` / `forgejo main`).
+- **`ansible-site-converged-mini` (SM40/SL8)** — the check had been red every run
+  from a single non-idempotent task. `site.yml`'s play-level `become: true`
+  gathers facts as root, so `ansible_env.HOME` = `/root`, but the *chezmoi* task
+  runs `become: false` as the invoking user — its `creates:` guard checked
+  `/root/.local/share/chezmoi/.git` (never exists) while the real source lives in
+  the run-user's home, re-firing `chezmoi init --apply` every pull (phantom
+  `changed`, and dotfiles force-re-applied nightly). Fixed by resolving the
+  unprivileged run-user's passwd home in the same `become: false` context and
+  guarding on that (`roles/state/tasks/main.yml`). Same class also fixed the
+  repo-root `hosts/<box>/pkglist.*` `lookup('file')` that resolved relative to the
+  playbook dir and WARNed empty on every pull, silently disabling package
+  convergence — anchored on `{{ playbook_dir }}` (`roles/base/tasks/main.yml`).
+- **`export-manifests-inventory-fresh` (SM16)** — the rig deploy copied
+  `export-manifests.sh` to `/opt/scripts/inventory/` but not its sibling
+  `gen-inventory-md.sh`, so the `[[ -x ]]` gate silently skipped the `inventory.md`
+  refresh under exit 0 while the dead-man still pinged green. Deploy doc + the
+  script now ship the helper together (a genuinely-missing helper is now a loud,
+  non-zero failure), and this check probes the consumer end. See
+  `configs/host/rig/export-manifests.service` for the corrected deploy.
+- **SL15** — `/opt/stacks/.gitignore` excluded the whole `journaling/n8n/`
+  directory, so git never descended and the nested `!n8n/*.workflow.json` negation
+  could never re-include the n8n workflow source. Split to `journaling/n8n/*` +
+  `!journaling/n8n/*.workflow.json` so workflow JSONs are versioned while the n8n
+  encryption key (`n8n/config`) and sqlite stay ignored (verified via
+  `git check-ignore`).
 
 For `wiki-drift` see the same-commit rule note in
 [`verification.md`](verification.md): re-run the generators

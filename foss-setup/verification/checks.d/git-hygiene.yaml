@@ -263,3 +263,52 @@ checks:
     task_id: ai-04
     runbook: wiki/docs/runbooks/git-hygiene.md
     enabled: true
+
+  # fix-65 (SH16 + SL28 class): the dual-remoted repos must have their Forgejo
+  # (no-cloud, authoritative) mirror and their GitHub mirror at the SAME commit.
+  # ai-tooling-clean-pushed already checks local-ai-tooling from the RIG checkout,
+  # but two real gaps slipped past it: local-ai-tooling's Forgejo mirror sat 16
+  # commits BEHIND GitHub (SH16) and dotfiles' GitHub mirror sat 2 commits BEHIND
+  # Forgejo (SL28) — opposite directions, and dotfiles had NO check at all. This
+  # compares the two REMOTES directly (no local checkout needed, so it catches
+  # drift even if the workstation clone is gone/stale) and fails on ANY inequality
+  # in EITHER direction. Runs on mini as btabaska (has the forgejo ssh alias + the
+  # forgejo server is local; github over https, both repos public). Pure shell.
+  - id: dual-remote-mirror-parity
+    name: "dual-remoted repos: Forgejo mirror == GitHub mirror (both directions)"
+    host: mini
+    cmd: >-
+      df_f=$(git ls-remote forgejo:home/dotfiles main | awk 'NR==1{print $1}') &&
+      df_g=$(git ls-remote https://github.com/btabaska/dotfiles main | awk 'NR==1{print $1}') &&
+      ai_f=$(git ls-remote forgejo:home/local-ai-tooling main | awk 'NR==1{print $1}') &&
+      ai_g=$(git ls-remote https://github.com/btabaska/local-ai-tooling main | awk 'NR==1{print $1}') &&
+      echo "dotfiles f=${df_f:0:12} g=${df_g:0:12} | local-ai-tooling f=${ai_f:0:12} g=${ai_g:0:12}" &&
+      { [ -n "$df_f" ] && [ "$df_f" = "$df_g" ] && [ -n "$ai_f" ] && [ "$ai_f" = "$ai_g" ]; } &&
+      echo DUAL-REMOTE-PARITY-OK
+    expect: DUAL-REMOTE-PARITY-OK
+    severity: warn
+    task_id: fix-65
+    runbook: wiki/docs/runbooks/git-hygiene.md
+    enabled: true
+
+  # fix-65 (SM16): the rig rebuildability loop had a silent-partial-failure — the
+  # deploy copied export-manifests.sh to /opt/scripts/inventory/ but NOT its
+  # sibling gen-inventory-md.sh, so the weekly export skipped the inventory.md
+  # refresh under exit 0 (the dead-man still pinged green). This probes the
+  # CONSUMER end: the helper must be present AND the most recent export run must
+  # have regenerated inventory.md rather than logging the skip. Host rig (as
+  # btabaska, who can read the unit journal).
+  - id: export-manifests-inventory-fresh
+    name: "rig export-manifests refreshes inventory.md (helper present, no silent skip)"
+    host: rig
+    cmd: >-
+      test -x /opt/scripts/inventory/gen-inventory-md.sh &&
+      last=$(journalctl -u export-manifests.service --no-pager 2>/dev/null | grep -Eo 'Regenerating inventory.md|skipping inventory.md refresh' | tail -1) &&
+      echo "gen-inventory=present last-leg=${last:-none}" &&
+      [ "$last" = "Regenerating inventory.md" ] &&
+      echo EXPORT-MANIFESTS-INVENTORY-OK
+    expect: EXPORT-MANIFESTS-INVENTORY-OK
+    severity: warn
+    task_id: fix-65
+    runbook: wiki/docs/runbooks/git-hygiene.md
+    enabled: true

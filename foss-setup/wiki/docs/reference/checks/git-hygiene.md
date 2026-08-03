@@ -1,6 +1,6 @@
 # Checks — git-hygiene
 
-`foss-setup/verification/checks.d/git-hygiene.yaml` — 13 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/git-hygiene.yaml` — 15 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `git-stacks-clean`
 
@@ -143,6 +143,28 @@ rig local-ai-tooling docker/.env keys all mapped in .env.example (ai-04)
 
 ```bash
 cd ~/Documents/GitHub/local-ai-tooling/docker && exk=$(grep -vE '^#|^$' .env.example | cut -d= -f1) && miss=$(for k in $(grep -vE '^#|^$' .env | cut -d= -f1); do echo "$exk" | grep -qx "$k" || echo "$k"; done | wc -l | tr -d '[:space:]') && echo "keys-missing-from-example=$miss" && [ "$miss" = 0 ] && echo ENV-EXAMPLE-PARITY-OK
+```
+
+## `dual-remote-mirror-parity`
+
+dual-remoted repos: Forgejo mirror == GitHub mirror (both directions)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-65` · **enabled:** True
+- **expects:** `DUAL-REMOTE-PARITY-OK`
+
+```bash
+df_f=$(git ls-remote forgejo:home/dotfiles main | awk 'NR==1{print $1}') && df_g=$(git ls-remote https://github.com/btabaska/dotfiles main | awk 'NR==1{print $1}') && ai_f=$(git ls-remote forgejo:home/local-ai-tooling main | awk 'NR==1{print $1}') && ai_g=$(git ls-remote https://github.com/btabaska/local-ai-tooling main | awk 'NR==1{print $1}') && echo "dotfiles f=${df_f:0:12} g=${df_g:0:12} | local-ai-tooling f=${ai_f:0:12} g=${ai_g:0:12}" && { [ -n "$df_f" ] && [ "$df_f" = "$df_g" ] && [ -n "$ai_f" ] && [ "$ai_f" = "$ai_g" ]; } && echo DUAL-REMOTE-PARITY-OK
+```
+
+## `export-manifests-inventory-fresh`
+
+rig export-manifests refreshes inventory.md (helper present, no silent skip)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `fix-65` · **enabled:** True
+- **expects:** `EXPORT-MANIFESTS-INVENTORY-OK`
+
+```bash
+test -x /opt/scripts/inventory/gen-inventory-md.sh && last=$(journalctl -u export-manifests.service --no-pager 2>/dev/null | grep -Eo 'Regenerating inventory.md|skipping inventory.md refresh' | tail -1) && echo "gen-inventory=present last-leg=${last:-none}" && [ "$last" = "Regenerating inventory.md" ] && echo EXPORT-MANIFESTS-INVENTORY-OK
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
