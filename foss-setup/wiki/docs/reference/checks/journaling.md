@@ -1,6 +1,6 @@
 # Checks — journaling
 
-`foss-setup/verification/checks.d/journaling.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/journaling.yaml` — 12 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `journaling-memos-ready`
 
@@ -121,6 +121,17 @@ IGDB #gamelog enrichment reaches Twitch OAuth + IGDB from the n8n container
 
 ```bash
 python3 /opt/verification/bin/journaling-igdb-enrich.py
+```
+
+## `journaling-reflection-backlog`
+
+no #journal memo older than 24h is missing its reflection (SM37 class)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-67` · **enabled:** True
+- **expects:** `^REFLECTION_BACKLOG=0$`
+
+```bash
+python3 /opt/verification/bin/journaling-reflection-backlog.py
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

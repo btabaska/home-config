@@ -61,3 +61,45 @@ checks:
     runbook: wiki/docs/runbooks/bug-intake.md
     enabled: true
     timeout: 240
+
+  # fix-67 / SL27 — the notify leg of a REAL bug report (n8n POSTs http://ntfy:80/bugs
+  # with Bearer $NTFY_TOKEN) had ZERO coverage: both e2e probes carry a sentinel that
+  # SKIPS the notify gate, so a rotted NTFY_TOKEN or a changed 'bugs' ACL would file the
+  # Forgejo issue but silently drop the phone notification (green-but-broken at the notify
+  # end). We can't test-publish without buzzing the operator, so this validates the two
+  # credentials the leg depends on WITHOUT delivering a page: (1) n8n's OWN NTFY_TOKEN
+  # still authenticates as buguser (GET /v1/account from inside the n8n container, using
+  # the exact running token — a rotted token 401s), and (2) the ntfy server still grants
+  # buguser write to topic 'bugs' (server-side ACL listing). The token value never leaves
+  # the container / never appears in output.
+  - id: bug-intake-ntfy-notify-branch
+    tier: fast
+    name: "bug-report ntfy notify leg: n8n's NTFY_TOKEN authenticates + retains write to 'bugs'"
+    host: mini
+    cmd: >-
+      U=$(docker exec n8n sh -c 'wget -qO- --header="Authorization: Bearer $NTFY_TOKEN" http://ntfy:80/v1/account 2>/dev/null' | grep -c buguser);
+      A=$(docker exec ntfy ntfy access buguser 2>/dev/null | grep -c 'write-only access to topic bugs');
+      if [ "$U" -ge 1 ] && [ "$A" -ge 1 ]; then echo "ntfy_bugs_notify=ok token=valid acl=write"; else echo "ntfy_bugs_notify=FAIL token_hits=$U acl_hits=$A"; fi
+    expect: '^ntfy_bugs_notify=ok '
+    severity: warn
+    task_id: fix-67
+    runbook: wiki/docs/runbooks/bug-intake.md
+    enabled: true
+
+  # fix-67 / SL25 — no stale synthetic probe issue lingering in the tracker the household
+  # reads. The bugreport-e2e probe files a sentinel issue and deletes it; when a delete
+  # failed once (issue #14) nothing swept the leftover and it sat open for 6 days. The probe
+  # now self-sweeps residue on every run; this backs that with a monitor. Any OPEN issue
+  # titled with the probe sentinel is residue (the probe deletes within seconds of creation,
+  # so no in-flight false positive) -> expect 0.
+  - id: bug-intake-no-probe-residue
+    tier: daily
+    name: "no stale synthetic bug-report probe issue lingering in home/household-bugs (SL25)"
+    host: mini
+    cmd: >-
+      curl -s -m 10 -H "Authorization: token $FORGEJO_PROBE_TOKEN" "$FORGEJO_API_URL/repos/home/household-bugs/issues?state=open&type=issues&limit=50" | python3 -c "import sys,json; d=json.load(sys.stdin); r=[i['number'] for i in d if 'n8n-bugreport-probe' in (i.get('title') or '')]; print('PROBE_RESIDUE=%d%s'%(len(r),(' '+str(r)) if r else ''))"
+    expect: '^PROBE_RESIDUE=0$'
+    severity: warn
+    task_id: fix-67
+    runbook: wiki/docs/runbooks/bug-intake.md
+    enabled: true

@@ -48,13 +48,13 @@ docker exec pinchflat sh -c 'yt-dlp -v --simulate --print id "https://www.youtub
 
 ## `pinchflat-stuck-media`
 
-pinchflat: no new bot-check-stranded media beyond the 7 accepted (M14 class)
+pinchflat: no new bot-check-stranded media beyond the 8 accepted (M14 class)
 
 - **host:** `mini` · **severity:** `warn` · **guards task:** `fix-37` · **enabled:** True
 - **expects:** `^new_botcheck_stuck=0$`
 
 ```bash
-python3 -c "import sqlite3; c=sqlite3.connect('/opt/stacks/pinchflat/config/db/pinchflat.db'); print('new_botcheck_stuck=%d' % c.execute(\"select count(*) from media_items where last_error like '%Sign in to confirm%' and media_filepath is null and id not in (409,702,895,915,939,1008,1333)\").fetchone()[0])"
+python3 -c "import sqlite3; c=sqlite3.connect('/opt/stacks/pinchflat/config/db/pinchflat.db'); print('new_botcheck_stuck=%d' % c.execute(\"select count(*) from media_items where last_error like '%Sign in to confirm%' and media_filepath is null and id not in (409,702,895,915,939,1008,1333,3076)\").fetchone()[0])"
 ```
 
 ## `romm-content-ingest`

@@ -46,3 +46,28 @@ checks:
     task_id: foss-03
     runbook: wiki/docs/services/syncthing.md
     enabled: true
+
+  # fix-67 / SL30 — the hub's live filesystem watcher must be up on EVERY folder, not
+  # just liveness. The Synology per-user inotify limit (default 8192) was exhausted at the
+  # second folder, so game-saves carried watchError "failed to set up inotify handler" and
+  # NAS-side changes (a manual save restore) only propagated on the ~1h periodic rescan —
+  # invisible to game-saves-mesh-synced (completion stays 100% because peer-originated syncs
+  # are unaffected). fs.inotify.max_user_watches is now raised to 204800 (live + persisted by
+  # DSM boot task; see configs/nas/syncthing/boot-inotify-limit.sh). This asserts NO folder
+  # reports a watchError, so an exhausted-limit regression trips instead of silently
+  # degrading to scan-only.
+  - id: syncthing-hub-inotify-live
+    tier: fast
+    name: "syncthing NAS hub: every folder's inotify watcher is live (no watchError)"
+    host: nas
+    cmd: >-
+      API=$(grep -o '<apikey>[^<]*</apikey>' /volume1/docker/syncthing/config/config.xml | sed 's/<[^>]*>//g');
+      FOLDERS=$(curl -s -H "X-API-Key: $API" http://127.0.0.1:8384/rest/config/folders | python3 -c "import sys,json;print(' '.join(f['id'] for f in json.load(sys.stdin)))");
+      bad='';
+      for f in $FOLDERS; do curl -s -H "X-API-Key: $API" "http://127.0.0.1:8384/rest/db/status?folder=$f" | grep -q '"watchError": "[^"]' && bad="$bad $f"; done;
+      [ -z "$bad" ] && echo "syncthing_inotify=ok folders=[$FOLDERS]" || echo "syncthing_inotify=DEGRADED watchError:$bad"
+    expect: '^syncthing_inotify=ok '
+    severity: warn
+    task_id: foss-03
+    runbook: wiki/docs/services/syncthing.md
+    enabled: true

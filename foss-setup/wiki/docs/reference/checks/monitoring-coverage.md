@@ -1,6 +1,6 @@
 # Checks — monitoring-coverage
 
-`foss-setup/verification/checks.d/monitoring-coverage.yaml` — 8 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/monitoring-coverage.yaml` — 9 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `homepage-dead-tiles`
 
@@ -44,6 +44,17 @@ homepage UniFi Network tile returns live gateway health (home-08 consumer end)
 
 ```bash
 python3 /opt/verification/bin/homepage-unifi-tile.py
+```
+
+## `terraria-tile-present`
+
+homepage Games group still lists the Terraria server tile (SL24)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-67` · **enabled:** True
+- **expects:** `Terraria`
+
+```bash
+curl -s -m 8 http://localhost:3010/api/services
 ```
 
 ## `kuma-all-monitors-notified`

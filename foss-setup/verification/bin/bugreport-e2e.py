@@ -34,7 +34,39 @@ def fail(msg):
     sys.exit(1)
 
 
+def _api(path, method="GET"):
+    r = urllib.request.Request(API + path, method=method,
+                               headers={"Authorization": "token " + TOK})
+    return urllib.request.urlopen(r, timeout=10)
+
+
+def sweep_residue():
+    """Self-clean: delete any leftover OPEN probe issues from a PRIOR run whose
+    DELETE failed (SL25 — issue #14 lingered 6 days because a one-off cleanup
+    failure had no sweeper). Best-effort; never fails the probe. Runs before we
+    file a new one so a stuck delete can't accumulate synthetic noise in the
+    tracker the household reads."""
+    if not TOK:
+        return
+    try:
+        data = json.load(_api(f"/repos/{REPO}/issues?state=open&type=issues&limit=50"))
+    except Exception as e:
+        print(f"BUGREPORT_WARN: residue sweep list failed: {e}", file=sys.stderr)
+        return
+    for i in data:
+        if SENTINEL in (i.get("title") or ""):
+            num = i.get("number")
+            try:
+                _api(f"/repos/{REPO}/issues/{num}", "DELETE")
+                print(f"BUGREPORT_WARN: swept stale probe residue issue #{num}", file=sys.stderr)
+            except Exception as e:
+                print(f"BUGREPORT_WARN: residue sweep delete of #{num} failed: {e}", file=sys.stderr)
+
+
 def main():
+    # 0) sweep any residue left by a prior run's failed cleanup (self-healing)
+    sweep_residue()
+
     # 1) form reachable + required fields present (form served + workflow active)
     try:
         html = urllib.request.urlopen(N8N + FORM_PATH, timeout=10).read().decode("utf-8", "replace")

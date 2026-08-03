@@ -87,19 +87,23 @@ checks:
     enabled: true
 
   # Class guard on the CONSUMER outcome: no NEW media item stranded by a
-  # YouTube bot-check. The 7 ids listed are the 2026-07-14 casualties, accepted
-  # as cookie-gated (POT was fetched and attached on 2026-07-18 and YouTube
-  # still returned LOGIN_REQUIRED for them — only sign-in cookies would recover
-  # them; documented in the runbook). Any OTHER id matching this error = the
-  # countermeasure pipeline has regressed or YouTube escalated -> investigate.
+  # YouTube bot-check. The 8 ids listed are accepted cookie-gated casualties:
+  # ids 409/702/895/915/939/1008/1333 (2026-07-14) plus 3076 (uploaded 2026-07-20,
+  # "Non AI Lofi for Summer Days", video 9bJ1sXn0Gsw — accepted fix-67/SM20). For
+  # all of them POT was fetched + attached and YouTube still returned
+  # LOGIN_REQUIRED ("Sign in to confirm you're not a bot"); only sign-in cookies
+  # would recover them and cookies are a deliberate non-goal on this fleet
+  # (account-flag risk) — documented in the runbook. Any OTHER id matching this
+  # error = the countermeasure pipeline regressed or YouTube escalated further ->
+  # investigate (do NOT reflexively add it here).
   - id: pinchflat-stuck-media
-    name: "pinchflat: no new bot-check-stranded media beyond the 7 accepted (M14 class)"
+    name: "pinchflat: no new bot-check-stranded media beyond the 8 accepted (M14 class)"
     host: mini
     cmd: >-
       python3 -c "import sqlite3; c=sqlite3.connect('/opt/stacks/pinchflat/config/db/pinchflat.db');
       print('new_botcheck_stuck=%d' % c.execute(\"select count(*) from media_items
       where last_error like '%Sign in to confirm%' and media_filepath is null
-      and id not in (409,702,895,915,939,1008,1333)\").fetchone()[0])"
+      and id not in (409,702,895,915,939,1008,1333,3076)\").fetchone()[0])"
     expect: '^new_botcheck_stuck=0$'
     severity: warn
     task_id: fix-37

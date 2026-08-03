@@ -1,6 +1,6 @@
 # Checks — bug-intake
 
-`foss-setup/verification/checks.d/bug-intake.yaml` — 5 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/bug-intake.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `bug-intake-form-armed`
 
@@ -55,6 +55,28 @@ synthetic report -> auto-triage comment appears on the Forgejo issue (degrade-aw
 
 ```bash
 python3 /opt/verification/bin/bugtriage-e2e.py
+```
+
+## `bug-intake-ntfy-notify-branch`
+
+bug-report ntfy notify leg: n8n's NTFY_TOKEN authenticates + retains write to 'bugs'
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-67` · **enabled:** True
+- **expects:** `^ntfy_bugs_notify=ok `
+
+```bash
+U=$(docker exec n8n sh -c 'wget -qO- --header="Authorization: Bearer $NTFY_TOKEN" http://ntfy:80/v1/account 2>/dev/null' | grep -c buguser); A=$(docker exec ntfy ntfy access buguser 2>/dev/null | grep -c 'write-only access to topic bugs'); if [ "$U" -ge 1 ] && [ "$A" -ge 1 ]; then echo "ntfy_bugs_notify=ok token=valid acl=write"; else echo "ntfy_bugs_notify=FAIL token_hits=$U acl_hits=$A"; fi
+```
+
+## `bug-intake-no-probe-residue`
+
+no stale synthetic bug-report probe issue lingering in home/household-bugs (SL25)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-67` · **enabled:** True
+- **expects:** `^PROBE_RESIDUE=0$`
+
+```bash
+curl -s -m 10 -H "Authorization: token $FORGEJO_PROBE_TOKEN" "$FORGEJO_API_URL/repos/home/household-bugs/issues?state=open&type=issues&limit=50" | python3 -c "import sys,json; d=json.load(sys.stdin); r=[i['number'] for i in d if 'n8n-bugreport-probe' in (i.get('title') or '')]; print('PROBE_RESIDUE=%d%s'%(len(r),(' '+str(r)) if r else ''))"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

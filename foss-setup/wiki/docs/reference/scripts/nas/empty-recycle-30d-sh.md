@@ -37,5 +37,5 @@
 - [`install-mylar3-perms-guard-task.sh`](install-mylar3-perms-guard-task-sh.md)
 - [`install-nas-docker-health-task.sh`](install-nas-docker-health-task-sh.md)
 - [`install-recycle-empty-task.sh`](install-recycle-empty-task-sh.md)
-- [`mylar3-perms-guard.sh`](mylar3-perms-guard-sh.md)
+- [`install-syncthing-inotify-task.sh`](install-syncthing-inotify-task-sh.md)
 - [NAS tasks scripts](index.md) · [All scripts](../index.md)

@@ -77,6 +77,23 @@ checks:
     runbook: wiki/docs/runbooks/monitoring-coverage.md
     enabled: true
 
+  # fix-67 / SL24 — the always-on Terraria game server (mini) had no Homepage tile
+  # while its sibling game servers did (mandate 3: the live stack is the source of
+  # truth for the dashboard). It is now an external link-only tile in the Games group.
+  # Probe the /api/services JSON (source of truth, hot-reloads) not the static / HTML
+  # shell (see the Homepage memory) so a services.yaml regression that drops the tile
+  # trips this. External href tile => no siteMonitor/widget, so homepage-dead-tiles
+  # can never see it — this is the only guard the tile has.
+  - id: terraria-tile-present
+    name: "homepage Games group still lists the Terraria server tile (SL24)"
+    host: mini
+    cmd: curl -s -m 8 http://localhost:3010/api/services
+    expect: 'Terraria'
+    severity: warn
+    task_id: fix-67
+    runbook: wiki/docs/runbooks/monitoring-coverage.md
+    enabled: true
+
   # ── M21 · every Uptime-Kuma monitor has an alert channel ─────────────────
   # bootstrap-nas-monitors.sh used to insert monitors and leave "attach ntfy" as
   # a manual step, so NAS Whisparr (id 56) shipped with no monitor_notification

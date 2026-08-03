@@ -1,0 +1,13 @@
+[Unit]
+Description=Hourly journal reflection reconcile (fix-67 / SM37)
+
+[Timer]
+# Hourly, plus a catch-up if the box was off at the scheduled minute. A day-time
+# run may inject-but-not-reflect while the rig GPU is busy; the next free-GPU
+# window (nights, immich-ml off 01-07) clears the backlog — the 24h backlog check
+# tolerates this.
+OnCalendar=*-*-* *:17:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

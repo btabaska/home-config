@@ -1,6 +1,6 @@
 # Checks — sync
 
-`foss-setup/verification/checks.d/sync.yaml` — 2 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/sync.yaml` — 3 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `syncthing-hub-mesh-direct`
 
@@ -22,6 +22,17 @@ syncthing GUI reverse-proxy URLs (hub + rig) serve via Caddy
 
 ```bash
 out=""; for h in syncthing.tabaska.us syncthing-rig.tabaska.us; do c=$(curl -sk -m 10 -o /dev/null -w '%{http_code}' --resolve "$h:443:127.0.0.1" "https://$h/rest/noauth/health"); [ "$c" = "200" ] && out="$out $h=ok" || out="$out $h=FAIL($c)"; done; echo "syncthing_urls$out"
+```
+
+## `syncthing-hub-inotify-live`
+
+syncthing NAS hub: every folder's inotify watcher is live (no watchError)
+
+- **host:** `nas` · **severity:** `warn` · **guards task:** `foss-03` · **enabled:** True
+- **expects:** `^syncthing_inotify=ok `
+
+```bash
+API=$(grep -o '<apikey>[^<]*</apikey>' /volume1/docker/syncthing/config/config.xml | sed 's/<[^>]*>//g'); FOLDERS=$(curl -s -H "X-API-Key: $API" http://127.0.0.1:8384/rest/config/folders | python3 -c "import sys,json;print(' '.join(f['id'] for f in json.load(sys.stdin)))"); bad=''; for f in $FOLDERS; do curl -s -H "X-API-Key: $API" "http://127.0.0.1:8384/rest/db/status?folder=$f" | grep -q '"watchError": "[^"]' && bad="$bad $f"; done; [ -z "$bad" ] && echo "syncthing_inotify=ok folders=[$FOLDERS]" || echo "syncthing_inotify=DEGRADED watchError:$bad"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

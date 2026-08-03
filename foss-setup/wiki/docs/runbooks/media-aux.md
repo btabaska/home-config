@@ -55,6 +55,12 @@ Output `kometa_run_errors=N`. Kometa's exit code is worthless (a run full of
      delete it (fix-37 removed all of them — empty blocks are latent errors).
    - `Plex Library 'X' not found` / `File does not exist` → a `libraries:`
      block names a nonexistent Plex library or collection file; fix or delete.
+   - `403 Forbidden` on `Processing IMDb List: ls…` (7 of the default-playlist
+     lists, ×4 lines + 1 summary = 29 errors) → IMDb was blocking Kometa's list
+     scraper's User-Agent. **Fixed by upgrading the image** (fix-67/SM19: v2.4.4
+     → **v2.4.6**, which sends IMDb's web-client identifier with GraphQL — PR
+     #3444). If it recurs on a newer IMDb change, bump the pinned image tag in
+     `compose.yaml` (live + `configs/docker-stack/stacks/kometa/compose.yaml`).
 3. Re-run one-shot and re-check:
    `ssh mini 'docker exec -e KOMETA_RUN=True kometa python3 kometa.py'`.
    The `-e KOMETA_RUN=True` is **mandatory** — Kometa gives env vars precedence
@@ -83,12 +89,13 @@ the `bgutil-pot` server is down/unreachable on the `edge` network.
 
 ## `pinchflat-stuck-media` failed (warn) — a NEW video is bot-check-stranded
 
-Output `new_botcheck_stuck=N`. A media item beyond the 7 accepted ids
-(409/702/895/915/939/1008/1333, the 2026-07-14 casualties) hit `Sign in to
-confirm you're not a bot` and never downloaded. The 7 are accepted because a
-valid PO token was fetched and attached on 2026-07-18 and YouTube still
-returned LOGIN_REQUIRED — that state is cookie-gated, and feeding account
-cookies to a headless downloader is a deliberate non-goal (account-flag risk).
+Output `new_botcheck_stuck=N`. A media item beyond the 8 accepted ids
+(409/702/895/915/939/1008/1333, the 2026-07-14 casualties; plus **3076** "Non AI
+Lofi for Summer Days", video 9bJ1sXn0Gsw, accepted 2026-07-20 fix-67/SM20) hit
+`Sign in to confirm you're not a bot` and never downloaded. These are accepted
+because a valid PO token was fetched and attached and YouTube still returned
+LOGIN_REQUIRED — that state is cookie-gated, and feeding account cookies to a
+headless downloader is a deliberate non-goal (account-flag risk).
 
 A new stranded item means the countermeasure pipeline regressed or YouTube
 escalated:

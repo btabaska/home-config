@@ -1,0 +1,15 @@
+[Unit]
+# fix-67 / SM37 — journal-reflection reconciler. Re-injects #journal memos that
+# have no 🧭 Reflection comment (e.g. a tag added by EDIT, which arrives as a
+# memos.memo.updated event the n8n Guard drops by design) into the journal
+# webhook so they get analyzed. Idempotent + best-effort; see the script header.
+# NOT ansible-managed (mini host units are manual/doc-only — see the mini memory).
+Description=Journal reflection reconciler (backfills unanalyzed #journal memos)
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+# root so it can read /opt/stacks/journaling/.env (640 root:btabaska) for the PAT.
+ExecStart=/usr/bin/python3 /opt/stacks/journaling/scripts/reconcile-reflections.py
+Nice=10

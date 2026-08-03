@@ -314,6 +314,17 @@
           type: gamedig
           serverType: minecraft
           url: udp://192.168.10.12:25565
+    # Headless TShock co-op server on the mini (game-01). No web UI and its REST
+    # API (7878) is bound to 127.0.0.1 for the verification probe only, so this is
+    # an external link-only tile (href + target, no siteMonitor/widget) — it gives
+    # the mesh-visible server a dashboard presence at parity with the other game
+    # servers (SL24). Connect address lives in the description. Guarded by check
+    # terraria-tile-present.
+    - Terraria:
+        icon: mdi-pickaxe
+        href: https://home.tabaska.us
+        description: TShock co-op (mini) · join 192.168.10.2:7777
+        target: _blank
 
 - AI:
     - Open WebUI:

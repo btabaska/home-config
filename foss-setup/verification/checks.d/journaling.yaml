@@ -188,3 +188,25 @@ checks:
     runbook: wiki/docs/services/journaling.md
     enabled: true
     timeout: 90
+
+  # fix-67 / SM37 — consumer-end class check that every real #journal entry ends up
+  # with a 🧭 Reflection comment. The journal-analyze loop only fires on
+  # memos.memo.created, so a #journal tag ADDED BY EDIT (a memos.memo.updated event
+  # the Guard drops by design) was silently never analyzed — memo 36 (2026-07-23)
+  # was lost this way. The journal-reflection-reconcile.timer (mini host unit) now
+  # backfills those; this asserts the OUTCOME: no top-level #journal memo older than
+  # 24h still lacks its reflection. The 24h grace lets the hourly reconciler + the
+  # nightly free-GPU window clear the backlog, so it never false-positives on a
+  # fresh entry waiting behind day-time GPU contention. Stubs (tag only, no body)
+  # are excluded — the Guard drops those and they can never earn a reflection.
+  - id: journaling-reflection-backlog
+    tier: daily
+    name: "no #journal memo older than 24h is missing its reflection (SM37 class)"
+    host: mini
+    cmd: python3 /opt/verification/bin/journaling-reflection-backlog.py
+    expect: '^REFLECTION_BACKLOG=0$'
+    severity: warn
+    task_id: fix-67
+    runbook: wiki/docs/services/journaling.md
+    enabled: true
+    timeout: 90
