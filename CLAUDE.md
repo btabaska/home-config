@@ -56,21 +56,35 @@ into chat, commits, or docs.** Template: `.handoff-secrets.yaml.example`.
 3. **Live stack is the source of truth for docs** — document what's running, not what was planned.
 4. **Disruptive work → 4–7AM EST window.** Confirm before destructive or user-facing actions.
 
-## Current priority: fleet-sweep remediation — COMPLETE (2026-08-02/03)
+## Current priority: local-AI ("local Claude") buildout — COMPLETE (2026-08-06)
 
-The `/fleet-sweep` 2026-08-02 audit (**`foss-setup/docs/fleet-sweep-2026-08-02.md`**, 318 findings;
-**`docs/fleet-sweep-2026-08-02-worklist.md`**, 21 clusters = `fix-49`…`fix-69`) has been **fully
-remediated** in an orchestrated drive (one subagent per item; operator waived the 4-7AM window):
-all 22 items — `fix-49`…`fix-69` + escalated `sec-12` (SH3) — are resolved and closed in
-`progress.json` (commits `667e361`…`25567cf`). Final audit-safe run: **343/362 checks pass, 0 crit
-failures** (baseline was 29 fails). The 20 regressed prior-closures are re-fixed and tracked via the
-new `progress.json.reopened` ledger (fix-68). Remaining warn-level residuals are expected/deferred,
-NOT regressions: `edge-plex-version-current` (NAS Plex one build behind → user update, ties to
-`fix-24`), `immich-user-zero-assets` (Kaelyn must enable backup on her own device),
-`sys-docker-subnet-squat` (two more docker squatters → open task `ha-19`), the deferred
-`git-etckeeper-clean`, plus self-healing `/opt/foss-setup` mini/rig clone drift (clears on the next
-ansible-pull) and one Kuma monitor to eyeball on `/status/fleet`. **Open human follow-ups:** schedule
-the pending mini kernel reboot (4-7AM), set Windows `RealTimeIsUniversal` on rig, subscribe a phone
-to the off-mini dead-man + `alert-drill` ntfy topics, and (optional) provide a subsource/OpenSubtitles
-key to broaden Bazarr coverage. Next work is the pre-existing open queue (`ha-19`, `fix-24`,
-`game-*`, `media-09/10/13`, etc.) via **`/build-next`** or **`/resolve-finding`**.
+The researched local-Claude AI stack shipped as tracker ledger `lai-01`…`lai-20` (orchestrated drive,
+one subagent per item). **19 done; `lai-15` DEFERRED** (StrategyWiki sits behind Cloudflare
+bot-management that fingerprints/403s mwoffliner — self-completing scaffolding + blocked-mode check
+shipped; real path = file the openZIM zim-request). Close-out doc:
+**`foss-setup/docs/local-ai-buildout-runlog.md`** (shipped-items table, all commits, the 20 e2e checks,
+verification triage). New services: **SearXNG** (searxng.tabaska.us), **kiwix** + ZIM library incl. full
+Wikipedia (kiwix.tabaska.us), **local-deep-research** (ldr.tabaska.us), **offline maps** PMTiles+Photon
+(maps.tabaska.us), plus OWUI search/RAG/reranker/native-MCP/audio(Kokoro TTS+faster-whisper STT)/
+image(ComfyUI)/code-exec(open-terminal)/native-memory, **opencode 1.18.10** pinned on Mac+rig with the
+plugin array + skills bundle + DIY memory plugin, and reranker/comfyui/playwright/openzim/trilium/osm
+MCPs. 20 new consumer-probing checks live in `verification/checks.d/local-ai.yaml` (domain
+`--host local-ai`), all green. Final full-fleet audit-safe run: **363/377 pass, ZERO genuine AI-stack
+regressions** (the only lai-introduced fails — 9 new AI ports missing from the fix-51 exposure baseline —
+were codified in `verification/assets/expected-listeners/`; the 1 crit + 13 other non-passes are
+pre-existing residuals in CLAUDE.md/the `reopened` ledger, or GPU-gated best-effort daily checks).
+
+**Open human follow-ups (none actioned):** **[SECURITY, urgent]** rotate `sudo.rig_password` (a lai-13
+cached-sudo stdin fall-through exposed the value in a subagent transcript; cred file since rewritten
+clean — follow `security-change-guard`); subscribe a phone to ntfy topic **`opencode`** (daily ~07:15
+"Agent Idle" ping is expected); register an operator account at **ldr.tabaska.us** (per-user SQLCipher
+DB, passwords unrecoverable); file the public **openZIM zim-request for strategywiki.org** then add the
+`.zim` to the NAS `zim-download-queue.sh` (unblocks `lai-15`); **Trilium-vs-Obsidian** decision at trial
+end; decide whether **Kagi** is retired or kept as a fallback engine; schedule the **OWUI 0.11.0**
+upgrade (open task `lai-21`). Prior fleet-sweep follow-ups still stand (mini kernel reboot 4-7AM, rig
+Windows `RealTimeIsUniversal`, off-mini dead-man/`alert-drill` ntfy subscribe, optional Bazarr subtitle
+key). Next work is the pre-existing open queue (`ha-19`, `fix-24`, `game-*`, `media-09/10/13`, `lai-21`,
+`fix-70`…`fix-81`, etc.) via **`/build-next`** or **`/resolve-finding`**.
+
+Prior priority (fleet-sweep 2026-08-02 remediation, `fix-49`…`fix-69` + `sec-12`) remains **COMPLETE**
+(commits `667e361`…`25567cf`); its residuals are folded into the follow-up list above.
