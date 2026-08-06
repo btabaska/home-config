@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 17 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 19 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -187,6 +187,28 @@ trilium-mcp real note search + content fetch via mcpo (lai-16 consumer end)
 
 ```bash
 python3 -c "import json,urllib.request; B='http://192.168.10.12:8000/trilium/'; sb=json.dumps({'query':'TRILIUMMCPPROBESENTINEL','limit':5}).encode(); sq=urllib.request.Request(B+'search_notes',data=sb,headers={'Content-Type':'application/json'}); sr=json.load(urllib.request.urlopen(sq,timeout=40)); sr=json.loads(sr) if isinstance(sr,str) else sr; res=sr.get('results',[]) if isinstance(sr,dict) else []; nid=res[0].get('note_id','') if res else ''; gb=json.dumps({'note_id':nid,'include_content':True}).encode(); gq=urllib.request.Request(B+'get_note',data=gb,headers={'Content-Type':'application/json'}); g=json.load(urllib.request.urlopen(gq,timeout=40)) if nid else {}; g=json.loads(g) if isinstance(g,str) else g; c=str(g.get('content','')) if isinstance(g,dict) else ''; ok=bool(res) and 'TRILIUMMCPPROBESENTINEL' in c and len(c)>80; print(('TRILIUM_MCP_OK' if ok else 'TRILIUM_MCP_BAD')+' hits=%d note=%s content_bytes=%d'%(len(res),nid or 'none',len(c)))"
+```
+
+## `maps-pmtiles-serve`
+
+Offline US map serves real vector tiles via Caddy (lai-17 consumer end)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `lai-17` · **enabled:** True
+- **expects:** `^MAPS_PMTILES_OK `
+
+```bash
+bash /opt/verification/bin/maps-pmtiles-serve.sh
+```
+
+## `maps-photon-geocode`
+
+Photon US offline geocoder (build-mode aware; real geocode once landed) (lai-17)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `lai-17` · **enabled:** True
+- **expects:** `^MAPS_PHOTON_OK `
+
+```bash
+bash /opt/verification/bin/maps-photon-geocode.sh
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

@@ -1,0 +1,4 @@
+# The ~18GB CONUS extract (rebuild: run-extract.sh) — never version.
+data/
+# Background extract/import logs.
+logs/

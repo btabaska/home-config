@@ -1,0 +1,8 @@
+# Vendored binary map assets — re-fetchable via ../../../maps/fetch-maps-assets.sh
+# (Protomaps basemaps-assets fonts+sprites + pinned maplibre-gl bundle). Kept out
+# of git like the fleet's other large/vendor blobs; index.html + style.json (the
+# only hand/generated text) ARE tracked.
+fonts/
+sprites/
+maplibre-gl.js
+maplibre-gl.css

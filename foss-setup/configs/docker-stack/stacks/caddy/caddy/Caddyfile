@@ -239,6 +239,26 @@ kiwix.{$DOMAIN} {
 	reverse_proxy {$NAS_IP}:8092
 }
 
+# Offline maps (lai-17, local-ai buildout). Static MapLibre viewer + Protomaps light
+# style + local fonts/sprites served from the caddy site dir (/opt/stacks/caddy/site/maps).
+# /pmtiles/* -> go-pmtiles "serve" (CONUS US extract, maps stack :8899); --public-url on
+# that container makes the TileJSON emit these public tile URLs. /geocode/* -> Photon US
+# offline geocoder (maps stack :2322; answers only after its index import completes).
+# LAN/tailnet only — nothing port-forwarded outward.
+maps.{$DOMAIN} {
+	import local_tls
+	handle_path /pmtiles/* {
+		reverse_proxy pmtiles:8080
+	}
+	handle_path /geocode/* {
+		reverse_proxy photon:2322
+	}
+	handle {
+		root * /srv/static/maps
+		file_server
+	}
+}
+
 # Rig AI stack (CachyOS — on-demand). HTTPS terminates on Mac mini Caddy, not the rig.
 # Set RIG_IP in .env (default homelab: 192.168.10.12).
 

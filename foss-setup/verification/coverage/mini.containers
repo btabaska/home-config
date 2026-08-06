@@ -32,7 +32,9 @@ paperless_db
 paperless_gotenberg
 paperless_redis
 paperless_tika
+photon
 pinchflat
+pmtiles
 romm
 romm-db
 scrutiny-collector

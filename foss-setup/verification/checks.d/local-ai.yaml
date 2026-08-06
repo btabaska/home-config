@@ -562,3 +562,47 @@ checks:
     task_id: lai-16
     runbook: wiki/docs/runbooks/trilium-mcp.md
     enabled: true
+
+  # maps-pmtiles-serve (lai-17): the CONSUMER end of the offline US basemap. Liveness
+  # lies (go-pmtiles answers 200 with an empty/partial archive), so this proves the whole
+  # browser path through the mini Caddy vhost maps.tabaska.us: (1) the go-pmtiles TileJSON
+  # reports CONUS bounds + maxzoom (guards a wrong/half archive swap), and (2) a REAL US
+  # vector tile (z8 over the central US) comes back as valid GZIPPED MVT bytes. The helper
+  # sends `Accept-Encoding: gzip` so Caddy passes go-pmtiles' gzip straight through (magic
+  # 1f8b) — the exact bytes MapLibre receives (WITHOUT the header Caddy transparently
+  # decompresses to raw protobuf, which is why the assert is header-pinned). The US extract
+  # is a static ~18GB CONUS cut (data/us.pmtiles) pmtiles-extracted from the remote
+  # Protomaps daily planet build; served by the `pmtiles` container (Caddy pmtiles module
+  # is NOT compiled into the fleet build, so a dedicated go-pmtiles `serve` container is the
+  # clean path). All-LAN, no model call -> fast sweep.
+  - id: maps-pmtiles-serve
+    name: "Offline US map serves real vector tiles via Caddy (lai-17 consumer end)"
+    host: mini
+    timeout: 60
+    cmd: bash /opt/verification/bin/maps-pmtiles-serve.sh
+    expect: '^MAPS_PMTILES_OK '
+    severity: warn
+    task_id: lai-17
+    runbook: wiki/docs/runbooks/maps.md
+    enabled: true
+
+  # maps-photon-geocode (lai-17): the Photon US OFFLINE geocoder, build-mode aware (mirrors
+  # lai-15's pipeline/content split). CONTENT once the index lands: a REAL geocode of a known
+  # US city (Chicago) through Caddy /geocode/* -> photon:2322 must return a feature with
+  # coordinates inside CONUS (catches a wrong/empty index). BUILDING before then: the first
+  # boot downloads ~10GB (r2.koalasec.org north-america/usa) and imports to ~17GB, and
+  # Photon's Java API binds :2322 ONLY after the import finishes — so "container running but
+  # not yet answering" is reported as a PASS (mode=building), NOT a failure. A persistently
+  # crash-looping photon is caught by containers-health-mini, not here. NB: this OSM/geocode
+  # stack is offline via Photon; the cyanheads OSM MCP (opencode/mcpo) uses public
+  # Nominatim/Overpass by design — Photon's API is not Nominatim-compatible (documented).
+  - id: maps-photon-geocode
+    name: "Photon US offline geocoder (build-mode aware; real geocode once landed) (lai-17)"
+    host: mini
+    timeout: 30
+    cmd: bash /opt/verification/bin/maps-photon-geocode.sh
+    expect: '^MAPS_PHOTON_OK '
+    severity: warn
+    task_id: lai-17
+    runbook: wiki/docs/runbooks/maps.md
+    enabled: true

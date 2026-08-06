@@ -20,7 +20,7 @@
 | `lai-14` | GameFAQs private corpus | ✅ done | 2-4 hrs |
 | `lai-15` | StrategyWiki ZIM build | ⏸️ deferred | 2-4 hrs |
 | `lai-16` | trilium-mcp wiring | ✅ done | 1-2 hrs |
-| `lai-17` | Offline maps: PMTiles + Photon | ⬜ open | 2-4 hrs |
+| `lai-17` | Offline maps: PMTiles + Photon | ✅ done | 2-4 hrs |
 | `lai-18` | Agent memory layer | ⬜ open | 2-4 hrs |
 | `lai-19` | local-ai consolidation sweep | ⬜ open | 2-4 hrs |
 | `lai-20` | local-ai buildout close-out | ⬜ open | 1-3 hrs |

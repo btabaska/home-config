@@ -357,6 +357,11 @@
         href: https://kiwix.tabaska.us
         description: Offline ZIM knowledge library
         siteMonitor: http://192.168.10.4:8092
+    - Maps:
+        icon: mdi-map
+        href: https://maps.tabaska.us
+        description: Offline US map + geocoder
+        siteMonitor: http://pmtiles:8080/us.json
     - Local Deep Research:
         icon: mdi-book-search
         href: https://ldr.tabaska.us

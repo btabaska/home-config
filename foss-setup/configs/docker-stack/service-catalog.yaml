@@ -412,6 +412,13 @@ services:
     url: https://kiwix.tabaska.us
     on_demand: false
     notes: Offline ZIM knowledge library (lai-12, local-ai buildout) — kiwix-serve 3.8.2 (tag@digest pinned) on the NAS serving the curated ~150GB set (devdocs picks, iFixit, sysadmin StackExchange, wiktionary en, game wikis, Wikipedia en maxi) from /volume1/zim. Host :8092 -> container :8080 (NAS :8080 is Scrutiny). library.xml rebuilt by kiwix-manage via DSM task 18 nightly 05:15 ONLY when the ZIM set changed (kiwix-serve cannot hot-add ZIMs); downloads land atomically via the sequential queue script. Feeds openzim-mcp (lai-13). Consumer check kiwix-search-consumer.
+  - name: maps
+    category: AI & Gaming
+    host: mini
+    port: 8899
+    url: https://maps.tabaska.us
+    on_demand: false
+    notes: Offline maps (lai-17, local-ai buildout) — a static MapLibre viewer + Protomaps "light" basemap over a CONUS PMTiles extract, plus a Photon US geocoder, all behind Caddy at maps.tabaska.us. The pmtiles container = protomaps/go-pmtiles "serve" (host :8899 -> :8080) over data/us.pmtiles (~18GB, pmtiles-extracted from the remote Protomaps daily planet build; the fleet Caddy build has no pmtiles module, so a dedicated serve container is the clean path). Caddy routes /pmtiles/* -> pmtiles, /geocode/* -> photon (:2322, REGION=usa index ~10GB->~17GB, imports on first boot; API answers only after import), else the static viewer from the caddy site dir. Fonts/sprites/maplibre are vendored locally (fetch-maps-assets.sh) so the viewer is fully offline. The cyanheads OSM MCP (opencode) uses PUBLIC OSM Nominatim/Overpass by design; Photon is the offline geocoder consumed by the viewer. Consumer checks maps-pmtiles-serve + maps-photon-geocode.
   - name: open-terminal
     category: AI & Gaming
     host: mini

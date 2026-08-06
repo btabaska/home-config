@@ -12,6 +12,7 @@ ghcr.io/habirabbu/musicseerr:v1.4.2
 ghcr.io/mealie-recipes/mealie:v3.4.0
 ghcr.io/open-webui/open-terminal:0.11.34@sha256:5e040fe357ce4fbd3d5e59c40247dd32172fa10c51c22ded3a7843e739d06a0e
 ghcr.io/paperless-ngx/paperless-ngx:2.20.11
+ghcr.io/protomaps/go-pmtiles:v1.31.2@sha256:06574f01f55a78f78f887bc7ebf729a5c093c0d6e17d9876300cfcb0758b59d3
 ghcr.io/recyclarr/recyclarr:8.4.0
 ghcr.io/seerr-team/seerr:v3.2.0
 ghcr.io/speaches-ai/speaches:0.8.3-cpu@sha256:21e3df06d842fb7802ab470dd77c25f0e8c0d22950e8d8c6ae886e851af53ef8
@@ -38,6 +39,7 @@ postgres:17-alpine
 python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de
 redis:7-alpine
 rommapp/romm:4.9.2
+rtuszik/photon-docker:2.3.1@sha256:729f883612bde3215c156111b421d8e0a27b1eb411b92ef4a24bd587b8259b04
 ryshe/terraria:tshock-1.4.5.6-6.1.0
 searxng/searxng:2026.8.4-c63835bd2
 strausmann/minecraft-bedrock-connect:latest

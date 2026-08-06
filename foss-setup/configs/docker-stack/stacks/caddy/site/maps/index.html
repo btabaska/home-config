@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Fleet Offline Maps — US</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<link rel="stylesheet" href="maplibre-gl.css" />
+<style>
+  html,body,#map{margin:0;height:100%;width:100%;font-family:system-ui,sans-serif}
+  #search{position:absolute;top:10px;left:10px;z-index:2;display:flex;gap:4px}
+  #q{width:240px;padding:7px 9px;border:1px solid #bbb;border-radius:6px;font-size:14px}
+  #results{position:absolute;top:46px;left:10px;z-index:2;background:#fff;border-radius:6px;
+    box-shadow:0 1px 6px rgba(0,0,0,.3);max-width:300px;overflow:hidden}
+  #results div{padding:6px 9px;cursor:pointer;font-size:13px;border-bottom:1px solid #eee}
+  #results div:hover{background:#eef}
+  #tag{position:absolute;bottom:6px;left:10px;z-index:2;background:rgba(255,255,255,.8);
+    padding:2px 6px;border-radius:4px;font-size:11px;color:#333}
+</style>
+</head>
+<body>
+<div id="search">
+  <input id="q" placeholder="Search a US place (offline Photon)…" autocomplete="off" />
+</div>
+<div id="results"></div>
+<div id="map"></div>
+<div id="tag">Protomaps PMTiles (US extract) · Photon geocoder · lai-17</div>
+<script src="maplibre-gl.js"></script>
+<script>
+const map = new maplibregl.Map({
+  container: "map",
+  style: "style.json",
+  center: [-98.5, 39.8],
+  zoom: 3.6,
+  hash: true
+});
+map.addControl(new maplibregl.NavigationControl(), "top-right");
+map.addControl(new maplibregl.ScaleControl());
+
+const q = document.getElementById("q");
+const results = document.getElementById("results");
+let marker = null;
+function clearResults(){ results.innerHTML = ""; }
+async function geocode(){
+  const text = q.value.trim();
+  if(!text){ clearResults(); return; }
+  try{
+    const r = await fetch("geocode/api?limit=5&q=" + encodeURIComponent(text));
+    if(!r.ok){ results.innerHTML = "<div>geocoder not ready ("+r.status+")</div>"; return; }
+    const gj = await r.json();
+    const feats = (gj && gj.features) || [];
+    if(!feats.length){ results.innerHTML = "<div>no results</div>"; return; }
+    clearResults();
+    feats.forEach(f=>{
+      const p = f.properties||{}, c = (f.geometry||{}).coordinates||[0,0];
+      const label = [p.name, p.city, p.state, p.country].filter(Boolean).join(", ");
+      const div = document.createElement("div");
+      div.textContent = label || (c[1]+","+c[0]);
+      div.onclick = ()=>{
+        map.flyTo({center:[c[0],c[1]], zoom:12});
+        if(marker) marker.remove();
+        marker = new maplibregl.Marker().setLngLat([c[0],c[1]]).addTo(map);
+        clearResults();
+      };
+      results.appendChild(div);
+    });
+  }catch(e){ results.innerHTML = "<div>geocode error</div>"; }
+}
+let t=null;
+q.addEventListener("input", ()=>{ clearTimeout(t); t=setTimeout(geocode, 350); });
+</script>
+</body>
+</html>

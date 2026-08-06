@@ -66,6 +66,7 @@ nav:
           - amp: services/amp.md
           - bedrock-connect: services/bedrock-connect.md
           - kiwix: services/kiwix.md
+          - maps: services/maps.md
           - open-terminal: services/open-terminal.md
           - palworld: services/palworld.md
           - playit: services/playit.md

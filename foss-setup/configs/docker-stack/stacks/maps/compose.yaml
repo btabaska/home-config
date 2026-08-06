@@ -1,0 +1,57 @@
+# Offline maps (lai-17, local-ai buildout run 12).
+#   pmtiles  — protomaps/go-pmtiles "serve": Z/X/Y vector tiles from a CONUS extract
+#              (data/us.pmtiles, ~18GB, pmtiles-extracted from the remote Protomaps
+#              daily planet build). Behind the mini Caddy vhost maps.tabaska.us
+#              (/pmtiles/* -> here); --public-url makes the TileJSON emit public URLs.
+#   photon   — rtuszik/photon-docker REGION=usa: offline geocoder (US index, ~10GB
+#              download -> ~17GB imported). Downloads+imports on first start; the
+#              :2322 API only answers once the import completes (build-mode aware in
+#              the maps-photon-geocode check). Behind Caddy /geocode/* -> photon:2322.
+# LAN/tailnet posture: host ports published, nothing port-forwarded outward.
+# Images digest-pinned (fleet convention). The static viewer (MapLibre + Protomaps
+# light style + fonts/sprites) lives in the caddy stack site dir, not here.
+name: maps
+
+services:
+  pmtiles:
+    image: ghcr.io/protomaps/go-pmtiles:v1.31.2@sha256:06574f01f55a78f78f887bc7ebf729a5c093c0d6e17d9876300cfcb0758b59d3
+    container_name: pmtiles
+    restart: unless-stopped
+    command:
+      - "serve"
+      - "/data"
+      - "--port=8080"
+      - "--cors=*"
+      - "--public-url=https://maps.tabaska.us/pmtiles"
+    volumes:
+      - ./data:/data:ro
+    ports:
+      - "8899:8080"
+    networks: [edge]
+    logging:
+      driver: json-file
+      options: {max-size: "1m", max-file: "1"}
+
+  photon:
+    image: rtuszik/photon-docker:2.3.1@sha256:729f883612bde3215c156111b421d8e0a27b1eb411b92ef4a24bd587b8259b04
+    container_name: photon
+    restart: unless-stopped
+    environment:
+      - REGION=usa
+      - UPDATE_STRATEGY=DISABLED
+      - TZ=America/New_York
+    volumes:
+      - photon_data:/photon/data
+    ports:
+      - "2322:2322"
+    networks: [edge]
+    logging:
+      driver: json-file
+      options: {max-size: "5m", max-file: "2"}
+
+networks:
+  edge:
+    external: true
+
+volumes:
+  photon_data:

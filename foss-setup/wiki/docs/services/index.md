@@ -1,6 +1,6 @@
 # Services
 
-55 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+56 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 
@@ -15,6 +15,7 @@
 | [amp](amp.md) | rig | https://amp.tabaska.us |
 | [bedrock-connect](bedrock-connect.md) | mini | — |
 | [kiwix](kiwix.md) | nas | https://kiwix.tabaska.us |
+| [maps](maps.md) | mini | https://maps.tabaska.us |
 | [open-terminal](open-terminal.md) | mini | — |
 | [palworld](palworld.md) | rig | — |
 | [playit](playit.md) | rig | — |
