@@ -1,6 +1,6 @@
 # Roadmap — local-ai-buildout
 
-20 task(s). Status mirrors `docs/progress.json` (the source of truth).
+21 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -10,7 +10,7 @@
 | `lai-04` | OWUI MCP rewire to native External Tools | ✅ done | 2-4 hrs |
 | `lai-05` | opencode upgrade (Mac + rig) | ✅ done | 2-4 hrs |
 | `lai-06` | Skills bundle (Mac + rig) | ✅ done | 2-4 hrs |
-| `lai-07` | Pin last rolling images | ⬜ open | <1 hr |
+| `lai-07` | Pin last rolling images | ✅ done | <1 hr |
 | `lai-08` | local-deep-research on rig | ⬜ open | 2-4 hrs |
 | `lai-09` | open-terminal code-exec for OWUI | ⬜ open | 1-3 hrs |
 | `lai-10` | Voice: Kokoro TTS + whisper STT | ⬜ open | 2-3 hrs |
@@ -24,5 +24,6 @@
 | `lai-18` | Agent memory layer | ⬜ open | 2-4 hrs |
 | `lai-19` | local-ai consolidation sweep | ⬜ open | 2-4 hrs |
 | `lai-20` | local-ai buildout close-out | ⬜ open | 1-3 hrs |
+| `lai-21` | Open WebUI 0.11.0 upgrade | ⬜ open | 1-3 hrs |
 
 [← Roadmap overview](index.md)

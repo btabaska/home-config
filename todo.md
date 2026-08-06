@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**281/385 done** · **71 open** · **18 deferred** · 15 retired.
+**282/386 done** · **71 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -37,7 +37,6 @@
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
 
 ### local-ai-buildout
-- [ ] **`lai-07`** Pin last rolling images _(est <1 hr)_
 - [ ] **`lai-08`** local-deep-research on rig _(est 2-4 hrs)_
 - [ ] **`lai-09`** open-terminal code-exec for OWUI _(est 1-3 hrs)_
 - [ ] **`lai-10`** Voice: Kokoro TTS + whisper STT _(est 2-3 hrs)_
@@ -51,6 +50,7 @@
 - [ ] **`lai-18`** Agent memory layer _(est 2-4 hrs)_
 - [ ] **`lai-19`** local-ai consolidation sweep _(est 2-4 hrs)_
 - [ ] **`lai-20`** local-ai buildout close-out _(est 1-3 hrs)_
+- [ ] **`lai-21`** Open WebUI 0.11.0 upgrade _(est 1-3 hrs)_
 
 ### media-pipeline
 - [ ] **`fix-70`** NAS Plex is one build behind — apply the pending Plex package update _(est <1 hr)_

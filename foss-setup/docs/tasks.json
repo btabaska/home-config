@@ -14361,5 +14361,21 @@
   "mode": "ai",
   "gate": "",
   "summary": "Full audit-safe verification run asserting no new failures vs the baseline; write docs/local-ai-buildout-runlog.md; publish; print the human follow-up list."
+ },
+ {
+  "id": "lai-21",
+  "title": "Open WebUI 0.11.0 upgrade",
+  "host": "rig",
+  "type": "sync",
+  "depends_on": [
+   "lai-07"
+  ],
+  "estimate": "1-3 hrs",
+  "required": false,
+  "track": "local-ai-buildout",
+  "run": 12,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Upgrade Open WebUI from the lai-07-pinned 0.10.2 digest to 0.11.0 (sub-agents, startup-cached tool descriptions): resolve + bump the digest in the local-ai-tooling compose, re-verify the PersistentConfig env-vs-DB seeds and the lai-03/lai-04 search+MCP wiring post-upgrade, and confirm the journaling coach loop + owui checks stay green."
  }
 ]

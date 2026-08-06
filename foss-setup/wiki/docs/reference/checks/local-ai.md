@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 8 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -77,6 +77,17 @@ rig live skill roots match skills-manifest.yaml + catalog cap (lai-06)
 
 ```bash
 cd ~/Documents/GitHub/local-ai-tooling && want=$(grep -E '^ *- skill: ' agentic/opencode/skills-manifest.yaml | awk '{print $NF}' | sort) && have=$(ls -1 $HOME/.claude/skills | sort) && n=$(printf '%s\n' "$have" | grep -c .) && m=$(ls -1 $HOME/.config/opencode/skills | grep -c .) && total=$((n+m)) && echo "claude=$n opencode=$m total=$total cap=40" && [ "$want" = "$have" ] && diff -rq agentic/opencode/skills "$HOME/.config/opencode/skills" >/dev/null && [ "$total" -le 40 ] && echo SKILLS-MANIFEST-PARITY-OK
+```
+
+## `ai-images-pinned`
+
+rig AI-stack compose digest-pinned + running containers match (lai-07)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `lai-07` · **enabled:** True
+- **expects:** `AI-IMAGES-PINNED-OK`
+
+```bash
+cd ~/Documents/GitHub/local-ai-tooling && rolling=$(grep -E '^ *image: ' docker/docker-compose.yml | grep -v '@sha256:' | grep -cE ':(latest|main|main-latest|cuda|nightly|dev)[[:space:]]*$'); fails=""; for s in llama-swap litellm open-webui mcpo comfyui; do img=$(awk -v s="$s" '$1=="image:"{i=$2} $1=="container_name:"&&$2==s{print i}' docker/docker-compose.yml); dig=${img#*@}; case "$img" in *@sha256:*) rd=$(docker image inspect "$(docker inspect -f '{{.Image}}' "$s" 2>/dev/null)" -f '{{range .RepoDigests}}{{.}} {{end}}' 2>/dev/null); case "$rd" in *"$dig"*) : ;; *) fails="$fails $s:running-digest-mismatch" ;; esac ;; *) fails="$fails $s:compose-unpinned" ;; esac; done; echo "rolling_tags=$rolling fails=${fails:-none}"; [ "${rolling:-1}" = "0" ] && [ -z "$fails" ] && echo AI-IMAGES-PINNED-OK
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

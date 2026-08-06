@@ -211,3 +211,40 @@ checks:
     task_id: lai-06
     runbook: wiki/docs/runbooks/git-hygiene.md
     enabled: true
+
+  # ai-images-pinned (lai-07): the rig AI stack was the fleet's last home of rolling
+  # image tags (llama-swap :cuda, litellm :main-latest, open-webui :main, plus
+  # straggler mcpo :main and comfyui :latest). lai-07 pinned all five BY DIGEST to
+  # the images that were running (repo:tag@sha256, immutable). Two failure modes
+  # this guards, both silent:
+  #   - someone reverts a pin (or adds a new service on :latest/:main) -> the stack
+  #     starts rolling again on the next pull        -> compose-side scan FAILs
+  #   - compose is pinned but a container was recreated from a different image
+  #     (ad-hoc `docker run`, stale pull, hand edit) -> live-side digest compare FAILs
+  # Runs on the rig from the local-ai-tooling checkout, same vantage as
+  # opencode-config-parity / ai-tooling-clean-pushed. Version-tagged images
+  # (postgres:16-alpine, python:3.12-slim, marinara:1.5.0) intentionally pass the
+  # rolling-tag scan. Negative-tested 2026-08-06 (un-pinned mcpo copy -> FAIL).
+  - id: ai-images-pinned
+    name: "rig AI-stack compose digest-pinned + running containers match (lai-07)"
+    host: rig
+    timeout: 60
+    cmd: >-
+      cd ~/Documents/GitHub/local-ai-tooling &&
+      rolling=$(grep -E '^ *image: ' docker/docker-compose.yml | grep -v '@sha256:' | grep -cE ':(latest|main|main-latest|cuda|nightly|dev)[[:space:]]*$');
+      fails="";
+      for s in llama-swap litellm open-webui mcpo comfyui; do
+      img=$(awk -v s="$s" '$1=="image:"{i=$2} $1=="container_name:"&&$2==s{print i}' docker/docker-compose.yml);
+      dig=${img#*@};
+      case "$img" in *@sha256:*)
+      rd=$(docker image inspect "$(docker inspect -f '{{.Image}}' "$s" 2>/dev/null)" -f '{{range .RepoDigests}}{{.}} {{end}}' 2>/dev/null);
+      case "$rd" in *"$dig"*) : ;; *) fails="$fails $s:running-digest-mismatch" ;; esac ;;
+      *) fails="$fails $s:compose-unpinned" ;; esac;
+      done;
+      echo "rolling_tags=$rolling fails=${fails:-none}";
+      [ "${rolling:-1}" = "0" ] && [ -z "$fails" ] && echo AI-IMAGES-PINNED-OK
+    expect: AI-IMAGES-PINNED-OK
+    severity: warn
+    task_id: lai-07
+    runbook: wiki/docs/architecture/local-ai-build.md
+    enabled: true
