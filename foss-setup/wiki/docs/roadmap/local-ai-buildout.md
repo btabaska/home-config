@@ -6,7 +6,7 @@
 |---|---|---|---|
 | `lai-01` | SearXNG metasearch on mini | ✅ done | 2-3 hrs |
 | `lai-02` | Local reranker via llama-swap | ✅ done | 2-3 hrs |
-| `lai-03` | OWUI search+RAG quality pass | ⬜ open | 2-4 hrs |
+| `lai-03` | OWUI search+RAG quality pass | ✅ done | 2-4 hrs |
 | `lai-04` | OWUI MCP rewire to native External Tools | ⬜ open | 2-4 hrs |
 | `lai-05` | opencode upgrade (Mac + rig) | ⬜ open | 2-4 hrs |
 | `lai-06` | Skills bundle (Mac + rig) | ⬜ open | 2-4 hrs |

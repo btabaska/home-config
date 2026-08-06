@@ -162,6 +162,7 @@ nav:
       - Trilium (self-hosted notes / Obsidian-replacement trial): runbooks/notes-trilium.md
       - SearXNG (private metasearch / AI web-search backend): runbooks/searxng.md
       - Local reranker (llama-swap /v1/rerank / score-spread guard): runbooks/rerank.md
+      - Open WebUI search + hybrid RAG (SearXNG / reranker / PersistentConfig): runbooks/owui-search-rag.md
       - Books — language & edition correctness (foreign records / grab guard / pinning): runbooks/books-language.md
       - Books — import completion & file↔record correctness (cross-wired packs / dead-ends / EPUB-first): runbooks/books-imports.md
       - Books — request-path robustness (Libreseerr errors / retries / ntfy): runbooks/books-requests.md

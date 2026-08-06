@@ -57,3 +57,40 @@ checks:
     task_id: lai-02
     runbook: wiki/docs/runbooks/rerank.md
     enabled: true
+
+  # owui-agentic-search (lai-03): the CONSUMER end of OWUI web search. Two-stage probe
+  # from the mini against the rig OWUI admin API (OWUI_URL/OWUI_API_KEY in runner env):
+  #   1. config drift gate — the DB (PersistentConfig beats env, so compose seeds prove
+  #      nothing) must still say: web search ON via searxng + hybrid RAG ON + external
+  #      qwen3-reranker. Catches "someone flipped the engine/reranker back in the UI".
+  #   2. POST /api/v1/retrieval/process/web/search — the exact code path a chat's
+  #      search runs (and what the native search_web builtin tool executes) — must
+  #      return real loaded results (OWUI -> mini SearXNG -> web loader fetches pages).
+  # NO model call is involved (search+loader only), so this is GPU-contention-safe by
+  # construction; still tier: daily because it fans out to live search engines + fetches
+  # ~5 external pages (too heavy/flaky for the 10-min fast sweep). One shell-level retry
+  # with a different query rides out a single engine-suspension sweep (SearXNG suspends
+  # rate-limited engines for ~180s). Generous timeout: search + 5 page fetches can crawl.
+  - id: owui-agentic-search
+    tier: daily
+    name: "OWUI web search consumer path returns SearXNG-sourced pages (lai-03)"
+    host: mini
+    timeout: 300
+    cmd: >-
+      w=$(curl -s -m 15 -H "Authorization:Bearer $OWUI_API_KEY" "$OWUI_URL/api/v1/retrieval/config"
+      | python3 -c 'import sys,json;d=json.load(sys.stdin);b=d.get("web",{});print("WIRED" if (b.get("ENABLE_WEB_SEARCH") and b.get("WEB_SEARCH_ENGINE")=="searxng" and b.get("SEARXNG_QUERY_URL","").startswith("http://192.168.10.2:8888/search") and d.get("ENABLE_RAG_HYBRID_SEARCH") and d.get("RAG_RERANKING_ENGINE")=="external" and d.get("RAG_RERANKING_MODEL")=="qwen3-reranker") else "DRIFT")' 2>/dev/null);
+      if [ "$w" != "WIRED" ]; then echo "OWUI_SEARCH_BAD config=${w:-noresponse}"; else
+      n=$(curl -s -m 110 -X POST -H "Authorization:Bearer $OWUI_API_KEY" -H "Content-Type:application/json"
+      -d "{\"queries\":[\"debian stable release\"]}" "$OWUI_URL/api/v1/retrieval/process/web/search"
+      | python3 -c 'import sys,json;d=json.load(sys.stdin);print(int(d.get("loaded_count") or 0))' 2>/dev/null);
+      if [ "${n:-0}" -gt 0 ] 2>/dev/null; then echo "OWUI_SEARCH_OK loaded=$n"; else sleep 5;
+      n=$(curl -s -m 110 -X POST -H "Authorization:Bearer $OWUI_API_KEY" -H "Content-Type:application/json"
+      -d "{\"queries\":[\"linux kernel news\"]}" "$OWUI_URL/api/v1/retrieval/process/web/search"
+      | python3 -c 'import sys,json;d=json.load(sys.stdin);print(int(d.get("loaded_count") or 0))' 2>/dev/null);
+      if [ "${n:-0}" -gt 0 ] 2>/dev/null; then echo "OWUI_SEARCH_OK loaded=$n retry=1";
+      else echo "OWUI_SEARCH_BAD loaded=${n:-invalid}"; fi; fi; fi
+    expect: '^OWUI_SEARCH_OK '
+    severity: warn
+    task_id: lai-03
+    runbook: wiki/docs/runbooks/owui-search-rag.md
+    enabled: true
