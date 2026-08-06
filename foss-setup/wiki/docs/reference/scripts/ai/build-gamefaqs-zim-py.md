@@ -45,5 +45,7 @@ Never let both files sit in /volume1/zim at once (duplicate Name).
 
 ## See also
 
+- [`build-strategywiki-zim.sh`](build-strategywiki-zim-sh.md)
+- [`strategywiki-zim-handler.sh`](strategywiki-zim-handler-sh.md)
 - [`wiki-rag-sync.py`](wiki-rag-sync-py.md)
 - [ai scripts](index.md) · [All scripts](../index.md)

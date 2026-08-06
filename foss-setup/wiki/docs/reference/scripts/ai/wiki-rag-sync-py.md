@@ -28,4 +28,6 @@ Stdlib only (mini has Python 3.10 — no oikb, which needs 3.11+).
 ## See also
 
 - [`build-gamefaqs-zim.py`](build-gamefaqs-zim-py.md)
+- [`build-strategywiki-zim.sh`](build-strategywiki-zim-sh.md)
+- [`strategywiki-zim-handler.sh`](strategywiki-zim-handler-sh.md)
 - [ai scripts](index.md) · [All scripts](../index.md)

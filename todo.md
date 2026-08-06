@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**289/386 done** · **64 open** · **18 deferred** · 15 retired.
+**289/386 done** · **63 open** · **19 deferred** · 15 retired.
 
 ---
 
@@ -37,7 +37,6 @@
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
 
 ### local-ai-buildout
-- [ ] **`lai-15`** StrategyWiki ZIM build _(est 2-4 hrs)_
 - [ ] **`lai-16`** trilium-mcp wiring _(est 1-2 hrs)_
 - [ ] **`lai-17`** Offline maps: PMTiles + Photon _(est 2-4 hrs)_
 - [ ] **`lai-18`** Agent memory layer _(est 2-4 hrs)_
@@ -122,6 +121,7 @@
 - **`ha-20`** Level Lock+ ×2: Apple Home now; trial HA pairing via BLE proxy after sensors arrive — _DEFERRED — Level Lock+ into HA; locks work in Apple Home now, HA path is hardware-gated on ha-30 ESP32 BLE proxies._
 - **`ha-24`** LG ThinQ range + microwave (cloud — status/alerts only, optional) — _DEFERRED — LG ThinQ range/microwave; optional low-value cloud status only._
 - **`ha-30`** Sensor rollout wave 1: Zigbee sensors, plugs, buttons (shopping list) — _DEFERRED — sensor rollout wave 1 (~$505-865 hardware); buy in stages (budget). On the hardware shopping list._
+- **`lai-15`** StrategyWiki ZIM build — _BLOCKED by Cloudflare — StrategyWiki fingerprints and 403s mwoffliner's Node/undici HTTP client (curl on host AND in-con_
 - **`retro-07`** Retro handheld onboarding (e.g. AYN Thor Max) — _DEFERRED — retro handheld onboarding; hardware-gated (no handheld owned yet)._
 - **`sbom-05`** Write per-host restore runbooks and run a whole-host rebuild drill — _DEFERRED — per-host restore runbooks + rebuild drill; twin of glue-06, deferred together._
 

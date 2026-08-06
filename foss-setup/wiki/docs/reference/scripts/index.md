@@ -4,7 +4,7 @@ Man-pages for every operational script in `foss-setup/scripts/`, generated from 
 
 | Category | Scripts | |
 |---|---|---|
-| **ai** | 2 | [open](ai/index.md) |
+| **ai** | 4 | [open](ai/index.md) |
 | **Backup & restore** | 7 | [open](backup/index.md) |
 | **beszel** | 1 | [open](beszel/index.md) |
 | **Docs & tracker generators** | 7 | [open](docs/index.md) |
@@ -23,4 +23,4 @@ Man-pages for every operational script in `foss-setup/scripts/`, generated from 
 | **verification** | 7 | [open](verification/index.md) |
 | **wiki** | 1 | [open](wiki/index.md) |
 
-_Total: 88 scripts across 18 categories._
+_Total: 90 scripts across 18 categories._

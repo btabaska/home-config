@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 15 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 16 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -165,6 +165,17 @@ Private GameFAQs ZIM real search->FAQ fetch via kiwix-serve (lai-14 consumer end
 
 ```bash
 python3 -c "import re,urllib.request,urllib.parse; B='http://192.168.10.4:8092'; g=lambda p: urllib.request.urlopen(urllib.request.Request(B+p,headers={'User-Agent':'fleet-verification'}),timeout=90).read().decode('utf-8','replace'); cat=g('/catalog/v2/entries?count=-1'); ent=[e for e in re.findall(r'<entry>(.*?)</entry>',cat,re.S) if '<name>gamefaqs_en_private</name>' in e]; base=(re.search(r'/content/([A-Za-z0-9_.-]+)',ent[0]).group(1) if ent else ''); sr=(g('/search?books.name=%s&pattern=%s&pageLength=5'%(base,urllib.parse.quote('chrono trigger'))) if base else ''); links=[l for l in re.findall(r'/content/[A-Za-z0-9_./?#=&%-]+',sr) if base and (base+'/') in l and l.endswith('.html')]; art=(g(urllib.parse.quote(links[0],safe='/:#?=&%')) if links else ''); ok=bool(ent) and bool(links) and len(art)>800 and 'chrono' in art.lower() and 'PRIVATE archive' in art; print(('GAMEFAQS_OK' if ok else 'GAMEFAQS_BAD')+' base=%s results=%d bytes=%d'%(base or 'none',len(links),len(art)))"
+```
+
+## `strategywiki-zim-present`
+
+StrategyWiki ZIM pipeline healthy / real search once landed (lai-15)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `lai-15` · **enabled:** True
+- **expects:** `^STRATEGYWIKI_OK `
+
+```bash
+python3 /opt/verification/bin/strategywiki-zim.py
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

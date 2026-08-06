@@ -488,3 +488,33 @@ checks:
     task_id: lai-14
     runbook: wiki/docs/runbooks/gamefaqs-zim.md
     enabled: true
+
+  # strategywiki-zim-present (lai-15): pipeline/consumer check for the StrategyWiki ZIM.
+  # The build (mwoffliner on the mini, nopic, --speed 0.5, digest-pinned image) is an
+  # async multi-hour job whose ZIM lands on the NAS Kiwix library later, so ONE probe
+  # covers the whole lifecycle in two auto-selected modes (helper
+  # /opt/verification/bin/strategywiki-zim.py, from the mini):
+  #   CONTENT  — once a strategywiki_* book is in the NAS catalog (192.168.10.4:8092):
+  #              a REAL Xapian fulltext search for a known game title + first-article
+  #              fetch with the term in the body (the same consumer proof gamefaqs uses).
+  #   PIPELINE — before it lands: report the build state from the mini status file
+  #              (BUILDING has a container-alive OR log-freshness liveness guard;
+  #              VALIDATING/PUSHING/PUSHED are healthy post-scrape; FAILED/stall = RED).
+  # CURRENT STATE = mode=blocked (green): StrategyWiki is behind Cloudflare bot
+  # management that fingerprints and 403s mwoffliner's Node/undici HTTP client (curl
+  # gets 200 with any UA; the Node client is blocked) — a hard external block that
+  # --speed can't touch, in the same expected-block class as GameFAQs-Turnstile. The
+  # human follow-up (file the openZIM zim-request) is surfaced in the OK line. If the
+  # block ever clears, relaunching the build script flips this to building->content with
+  # no edit here. All-LAN, no model call -> fast sweep; NAS answers search slowly under
+  # download I/O -> generous timeout.
+  - id: strategywiki-zim-present
+    name: "StrategyWiki ZIM pipeline healthy / real search once landed (lai-15)"
+    host: mini
+    timeout: 120
+    cmd: python3 /opt/verification/bin/strategywiki-zim.py
+    expect: '^STRATEGYWIKI_OK '
+    severity: warn
+    task_id: lai-15
+    runbook: wiki/docs/runbooks/strategywiki-zim.md
+    enabled: true
