@@ -413,6 +413,14 @@ services:
     ui: false
     on_demand: false
     notes: Sandboxed code-execution backend for the rig's Open WebUI (lai-09, local-ai buildout) — ghcr.io/open-webui/open-terminal 0.11.34 (tag@digest pinned, full toolkit). Replaces browser Pyodide with a real persistent Linux sandbox; OWUI 0.10.2 wires it as a terminal-server connection (PersistentConfig terminal_server.connections, Bearer key vault open_terminal.api_key) and proxies run_command/files tool calls via /api/v1/terminals/open-terminal/*. DELIBERATELY LAN-only, no Caddy vhost, no Homepage tile (it executes arbitrary code); own compose network, no docker socket, mem/cpu/pids capped. Consumer check owui-code-exec.
+  - name: kokoro
+    category: AI & Gaming
+    host: rig
+    port: 8880
+    url: null
+    ui: false
+    on_demand: false
+    notes: Local TTS for Open WebUI voice (lai-10, local-ai buildout) — remsky/Kokoro-FastAPI v0.7.1, CPU variant tag@digest pinned, in the rig local-ai-tooling compose. CPU on purpose (rig-gpu-vram-contention — no new daytime VRAM consumers); model weights + UniDic baked into the image, no volume. OpenAI-compatible /v1/audio/speech, model "kokoro", 68 voices (default af_heart); OWUI Audio TTS points at http://kokoro:8880/v1 (PersistentConfig, wired via the admin API; compose env = rebuild seeds). KEYLESS — LAN/tailnet posture like llama-swap/comfyui, no Caddy vhost (a /web beta player exists on :8880). STT counterpart = the mini journaling faster-whisper (:8010). Consumer check voice-roundtrip.
   - name: comfyui
     category: AI & Gaming
     host: rig

@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 10 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -110,6 +110,17 @@ OWUI terminal proxy runs real code on mini open-terminal (lai-09)
 
 ```bash
 r=$(curl -s -m 90 -X POST -H "Authorization:Bearer $OWUI_API_KEY" -H "Content-Type:application/json" -d "{\"command\":\"python3 -c \\\"print(617*3)\\\"\"}" "$OWUI_URL/api/v1/terminals/open-terminal/execute?wait=60" | python3 -c 'import sys,json;d=json.load(sys.stdin);out="".join(e.get("data","") for e in d.get("output",[]));print(("OK" if d.get("exit_code")==0 and "1851" in out else "BAD")+" status="+str(d.get("status"))+" exit="+str(d.get("exit_code")))' 2>/dev/null); case "$r" in OK*) echo "OWUI_CODEEXEC_OK $r";; *) echo "OWUI_CODEEXEC_BAD r=${r:-noresponse}";; esac
+```
+
+## `voice-roundtrip`
+
+Kokoro TTS -> mini whisper STT round-trip + OWUI audio config wired (lai-10)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `lai-10` · **enabled:** True
+- **expects:** `^VOICE_OK `
+
+```bash
+cfg=$(curl -s -m 15 -H "Authorization:Bearer $OWUI_API_KEY" "$OWUI_URL/api/v1/audio/config" | python3 -c 'import sys,json;d=json.load(sys.stdin);t=d.get("tts",{});s=d.get("stt",{});print("WIRED" if (t.get("ENGINE")=="openai" and t.get("OPENAI_API_BASE_URL")=="http://kokoro:8880/v1" and t.get("MODEL")=="kokoro" and s.get("ENGINE")=="openai" and s.get("OPENAI_API_BASE_URL","").startswith("http://192.168.10.2:8010") and s.get("MODEL")=="Systran/faster-whisper-small") else "DRIFT")' 2>/dev/null); if [ "$cfg" != "WIRED" ]; then echo "VOICE_BAD config=${cfg:-noresponse}"; else d=$(mktemp -d); curl -s -m 60 -X POST -H "Content-Type:application/json" -d "{\"model\":\"kokoro\",\"input\":\"The fleet voice loop check says pomegranate.\",\"voice\":\"af_heart\",\"response_format\":\"wav\"}" "http://192.168.10.12:8880/v1/audio/speech" -o "$d/probe.wav"; sz=$(wc -c < "$d/probe.wav" 2>/dev/null); if [ "${sz:-0}" -lt 40000 ] || [ "$(head -c 4 "$d/probe.wav")" != "RIFF" ]; then echo "VOICE_BAD tts_bytes=${sz:-0}"; rm -rf "$d"; else txt=$(curl -s -m 200 -X POST -F "file=@$d/probe.wav" -F "model=Systran/faster-whisper-small" -F "response_format=json" "http://192.168.10.2:8010/v1/audio/transcriptions" | python3 -c 'import sys,json;print(json.load(sys.stdin).get("text",""))' 2>/dev/null); rm -rf "$d"; low=$(printf "%s" "$txt" | tr "[:upper:]" "[:lower:]"); case "$low" in *fleet*voice*loop*pomegranate*) echo "VOICE_OK tts_bytes=$sz stt=$low";; *) echo "VOICE_BAD stt=${low:-empty}";; esac; fi; fi
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
