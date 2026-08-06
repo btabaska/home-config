@@ -1,4 +1,5 @@
-# Local-AI buildout (lai-*, run 12). SearXNG private metasearch on mini.
+# Local-AI buildout (lai-*, run 12). SearXNG private metasearch on mini +
+# the rig's local reranker (lai-02).
 #
 # Consumer-end probe, not liveness: containers-manifest-mini / containers-health-mini
 # (docker-fleet.yaml) already prove the container is up. The real downstream consumer
@@ -26,4 +27,33 @@ checks:
     severity: warn
     task_id: lai-01
     runbook: wiki/docs/runbooks/searxng.md
+    enabled: true
+
+  # rerank-spread (lai-02): the rig reranker (llama-swap qwen3-reranker, CPU) must
+  # return a REAL relevance spread, not liveness. The specific failure this guards:
+  # a community Qwen3-Reranker GGUF (broken classification head) serves 200s with
+  # near-zero relevance_score for EVERYTHING — green-but-broken. So the probe sends
+  # one clearly-relevant + one clearly-irrelevant document and asserts the relevant
+  # doc scores high AND beats the irrelevant one by a wide margin. Scores are
+  # sigmoid-normalized 0..1 (llama.cpp b10015); healthy baseline measured
+  # 2026-08-05: rel=0.9945 irr=0.000026. Thresholds 0.5/0.4 are far from both the
+  # healthy and the broken (~0 spread) modes. Runs from the mini over the tailnet
+  # (same address as the rig.yaml llama-swap checks); generous timeout because the
+  # first call after an idle unload cold-loads the 639MB model.
+  - id: rerank-spread
+    name: "llama-swap /v1/rerank scores relevant >> irrelevant (lai-02 broken-GGUF guard)"
+    host: url
+    timeout: 240
+    cmd: >-
+      python3 -c "import json,urllib.request;
+      body=json.dumps({'model':'qwen3-reranker','query':'How do I restart a systemd service on Linux?','documents':['Use systemctl restart nginx.service to restart the unit, then systemctl status to confirm it is active again.','My favorite pancake recipe uses two eggs, a cup of flour, some milk and a pinch of salt.']}).encode();
+      req=urllib.request.Request('http://cachyos.tailb31641.ts.net:9292/v1/rerank', data=body, headers={'Content-Type':'application/json'});
+      r=json.load(urllib.request.urlopen(req, timeout=180));
+      s={d['index']:d['relevance_score'] for d in r['results']};
+      ok=s[0]>=0.5 and (s[0]-s[1])>=0.4;
+      print(('RERANK_OK' if ok else 'RERANK_BAD')+' rel=%.4f irr=%.4f spread=%.4f'%(s[0],s[1],s[0]-s[1]))"
+    expect: '^RERANK_OK '
+    severity: warn
+    task_id: lai-02
+    runbook: wiki/docs/runbooks/rerank.md
     enabled: true
