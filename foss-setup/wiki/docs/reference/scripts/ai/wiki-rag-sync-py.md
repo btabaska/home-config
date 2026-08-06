@@ -27,4 +27,5 @@ Stdlib only (mini has Python 3.10 — no oikb, which needs 3.11+).
 
 ## See also
 
+- [`build-gamefaqs-zim.py`](build-gamefaqs-zim-py.md)
 - [ai scripts](index.md) · [All scripts](../index.md)

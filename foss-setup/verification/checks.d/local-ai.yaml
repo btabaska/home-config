@@ -452,3 +452,39 @@ checks:
     task_id: lai-13
     runbook: wiki/docs/runbooks/openzim-mcp.md
     enabled: true
+
+  # gamefaqs-zim-search (lai-14): consumer end of the PRIVATE GameFAQs text ZIM.
+  # Proves the full human path (kiwix.tabaska.us -> NAS kiwix-serve :8092): the
+  # library must (1) still list the private book (catalog <name>gamefaqs_en_private,
+  # a STABLE metadata Name shared by both the subset shard and the full build, so the
+  # subset->full swap never edits this check), (2) return REAL Xapian fulltext results
+  # for a stable term ("chrono trigger" — Chrono Trigger is SNES/4th-gen, present in
+  # both the subset and the full corpus), and (3) serve the first FAQ article with the
+  # term in its body — catching the two green-but-broken modes kiwix has (empty
+  # library after a failed library.xml rebuild; 200 while search is broken). The
+  # article assert ALSO requires the baked-in "PRIVATE archive" copyright marker, so a
+  # wrong/public ZIM ever landing under this Name trips the check. The URL base is
+  # resolved LIVE from the catalog (search wants the filename base, not the Name), so
+  # nothing here hardcodes the subset-vs-full filename. All-LAN, no model call, but the
+  # DS920+ answers search slowly under download I/O -> generous timeout, fast sweep ok.
+  - id: gamefaqs-zim-search
+    name: "Private GameFAQs ZIM real search->FAQ fetch via kiwix-serve (lai-14 consumer end)"
+    host: mini
+    timeout: 120
+    cmd: >-
+      python3 -c "import re,urllib.request,urllib.parse;
+      B='http://192.168.10.4:8092';
+      g=lambda p: urllib.request.urlopen(urllib.request.Request(B+p,headers={'User-Agent':'fleet-verification'}),timeout=90).read().decode('utf-8','replace');
+      cat=g('/catalog/v2/entries?count=-1');
+      ent=[e for e in re.findall(r'<entry>(.*?)</entry>',cat,re.S) if '<name>gamefaqs_en_private</name>' in e];
+      base=(re.search(r'/content/([A-Za-z0-9_.-]+)',ent[0]).group(1) if ent else '');
+      sr=(g('/search?books.name=%s&pattern=%s&pageLength=5'%(base,urllib.parse.quote('chrono trigger'))) if base else '');
+      links=[l for l in re.findall(r'/content/[A-Za-z0-9_./?#=&%-]+',sr) if base and (base+'/') in l and l.endswith('.html')];
+      art=(g(urllib.parse.quote(links[0],safe='/:#?=&%')) if links else '');
+      ok=bool(ent) and bool(links) and len(art)>800 and 'chrono' in art.lower() and 'PRIVATE archive' in art;
+      print(('GAMEFAQS_OK' if ok else 'GAMEFAQS_BAD')+' base=%s results=%d bytes=%d'%(base or 'none',len(links),len(art)))"
+    expect: '^GAMEFAQS_OK '
+    severity: warn
+    task_id: lai-14
+    runbook: wiki/docs/runbooks/gamefaqs-zim.md
+    enabled: true

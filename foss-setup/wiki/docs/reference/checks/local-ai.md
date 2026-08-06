@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 14 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 15 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -154,6 +154,17 @@ openzim-mcp real ZIM search + article fetch via mcpo (lai-13 consumer end)
 
 ```bash
 python3 -c "import json,urllib.request; Z='/zim/ifixit_en_all_2025-12.zim'; B='http://192.168.10.12:8000/openzim/'; b=json.dumps({'query':'battery replacement','zim_file_path':Z,'limit':3}).encode(); q=urllib.request.Request(B+'zim_search',data=b,headers={'Content-Type':'application/json'}); r=json.load(urllib.request.urlopen(q,timeout=75)); r=json.loads(r) if isinstance(r,str) else r; res=r.get('results',[]) if isinstance(r,dict) else []; p=res[0].get('path','') if res else ''; b2=json.dumps({'zim_file_path':Z,'entry_path':p}).encode(); q2=urllib.request.Request(B+'zim_get',data=b2,headers={'Content-Type':'application/json'}); g=json.load(urllib.request.urlopen(q2,timeout=75)) if p else {}; g=json.loads(g) if isinstance(g,str) else g; c=str(g.get('content','')) if isinstance(g,dict) else str(g); ok=bool(res) and len(c)>800 and 'battery' in c.lower(); print(('OPENZIM_OK' if ok else 'OPENZIM_BAD')+' results=%d path=%s content_bytes=%d'%(len(res),p,len(c)))"
+```
+
+## `gamefaqs-zim-search`
+
+Private GameFAQs ZIM real search->FAQ fetch via kiwix-serve (lai-14 consumer end)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `lai-14` · **enabled:** True
+- **expects:** `^GAMEFAQS_OK `
+
+```bash
+python3 -c "import re,urllib.request,urllib.parse; B='http://192.168.10.4:8092'; g=lambda p: urllib.request.urlopen(urllib.request.Request(B+p,headers={'User-Agent':'fleet-verification'}),timeout=90).read().decode('utf-8','replace'); cat=g('/catalog/v2/entries?count=-1'); ent=[e for e in re.findall(r'<entry>(.*?)</entry>',cat,re.S) if '<name>gamefaqs_en_private</name>' in e]; base=(re.search(r'/content/([A-Za-z0-9_.-]+)',ent[0]).group(1) if ent else ''); sr=(g('/search?books.name=%s&pattern=%s&pageLength=5'%(base,urllib.parse.quote('chrono trigger'))) if base else ''); links=[l for l in re.findall(r'/content/[A-Za-z0-9_./?#=&%-]+',sr) if base and (base+'/') in l and l.endswith('.html')]; art=(g(urllib.parse.quote(links[0],safe='/:#?=&%')) if links else ''); ok=bool(ent) and bool(links) and len(art)>800 and 'chrono' in art.lower() and 'PRIVATE archive' in art; print(('GAMEFAQS_OK' if ok else 'GAMEFAQS_BAD')+' base=%s results=%d bytes=%d'%(base or 'none',len(links),len(art)))"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

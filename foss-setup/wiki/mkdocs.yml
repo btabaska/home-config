@@ -172,6 +172,7 @@ nav:
       - Image & browser tools (OWUI ComfyUI engine / comfyui-mcp / playwright-mcp): runbooks/image-browser-mcp.md
       - Kiwix (offline ZIM library / no hot-add / sequential queue): runbooks/kiwix.md
       - openzim-mcp (ZIM tools for AI / mcpo bridge / RO zim mount): runbooks/openzim-mcp.md
+      - GameFAQs corpus (PRIVATE ZIM / IA source / LAN-only / no-redistribute): runbooks/gamefaqs-zim.md
       - Books — language & edition correctness (foreign records / grab guard / pinning): runbooks/books-language.md
       - Books — import completion & file↔record correctness (cross-wired packs / dead-ends / EPUB-first): runbooks/books-imports.md
       - Books — request-path robustness (Libreseerr errors / retries / ntfy): runbooks/books-requests.md
@@ -316,6 +317,7 @@ nav:
       - Overview: reference/scripts/index.md
       - ai:
           - Index: reference/scripts/ai/index.md
+          - build-gamefaqs-zim.py: reference/scripts/ai/build-gamefaqs-zim-py.md
           - wiki-rag-sync.py: reference/scripts/ai/wiki-rag-sync-py.md
       - Backup & restore:
           - Index: reference/scripts/backup/index.md
