@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 3 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 4 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -33,6 +33,17 @@ OWUI web search consumer path returns SearXNG-sourced pages (lai-03)
 
 ```bash
 w=$(curl -s -m 15 -H "Authorization:Bearer $OWUI_API_KEY" "$OWUI_URL/api/v1/retrieval/config" | python3 -c 'import sys,json;d=json.load(sys.stdin);b=d.get("web",{});print("WIRED" if (b.get("ENABLE_WEB_SEARCH") and b.get("WEB_SEARCH_ENGINE")=="searxng" and b.get("SEARXNG_QUERY_URL","").startswith("http://192.168.10.2:8888/search") and d.get("ENABLE_RAG_HYBRID_SEARCH") and d.get("RAG_RERANKING_ENGINE")=="external" and d.get("RAG_RERANKING_MODEL")=="qwen3-reranker") else "DRIFT")' 2>/dev/null); if [ "$w" != "WIRED" ]; then echo "OWUI_SEARCH_BAD config=${w:-noresponse}"; else n=$(curl -s -m 110 -X POST -H "Authorization:Bearer $OWUI_API_KEY" -H "Content-Type:application/json" -d "{\"queries\":[\"debian stable release\"]}" "$OWUI_URL/api/v1/retrieval/process/web/search" | python3 -c 'import sys,json;d=json.load(sys.stdin);print(int(d.get("loaded_count") or 0))' 2>/dev/null); if [ "${n:-0}" -gt 0 ] 2>/dev/null; then echo "OWUI_SEARCH_OK loaded=$n"; else sleep 5; n=$(curl -s -m 110 -X POST -H "Authorization:Bearer $OWUI_API_KEY" -H "Content-Type:application/json" -d "{\"queries\":[\"linux kernel news\"]}" "$OWUI_URL/api/v1/retrieval/process/web/search" | python3 -c 'import sys,json;d=json.load(sys.stdin);print(int(d.get("loaded_count") or 0))' 2>/dev/null); if [ "${n:-0}" -gt 0 ] 2>/dev/null; then echo "OWUI_SEARCH_OK loaded=$n retry=1"; else echo "OWUI_SEARCH_BAD loaded=${n:-invalid}"; fi; fi; fi
+```
+
+## `owui-mcp-tools`
+
+OWUI native MCP tool servers wired + visible-tool budget (lai-04)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `lai-04` · **enabled:** True
+- **expects:** `^OWUI_MCP_OK `
+
+```bash
+python3 /opt/verification/bin/owui-mcp-tools.py
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
