@@ -121,3 +121,60 @@ checks:
     task_id: lai-04
     runbook: wiki/docs/runbooks/owui-mcp-tools.md
     enabled: true
+
+  # opencode-config-parity (lai-05): the opencode client config is dual-homed — repo
+  # canonical (local-ai-tooling root opencode.json, with clients/ + agentic/opencode/
+  # copies kept byte-identical) vs the rig's live ~/.config/opencode/. Same drift class
+  # ai-tooling-clean-pushed guards, but for the DEPLOYED side: a live hotfix that never
+  # lands in the repo (or a repo change never deployed) silently forks the agent's
+  # behavior. Also pins the binary: clients/opencode.version is the single pinned-version
+  # source (1.18.10 at build) — an autoupdate or ad-hoc upgrade FAILs here until the pin
+  # file moves with it. Pure shell, runs on the rig like ai-tooling-clean-pushed.
+  - id: opencode-config-parity
+    name: "rig live opencode config == repo canonical AND pinned version installed (lai-05)"
+    host: rig
+    cmd: >-
+      cd ~/Documents/GitHub/local-ai-tooling &&
+      pin=$(cat clients/opencode.version) &&
+      ver=$($HOME/.opencode/bin/opencode --version 2>/dev/null | tail -1) &&
+      c1=$(sha256sum opencode.json | cut -c1-64) &&
+      l1=$(sha256sum $HOME/.config/opencode/opencode.json | cut -c1-64) &&
+      c2=$(sha256sum agentic/opencode/dcp.jsonc | cut -c1-64) &&
+      l2=$(sha256sum $HOME/.config/opencode/dcp.jsonc | cut -c1-64) &&
+      c3=$(sha256sum clients/opencode.json | cut -c1-64) &&
+      c4=$(sha256sum agentic/opencode/opencode.json | cut -c1-64) &&
+      echo "ver=$ver pin=$pin cfg live=${l1:0:12} repo=${c1:0:12} dcp live=${l2:0:12} repo=${c2:0:12}" &&
+      { [ -n "$pin" ] && [ "$ver" = "$pin" ] && [ "$c1" = "$l1" ] && [ "$c2" = "$l2" ] && [ "$c3" = "$c1" ] && [ "$c4" = "$c1" ]; } &&
+      echo OPENCODE-CONFIG-PARITY-OK
+    expect: OPENCODE-CONFIG-PARITY-OK
+    severity: warn
+    task_id: lai-05
+    runbook: wiki/docs/runbooks/git-hygiene.md
+    enabled: true
+
+  # opencode-run-probe (lai-05): consumer-end proof that the WHOLE opencode path works on
+  # the rig — pinned binary starts, the 6 pinned plugins load, and a REAL completion goes
+  # provider->LiteLLM->llama-swap and comes back (the exact custom-provider forwarding that
+  # regressed in opencode 1.0.x #5674/#5210). Uses litellm/utility (fast-3b, temp 0): tiny,
+  # loads in seconds, but it IS in the llama-swap big/swap group, so the probe momentarily
+  # evicts whichever big model is resident — NVMe reload is seconds; daily 07:15 only (same
+  # class as journaling-loop-e2e driving the coach model). Best-effort aware: severity warn,
+  # and the opencode-ntfy.sh plugin firing an "Agent Idle" push on the `opencode` topic at
+  # 07:15 is EXPECTED (doubles as a plugin-e2e heartbeat), not noise. LITELLM_API_KEY is
+  # exported exactly the way the rig's ~/.bashrc does it (docker/.env CODING_LITELLM_KEY).
+  - id: opencode-run-probe
+    tier: daily
+    name: "opencode run completes a real completion through LiteLLM on the rig (lai-05)"
+    host: rig
+    timeout: 300
+    cmd: >-
+      export LITELLM_API_KEY="$(grep -s "^CODING_LITELLM_KEY=" "$HOME/Documents/GitHub/local-ai-tooling/docker/.env" | cut -d= -f2-)" &&
+      cd /tmp &&
+      out=$(timeout 240 $HOME/.opencode/bin/opencode run -m litellm/utility "Reply with exactly: E2E_PROBE_OK. Do not use any tools." 2>/dev/null);
+      if echo "$out" | grep -q "E2E_PROBE_OK"; then echo "OPENCODE_RUN_OK";
+      else echo "OPENCODE_RUN_BAD tail=$(echo "$out" | tail -c 160 | tr "\n" " ")"; fi
+    expect: '^OPENCODE_RUN_OK'
+    severity: warn
+    task_id: lai-05
+    runbook: wiki/docs/architecture/local-ai-build.md
+    enabled: true

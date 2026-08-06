@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 4 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 6 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -44,6 +44,28 @@ OWUI native MCP tool servers wired + visible-tool budget (lai-04)
 
 ```bash
 python3 /opt/verification/bin/owui-mcp-tools.py
+```
+
+## `opencode-config-parity`
+
+rig live opencode config == repo canonical AND pinned version installed (lai-05)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `lai-05` · **enabled:** True
+- **expects:** `OPENCODE-CONFIG-PARITY-OK`
+
+```bash
+cd ~/Documents/GitHub/local-ai-tooling && pin=$(cat clients/opencode.version) && ver=$($HOME/.opencode/bin/opencode --version 2>/dev/null | tail -1) && c1=$(sha256sum opencode.json | cut -c1-64) && l1=$(sha256sum $HOME/.config/opencode/opencode.json | cut -c1-64) && c2=$(sha256sum agentic/opencode/dcp.jsonc | cut -c1-64) && l2=$(sha256sum $HOME/.config/opencode/dcp.jsonc | cut -c1-64) && c3=$(sha256sum clients/opencode.json | cut -c1-64) && c4=$(sha256sum agentic/opencode/opencode.json | cut -c1-64) && echo "ver=$ver pin=$pin cfg live=${l1:0:12} repo=${c1:0:12} dcp live=${l2:0:12} repo=${c2:0:12}" && { [ -n "$pin" ] && [ "$ver" = "$pin" ] && [ "$c1" = "$l1" ] && [ "$c2" = "$l2" ] && [ "$c3" = "$c1" ] && [ "$c4" = "$c1" ]; } && echo OPENCODE-CONFIG-PARITY-OK
+```
+
+## `opencode-run-probe`
+
+opencode run completes a real completion through LiteLLM on the rig (lai-05)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `lai-05` · **enabled:** True
+- **expects:** `^OPENCODE_RUN_OK`
+
+```bash
+export LITELLM_API_KEY="$(grep -s "^CODING_LITELLM_KEY=" "$HOME/Documents/GitHub/local-ai-tooling/docker/.env" | cut -d= -f2-)" && cd /tmp && out=$(timeout 240 $HOME/.opencode/bin/opencode run -m litellm/utility "Reply with exactly: E2E_PROBE_OK. Do not use any tools." 2>/dev/null); if echo "$out" | grep -q "E2E_PROBE_OK"; then echo "OPENCODE_RUN_OK"; else echo "OPENCODE_RUN_BAD tail=$(echo "$out" | tail -c 160 | tr "\n" " ")"; fi
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
