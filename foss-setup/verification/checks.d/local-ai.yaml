@@ -606,3 +606,36 @@ checks:
     task_id: lai-17
     runbook: wiki/docs/runbooks/maps.md
     enabled: true
+
+  # agent-memory-plugin (lai-18): the DIY opencode memory layer. Deterministic + GPU-SAFE by
+  # design — it makes NO live model call (the summarizer runs on the 3B `utility` model, out of
+  # band, on session.idle; pinning the 3090 Ti from a fast-sweep check would be exactly the
+  # VRAM-contention footgun rig-gpu-vram-contention warns about). Instead it probes the pipeline
+  # ARTIFACTS on the rig: (1) the vendored plugin file is present, (2) it still carries its core
+  # wiring — the session.idle + experimental.session.compacting triggers AND the LiteLLM
+  # /chat/completions summarizer call (a gutted plugin that no longer summarizes fails here),
+  # (3) it is syntactically valid (node --experimental-strip-types --check, the same node the
+  # rig already runs), and (4) at least one project MEMORY.md exists in the memory dir with a
+  # well-formed dated `## … (idle|compacting)` section + `- ` bullets — which only appears once
+  # the WRITE path has actually run end-to-end. host:rig + node-on-rig, same pattern as
+  # opencode-run-probe; runs in the fast sweep (pure file ops, no network, no GPU).
+  - id: agent-memory-plugin
+    name: "opencode agent-memory plugin present+valid on rig AND a well-formed MEMORY.md exists (lai-18)"
+    host: rig
+    timeout: 30
+    cmd: >-
+      P="$HOME/.config/opencode/plugins/memory.ts";
+      D="${OPENCODE_MEMORY_DIR:-$HOME/.local/share/opencode/memory}";
+      if [ ! -f "$P" ]; then echo MEM_NO_PLUGIN; exit 0; fi;
+      if ! grep -q "experimental.session.compacting" "$P" || ! grep -q "session.idle" "$P" || ! grep -q "chat/completions" "$P"; then echo MEM_PLUGIN_STRUCT_BAD; exit 0; fi;
+      if ! node --experimental-strip-types --check "$P" >/dev/null 2>&1; then echo MEM_PLUGIN_SYNTAX_BAD; exit 0; fi;
+      f=$(ls -t "$D"/*.md 2>/dev/null | head -1);
+      if [ -z "$f" ]; then echo MEM_NO_FILE; exit 0; fi;
+      sec=$(grep -cE "^## .*\((idle|compacting)\)$" "$f" | tr -d "[:space:]");
+      bul=$(grep -cE "^- " "$f" | tr -d "[:space:]");
+      if [ "${sec:-0}" -ge 1 ] && [ "${bul:-0}" -ge 1 ]; then echo "MEM_OK plugin=ok syntax=ok sections=$sec bullets=$bul file=$(basename "$f")"; else echo "MEM_MALFORMED sec=${sec:-0} bul=${bul:-0}"; fi
+    expect: '^MEM_OK '
+    severity: warn
+    task_id: lai-18
+    runbook: wiki/docs/runbooks/agent-memory.md
+    enabled: true

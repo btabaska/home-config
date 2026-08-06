@@ -176,6 +176,7 @@ nav:
       - GameFAQs corpus (PRIVATE ZIM / IA source / LAN-only / no-redistribute): runbooks/gamefaqs-zim.md
       - StrategyWiki ZIM (mwoffliner / Cloudflare-blocked / openZIM request): runbooks/strategywiki-zim.md
       - trilium-mcp (notes tools for AI / read-mostly / rides the Trilium trial): runbooks/trilium-mcp.md
+      - Agent memory (opencode MEMORY.md plugin / OWUI native Memory): runbooks/agent-memory.md
       - Books — language & edition correctness (foreign records / grab guard / pinning): runbooks/books-language.md
       - Books — import completion & file↔record correctness (cross-wired packs / dead-ends / EPUB-first): runbooks/books-imports.md
       - Books — request-path robustness (Libreseerr errors / retries / ntfy): runbooks/books-requests.md

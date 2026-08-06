@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 19 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 20 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -209,6 +209,17 @@ Photon US offline geocoder (build-mode aware; real geocode once landed) (lai-17)
 
 ```bash
 bash /opt/verification/bin/maps-photon-geocode.sh
+```
+
+## `agent-memory-plugin`
+
+opencode agent-memory plugin present+valid on rig AND a well-formed MEMORY.md exists (lai-18)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `lai-18` · **enabled:** True
+- **expects:** `^MEM_OK `
+
+```bash
+P="$HOME/.config/opencode/plugins/memory.ts"; D="${OPENCODE_MEMORY_DIR:-$HOME/.local/share/opencode/memory}"; if [ ! -f "$P" ]; then echo MEM_NO_PLUGIN; exit 0; fi; if ! grep -q "experimental.session.compacting" "$P" || ! grep -q "session.idle" "$P" || ! grep -q "chat/completions" "$P"; then echo MEM_PLUGIN_STRUCT_BAD; exit 0; fi; if ! node --experimental-strip-types --check "$P" >/dev/null 2>&1; then echo MEM_PLUGIN_SYNTAX_BAD; exit 0; fi; f=$(ls -t "$D"/*.md 2>/dev/null | head -1); if [ -z "$f" ]; then echo MEM_NO_FILE; exit 0; fi; sec=$(grep -cE "^## .*\((idle|compacting)\)$" "$f" | tr -d "[:space:]"); bul=$(grep -cE "^- " "$f" | tr -d "[:space:]"); if [ "${sec:-0}" -ge 1 ] && [ "${bul:-0}" -ge 1 ]; then echo "MEM_OK plugin=ok syntax=ok sections=$sec bullets=$bul file=$(basename "$f")"; else echo "MEM_MALFORMED sec=${sec:-0} bul=${bul:-0}"; fi
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
