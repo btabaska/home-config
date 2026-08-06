@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 6 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -66,6 +66,17 @@ opencode run completes a real completion through LiteLLM on the rig (lai-05)
 
 ```bash
 export LITELLM_API_KEY="$(grep -s "^CODING_LITELLM_KEY=" "$HOME/Documents/GitHub/local-ai-tooling/docker/.env" | cut -d= -f2-)" && cd /tmp && out=$(timeout 240 $HOME/.opencode/bin/opencode run -m litellm/utility "Reply with exactly: E2E_PROBE_OK. Do not use any tools." 2>/dev/null); if echo "$out" | grep -q "E2E_PROBE_OK"; then echo "OPENCODE_RUN_OK"; else echo "OPENCODE_RUN_BAD tail=$(echo "$out" | tail -c 160 | tr "\n" " ")"; fi
+```
+
+## `skills-manifest-parity`
+
+rig live skill roots match skills-manifest.yaml + catalog cap (lai-06)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `lai-06` · **enabled:** True
+- **expects:** `SKILLS-MANIFEST-PARITY-OK`
+
+```bash
+cd ~/Documents/GitHub/local-ai-tooling && want=$(grep -E '^ *- skill: ' agentic/opencode/skills-manifest.yaml | awk '{print $NF}' | sort) && have=$(ls -1 $HOME/.claude/skills | sort) && n=$(printf '%s\n' "$have" | grep -c .) && m=$(ls -1 $HOME/.config/opencode/skills | grep -c .) && total=$((n+m)) && echo "claude=$n opencode=$m total=$total cap=40" && [ "$want" = "$have" ] && diff -rq agentic/opencode/skills "$HOME/.config/opencode/skills" >/dev/null && [ "$total" -le 40 ] && echo SKILLS-MANIFEST-PARITY-OK
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

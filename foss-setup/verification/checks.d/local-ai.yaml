@@ -178,3 +178,36 @@ checks:
     task_id: lai-05
     runbook: wiki/docs/architecture/local-ai-build.md
     enabled: true
+
+  # skills-manifest-parity (lai-06): the curated skills bundle is dual-rooted on the rig —
+  # ~/.claude/skills (23 skills installed via the Vercel skills CLI; contents are
+  # no-redistribute so the repo records NAMES ONLY in agentic/opencode/skills-manifest.yaml)
+  # and ~/.config/opencode/skills (11 curated skills, repo-canonical at
+  # agentic/opencode/skills/). Same drift class opencode-config-parity guards: an ad-hoc
+  # `npx skills add` (or a deleted skill) that never lands in the manifest silently forks
+  # the agent's skill catalog — and the catalog has a hard cap (<=40 incl. opencode's 4
+  # built-ins; arXiv:2602.16653 — misrouting grows as the catalog bloats), so unrecorded
+  # additions are a quality regression, not just drift. Asserts: name-set equality with the
+  # manifest, byte equality of the repo-managed root, and the cap. Runs on the rig like
+  # opencode-config-parity. The Mac carries the same bundle but is not runner-reachable —
+  # accepted gap, documented in the manifest's parity section.
+  - id: skills-manifest-parity
+    name: "rig live skill roots match skills-manifest.yaml + catalog cap (lai-06)"
+    host: rig
+    cmd: >-
+      cd ~/Documents/GitHub/local-ai-tooling &&
+      want=$(grep -E '^ *- skill: ' agentic/opencode/skills-manifest.yaml | awk '{print $NF}' | sort) &&
+      have=$(ls -1 $HOME/.claude/skills | sort) &&
+      n=$(printf '%s\n' "$have" | grep -c .) &&
+      m=$(ls -1 $HOME/.config/opencode/skills | grep -c .) &&
+      total=$((n+m)) &&
+      echo "claude=$n opencode=$m total=$total cap=40" &&
+      [ "$want" = "$have" ] &&
+      diff -rq agentic/opencode/skills "$HOME/.config/opencode/skills" >/dev/null &&
+      [ "$total" -le 40 ] &&
+      echo SKILLS-MANIFEST-PARITY-OK
+    expect: SKILLS-MANIFEST-PARITY-OK
+    severity: warn
+    task_id: lai-06
+    runbook: wiki/docs/runbooks/git-hygiene.md
+    enabled: true

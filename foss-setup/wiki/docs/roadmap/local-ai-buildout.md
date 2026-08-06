@@ -9,7 +9,7 @@
 | `lai-03` | OWUI search+RAG quality pass | ✅ done | 2-4 hrs |
 | `lai-04` | OWUI MCP rewire to native External Tools | ✅ done | 2-4 hrs |
 | `lai-05` | opencode upgrade (Mac + rig) | ✅ done | 2-4 hrs |
-| `lai-06` | Skills bundle (Mac + rig) | ⬜ open | 2-4 hrs |
+| `lai-06` | Skills bundle (Mac + rig) | ✅ done | 2-4 hrs |
 | `lai-07` | Pin last rolling images | ⬜ open | <1 hr |
 | `lai-08` | local-deep-research on rig | ⬜ open | 2-4 hrs |
 | `lai-09` | open-terminal code-exec for OWUI | ⬜ open | 1-3 hrs |
