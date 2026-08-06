@@ -23,7 +23,7 @@
 | `lai-17` | Offline maps: PMTiles + Photon | ✅ done | 2-4 hrs |
 | `lai-18` | Agent memory layer | ✅ done | 2-4 hrs |
 | `lai-19` | local-ai consolidation sweep | ✅ done | 2-4 hrs |
-| `lai-20` | local-ai buildout close-out | ⬜ open | 1-3 hrs |
+| `lai-20` | local-ai buildout close-out | ✅ done | 1-3 hrs |
 | `lai-21` | Open WebUI 0.11.0 upgrade | ⬜ open | 1-3 hrs |
 
 [← Roadmap overview](index.md)

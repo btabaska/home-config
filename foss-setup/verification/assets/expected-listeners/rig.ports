@@ -17,6 +17,7 @@
 3001    # lumiverse
 3002    # marinara
 4000    # litellm
+5000    # local-deep-research (LDR, lai-08)
 5355    # systemd-resolved — LLMNR (host)
 8000    # mcpo
 8080    # amp — CubeCoders AMP web
@@ -25,6 +26,9 @@
 8212    # palworld — REST admin API
 8384    # syncthing — GUI
 8765    # fleet-mcp (local-ai-tooling ops/fleet_mcp.py, host)
+8880    # kokoro — CPU TTS for OWUI voice (lai-10)
+8931    # playwright-mcp — headless browser MCP (lai-11)
+9000    # comfyui-mcp — image gen/edit MCP (lai-11)
 9292    # llama-swap
 11434   # ollama (host)
 22000   # syncthing — sync protocol

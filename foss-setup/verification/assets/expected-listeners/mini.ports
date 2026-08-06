@@ -18,6 +18,7 @@
 443     # caddy — HTTPS auth edge
 853     # adguardhome — DNS-over-TLS
 2222    # forgejo — git SSH
+2322    # photon — offline US geocoder (maps, lai-17)
 3001    # uptime-kuma
 3010    # homepage
 3030    # forgejo — web UI
@@ -30,6 +31,7 @@
 8000    # paperless-ngx
 8001    # healthchecks
 8010    # faster-whisper
+8020    # open-terminal — OWUI code-exec sandbox, LAN/Bearer (lai-09)
 8080    # ntfy
 8081    # metube
 8082    # miniflux
@@ -39,6 +41,8 @@
 8384    # syncthing — GUI
 8688    # musicseerr
 8789    # libreseerr
+8888    # searxng — private metasearch JSON API (lai-01)
+8899    # pmtiles — offline US basemap tiles (maps, lai-17)
 8945    # pinchflat
 8998    # romm
 9000    # mealie

@@ -42,6 +42,7 @@
 8083    # docker-proxy container
 8084    # docker-proxy container
 8090    # docker-proxy container
+8092    # kiwix-serve — offline ZIM knowledge library (lai-12)
 8096    # jellyfin
 8191    # flaresolverr
 8337    # docker-proxy container
