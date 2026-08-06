@@ -409,3 +409,46 @@ checks:
     task_id: lai-12
     runbook: wiki/docs/runbooks/kiwix.md
     enabled: true
+
+  # openzim-mcp-search (lai-13): the AI-side consumer of the ZIM library — one real
+  # search + article fetch through the FULL chain: mini -> rig mcpo :8000 /openzim
+  # (OpenAPI bridge) -> openzim-mcp 2.5.5 subprocess (uvx, --mode advanced) -> /zim
+  # container bind -> rig /mnt/nas-zim RO CIFS mount (dedicated NAS user zimro) ->
+  # NAS zim share -> libzim Xapian index inside the actual ZIM. Green-but-broken
+  # modes this catches: mcpo up but the openzim subprocess dead (endpoint 500s), the
+  # CIFS mount dead/empty under a live bind (openzim answers with a security/not-found
+  # error -> no results), share perm drift on the NAS (mount errors), and a broken
+  # Xapian read (results empty / content junk). Pins the iFixit FILENAME (landed
+  # 2025-12, pinned-filename convention like the download queue) so days of library
+  # growth (wikipedia 115G trickling in) never break it — but refreshing iFixit to a
+  # newer ZIM means updating the path here + the deployed copy. Content assert is on
+  # the FETCHED ARTICLE (term present + non-trivial size), not on HTTP 200. All-LAN,
+  # no model call, warm subprocess -> fast sweep; generous timeouts because the NAS
+  # answers slowly under download I/O. OWUI-visible tool budget effects of the
+  # /openzim connection (39/40) stay guarded by owui-mcp-tools, not here.
+  - id: openzim-mcp-search
+    name: "openzim-mcp real ZIM search + article fetch via mcpo (lai-13 consumer end)"
+    host: mini
+    timeout: 180
+    cmd: >-
+      python3 -c "import json,urllib.request;
+      Z='/zim/ifixit_en_all_2025-12.zim';
+      B='http://192.168.10.12:8000/openzim/';
+      b=json.dumps({'query':'battery replacement','zim_file_path':Z,'limit':3}).encode();
+      q=urllib.request.Request(B+'zim_search',data=b,headers={'Content-Type':'application/json'});
+      r=json.load(urllib.request.urlopen(q,timeout=75));
+      r=json.loads(r) if isinstance(r,str) else r;
+      res=r.get('results',[]) if isinstance(r,dict) else [];
+      p=res[0].get('path','') if res else '';
+      b2=json.dumps({'zim_file_path':Z,'entry_path':p}).encode();
+      q2=urllib.request.Request(B+'zim_get',data=b2,headers={'Content-Type':'application/json'});
+      g=json.load(urllib.request.urlopen(q2,timeout=75)) if p else {};
+      g=json.loads(g) if isinstance(g,str) else g;
+      c=str(g.get('content','')) if isinstance(g,dict) else str(g);
+      ok=bool(res) and len(c)>800 and 'battery' in c.lower();
+      print(('OPENZIM_OK' if ok else 'OPENZIM_BAD')+' results=%d path=%s content_bytes=%d'%(len(res),p,len(c)))"
+    expect: '^OPENZIM_OK '
+    severity: warn
+    task_id: lai-13
+    runbook: wiki/docs/runbooks/openzim-mcp.md
+    enabled: true

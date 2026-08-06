@@ -16,7 +16,7 @@
 | `lai-10` | Voice: Kokoro TTS + whisper STT | ✅ done | 2-3 hrs |
 | `lai-11` | Image/browser tools | ✅ done | 2-4 hrs |
 | `lai-12` | kiwix-serve ZIM library on NAS | ✅ done | 2-4 hrs |
-| `lai-13` | openzim-mcp for ZIM library | ⬜ open | 1-2 hrs |
+| `lai-13` | openzim-mcp for ZIM library | ✅ done | 1-2 hrs |
 | `lai-14` | GameFAQs private corpus | ⬜ open | 2-4 hrs |
 | `lai-15` | StrategyWiki ZIM build | ⬜ open | 2-4 hrs |
 | `lai-16` | trilium-mcp wiring | ⬜ open | 1-2 hrs |

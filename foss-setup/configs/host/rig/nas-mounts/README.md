@@ -10,7 +10,7 @@ surfaced the gap.
 
 | File | Live target on the rig | Purpose |
 |------|------------------------|---------|
-| `fstab.snippet` | lines appended to `/etc/fstab` | the 5 NAS CIFS mounts |
+| `fstab.snippet` | lines appended to `/etc/fstab` | the 6 NAS CIFS mounts |
 | `10-remote-fs.conf` | `/etc/systemd/system/docker.service.d/10-remote-fs.conf` | order Docker `After=`/`Wants=` the NAS mounts so they are up before containers start (fix-58 SH13: `After=remote-fs.target` alone is NOT enough for `nofail` mounts — see below) |
 
 ## The mounts
@@ -22,11 +22,17 @@ All target the NAS SMB shares on `192.168.10.4`. Consumers:
 - `//192.168.10.4/podcasts → /mnt/nas-podcasts-ro` (ro, automount) — [ipod-abs-sync](../ipod-abs-sync/)
 - `//192.168.10.4/games → /mnt/share/Games` (rw, automount) — game servers (AMP/Palworld)
 - `//192.168.10.4/manga → /mnt/nas-manga` (**rw, PERSISTENT — not autofs**) — [suwayomi](../suwayomi/) writes CBZ here → Komga's Manga library (read-18)
+- `//192.168.10.4/zim → /mnt/nas-zim` (**ro, PERSISTENT — not autofs**) — mcpo bind-mounts it
+  (`/mnt/nas-zim:/zim:ro` in `local-ai-tooling/docker/docker-compose.yml`) for **openzim-mcp**
+  (lai-13), and opencode's stdio openzim-mcp reads it directly. Mounts as the DEDICATED
+  low-priv NAS user `zimro` (RO on the `zim` share only; password at vault
+  `hosts.nas.zimro_smb_password`, cred file `/etc/samba/cred-nas-zim`). Share-side record:
+  `configs/nas/kiwix/README.md`.
 
-**Why `manga` is persistent, not autofs:** it's bind-mounted continuously into the
-Suwayomi container. A persistent CIFS mount reconnects in place across NAS reboots (same
-mountpoint, no re-mount) so the container's bind stays valid; an autofs re-mount would not
-propagate into the running container (rprivate).
+**Why `manga` and `zim` are persistent, not autofs:** they're bind-mounted continuously into
+containers (Suwayomi / mcpo). A persistent CIFS mount reconnects in place across NAS reboots
+(same mountpoint, no re-mount) so the container's bind stays valid; an autofs re-mount would
+not propagate into the running container (rprivate).
 
 **Boot-race fix (fix-58 SH13, 2026-08-03):** the original `10-remote-fs.conf` ordered Docker
 only `After=remote-fs.target`. That is INSUFFICIENT because the manga mount is `nofail`, and
@@ -37,20 +43,29 @@ dir via its rprivate bind, and saw ZERO downloads (all 279 chapters + every thum
 until a manual `docker restart suwayomi`). The drop-in now ALSO orders Docker `After=` the
 specific `mnt-nas\x2dmanga.mount` and `Wants=` it (not `Requires=`, so a NAS outage still lets
 Docker + every other container come up — ordering only, ≤30s worst-case boot delay).
+lai-13 added `mnt-nas\x2dzim.mount` to the same `After=`/`Wants=` lines (mcpo bind).
 
 ## Credentials (secrets — NOT in the repo)
 
-Two root-only cred files, referenced by the mount lines:
+Three root-only cred files, referenced by the mount lines:
 
-- `/etc/samba/cred-nas` (root:root 0600) — music, audiobooks, podcasts, manga
-- `/etc/nas_creds` (root:root 0600) — games
+- `/etc/samba/cred-nas` (root:root 0600) — music, audiobooks, podcasts, manga (`username=btabaska`)
+- `/etc/nas_creds` (root:root 0600) — games (`username=btabaska`)
+- `/etc/samba/cred-nas-zim` (root:root 0600) — zim (`username=zimro`, the dedicated low-priv
+  RO user; password at vault `hosts.nas.zimro_smb_password` — lai-13)
 
-Each is `username=btabaska` + the NAS SMB password + `domain=WORKGROUP`. Recreate with:
+Each is `username=` + SMB password + `domain=WORKGROUP`. Recreate with:
 
 ```sh
 printf 'username=btabaska\npassword=<nas-smb-pw>\ndomain=WORKGROUP\n' | sudo tee /etc/samba/cred-nas
 sudo chmod 600 /etc/samba/cred-nas
 ```
+
+**Hazard (bit this build twice):** rig sudo caches credentials ACROSS ssh sessions, so a
+`{ printf '<sudo-pw>\n'; printf '<file-content>' } | ssh rig 'sudo -S sh -c "cat > file"`
+pipeline can leave the sudo password as the file's first line when `sudo -S` doesn't consume
+it (see memory `sudo-stdin-append-hazard`). Write cred files in TWO steps: cache the cred
+(`sudo -S -v`) first, then pipe ONLY the content through `sudo -n sh -c 'cat > …'`.
 
 ## Applying (manual — ansible does NOT manage this)
 

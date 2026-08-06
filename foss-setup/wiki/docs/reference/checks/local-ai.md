@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 13 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 14 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -143,6 +143,17 @@ Kiwix library breadth + real search->article fetch (lai-12 consumer end)
 
 ```bash
 python3 /opt/verification/bin/kiwix-search-consumer.py
+```
+
+## `openzim-mcp-search`
+
+openzim-mcp real ZIM search + article fetch via mcpo (lai-13 consumer end)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `lai-13` · **enabled:** True
+- **expects:** `^OPENZIM_OK `
+
+```bash
+python3 -c "import json,urllib.request; Z='/zim/ifixit_en_all_2025-12.zim'; B='http://192.168.10.12:8000/openzim/'; b=json.dumps({'query':'battery replacement','zim_file_path':Z,'limit':3}).encode(); q=urllib.request.Request(B+'zim_search',data=b,headers={'Content-Type':'application/json'}); r=json.load(urllib.request.urlopen(q,timeout=75)); r=json.loads(r) if isinstance(r,str) else r; res=r.get('results',[]) if isinstance(r,dict) else []; p=res[0].get('path','') if res else ''; b2=json.dumps({'zim_file_path':Z,'entry_path':p}).encode(); q2=urllib.request.Request(B+'zim_get',data=b2,headers={'Content-Type':'application/json'}); g=json.load(urllib.request.urlopen(q2,timeout=75)) if p else {}; g=json.loads(g) if isinstance(g,str) else g; c=str(g.get('content','')) if isinstance(g,dict) else str(g); ok=bool(res) and len(c)>800 and 'battery' in c.lower(); print(('OPENZIM_OK' if ok else 'OPENZIM_BAD')+' results=%d path=%s content_bytes=%d'%(len(res),p,len(c)))"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

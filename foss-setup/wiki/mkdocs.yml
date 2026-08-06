@@ -171,6 +171,7 @@ nav:
       - Voice (Kokoro TTS / faster-whisper STT / OWUI audio): runbooks/voice.md
       - Image & browser tools (OWUI ComfyUI engine / comfyui-mcp / playwright-mcp): runbooks/image-browser-mcp.md
       - Kiwix (offline ZIM library / no hot-add / sequential queue): runbooks/kiwix.md
+      - openzim-mcp (ZIM tools for AI / mcpo bridge / RO zim mount): runbooks/openzim-mcp.md
       - Books — language & edition correctness (foreign records / grab guard / pinning): runbooks/books-language.md
       - Books — import completion & file↔record correctness (cross-wired packs / dead-ends / EPUB-first): runbooks/books-imports.md
       - Books — request-path robustness (Libreseerr errors / retries / ntfy): runbooks/books-requests.md
