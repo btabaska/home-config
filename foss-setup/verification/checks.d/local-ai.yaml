@@ -248,3 +248,32 @@ checks:
     task_id: lai-07
     runbook: wiki/docs/architecture/local-ai-build.md
     enabled: true
+
+  # ldr-research-e2e (lai-08): the CONSUMER end of local-deep-research — a real
+  # quick-mode research must complete with a cited report, which proves the whole
+  # chain: LDR web app (per-user SQLCipher login, probe account auto-re-registered
+  # after a volume wipe) -> LiteLLM openai_endpoint (scoped `ldr` virtual key) ->
+  # llama-swap coder-strong (qwen3.6-27b), AND LDR -> mini SearXNG for real web
+  # results. Helper is repo-canonical on the rig (local-ai-tooling
+  # scripts/ldr-e2e.py, kept deployed==repo by ai-tooling-clean-pushed); creds
+  # come from docker/.env exactly like opencode-run-probe. Best-effort aware
+  # (mirrors journaling-loop-e2e): it FIRST pre-probes whether the strong model
+  # can load at all (llama-swap direct, no key) and emits LDR_E2E_SKIP_GPU_BUSY
+  # (a PASS) under VRAM contention (Immich ML night window / games —
+  # rig-gpu-vram-contention: contention is policy, not an incident); the
+  # pre-probe also WARMS the model so the research runs fast. A real BAD means
+  # the model WAS loadable but the LDR pipeline broke. tier: daily (07:15 sweep,
+  # right after the 07:00 Immich-ML-off edge so the GPU is normally free; a full
+  # research is far too heavy for the 10-min fast sweep). Generous timeout:
+  # cold 27B load (~1-2 min) + research (measured 100 s warm, 2026-08-06).
+  - id: ldr-research-e2e
+    tier: daily
+    name: "local-deep-research completes a cited SearXNG+coder-strong research (lai-08)"
+    host: rig
+    timeout: 900
+    cmd: python3 $HOME/Documents/GitHub/local-ai-tooling/scripts/ldr-e2e.py
+    expect: '^LDR_E2E_(OK|SKIP_GPU_BUSY)'
+    severity: warn
+    task_id: lai-08
+    runbook: wiki/docs/runbooks/ldr.md
+    enabled: true

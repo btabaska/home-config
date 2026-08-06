@@ -352,6 +352,11 @@
         href: https://searxng.tabaska.us
         description: Private metasearch
         siteMonitor: http://searxng:8080
+    - Local Deep Research:
+        icon: mdi-book-search
+        href: https://ldr.tabaska.us
+        description: Deep-research assistant
+        siteMonitor: http://192.168.10.12:5000
 
 - Media Automation:
     - Sonarr:

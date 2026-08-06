@@ -164,6 +164,7 @@ nav:
       - Local reranker (llama-swap /v1/rerank / score-spread guard): runbooks/rerank.md
       - Open WebUI search + hybrid RAG (SearXNG / reranker / PersistentConfig): runbooks/owui-search-rag.md
       - Open WebUI native MCP tools (fleet-mcp / context7 / mcpo split): runbooks/owui-mcp-tools.md
+      - local-deep-research (cited research / env-locked config / probe account): runbooks/ldr.md
       - Books — language & edition correctness (foreign records / grab guard / pinning): runbooks/books-language.md
       - Books — import completion & file↔record correctness (cross-wired packs / dead-ends / EPUB-first): runbooks/books-imports.md
       - Books — request-path robustness (Libreseerr errors / retries / ntfy): runbooks/books-requests.md

@@ -412,6 +412,13 @@ services:
     url: https://comfyui.tabaska.us
     on_demand: false
     notes: Image-gen backend (ai-01, added 2026-07-18) serving 3 image models — Z-Image Turbo / NoobAI-XL / Flux.2 Klein — for the RP frontends (OWUI/Lumiverse/Marinara). Frontends do NOT hit :8188 directly; they go through the gpu-arbiter (:8189) so image gen and the local LLMs take turns on the single 3090 Ti. LAN posture (like ollama). Rig runs 24/7.
+  - name: local-deep-research
+    category: AI & Gaming
+    host: rig
+    port: 5000
+    url: https://ldr.tabaska.us
+    on_demand: false
+    notes: Iterative deep-research assistant (lai-08, local-ai buildout) — LearningCircuit LDR 1.10.1 (digest-pinned). Multi-step search + synthesis with citations, fully local — LLM = LiteLLM openai_endpoint alias coder-strong (qwen3.6-27b via llama-swap, scoped virtual key), search = the mini SearXNG (lai-01). Per-user SQLCipher-encrypted DBs (no password reset possible); registration open, app login is the auth gate (LAN/tailnet posture like lumiverse). Env-locked config — model/search changes go through the compose, not the UI. Daily consumer check ldr-research-e2e (best-effort under GPU contention).
   - name: gpu-arbiter
     category: AI & Gaming
     host: rig

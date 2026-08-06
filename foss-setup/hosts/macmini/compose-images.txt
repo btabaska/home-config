@@ -20,7 +20,7 @@ gotenberg/gotenberg:8.21
 healthchecks/healthchecks:v3.10
 henrygd/beszel:0.18.7
 henrygd/beszel-agent:0.18.7
-kometateam/kometa:v2.4.4
+kometateam/kometa:v2.4.6
 louislam/dockge:1.5.0
 louislam/uptime-kuma:2.1.1
 mariadb:11
@@ -38,6 +38,8 @@ python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266
 redis:7-alpine
 rommapp/romm:4.9.2
 ryshe/terraria:tshock-1.4.5.6-6.1.0
+searxng/searxng:2026.8.4-c63835bd2
 strausmann/minecraft-bedrock-connect:latest
 syncthing/syncthing:2.1.2@sha256:4464f4161dd0251e20d46bb3aec83363db75d80cef1abdd5d5fd4054b04a004d
+triliumnext/trilium:v0.104.1
 wallabag/wallabag:2.6.14

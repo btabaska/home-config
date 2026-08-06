@@ -5,7 +5,7 @@
 > **Do not edit by hand** — your changes will be overwritten. Adjust the generator
 > or the source manifests under `hosts/macmini/` instead.
 >
-> Generated: 2026-07-28T13:11:51-04:00
+> Generated: 2026-08-06T09:17:36-04:00
 
 ## Host
 
@@ -21,9 +21,9 @@
 | apt manual packages | `hosts/macmini/` | 62 pkgs | tracked |
 | AUR/foreign packages | `hosts/macmini/pkglist.aur.txt` | 0 pkgs | tracked |
 | Flatpak apps | `hosts/macmini/flatpak.txt` | 0 apps | tracked |
-| Compose images (pinned) | `/opt/stacks` | 41 images | pinned |
-| Running containers | docker | 45 up | active |
-| systemd timers | `hosts/macmini/systemd-timers.txt` | 24 active | scheduled |
+| Compose images (pinned) | `/opt/stacks` | 45 images | pinned |
+| Running containers | docker | 48 up | active |
+| systemd timers | `hosts/macmini/systemd-timers.txt` | 29 active | scheduled |
 
 ## Pinned container images
 
@@ -51,13 +51,15 @@
 | `healthchecks/healthchecks:v3.10` | /opt/stacks |
 | `henrygd/beszel:0.18.7` | /opt/stacks |
 | `henrygd/beszel-agent:0.18.7` | /opt/stacks |
-| `kometateam/kometa:v2.4.4` | /opt/stacks |
+| `kometateam/kometa:v2.4.6` | /opt/stacks |
 | `louislam/dockge:1.5.0` | /opt/stacks |
 | `louislam/uptime-kuma:2.1.1` | /opt/stacks |
 | `mariadb:11` | /opt/stacks |
 | `mariadb:11.4` | /opt/stacks |
 | `metube-bgutil:local` | /opt/stacks |
 | `miniflux/miniflux:2.3.1` | /opt/stacks |
+| `mozzo/booklogr:v1.11.1` | /opt/stacks |
+| `mozzo/booklogr-web:v1.11.1` | /opt/stacks |
 | `mvance/unbound:1.22.0` | /opt/stacks |
 | `n8nio/n8n:2.32.2@sha256:119afa425cc1ac3e62823c65aae16fcee409ef4c94555ebab3a9dff6eccb9073` | /opt/stacks |
 | `neosmemo/memos:0.29.1@sha256:3e1253477066eb2aefa91145f7f9038bb931ed88c8a3ee05310a933594cdba7d` | /opt/stacks |
@@ -67,8 +69,10 @@
 | `redis:7-alpine` | /opt/stacks |
 | `rommapp/romm:4.9.2` | /opt/stacks |
 | `ryshe/terraria:tshock-1.4.5.6-6.1.0` | /opt/stacks |
+| `searxng/searxng:2026.8.4-c63835bd2` | /opt/stacks |
 | `strausmann/minecraft-bedrock-connect:latest` | /opt/stacks |
 | `syncthing/syncthing:2.1.2@sha256:4464f4161dd0251e20d46bb3aec83363db75d80cef1abdd5d5fd4054b04a004d` | /opt/stacks |
+| `triliumnext/trilium:v0.104.1` | /opt/stacks |
 | `wallabag/wallabag:2.6.14` | /opt/stacks |
 
 ---

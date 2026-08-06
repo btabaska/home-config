@@ -272,6 +272,15 @@ mcpo.{$DOMAIN} {
 	reverse_proxy {$RIG_IP}:8000
 }
 
+# local-deep-research — iterative deep-research assistant (lai-08; rig :5000,
+# LearningCircuit LDR pinned 1.10.1). Rides LiteLLM (coder-strong) + the mini
+# SearXNG. LDR's own per-user login (SQLCipher-encrypted DBs) is the auth gate,
+# like lumiverse — LAN/tailnet posture, nothing port-forwarded outward.
+ldr.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$RIG_IP}:5000
+}
+
 # Lumiverse — creative/RP chat frontend (rig, on-demand; ghcr prolix-oc/lumiverse).
 # App login (BetterAuth) gates it; models restricted to cydonia/dolphin-venice/goetia
 # via a LiteLLM virtual key. Added 2026-07-18.

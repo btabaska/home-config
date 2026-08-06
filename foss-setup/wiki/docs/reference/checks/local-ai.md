@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 8 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 9 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -88,6 +88,17 @@ rig AI-stack compose digest-pinned + running containers match (lai-07)
 
 ```bash
 cd ~/Documents/GitHub/local-ai-tooling && rolling=$(grep -E '^ *image: ' docker/docker-compose.yml | grep -v '@sha256:' | grep -cE ':(latest|main|main-latest|cuda|nightly|dev)[[:space:]]*$'); fails=""; for s in llama-swap litellm open-webui mcpo comfyui; do img=$(awk -v s="$s" '$1=="image:"{i=$2} $1=="container_name:"&&$2==s{print i}' docker/docker-compose.yml); dig=${img#*@}; case "$img" in *@sha256:*) rd=$(docker image inspect "$(docker inspect -f '{{.Image}}' "$s" 2>/dev/null)" -f '{{range .RepoDigests}}{{.}} {{end}}' 2>/dev/null); case "$rd" in *"$dig"*) : ;; *) fails="$fails $s:running-digest-mismatch" ;; esac ;; *) fails="$fails $s:compose-unpinned" ;; esac; done; echo "rolling_tags=$rolling fails=${fails:-none}"; [ "${rolling:-1}" = "0" ] && [ -z "$fails" ] && echo AI-IMAGES-PINNED-OK
+```
+
+## `ldr-research-e2e`
+
+local-deep-research completes a cited SearXNG+coder-strong research (lai-08)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `lai-08` · **enabled:** True
+- **expects:** `^LDR_E2E_(OK|SKIP_GPU_BUSY)`
+
+```bash
+python3 $HOME/Documents/GitHub/local-ai-tooling/scripts/ldr-e2e.py
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
