@@ -15,18 +15,24 @@ What it proves (from the mini, over the LAN):
   2. OWUI's admin API still shows BOTH native mcp servers registered + enabled
      (ids ``fleet`` and ``context7``) with fleet's function filter non-empty —
      catches "someone deleted/disabled the connection or cleared the filter in the UI".
-  3. The TOTAL OWUI-visible tool budget is within cap (<= 40; measured 36 at build:
-     fleet 9 + context7 2 + serena 21 + time 2 + fetch 1 + sequential-thinking 1).
+  3. The TOTAL OWUI-visible tool budget is within cap (<= 40; measured 36 at the
+     lai-11 rebalance: fleet 9 + context7 2 + serena 10 + time 2 + fetch 1 +
+     sequential-thinking 1 + comfyui 3 + playwright 8).
      Fleet's exposed count = live tools/list names intersected with the configured
      filter (same endswith allow-list semantics as OWUI's ``is_string_allowed``);
-     mcpo/OpenAPI counts come from each bridge's live openapi.json paths — so a
-     broken bridge (the 2026-08-03 mcp-SDK-2.0 breakage mounted time/fetch with
-     ZERO tools) shows up as a count drop. context7 is counted as a constant 2
-     (resolve-library-id + query-docs) instead of hammering the hosted endpoint
-     every sweep; the <=40 cap keeps 4 tools of headroom for its drift.
+     mcpo/OpenAPI counts come from each bridge's live openapi.json operationIds
+     (``tool_<name>_post`` — the names OWUI actually filters/exposes) with the
+     per-connection filter applied — so a broken bridge (the 2026-08-03
+     mcp-SDK-2.0 breakage mounted time/fetch with ZERO tools) or a filter that
+     matches nothing (the operationId-vs-path trap) shows up here. context7 is
+     counted as a constant 2 (resolve-library-id + query-docs) instead of
+     hammering the hosted endpoint every sweep. Other native-mcp connections
+     (comfyui/playwright, lai-11) are counted by their allow-list size and MUST
+     carry a non-empty filter — budget policy; their live tools/list + filter
+     validity is probed by the sibling check ``image-browser-mcp``.
 
 Prints exactly one classification line on stdout (runner matches ``expect``):
-  OWUI_MCP_OK fleet=9 mcpo=25 total=36    all good                    -> PASS
+  OWUI_MCP_OK fleet=9 mcp_other=11 mcpo=14 total=36   all good        -> PASS
   OWUI_MCP_BAD <reason>                    handshake/config/budget bad -> FAIL
 
 Runs on the mini runner (``/etc/verification/env`` provides OWUI_URL + OWUI_API_KEY).
@@ -144,6 +150,27 @@ def main() -> None:
     fleet_visible = sum(1 for n in fleet_tool_names if is_allowed(n, filter_entries))
     if fleet_visible == 0:
         bad("fleet_filter_matches_zero_tools")
+
+    def conn_filter(c):
+        raw = (c.get("config") or {}).get("function_name_filter_list", "")
+        return [e.strip() for e in raw.split(",") if e.strip()] if isinstance(raw, str) else [e for e in raw if e]
+
+    # other native-mcp connections (lai-11: comfyui + playwright) count by their
+    # allow-list size; an unfiltered local mcp connection breaks the budget policy
+    # (their live tools/list + filter validity is image-browser-mcp's job).
+    mcp_other = 0
+    for c in connections:
+        if c.get("type") != "mcp" or not (c.get("config") or {}).get("enable"):
+            continue
+        cid = (c.get("info") or {}).get("id", "?")
+        if cid in ("fleet", "context7"):
+            continue
+        entries = [e for e in conn_filter(c) if not e.startswith("!")]
+        if not entries:
+            bad(f"mcp_conn_unfiltered:{cid}")
+        print(f"mcp {cid}: {len(entries)} tools (filter size)", file=sys.stderr)
+        mcp_other += len(entries)
+
     mcpo_total = 0
     for c in connections:
         if c.get("type", "openapi") != "openapi" or not (c.get("config") or {}).get("enable"):
@@ -152,17 +179,27 @@ def main() -> None:
         cid = (c.get("info") or {}).get("id", "?")
         try:
             _, body = http("GET", f"{url.rstrip('/')}/{c.get('path', 'openapi.json')}", None, {}, timeout=20)
-            n = len(json.loads(body).get("paths", {}))
+            paths = json.loads(body).get("paths", {})
         except (urllib.error.URLError, OSError, ValueError) as e:
             bad(f"mcpo_openapi_unreachable:{cid}:{type(e).__name__}")
-        if n == 0:
+        # OWUI's visible names are the OpenAPI operationIds (tool_<name>_post),
+        # and the per-connection filter applies to THOSE (endswith semantics) —
+        # a filter written against bare tool names silently hides everything.
+        op_ids = [op.get("operationId") for ops in paths.values() for op in ops.values()
+                  if isinstance(op, dict) and op.get("operationId")]
+        if not op_ids:
             bad(f"mcpo_bridge_zero_tools:{cid}")
-        print(f"openapi {cid}: {n} tools", file=sys.stderr)
+        entries = conn_filter(c)
+        n = sum(1 for name in op_ids if is_allowed(name, entries)) if entries else len(op_ids)
+        if n == 0:
+            bad(f"mcpo_filter_matches_zero_tools:{cid}")
+        print(f"openapi {cid}: {n}/{len(op_ids)} tools visible", file=sys.stderr)
         mcpo_total += n
-    total = fleet_visible + CONTEXT7_TOOLS + mcpo_total
+
+    total = fleet_visible + CONTEXT7_TOOLS + mcp_other + mcpo_total
     if total > BUDGET:
         bad(f"tool_budget_exceeded total={total} cap={BUDGET}")
-    print(f"OWUI_MCP_OK fleet={fleet_visible} mcpo={mcpo_total} total={total}")
+    print(f"OWUI_MCP_OK fleet={fleet_visible} mcp_other={mcp_other} mcpo={mcpo_total} total={total}")
 
 
 if __name__ == "__main__":

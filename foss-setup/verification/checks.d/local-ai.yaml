@@ -349,3 +349,34 @@ checks:
     task_id: lai-10
     runbook: wiki/docs/runbooks/voice.md
     enabled: true
+
+  # image-browser-mcp (lai-11): the image/browser tool stack in ONE consumer probe.
+  # Helper (verification/bin/image-browser-mcp.py) proves, from the mini:
+  #   1. REAL MCP handshakes (initialize -> initialized -> tools/list) against the
+  #      two new rig streamable-HTTP servers — comfyui-mcp (:9000/mcp, v1.1.1 from
+  #      a pinned git SHA, talks to ComfyUI via the gpu-arbiter) and playwright-mcp
+  #      (:8931/mcp, microsoft v0.0.79 tag@digest, headless chromium --isolated).
+  #   2. OWUI still has both native-mcp connections registered + enabled and every
+  #      filter entry matches a LIVE tool name (endswith semantics) — catches both
+  #      UI deletions and upstream tool renames. Budget math stays in owui-mcp-tools.
+  #   3. A REAL playwright navigation: browser_navigate to the internal wiki must
+  #      return the page title — chromium actually launches and renders (CPU-only,
+  #      all-LAN; ~2-4s on the rig).
+  #   4. OWUI image gen+edit config drift gate: engine comfyui, base URL the
+  #      gpu-arbiter :8189 (NOT bare :8188 — bypassing the arbiter reintroduces
+  #      the 24GB VRAM OOM class), z-image model + non-empty node mapping, edit =
+  #      flux-2-klein via the arbiter. Deliberately NO GPU call — the config gate
+  #      plus the one-time live gen/edit at build (2026-08-06: real 512px PNG via
+  #      /api/v1/images/generations, real instruction-edit via /images/edit, both
+  #      through the arbiter with the take-turns log lines) is the GPU evidence,
+  #      and comfyui-mcp only serves tools/list while it can reach ComfyUI.
+  - id: image-browser-mcp
+    name: "comfyui-mcp + playwright-mcp handshake/nav + OWUI image-engine config (lai-11)"
+    host: mini
+    timeout: 120
+    cmd: python3 /opt/verification/bin/image-browser-mcp.py
+    expect: '^IMGBROWSER_OK '
+    severity: warn
+    task_id: lai-11
+    runbook: wiki/docs/runbooks/image-browser-mcp.md
+    enabled: true

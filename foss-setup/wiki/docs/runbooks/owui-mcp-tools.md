@@ -30,9 +30,18 @@ OWUI (`0.10.2`, `open-webui` container on the rig, local-ai-tooling compose,
   `config.function_name_filter_list` (comma list; `!` prefix = block; matching is
   *endswith*, OWUI `is_string_allowed`). fleet exposes **9/10** tools —
   `run_verification_checks` is filtered out (a minutes-long full check sweep;
-  chat-hostile). Total OWUI-visible budget at build: **36** (fleet 9 + context7 2 +
-  serena 21 + time 2 + fetch 1 + sequential-thinking 1), cap ≤ 40 — small local
-  models misroute as the tool catalog grows.
+  chat-hostile). **Trap:** for openapi/mcpo connections the filter applies to the
+  OpenAPI **operationIds** (`tool_<name>_post`), not the bare tool names — a
+  bare-name filter silently hides *everything* (the helper FAILs
+  `mcpo_filter_matches_zero_tools` on that). Native-mcp filters use bare names.
+  Total OWUI-visible budget after the lai-11 rebalance: **36** = fleet 9 +
+  context7 2 + serena 10 (read-only intel subset; the 11 mutating tools are
+  opencode-only) + time 2 + fetch 1 + sequential-thinking 1 + comfyui 3
+  (zimage_turbo/noobai_anime/view_image) + playwright 8 (browse/interact
+  subset), cap ≤ 40 — small local models misroute as the tool catalog grows.
+  Local native-mcp connections MUST carry a non-empty filter (budget policy,
+  enforced); the lai-11 servers' live handshakes + filter validity are the
+  sibling `image-browser-mcp` check's job.
 - **mcpo `uvx` pinning:** `mcp-server-time` + `mcp-server-fetch` pin `--with mcp<2`
   in `mcpo-config.json`. MCP python SDK 2.0 renamed `McpError` → `MCPError`; with
   unpinned resolution both bridges crashed at the 2026-08-03 reboot and mcpo
@@ -57,6 +66,8 @@ The helper is `/opt/verification/bin/owui-mcp-tools.py` (repo
 | `fleet_function_filter_empty_all_tools_exposed` | filter cleared in the UI → re-run the seed script (budget guard is gone until then). |
 | `mcpo_bridge_zero_tools:<id>` | that stdio server crashed at mcpo boot (the SDK-2.0 mode) → `docker logs mcpo` for the import traceback, fix/pin in `mcpo-config.json`, `docker restart mcpo`. |
 | `mcpo_openapi_unreachable:<id>` | mcpo itself down / port 8000 blocked from the mini. |
+| `mcpo_filter_matches_zero_tools:<id>` | the connection's filter entries match no live operationId (bare-name-vs-`tool_*_post` trap, or an upstream rename) → fix the filter in the seed script and re-run it. |
+| `mcp_conn_unfiltered:<id>` | a local native-mcp connection (not fleet/context7) has an empty function filter — budget policy says every local mcp server ships a curated allow-list → add one in the seed script. |
 | `tool_budget_exceeded total=N` | someone added servers/tools past the cap → trim with per-server `function_name_filter_list` (Admin UI or seed script), keep ≤ 40. |
 
 Consumer-end sanity (what lai-04 proved live): a chat on `coder` with

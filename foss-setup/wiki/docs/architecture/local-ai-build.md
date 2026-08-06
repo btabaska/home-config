@@ -124,6 +124,20 @@ A single image model peaks **~21 GiB** and the 73k-ctx 24B LLMs sit at
 LLM reloads on the next chat turn. Frontends point their ComfyUI URL at
 **`:8189`, not `:8188`**. Verified API workflows: `local-ai-tooling/comfyui-workflows/`.
 
+**Chat-native image gen (lai-11, 2026-08-06).** Open WebUI's own image pipeline
+now runs on the ComfyUI engine through the arbiter: **generation** =
+`z_image_turbo_bf16` (default 1024², 8 steps) via `/api/v1/images/generations`,
+**edit** = `flux-2-klein-9b-Q8_0` instruction editing via `/api/v1/images/edit`
+(both PersistentConfig — DB-only, re-apply per the
+[image-browser-mcp runbook](../runbooks/image-browser-mcp.md) after a volume
+wipe). Two MCP tool servers joined the compose the same day: **comfyui-mcp**
+(`:9000/mcp`, joenorton v1.1.1 from a pinned git SHA, curated `zimage_turbo` +
+`noobai_anime` workflow tools, ComfyUI access only via the arbiter) and
+**playwright-mcp** (`:8931/mcp`, microsoft v0.0.79 tag@digest, headless
+chromium `--isolated`, Host-allowlisted). OWUI sees filtered subsets (3 + 8
+tools inside the 36-tool budget); opencode gets both full-set (build/plan
+agents only). Check: `image-browser-mcp` (mini).
+
 **Quality pass (2026-07-19, deep-research-backed, all re-validated + re-seeded
 into both frontends).** The three defaults above were tuned for best per-pass
 quality while staying fast enough for interactive RP. The **biggest fix was

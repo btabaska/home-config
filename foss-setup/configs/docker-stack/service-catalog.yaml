@@ -443,6 +443,22 @@ services:
     ui: false
     on_demand: false
     notes: Take-turns GPU-sharing proxy (ai-01) fronting ComfyUI on :8189 — internal only, no web UI/vhost. On an incoming gen it force-unloads llama-swap, proxies to ComfyUI (:8188), then /free's ComfyUI after, so image gen and the 73k-ctx 24B LLMs share one 3090 Ti without OOM. The unload hook must match /api/prompt (the path web-UI/API clients POST), not just /prompt. Rig runs 24/7.
+  - name: comfyui-mcp
+    category: AI & Gaming
+    host: rig
+    port: 9000
+    url: null
+    ui: false
+    on_demand: false
+    notes: Streamable-HTTP MCP tool server for ComfyUI image gen (lai-11, local-ai-tooling compose) — joenorton/comfyui-mcp-server v1.1.1 built from a pinned git SHA (docker/comfyui-mcp/Dockerfile). Talks to the gpu-arbiter (:8189), never ComfyUI directly, so MCP-driven gens keep the take-turns GPU protocol. 17 tools incl. curated workflow tools zimage_turbo + noobai_anime (docker/comfyui-mcp/workflows, prompt+seed params only). Consumers = OWUI native MCP (3-tool filter) + opencode (full set). LAN posture like llama-swap — :9000, no vhost, no auth. Check image-browser-mcp.
+  - name: playwright-mcp
+    category: AI & Gaming
+    host: rig
+    port: 8931
+    url: null
+    ui: false
+    on_demand: false
+    notes: Headless-browser MCP tool server (lai-11, local-ai-tooling compose) — microsoft/playwright-mcp v0.0.79 tag@digest pinned, headless chromium only, --isolated (no persistent profile), Host-allowlist gated (entries are host:port; a bare hostname 403s). Streamable-HTTP at :8931/mcp. 24 tools; consumers = OWUI native MCP (8 browse/interact tools) + opencode (full set). LAN-only, no vhost, no auth — never expose (it browses as this host). Check image-browser-mcp.
   - name: apollo
     category: AI & Gaming
     host: rig

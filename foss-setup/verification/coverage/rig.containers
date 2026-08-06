@@ -1,6 +1,7 @@
 amp
 beszel-agent
 comfyui
+comfyui-mcp
 gpu-arbiter
 kokoro
 litellm
@@ -13,5 +14,6 @@ mcpo
 open-webui
 palworld
 playit
+playwright-mcp
 scrutiny-collector
 suwayomi

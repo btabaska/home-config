@@ -168,6 +168,7 @@ nav:
       - Open Terminal (OWUI server-side code execution / sandbox): runbooks/owui-code-exec.md
       - local-deep-research (cited research / env-locked config / probe account): runbooks/ldr.md
       - Voice (Kokoro TTS / faster-whisper STT / OWUI audio): runbooks/voice.md
+      - Image & browser tools (OWUI ComfyUI engine / comfyui-mcp / playwright-mcp): runbooks/image-browser-mcp.md
       - Books — language & edition correctness (foreign records / grab guard / pinning): runbooks/books-language.md
       - Books — import completion & file↔record correctness (cross-wired packs / dead-ends / EPUB-first): runbooks/books-imports.md
       - Books — request-path robustness (Libreseerr errors / retries / ntfy): runbooks/books-requests.md
