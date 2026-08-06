@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**289/386 done** · **63 open** · **19 deferred** · 15 retired.
+**290/386 done** · **62 open** · **19 deferred** · 15 retired.
 
 ---
 
@@ -37,7 +37,6 @@
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
 
 ### local-ai-buildout
-- [ ] **`lai-16`** trilium-mcp wiring _(est 1-2 hrs)_
 - [ ] **`lai-17`** Offline maps: PMTiles + Photon _(est 2-4 hrs)_
 - [ ] **`lai-18`** Agent memory layer _(est 2-4 hrs)_
 - [ ] **`lai-19`** local-ai consolidation sweep _(est 2-4 hrs)_

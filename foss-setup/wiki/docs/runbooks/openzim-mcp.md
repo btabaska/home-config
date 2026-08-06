@@ -26,7 +26,7 @@ library for Open WebUI chat and opencode. Library operation itself:
 
 | Consumer | Path | Tools visible |
 |---|---|---|
-| Open WebUI | `http://mcpo:8000/openzim` (OpenAPI bridge) | **3 of 8** — `zim_query` + `zim_search` + `zim_get` (operationId filter `tool_zim_*_post`); OWUI total 39/40 |
+| Open WebUI | `http://mcpo:8000/openzim` (OpenAPI bridge) | **3 of 8** — `zim_query` + `zim_search` + `zim_get` (operationId filter `tool_zim_*_post`); OWUI total 40/40 |
 | opencode (rig) | own stdio spawn: `uvx openzim-mcp==2.5.5 --mode advanced /mnt/nas-zim` | all 8 (build + plan agents, `openzim*` glob) |
 | verification / scripts | `http://192.168.10.12:8000/openzim/<tool>` POST | all 8 |
 | **Mac opencode** | **NOT wired** — deliberate | — |
@@ -63,7 +63,7 @@ VERIFICATION_STATE_DIR=$(mktemp -d) /opt/verification/bin/run-checks.sh --no-not
 | "Security Validation Error" on a path | The `zim_file_path` isn't under the allowed dir — inside mcpo the library is `/zim/<file>.zim` (NOT `/mnt/nas-zim/...`); for opencode it IS `/mnt/nas-zim/<file>.zim` |
 | Empty file list / mount dead | Rig CIFS mount: `findmnt /mnt/nas-zim || sudo systemctl reset-failed; sudo mount /mnt/nas-zim`; then recreate mcpo (a bind over a re-made mount does NOT propagate into the running container) |
 | Auth failures on the mount | NAS side: `zimro` user or `zim` share perms changed — share is `btabaska` RW / `zimro` RO + ACLs (see `configs/nas/kiwix/README.md`); password at vault `hosts.nas.zimro_smb_password` → `/etc/samba/cred-nas-zim` |
-| OWUI chat can't see zim tools | PersistentConfig wipe — re-run `scripts/seed-owui-tool-servers.sh` (OWUI budget incl. openzim = 39/40; guarded by `owui-mcp-tools`) |
+| OWUI chat can't see zim tools | PersistentConfig wipe — re-run `scripts/seed-owui-tool-servers.sh` (OWUI budget incl. openzim = 40/40; guarded by `owui-mcp-tools`) |
 | opencode `openzim failed: uvx not found` | Non-login shell PATH artifact — `uvx` is `~/.local/bin`; real sessions (login shell) are fine |
 | Searches slow / time out | NAS under heavy I/O (Wikipedia queue still running, or a scrub) — expected while the library grows; the check has generous timeouts |
 
