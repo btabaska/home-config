@@ -1,0 +1,29 @@
+# Local-AI buildout (lai-*, run 12). SearXNG private metasearch on mini.
+#
+# Consumer-end probe, not liveness: containers-manifest-mini / containers-health-mini
+# (docker-fleet.yaml) already prove the container is up. The real downstream consumer
+# (Open WebUI web search / Agentic Research, lai-03) calls GET /search?q=...&format=json
+# on the host port and needs REAL results back. This probe asserts exactly that, which
+# catches the two ways the instance goes green-but-broken:
+#   - `json` dropped from search.formats  -> HTTP 403 (invalid JSON -> python exits 1)
+#   - limiter/botdetection re-enabled     -> HTTP 429 block page (same)
+#   - all upstream engines dead (mini lost outbound DNS/net) -> results: [] -> BAD
+# One shell-level retry with a second query rides out a single flaky engine sweep.
+checks:
+  - id: searxng-json-probe
+    name: "SearXNG JSON API returns real results (lai-01 consumer end)"
+    host: mini
+    cmd: >-
+      r=$(curl -s -m 20 'http://127.0.0.1:8888/search?q=wikipedia&format=json'
+      | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('results',[])))" 2>/dev/null);
+      if [ "${r:-0}" -gt 0 ] 2>/dev/null; then echo "SEARXNG_OK results=$r";
+      else sleep 3;
+      r=$(curl -s -m 20 'http://127.0.0.1:8888/search?q=debian+linux&format=json'
+      | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('results',[])))" 2>/dev/null);
+      if [ "${r:-0}" -gt 0 ] 2>/dev/null; then echo "SEARXNG_OK results=$r retry=1";
+      else echo "SEARXNG_BAD results=${r:-invalid}"; fi; fi
+    expect: '^SEARXNG_OK '
+    severity: warn
+    task_id: lai-01
+    runbook: wiki/docs/runbooks/searxng.md
+    enabled: true

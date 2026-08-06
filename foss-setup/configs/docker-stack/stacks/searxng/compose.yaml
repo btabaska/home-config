@@ -1,0 +1,58 @@
+# SearXNG — private metasearch engine (lai-01, local-ai buildout run 12).
+# Source: https://github.com/searxng/searxng   Docs: https://docs.searxng.org
+#
+# Serves the household + the local AI stack: Open WebUI web search / Agentic
+# Research (lai-03) consumes GET /search?q=...&format=json, so settings.yml MUST
+# keep `json` in search.formats. NB: OWUI strips any `&format=json` baked into
+# SEARXNG_QUERY_URL — the server-side formats list is the ONLY thing that works.
+# SearXNG's default limiter/bot-detection also blocks plain API clients, so it
+# is disabled (settings.yml server.limiter: false). Both are safe because this
+# is a LAN/tailnet-only private instance — Caddy vhost + host port :8888,
+# nothing port-forwarded outward.
+#
+# PINNED to 2026.8.4-c63835bd2 — SearXNG publishes rolling date tags and
+# :latest is the same rolling stream; pin + bump deliberately like the rest of
+# the fleet (docker compose pull && docker compose up -d after a tag bump).
+#
+# Config: ./searxng/settings.yml (committed — no secrets; use_default_settings
+# keeps upstream engine defaults working across image bumps).
+# Secret: server.secret_key comes from SEARXNG_SECRET in ./.env (gitignored;
+# vault key searxng.secret_key; template .env.example).
+# State: nothing worth backing up — ./searxng holds config only; the engine
+# cache volume is disposable.
+
+name: searxng
+
+services:
+  searxng:
+    image: searxng/searxng:2026.8.4-c63835bd2
+    container_name: searxng
+    restart: unless-stopped
+    ports:
+      # LAN API consumers hit the host port directly (Open WebUI on the rig,
+      # the searxng-json-probe check); browsers use https://searxng.tabaska.us.
+      - "8888:8080"
+    env_file:
+      - .env # SEARXNG_SECRET (vault searxng.secret_key)
+    environment:
+      - SEARXNG_BASE_URL=https://searxng.tabaska.us/
+      - TZ=America/New_York
+    volumes:
+      - ./searxng:/etc/searxng
+      - searxng_cache:/var/cache/searxng
+    networks:
+      - edge
+    logging:
+      # SearXNG logs every query + engine errors — cap it (upstream's own
+      # compose does the same) so it can't flood the mini's disk.
+      driver: json-file
+      options:
+        max-size: 1m
+        max-file: "1"
+
+networks:
+  edge:
+    external: true
+
+volumes:
+  searxng_cache:

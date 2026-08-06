@@ -4,7 +4,7 @@
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
-| `lai-01` | SearXNG metasearch on mini | ⬜ open | 2-3 hrs |
+| `lai-01` | SearXNG metasearch on mini | ✅ done | 2-3 hrs |
 | `lai-02` | Local reranker via llama-swap | ⬜ open | 2-3 hrs |
 | `lai-03` | OWUI search+RAG quality pass | ⬜ open | 2-4 hrs |
 | `lai-04` | OWUI MCP rewire to native External Tools | ⬜ open | 2-4 hrs |

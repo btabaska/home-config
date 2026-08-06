@@ -1062,3 +1062,23 @@ services:
       The server is up but the world never finished generating / status shows no world.
     fix: |-
       On first boot the small world takes 60-90s to generate; watch `docker logs terraria` for "Server started" and the worldgen steps to complete. If it is stuck, confirm the `world/` volume is writable and `tshock-config/config.json` is valid JSON (a broken config aborts startup); reseed it from `config.json.example` and `docker compose up -d`. The consumer checks `terraria-join-handshake` and `terraria-world-loaded` in the verification sweep flag both failure modes.
+- name: searxng
+  about: |-
+    SearXNG is the fleet's private metasearch engine (lai-01, local-ai buildout) — the self-hosted Kagi replacement and, more importantly, the web-search backend the local AI stack consumes (Open WebUI web search / Agentic Research, lai-03). It runs as `searxng/searxng:2026.8.4-c63835bd2` (a PINNED date tag — SearXNG only publishes a rolling stream, so the pin is the fleet's stability knob) on the Mac mini at `/opt/stacks/searxng`, on the shared external `edge` network for Caddy (https://searxng.tabaska.us for humans) AND published on host `:8888` (container `:8080`) so LAN API consumers — Open WebUI on the rig, the verification probe — can hit `http://192.168.10.2:8888/search?q=...&format=json` directly. Two settings are load-bearing and deliberate in `./searxng/settings.yml` (committed, secret-free, `use_default_settings: true`): `search.formats` includes `json` (without it the JSON API answers 403 Forbidden; OWUI strips any `&format=json` baked into SEARXNG_QUERY_URL, so this server-side list is the ONLY way to enable it), and `server.limiter: false` (the default limiter/bot-detection classifies plain API clients like curl/OWUI as bots and blocks them). Both are safe because this is a LAN/tailnet-only instance — nothing is port-forwarded outward. The single secret, `server.secret_key`, is injected as the `SEARXNG_SECRET` env var from the gitignored `./.env` (vault `searxng.secret_key`, template `.env.example`). No state worth backing up: `./searxng` holds config only and the `searxng_cache` volume is disposable.
+  troubleshoot:
+  - symptom: |-
+      API queries return HTTP 403 Forbidden while the web UI works fine (Open WebUI web search fails / searxng-json-probe check fails).
+    fix: |-
+      The `json` format has been dropped from `search.formats` in `/opt/stacks/searxng/searxng/settings.yml` — SearXNG 403s any `format=` its formats list does not contain. Restore `formats: [html, json]` and `cd /opt/stacks/searxng && docker compose restart`. Do NOT try to fix this from the Open WebUI side by appending `&format=json` to SEARXNG_QUERY_URL — OWUI strips that parameter; only the server-side list works.
+  - symptom: |-
+      API queries return HTTP 429 "Too Many Requests" or a bot-detection block page from curl/OWUI.
+    fix: |-
+      The limiter got re-enabled (an image bump can also introduce new botdetection defaults). This is a private LAN instance: set `server.limiter: false` in `/opt/stacks/searxng/searxng/settings.yml` and restart the stack. If a future exposure change ever makes it public-facing, re-enable the limiter and give OWUI a bypass instead (limiter.toml token pass-through) rather than running an open unmetered instance.
+  - symptom: |-
+      Container exits at startup complaining about the secret key (or `server.secret_key` is still the 'ultrasecretkey' placeholder).
+    fix: |-
+      `SEARXNG_SECRET` is missing/empty — the env override is how `server.secret_key` gets set (it is deliberately NOT in the committed settings.yml). Recreate `/opt/stacks/searxng/.env` from `.env.example` with the value from the vault key `searxng.secret_key`, then `docker compose up -d`.
+  - symptom: |-
+      Searches return zero results or only errors in the results JSON (`results: []` with engine errors in /stats).
+    fix: |-
+      Individual upstream engines rate-limit or break routinely — that is why the check queries a broad term and any engine answering makes it pass. Check https://searxng.tabaska.us/stats for per-engine error rates; a single red engine is normal background noise, ALL engines failing usually means the mini lost outbound DNS/internet (check AdGuard/Unbound and the mini's uplink first). Engine fixes ride image bumps: update the pinned tag in compose.yaml (both repos) and `docker compose pull && docker compose up -d`.

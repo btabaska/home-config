@@ -68,6 +68,7 @@ nav:
           - palworld: services/palworld.md
           - playit: services/playit.md
           - romm: services/romm.md
+          - searxng: services/searxng.md
           - terraria: services/terraria.md
       - Documents & Life:
           - paperless-ngx: services/paperless-ngx.md
@@ -159,6 +160,7 @@ nav:
       - Audiobookshelf (audiobooks + podcasts, non-root port trap): runbooks/audiobookshelf.md
       - Komga (comics + manga reader, JVM / OPDS / page-stream): runbooks/komga.md
       - Trilium (self-hosted notes / Obsidian-replacement trial): runbooks/notes-trilium.md
+      - SearXNG (private metasearch / AI web-search backend): runbooks/searxng.md
       - Books — language & edition correctness (foreign records / grab guard / pinning): runbooks/books-language.md
       - Books — import completion & file↔record correctness (cross-wired packs / dead-ends / EPUB-first): runbooks/books-imports.md
       - Books — request-path robustness (Libreseerr errors / retries / ntfy): runbooks/books-requests.md
@@ -269,6 +271,7 @@ nav:
       - ipod-abs-sync: reference/checks/ipod-abs-sync.md
       - journaling: reference/checks/journaling.md
       - lan-exposure: reference/checks/lan-exposure.md
+      - local-ai: reference/checks/local-ai.md
       - media: reference/checks/media.md
       - media-aux: reference/checks/media-aux.md
       - media-indexers: reference/checks/media-indexers.md

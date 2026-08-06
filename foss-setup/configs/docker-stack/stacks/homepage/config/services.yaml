@@ -347,6 +347,11 @@
         href: https://n8n.tabaska.us
         description: Automation workflows
         siteMonitor: http://n8n:5678
+    - SearXNG:
+        icon: searxng.png
+        href: https://searxng.tabaska.us
+        description: Private metasearch
+        siteMonitor: http://searxng:8080
 
 - Media Automation:
     - Sonarr:

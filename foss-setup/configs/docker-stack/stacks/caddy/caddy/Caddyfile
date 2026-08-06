@@ -220,6 +220,16 @@ git.{$DOMAIN} {
 	reverse_proxy forgejo:3000
 }
 
+# SearXNG — private metasearch (lai-01, local-ai buildout). Mini container on the
+# edge network; ALSO published on host :8888 for LAN API consumers (Open WebUI on
+# the rig hits http://192.168.10.2:8888 directly). The JSON API is enabled
+# server-side (search.formats in the stack's settings.yml) and the limiter is off
+# — LAN/tailnet posture, nothing port-forwarded outward.
+searxng.{$DOMAIN} {
+	import local_tls
+	reverse_proxy searxng:8080
+}
+
 # Rig AI stack (CachyOS — on-demand). HTTPS terminates on Mac mini Caddy, not the rig.
 # Set RIG_IP in .env (default homelab: 192.168.10.12).
 

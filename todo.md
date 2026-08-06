@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**275/385 done** · **77 open** · **18 deferred** · 15 retired.
+**276/385 done** · **76 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -37,7 +37,6 @@
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
 
 ### local-ai-buildout
-- [ ] **`lai-01`** SearXNG metasearch on mini _(est 2-3 hrs)_
 - [ ] **`lai-02`** Local reranker via llama-swap _(est 2-3 hrs)_
 - [ ] **`lai-03`** OWUI search+RAG quality pass _(est 2-4 hrs)_
 - [ ] **`lai-04`** OWUI MCP rewire to native External Tools _(est 2-4 hrs)_

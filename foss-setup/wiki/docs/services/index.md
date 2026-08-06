@@ -1,6 +1,6 @@
 # Services
 
-52 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
+53 compose stacks, generated from the repo (`configs/docker-stack/stacks/`, `configs/nas/`, `configs/gaming/`) by `scripts/docs/gen-wiki-services.py`. If a page here disagrees with a compose file, regenerate — the compose file wins.
 
 ## AI & Cameras
 
@@ -17,6 +17,7 @@
 | [palworld](palworld.md) | rig | — |
 | [playit](playit.md) | rig | — |
 | [romm](romm.md) | mini | https://romm.tabaska.us |
+| [searxng](searxng.md) | mini | https://searxng.tabaska.us |
 | [terraria](terraria.md) | mini | — |
 
 ## Documents & Life

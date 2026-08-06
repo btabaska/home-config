@@ -398,6 +398,13 @@ services:
     url: https://mcpo.tabaska.us
     on_demand: false
     notes: MCP→OpenAPI tool bridge; docs at /docs (root 404s by design). Rig runs 24/7.
+  - name: searxng
+    category: AI & Gaming
+    host: mini
+    port: 8888
+    url: https://searxng.tabaska.us
+    on_demand: false
+    notes: Private metasearch (lai-01, local-ai buildout) — Kagi replacement + the web-search backend for Open WebUI (lai-03). JSON API enabled server-side (search.formats includes json; OWUI strips &format=json from query URLs) and limiter OFF — LAN/tailnet-only. Host port 8888 -> container 8080; browsers via Caddy.
   - name: comfyui
     category: AI & Gaming
     host: rig
