@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 9 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 10 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -99,6 +99,17 @@ local-deep-research completes a cited SearXNG+coder-strong research (lai-08)
 
 ```bash
 python3 $HOME/Documents/GitHub/local-ai-tooling/scripts/ldr-e2e.py
+```
+
+## `owui-code-exec`
+
+OWUI terminal proxy runs real code on mini open-terminal (lai-09)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `lai-09` · **enabled:** True
+- **expects:** `^OWUI_CODEEXEC_OK `
+
+```bash
+r=$(curl -s -m 90 -X POST -H "Authorization:Bearer $OWUI_API_KEY" -H "Content-Type:application/json" -d "{\"command\":\"python3 -c \\\"print(617*3)\\\"\"}" "$OWUI_URL/api/v1/terminals/open-terminal/execute?wait=60" | python3 -c 'import sys,json;d=json.load(sys.stdin);out="".join(e.get("data","") for e in d.get("output",[]));print(("OK" if d.get("exit_code")==0 and "1851" in out else "BAD")+" status="+str(d.get("status"))+" exit="+str(d.get("exit_code")))' 2>/dev/null); case "$r" in OK*) echo "OWUI_CODEEXEC_OK $r";; *) echo "OWUI_CODEEXEC_BAD r=${r:-noresponse}";; esac
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

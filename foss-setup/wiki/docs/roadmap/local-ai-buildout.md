@@ -12,7 +12,7 @@
 | `lai-06` | Skills bundle (Mac + rig) | ✅ done | 2-4 hrs |
 | `lai-07` | Pin last rolling images | ✅ done | <1 hr |
 | `lai-08` | local-deep-research on rig | ✅ done | 2-4 hrs |
-| `lai-09` | open-terminal code-exec for OWUI | ⬜ open | 1-3 hrs |
+| `lai-09` | open-terminal code-exec for OWUI | ✅ done | 1-3 hrs |
 | `lai-10` | Voice: Kokoro TTS + whisper STT | ⬜ open | 2-3 hrs |
 | `lai-11` | Image/browser tools | ⬜ open | 2-4 hrs |
 | `lai-12` | kiwix-serve ZIM library on NAS | ⬜ open | 2-4 hrs |

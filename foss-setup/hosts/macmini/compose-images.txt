@@ -10,6 +10,7 @@ ghcr.io/blakeblackshear/frigate:0.17.1
 ghcr.io/gethomepage/homepage:v1.13.2
 ghcr.io/habirabbu/musicseerr:v1.4.2
 ghcr.io/mealie-recipes/mealie:v3.4.0
+ghcr.io/open-webui/open-terminal:0.11.34@sha256:5e040fe357ce4fbd3d5e59c40247dd32172fa10c51c22ded3a7843e739d06a0e
 ghcr.io/paperless-ngx/paperless-ngx:2.20.11
 ghcr.io/recyclarr/recyclarr:8.4.0
 ghcr.io/seerr-team/seerr:v3.2.0

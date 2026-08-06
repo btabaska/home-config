@@ -1,0 +1,63 @@
+# Open Terminal — server-side code-execution backend for Open WebUI (lai-09,
+# local-ai buildout run 12).
+# Source: https://github.com/open-webui/open-terminal   Docs: https://docs.openwebui.com/features/open-terminal/
+#
+# Gives the rig's OWUI (0.10.2) a REAL sandboxed computer for code execution,
+# replacing the browser-Pyodide default: OWUI stores this instance as a
+# system-level terminal-server connection (PersistentConfig
+# `terminal_server.connections`, canonical seed commented in local-ai-tooling
+# docker/.env) and proxies chats' run_command / files/* tool calls here via
+# /api/v1/terminals/{id}/... with the Bearer key held server-side. NB: in OWUI
+# 0.10.x `CODE_EXECUTION_ENGINE` itself only knows pyodide|jupyter — Open
+# Terminal is wired through the terminal-server integration, NOT that knob.
+#
+# SECURITY (this thing executes arbitrary code by design):
+#   - LAN-only: host port :8020 (container :8000), NO Caddy vhost, nothing
+#     port-forwarded outward. Consumers = rig OWUI + the verification probe.
+#   - Every API request needs the Bearer key (env OPEN_TERMINAL_API_KEY,
+#     vault open_terminal.api_key) — v0.11.30+ constant-time compare.
+#   - Isolation: its own compose network (NOT edge), no docker socket, no host
+#     mounts beyond ./data (the sandbox home), mem/cpu/pids caps below. The
+#     in-container `user` has passwordless sudo BY DESIGN (apt installs inside
+#     the sandbox) — that is root in the container only; keep it that way by
+#     never mounting host paths or the docker socket here.
+#
+# PINNED by tag@digest (fleet convention, lai-07): full-toolkit variant
+# (Python + Node + build tools + ffmpeg...; slim/alpine exist but the toolkit
+# is the point). Bump deliberately: update tag+digest, compose pull && up -d.
+#
+# State: ./data == /home/user (the sandbox home — installed packages, files the
+# model writes). Disposable in principle, kept under restic via /opt/stacks.
+
+name: open-terminal
+
+services:
+  open-terminal:
+    image: ghcr.io/open-webui/open-terminal:0.11.34@sha256:5e040fe357ce4fbd3d5e59c40247dd32172fa10c51c22ded3a7843e739d06a0e
+    container_name: open-terminal
+    restart: unless-stopped
+    ports:
+      # LAN API consumers only (rig OWUI proxy + owui-code-exec check); no vhost.
+      - "8020:8000"
+    env_file:
+      - .env # OPEN_TERMINAL_API_KEY (vault open_terminal.api_key)
+    environment:
+      - TZ=America/New_York
+      # Default wait/kill ceiling for /execute when the caller passes none —
+      # long enough for pip installs, short enough to not wedge the sandbox.
+      - OPEN_TERMINAL_EXECUTE_TIMEOUT=120
+    dns:
+      # net-16 fleet convention: mini containers resolve via NAS AdGuard.
+      - 192.168.10.4
+    volumes:
+      - ./data:/home/user
+    # Resource caps: a runaway `while true` / fork bomb inside the sandbox must
+    # not take the mini (38-container docker host) with it.
+    mem_limit: 4g
+    cpus: 2
+    pids_limit: 512
+    logging:
+      driver: json-file
+      options:
+        max-size: 1m
+        max-file: "1"

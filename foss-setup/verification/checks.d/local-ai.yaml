@@ -277,3 +277,30 @@ checks:
     task_id: lai-08
     runbook: wiki/docs/runbooks/ldr.md
     enabled: true
+
+  # owui-code-exec (lai-09): the CONSUMER end of server-side code execution —
+  # OWUI's terminal proxy (POST /api/v1/terminals/open-terminal/execute, the same
+  # route chats' run_command tool calls take) must make the mini's open-terminal
+  # sandbox ACTUALLY run code and hand real stdout back. One round-trip proves the
+  # whole chain: OWUI up + the PersistentConfig terminal_server.connections entry
+  # still present (a DB/volume wipe silently erases it — this is the drift guard,
+  # 404 "Terminal server not found" fails here) + the server-side Bearer key still
+  # valid (401/403 fails) + the open-terminal container executing (deterministic
+  # arithmetic in the output, exit_code 0 — liveness lies, stdout does not).
+  # All-LAN, NO model call (GPU-contention-safe by construction) -> fast sweep.
+  # Generous curl/wait budget: OWUI proxies with a 300s ceiling; a cold sandbox
+  # answers in ~1s so 60s of wait is already luxurious.
+  - id: owui-code-exec
+    name: "OWUI terminal proxy runs real code on mini open-terminal (lai-09)"
+    host: mini
+    timeout: 120
+    cmd: >-
+      r=$(curl -s -m 90 -X POST -H "Authorization:Bearer $OWUI_API_KEY" -H "Content-Type:application/json"
+      -d "{\"command\":\"python3 -c \\\"print(617*3)\\\"\"}" "$OWUI_URL/api/v1/terminals/open-terminal/execute?wait=60"
+      | python3 -c 'import sys,json;d=json.load(sys.stdin);out="".join(e.get("data","") for e in d.get("output",[]));print(("OK" if d.get("exit_code")==0 and "1851" in out else "BAD")+" status="+str(d.get("status"))+" exit="+str(d.get("exit_code")))' 2>/dev/null);
+      case "$r" in OK*) echo "OWUI_CODEEXEC_OK $r";; *) echo "OWUI_CODEEXEC_BAD r=${r:-noresponse}";; esac
+    expect: '^OWUI_CODEEXEC_OK '
+    severity: warn
+    task_id: lai-09
+    runbook: wiki/docs/runbooks/owui-code-exec.md
+    enabled: true

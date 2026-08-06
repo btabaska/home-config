@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**283/386 done** · **70 open** · **18 deferred** · 15 retired.
+**284/386 done** · **69 open** · **18 deferred** · 15 retired.
 
 ---
 
@@ -37,7 +37,6 @@
 - [ ] **`retro-08`** RomM RetroAchievements dashboard (view-only unlock %/hardcore stats) _(est ~15 min config)_ — ⛔ gate: operator RetroAchievements username
 
 ### local-ai-buildout
-- [ ] **`lai-09`** open-terminal code-exec for OWUI _(est 1-3 hrs)_
 - [ ] **`lai-10`** Voice: Kokoro TTS + whisper STT _(est 2-3 hrs)_
 - [ ] **`lai-11`** Image/browser tools _(est 2-4 hrs)_
 - [ ] **`lai-12`** kiwix-serve ZIM library on NAS _(est 2-4 hrs)_
