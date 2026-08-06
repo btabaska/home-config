@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 12 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 13 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -132,6 +132,17 @@ comfyui-mcp + playwright-mcp handshake/nav + OWUI image-engine config (lai-11)
 
 ```bash
 python3 /opt/verification/bin/image-browser-mcp.py
+```
+
+## `kiwix-search-consumer`
+
+Kiwix library breadth + real search->article fetch (lai-12 consumer end)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `lai-12` · **enabled:** True
+- **expects:** `^KIWIX_OK `
+
+```bash
+python3 /opt/verification/bin/kiwix-search-consumer.py
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

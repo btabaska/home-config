@@ -380,3 +380,32 @@ checks:
     task_id: lai-11
     runbook: wiki/docs/runbooks/image-browser-mcp.md
     enabled: true
+
+  # kiwix-search-consumer (lai-12): the CONSUMER end of the NAS offline ZIM library.
+  # Liveness lies twice for kiwix-serve: it answers 200 with an EMPTY library (the
+  # library.xml rebuild failed / /volume1/zim unmounted — kiwix-serve cannot hot-add
+  # ZIMs, the nightly DSM refresh task owns the XML) and it answers 200 while search
+  # is broken. Helper (verification/bin/kiwix-search-consumer.py) proves, from the
+  # mini against 192.168.10.4:8092: (1) the OPDS catalog lists >=10 books, (2) a
+  # REAL Xapian fulltext search returns result links, and (3) the first result's
+  # article body actually serves with the search term in it. ADAPTIVE to whatever
+  # has landed (the library grows for days while wikipedia maxi ~115G trickles in):
+  # the search book comes from the live catalog — first PRESENT candidate from
+  # iFixit -> StackExchange -> wiktionary -> wikipedia that actually yields search
+  # results. Detection is BEHAVIOR-based: the catalog `_ftindex:` tag is unreliable
+  # (every book reports :no, incl. iFixit whose Xapian search demonstrably works);
+  # devdocs ZIMs genuinely lack fulltext, so if NO searchable candidate has landed
+  # (from-scratch rebuild mid-queue) the probe degrades to the title-index /suggest
+  # endpoint on devdocs (still index->path->content e2e, emits mode=suggest); but
+  # candidates PRESENT with zero results = FAIL, not degrade.
+  # Generous timeout: the DS920+ answers search slowly under download I/O.
+  - id: kiwix-search-consumer
+    name: "Kiwix library breadth + real search->article fetch (lai-12 consumer end)"
+    host: mini
+    timeout: 120
+    cmd: python3 /opt/verification/bin/kiwix-search-consumer.py
+    expect: '^KIWIX_OK '
+    severity: warn
+    task_id: lai-12
+    runbook: wiki/docs/runbooks/kiwix.md
+    enabled: true

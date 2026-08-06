@@ -230,6 +230,15 @@ searxng.{$DOMAIN} {
 	reverse_proxy searxng:8080
 }
 
+# Kiwix — offline ZIM knowledge library (lai-12, local-ai buildout). kiwix-serve on
+# the NAS (:8092 -> container 8080; NAS :8080 is Scrutiny) serving the curated ~150GB
+# ZIM set (devdocs, iFixit, StackExchange, wiktionary, game wikis, Wikipedia maxi)
+# out of /volume1/zim. LAN/tailnet only.
+kiwix.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$NAS_IP}:8092
+}
+
 # Rig AI stack (CachyOS — on-demand). HTTPS terminates on Mac mini Caddy, not the rig.
 # Set RIG_IP in .env (default homelab: 192.168.10.12).
 

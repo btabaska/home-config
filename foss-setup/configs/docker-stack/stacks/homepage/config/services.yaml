@@ -352,6 +352,11 @@
         href: https://searxng.tabaska.us
         description: Private metasearch
         siteMonitor: http://searxng:8080
+    - Kiwix:
+        icon: kiwix.png
+        href: https://kiwix.tabaska.us
+        description: Offline ZIM knowledge library
+        siteMonitor: http://192.168.10.4:8092
     - Local Deep Research:
         icon: mdi-book-search
         href: https://ldr.tabaska.us

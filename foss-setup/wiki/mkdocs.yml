@@ -65,6 +65,7 @@ nav:
       - AI & Gaming:
           - amp: services/amp.md
           - bedrock-connect: services/bedrock-connect.md
+          - kiwix: services/kiwix.md
           - open-terminal: services/open-terminal.md
           - palworld: services/palworld.md
           - playit: services/playit.md
@@ -169,6 +170,7 @@ nav:
       - local-deep-research (cited research / env-locked config / probe account): runbooks/ldr.md
       - Voice (Kokoro TTS / faster-whisper STT / OWUI audio): runbooks/voice.md
       - Image & browser tools (OWUI ComfyUI engine / comfyui-mcp / playwright-mcp): runbooks/image-browser-mcp.md
+      - Kiwix (offline ZIM library / no hot-add / sequential queue): runbooks/kiwix.md
       - Books — language & edition correctness (foreign records / grab guard / pinning): runbooks/books-language.md
       - Books — import completion & file↔record correctness (cross-wired packs / dead-ends / EPUB-first): runbooks/books-imports.md
       - Books — request-path robustness (Libreseerr errors / retries / ntfy): runbooks/books-requests.md
@@ -383,6 +385,7 @@ nav:
           - import-seedbox-roms.sh: reference/scripts/nas/import-seedbox-roms-sh.md
           - install-beets-task.sh: reference/scripts/nas/install-beets-task-sh.md
           - install-immich-dump-task.sh: reference/scripts/nas/install-immich-dump-task-sh.md
+          - install-kiwix-refresh-task.sh: reference/scripts/nas/install-kiwix-refresh-task-sh.md
           - install-mylar3-perms-guard-task.sh: reference/scripts/nas/install-mylar3-perms-guard-task-sh.md
           - install-nas-docker-health-task.sh: reference/scripts/nas/install-nas-docker-health-task-sh.md
           - install-recycle-empty-task.sh: reference/scripts/nas/install-recycle-empty-task-sh.md

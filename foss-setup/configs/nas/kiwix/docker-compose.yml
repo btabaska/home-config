@@ -1,0 +1,38 @@
+# Kiwix — offline ZIM knowledge library (lai-12, local-ai buildout)
+# Role : kiwix-serve on the NAS (Synology DS920+, 192.168.10.4) serving the curated
+#        ~150GB ZIM set (devdocs picks, iFixit, sysadmin StackExchange, wiktionary,
+#        game wikis, Wikipedia en maxi) to browsers (via mini Caddy
+#        https://kiwix.tabaska.us) and to the AI stack (openzim-mcp, lai-13).
+# Docs : https://kiwix.org  •  https://github.com/kiwix/kiwix-tools
+# Layout:
+#   /volume1/zim                     — the ZIM library itself (11T free on /volume1).
+#                                      Downloads land here ATOMICALLY: the queue script
+#                                      (zim-download-queue.sh) fetches into .incoming/
+#                                      and mv's complete files up, so nothing here is
+#                                      ever partial.
+#   /volume1/docker/kiwix/library    — library.xml built by kiwix-library-refresh.sh
+#                                      (kiwix-manage in the ghcr.io/kiwix/kiwix-tools
+#                                      sibling image; DSM task "kiwix library refresh"
+#                                      runs it nightly 05:15 and it restarts this
+#                                      container ONLY when the ZIM set changed).
+# kiwix-serve cannot hot-add ZIMs by itself: --monitorLibrary makes it re-read
+# library.xml when the refresh script rewrites it; the restart in the refresh script
+# is the deterministic belt-and-braces on top.
+# Port: host 8092 -> container 8080 (NAS :8080 is Scrutiny, :8090 taken). LAN-only,
+# browsers come through the mini Caddy vhost.
+# To upgrade: bump tag+digest here AND the kiwix-tools pin inside
+#   kiwix-library-refresh.sh (same release train), then
+#   ssh -t nas 'cd /volume1/docker/kiwix && sudo /usr/local/bin/docker compose pull && sudo /usr/local/bin/docker compose up -d'
+name: kiwix
+services:
+  kiwix:
+    image: ghcr.io/kiwix/kiwix-serve:3.8.2@sha256:57baa553c46cd30770905df15a9a687258aa5471c30c8edaefe278f1784e1aa8   # digest-pinned; pulled on the NAS 2026-08-06
+    container_name: kiwix
+    user: "1026:100"                     # btabaska:users — matches /volume1/zim ownership, non-root
+    command: --library /library/library.xml --monitorLibrary
+    volumes:
+      - /volume1/zim:/data:ro                          # ZIM files (paths in library.xml are /data/<file>)
+      - /volume1/docker/kiwix/library:/library:ro      # library.xml (written by the refresh script, not the container)
+    ports:
+      - '8092:8080'
+    restart: always

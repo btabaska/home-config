@@ -1,6 +1,6 @@
 # NAS tasks scripts
 
-`foss-setup/scripts/nas/` — 16 script(s).
+`foss-setup/scripts/nas/` — 17 script(s).
 
 | Script | Role |
 |---|---|
@@ -13,6 +13,7 @@
 | [`import-seedbox-roms.sh`](import-seedbox-roms-sh.md) | copy the seedbox "manual" ROM collections into the |
 | [`install-beets-task.sh`](install-beets-task-sh.md) | — |
 | [`install-immich-dump-task.sh`](install-immich-dump-task-sh.md) | — |
+| [`install-kiwix-refresh-task.sh`](install-kiwix-refresh-task-sh.md) | run ON the nas as root. Installs DSM Task |
 | [`install-mylar3-perms-guard-task.sh`](install-mylar3-perms-guard-task-sh.md) | run ON the nas as root. Installs DSM Task |
 | [`install-nas-docker-health-task.sh`](install-nas-docker-health-task-sh.md) | Install NAS docker health cron + fix Task Scheduler repeat-hour bug. |
 | [`install-recycle-empty-task.sh`](install-recycle-empty-task-sh.md) | run ON the nas as root. Installs DSM Task |

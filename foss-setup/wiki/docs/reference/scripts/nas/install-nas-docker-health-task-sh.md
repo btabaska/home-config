@@ -27,7 +27,7 @@
 - [`import-seedbox-roms.sh`](import-seedbox-roms-sh.md)
 - [`install-beets-task.sh`](install-beets-task-sh.md)
 - [`install-immich-dump-task.sh`](install-immich-dump-task-sh.md)
+- [`install-kiwix-refresh-task.sh`](install-kiwix-refresh-task-sh.md)
 - [`install-mylar3-perms-guard-task.sh`](install-mylar3-perms-guard-task-sh.md)
 - [`install-recycle-empty-task.sh`](install-recycle-empty-task-sh.md)
-- [`install-syncthing-inotify-task.sh`](install-syncthing-inotify-task-sh.md)
 - [NAS tasks scripts](index.md) · [All scripts](../index.md)

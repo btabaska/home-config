@@ -405,6 +405,13 @@ services:
     url: https://searxng.tabaska.us
     on_demand: false
     notes: Private metasearch (lai-01, local-ai buildout) — Kagi replacement + the web-search backend for Open WebUI (lai-03). JSON API enabled server-side (search.formats includes json; OWUI strips &format=json from query URLs) and limiter OFF — LAN/tailnet-only. Host port 8888 -> container 8080; browsers via Caddy.
+  - name: kiwix
+    category: AI & Gaming
+    host: nas
+    port: 8092
+    url: https://kiwix.tabaska.us
+    on_demand: false
+    notes: Offline ZIM knowledge library (lai-12, local-ai buildout) — kiwix-serve 3.8.2 (tag@digest pinned) on the NAS serving the curated ~150GB set (devdocs picks, iFixit, sysadmin StackExchange, wiktionary en, game wikis, Wikipedia en maxi) from /volume1/zim. Host :8092 -> container :8080 (NAS :8080 is Scrutiny). library.xml rebuilt by kiwix-manage via DSM task 18 nightly 05:15 ONLY when the ZIM set changed (kiwix-serve cannot hot-add ZIMs); downloads land atomically via the sequential queue script. Feeds openzim-mcp (lai-13). Consumer check kiwix-search-consumer.
   - name: open-terminal
     category: AI & Gaming
     host: mini
