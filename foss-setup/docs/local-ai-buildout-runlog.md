@@ -174,8 +174,8 @@ warn residuals + 1 self-healed transient — none introduced by this buildout.
    README + the lai-13 progress note.
 2. **Subscribe a phone to the ntfy topic `opencode`** (`opencode-ntfy.sh`). The daily ~07:15
    "Agent Idle" probe ping from `opencode-run-probe` is expected, not an error.
-3. **Register an operator account at `ldr.tabaska.us`** (local-deep-research; open registration,
-   per-user SQLCipher-encrypted DB — passwords are unrecoverable by design).
+3. ~~**Register an operator account at `ldr.tabaska.us`**~~ — **DONE 2026-08-07** (operator created
+   the `btabaska` account; per-user SQLCipher-encrypted DB, password unrecoverable by design).
 4. **File the public openZIM zim-request for `strategywiki.org`** (openZIM infra handles Cloudflare),
    then add the resulting `.zim` URL to the NAS `zim-download-queue.sh`. This is the real path to a
    StrategyWiki ZIM (unblocks the deferred lai-15).

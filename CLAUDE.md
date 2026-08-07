@@ -77,8 +77,8 @@ pre-existing residuals in CLAUDE.md/the `reopened` ledger, or GPU-gated best-eff
 **Open human follow-ups (none actioned):** **[SECURITY, urgent]** rotate `sudo.rig_password` (a lai-13
 cached-sudo stdin fall-through exposed the value in a subagent transcript; cred file since rewritten
 clean — follow `security-change-guard`); subscribe a phone to ntfy topic **`opencode`** (daily ~07:15
-"Agent Idle" ping is expected); register an operator account at **ldr.tabaska.us** (per-user SQLCipher
-DB, passwords unrecoverable); file the public **openZIM zim-request for strategywiki.org** then add the
+"Agent Idle" ping is expected); ~~register an operator account at **ldr.tabaska.us**~~ (DONE 2026-08-07
+— `btabaska` account created); file the public **openZIM zim-request for strategywiki.org** then add the
 `.zim` to the NAS `zim-download-queue.sh` (unblocks `lai-15`); **Trilium-vs-Obsidian** decision at trial
 end; decide whether **Kagi** is retired or kept as a fallback engine; schedule the **OWUI 0.11.0**
 upgrade (open task `lai-21`). Prior fleet-sweep follow-ups still stand (mini kernel reboot 4-7AM, rig
