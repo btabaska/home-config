@@ -337,6 +337,16 @@
         href: https://ai.tabaska.us
         description: Chat UI
         siteMonitor: http://192.168.10.12:3000
+    - Lumiverse:
+        icon: mdi-drama-masks
+        href: https://lumiverse.tabaska.us
+        description: Creative/RP chat (cydonia · dolphin-venice · goetia)
+        siteMonitor: http://192.168.10.12:3001
+    - Marinara:
+        icon: mdi-pasta
+        href: https://marinara.tabaska.us
+        description: Creative/RP chat + game engine (Caddy Basic Auth)
+        siteMonitor: http://192.168.10.12:3002
     - ComfyUI:
         icon: comfyui.png
         href: https://comfyui.tabaska.us
