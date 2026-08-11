@@ -26,6 +26,7 @@ Mylar3 is the western-COMICS acquisition *arr — it plays Sonarr's role (monito
 |---|---|
 | `mylar3` | `/volume1/docker/mylar3/config:/config` |
 | `mylar3` | `/volume1/comics:/comics` |
+| `mylar3` | `/volume1/mounts/seedbox-files:/seedbox` |
 
 ## Environment (`.env`)
 

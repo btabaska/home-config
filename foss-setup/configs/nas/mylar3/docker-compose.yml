@@ -38,6 +38,18 @@ services:
     volumes:
       - /volume1/docker/mylar3/config:/config   # config.ini + SQLite DB
       - /volume1/comics:/comics                 # comics library root — Comic Location is /comics/Comics
+      # 2026-08-11: torrent import path fix. Mylar snatches to the seedbox Deluge (label
+      # `mylar`) but had NO path to completed payloads — any torrent win stranded in
+      # Snatched forever (DDL/GetComics masked it). Plain bind to match the *arr fleet:
+      # after any host-side remount of /volume1/mounts/seedbox-files this container must
+      # be restarted too. (shelfmark proves the better pattern — mount --make-rshared +
+      # :rslave bind auto-recovers from remounts — fleet-wide migration is a follow-up;
+      # note an rslave bind FAILS TO START while the rshared flag is missing, which
+      # happens after every mid-life remount until boot-rshared.sh or an operator
+      # re-applies it.)
+      # Pairs with: Deluge label `mylar` move_completed -> files/mylar (set via RPC same
+      # date) + config.ini deluge_done_directory=/seedbox/mylar.
+      - /volume1/mounts/seedbox-files:/seedbox  # completed-torrent payloads (read via FUSE)
     ports:
       - '8090:8090'
     restart: unless-stopped
