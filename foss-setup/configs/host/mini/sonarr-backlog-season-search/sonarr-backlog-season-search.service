@@ -1,0 +1,11 @@
+[Unit]
+Description=Throttled Sonarr backlog clearer — ONE season-pack search per run (replaces the 2026-08-10 per-episode sweeper)
+Documentation=file:/usr/local/sbin/sonarr-backlog-season-search.py
+OnFailure=ntfy-notify@%n.service
+
+[Service]
+Type=oneshot
+User=btabaska
+StateDirectory=sonarr-backlog-season-search
+EnvironmentFile=/etc/default/sonarr-backlog-season-search
+ExecStart=/usr/local/sbin/sonarr-backlog-season-search.py

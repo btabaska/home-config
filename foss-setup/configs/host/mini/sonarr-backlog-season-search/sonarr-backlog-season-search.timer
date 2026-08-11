@@ -1,0 +1,13 @@
+[Unit]
+Description=Run the throttled Sonarr season-pack backlog search every 2 hours
+
+[Timer]
+# Every 2h = max 12 season searches/day — a small slice of the shared
+# IPTorrents 600-queries/24h budget (the old per-episode sweeper burned
+# ~150/hour and made every search return 0). No Persistent= catch-up:
+# a missed run just waits for the next slot; never burst after downtime.
+OnCalendar=0/2:10
+RandomizedDelaySec=600
+
+[Install]
+WantedBy=timers.target
