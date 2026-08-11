@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **383 checks across 42 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **384 checks across 42 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -21,7 +21,7 @@ Every acceptance/regression check the fleet runs — **383 checks across 42 doma
 | [local-ai](local-ai.md) | 20 | 0 | 20 |
 | [media](media.md) | 21 | 7 | 14 |
 | [media-aux](media-aux.md) | 6 | 1 | 5 |
-| [media-indexers](media-indexers.md) | 4 | 0 | 4 |
+| [media-indexers](media-indexers.md) | 5 | 0 | 5 |
 | [media-library-correctness](media-library-correctness.md) | 9 | 2 | 7 |
 | [media-subtitles](media-subtitles.md) | 2 | 0 | 2 |
 | [media-watchable](media-watchable.md) | 4 | 0 | 4 |
@@ -47,4 +47,4 @@ Every acceptance/regression check the fleet runs — **383 checks across 42 doma
 | [verification-env-integrity](verification-env-integrity.md) | 2 | 2 | 0 |
 | [verification-self](verification-self.md) | 7 | 0 | 7 |
 
-_Total: 383 checks._
+_Total: 384 checks._

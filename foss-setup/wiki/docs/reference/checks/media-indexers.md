@@ -1,6 +1,6 @@
 # Checks — media-indexers
 
-`foss-setup/verification/checks.d/media-indexers.yaml` — 4 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/media-indexers.yaml` — 5 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `bitmagnet-dht-ingesting`
 
@@ -44,6 +44,17 @@ arr grabs: no auto-grab-enabled indexer is monopolising the grab stream (fix-50 
 
 ```bash
 python3 /opt/verification/bin/arr-grab-indexer-share.py share
+```
+
+## `iptorrents-idsearch-returns-results`
+
+prowlarr->IPT: imdbid search returns results (backlog-search chain, 2026-08-11 class)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `verify-06` · **enabled:** True
+- **expects:** `^ipt_idsearch_items=[1-9][0-9]*$`
+
+```bash
+k=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas "sed -n 's:.*<ApiKey>\(.*\)</ApiKey>.*:\1:p' /volume1/docker/prowlarr/config/config.xml" 2>/dev/null | tr -d '[:space:]'); if [ -z "$k" ]; then echo "ipt_idsearch=NO_APIKEY"; else n=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas "curl -sm 60 'http://localhost:9696/1/api?t=movie&imdbid=tt0133093&apikey=$k'" 2>/dev/null | grep -o '<item>' | wc -l | tr -d '[:space:]'); echo "ipt_idsearch_items=${n:-0}"; fi
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

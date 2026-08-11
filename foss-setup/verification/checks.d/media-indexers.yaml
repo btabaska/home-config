@@ -97,3 +97,34 @@ checks:
     task_id: fix-50
     runbook: wiki/docs/runbooks/verification.md
     enabled: true
+
+  # ── 2026-08-11 backlog incident: ID-search chain returns real results ─────────────────
+  # The *arr backlog sat at ~1118 missing episodes because ID-carrying searches through
+  # Prowlarr returned 0 while everything looked green: Prowlarr SKIPS an indexer entirely
+  # when the request carries an ID param its caps don't list (tvdbid — by design, wontfix
+  # upstream Prowlarr#1512), stale *arr caps kept sending tvdbid, and a per-episode sweeper
+  # had burned IPT's 600-queries/24h budget (over-budget searches also return 0). This
+  # probes the healthy path end-to-end: an imdbid movie search through Prowlarr scoped to
+  # IPTorrents (the main content source; imdbid IS in its caps) must return >0 items.
+  # Catches: caps/skip regressions, IPT cookie expiry, budget exhaustion, dead indexer.
+  # tier daily => spends exactly 1 query of the 600/24h budget. Prowlarr API key is
+  # self-sourced from the NAS config.xml like bitmagnet-torznab-via-prowlarr (no new secret).
+  - id: iptorrents-idsearch-returns-results
+    name: "prowlarr->IPT: imdbid search returns results (backlog-search chain, 2026-08-11 class)"
+    host: mini
+    tier: daily
+    timeout: 90
+    cmd: >-
+      k=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "sed -n 's:.*<ApiKey>\(.*\)</ApiKey>.*:\1:p' /volume1/docker/prowlarr/config/config.xml"
+      2>/dev/null | tr -d '[:space:]');
+      if [ -z "$k" ]; then echo "ipt_idsearch=NO_APIKEY"; else
+      n=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas
+      "curl -sm 60 'http://localhost:9696/1/api?t=movie&imdbid=tt0133093&apikey=$k'"
+      2>/dev/null | grep -o '<item>' | wc -l | tr -d '[:space:]');
+      echo "ipt_idsearch_items=${n:-0}"; fi
+    expect: '^ipt_idsearch_items=[1-9][0-9]*$'
+    severity: warn
+    task_id: verify-06
+    runbook: wiki/docs/runbooks/verification.md
+    enabled: true
