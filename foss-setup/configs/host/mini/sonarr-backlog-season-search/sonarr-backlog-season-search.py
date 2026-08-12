@@ -17,8 +17,17 @@ season searches/day, a small slice of the shared IPT budget alongside RSS.
 
 Guards — the run SKIPs (exit 0, one SKIP line) when:
   * a Search command is already queued/running in Sonarr (don't stack searches)
-  * the queue holds > MAX_QUEUE_WARNINGS warning items (imports are in trouble;
-    pouring more grabs in makes it worse)
+  * the queue holds > MAX_QUEUE_WARNINGS distinct PROBLEM DOWNLOADS (2026-08-12
+    rework: the original guard counted warning RECORDS, so ONE partial season
+    pack — Animaniacs S01, 19 files for 160 wanted episodes = 160 records —
+    silenced ALL searching for 15h. Now: warnings are grouped by downloadId
+    (one bad grab = one problem, however many episodes it maps to), drained
+    partial packs are ignored entirely (terminal corpses the arr-queue-
+    reconcile pack-drained rule clears; not a sign of import trouble), and a
+    series with an actionable problem download is merely EXCLUDED from
+    candidacy — other series keep searching. The global skip now only fires on
+    genuinely systemic trouble: >15 distinct broken downloads = mount dead /
+    disk full / import path broken.)
   * nothing qualifies (backlog clear or everything cooling down) -> DONE_OK
 A real API/config error exits 1 so OnFailure=ntfy-notify@ fires.
 
@@ -73,6 +82,25 @@ def api(path, method="GET", body=None):
         raise last
 
 
+def pack_drained(rec):
+    """Same detection as arr-queue-reconcile's pack-drained rule (kept in sync
+    by hand — these units are deliberately standalone): a completed
+    importPending download that imported everything it contains. The marker
+    lives in a statusMessage TITLE, not a message."""
+    if rec.get("trackedDownloadState") != "importPending":
+        return False
+    if rec.get("status") != "completed":
+        return False
+    titles, messages = [], []
+    for sm in rec.get("statusMessages", []) or []:
+        titles.append((sm.get("title") or "").lower())
+        messages.extend((m or "").lower() for m in sm.get("messages", []) or [])
+    marker = any("were not imported or missing from the release" in t
+                 for t in titles + messages)
+    return bool(marker and messages
+                and all("already imported" in m for m in messages))
+
+
 def load_state():
     try:
         with open(STATE) as f:
@@ -99,13 +127,22 @@ def main():
             print(f"SKIP search-already-running name={c.get('name')} id={c.get('id')}")
             return 0
 
-    # Guard 2: import trouble — queue full of warnings.
-    q = api("/queue?page=1&pageSize=200")
-    warn = sum(1 for r in q.get("records", [])
-               if r.get("trackedDownloadStatus") == "warning")
-    if warn > MAX_WARN:
-        print(f"SKIP queue-warnings={warn} > {MAX_WARN} — clear imports first")
+    # Guard 2: import trouble — count distinct problem DOWNLOADS, not records,
+    # and ignore drained packs (see docstring). Track which series have an
+    # actionable problem so only THEY sit out this round.
+    q = api("/queue?page=1&pageSize=500")
+    warn_dl = {}  # downloadId -> its warning records
+    for r in q.get("records", []) or []:
+        if r.get("trackedDownloadStatus") == "warning":
+            warn_dl.setdefault(r.get("downloadId") or f"?{r.get('id')}", []).append(r)
+    actionable = {dl: recs for dl, recs in warn_dl.items()
+                  if not all(pack_drained(r) for r in recs)}
+    if len(actionable) > MAX_WARN:
+        print(f"SKIP problem-downloads={len(actionable)} > {MAX_WARN} "
+              f"(warning-records={sum(len(v) for v in warn_dl.values())}) — imports look systemically broken")
         return 0
+    warn_series = {r.get("seriesId") for recs in actionable.values()
+                   for r in recs} - {None}
 
     # Collect missing monitored episodes, old enough that RSS won't cover them.
     now = time.time()
@@ -139,9 +176,12 @@ def main():
     state = load_state()
     searched = state.setdefault("searched", {})
     candidates = [(n, sid, season) for (sid, season), n in counts.items()
-                  if now - searched.get(f"{sid}-{season}", 0) > COOLDOWN]
+                  if sid not in warn_series
+                  and now - searched.get(f"{sid}-{season}", 0) > COOLDOWN]
+    excluded = sum(1 for (sid, _s) in counts if sid in warn_series)
     if not candidates:
-        print(f"DONE_OK nothing-to-search seasons_missing={len(counts)} (all cooling down or clear)")
+        print(f"DONE_OK nothing-to-search seasons_missing={len(counts)} "
+              f"series_excluded_for_warnings={len(warn_series)} (all cooling down, excluded, or clear)")
         return 0
 
     # Highest yield first; stable tie-break keeps rotation deterministic.
@@ -151,7 +191,8 @@ def main():
     searched[f"{sid}-{season}"] = now
     save_state(state)
     print(f"SEARCHED series={titles.get(sid, sid)!r} season={season} "
-          f"missing={n} commandId={cmd.get('id')} candidates={len(candidates)}")
+          f"missing={n} commandId={cmd.get('id')} candidates={len(candidates)}"
+          + (f" seasons_excluded_for_warnings={excluded}" if excluded else ""))
 
     ping = os.environ.get("HEALTHCHECKS_PING_URL")
     if ping:
