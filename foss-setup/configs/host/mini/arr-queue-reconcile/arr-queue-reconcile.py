@@ -25,9 +25,29 @@ are PROVABLY safe to drop, and ONLY those:
       -> remove + blocklist, skipRedownload=false (let the arr re-search a clean
       copy; the dead release is blocklisted so it won't be re-picked).
 
+  Plus one WHOLE-DOWNLOAD rule with its own faster age gate (2026-08-12,
+  Animaniacs S01 wedge — a 19-file "season pack" grabbed for a 160-episode
+  season left 160 importPending records that blocked the backlog searcher's
+  queue-warning guard for 15h+):
+
+    * PACK-DRAINED — a completed importPending download whose statusMessages
+      carry the partial-pack marker ("... were not imported or missing from the
+      release", which lives in a statusMessage TITLE, not a message) and where
+      EVERY message is "already imported" = the pack has imported everything it
+      will ever import; the leftover records can never resolve.
+      -> bulk-remove the whole download's records + blocklist,
+      removeFromClient=false (the torrent is seeding on a private tracker —
+      unlike the dead-end/satisfied classes there IS a healthy payload, leave
+      it), skipRedownload=true (the throttled backlog searcher owns
+      re-searching, not a 141-episode search storm). Age gate
+      PACK_DRAINED_AGE_HOURS (default 6 — terminal as soon as import settles,
+      and waiting 72h would wedge the searcher for 3 days). Counts as ONE
+      removal against MAX_REMOVALS.
+
 Deliberately NOT auto-removed: wrong-series/wrong-movie maps ("matched ... by ID"
 where the item is still fileless) — those can be a real release needing a manual
-import decision, so they are left for a human.
+import decision, so they are left for a human. Packs where any file-level
+message is NOT "already imported" (a real import failure) also stay.
 
 Idempotent; caps removals per run (MAX_REMOVALS). Prints one summary line.
 Exit 0 on success (even if it removed nothing); non-zero only on an API/config
@@ -49,6 +69,7 @@ from datetime import datetime, timezone
 
 DRY = os.environ.get("DRY_RUN", "0") == "1"
 MAX_AGE = float(os.environ.get("MAX_AGE_HOURS", "72")) * 3600
+PACK_DRAINED_AGE = float(os.environ.get("PACK_DRAINED_AGE_HOURS", "6")) * 3600
 MAX_REMOVALS = int(os.environ.get("MAX_REMOVALS", "25"))
 DEAD_END = (
     "no files found are eligible",
@@ -74,7 +95,7 @@ for name, uenv, kenv, ver in (
         ARRS.append((name, url.rstrip("/"), ver, key))
 
 
-def api(base, ver, key, path, method="GET", timeout=45, retries=4):
+def api(base, ver, key, path, method="GET", timeout=45, retries=4, body=None):
     # Sonarr/Radarr intermittently 401/500/time out under DB-lock / I/O
     # contention (API-key validation reads the locked DB -> spurious 401). A
     # transient blip must not page or abort the run — retry with backoff and
@@ -83,6 +104,7 @@ def api(base, ver, key, path, method="GET", timeout=45, retries=4):
     for attempt in range(retries):
         req = urllib.request.Request(
             f"{base}/api/{ver}/{path}", method=method,
+            data=json.dumps(body).encode() if body is not None else None,
             headers={"X-Api-Key": key, "Content-Type": "application/json"})
         try:
             with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -144,11 +166,71 @@ def satisfied(name, base, ver, key, rec):
         return False  # unknown -> treat as NOT satisfied (safer: won't skip-redownload)
 
 
+def pack_drained(rec):
+    """True iff this record's download is a drained partial pack: completed,
+    importPending, carries the partial-pack marker title, and every file-level
+    message says "already imported" (so nothing importable remains)."""
+    if rec.get("trackedDownloadState") != "importPending":
+        return False
+    if rec.get("status") != "completed":
+        return False
+    titles, messages = [], []
+    for sm in rec.get("statusMessages", []) or []:
+        titles.append((sm.get("title") or "").lower())
+        messages.extend((m or "").lower() for m in sm.get("messages", []) or [])
+    marker = any("were not imported or missing from the release" in t
+                 for t in titles + messages)
+    return bool(marker and messages
+                and all("already imported" in m for m in messages))
+
+
+def remove_drained_packs(name, base, ver, key, records):
+    """Bulk-remove whole drained-pack downloads. Returns (packs_removed,
+    handled_queue_ids) so the per-record loop skips what's already gone."""
+    removed, handled = 0, set()
+    by_dl = {}
+    for rec in records:
+        by_dl.setdefault(rec.get("downloadId") or f"?{rec.get('id')}", []).append(rec)
+    for dlid, group in by_dl.items():
+        if not all(pack_drained(r) for r in group):
+            continue
+        if min(age_seconds(r.get("added", "")) for r in group) < PACK_DRAINED_AGE:
+            continue
+        ids = [r["id"] for r in group]
+        title = (group[0].get("title") or "?")[:55]
+        if DRY:
+            print(f"  DRY would-remove [{name}] pack-drained n={len(ids)} "
+                  f"dl={dlid[:12]} {title}", file=sys.stderr)
+            removed += 1
+            handled.update(ids)
+            continue
+        try:
+            # one download at a time; 160-record packs make Sonarr chew ~min
+            api(base, ver, key,
+                "queue/bulk?removeFromClient=false&blocklist=true"
+                "&skipRedownload=true", method="DELETE", timeout=300,
+                retries=1, body={"ids": ids})
+            removed += 1
+            handled.update(ids)
+            print(f"  REMOVED [{name}] pack-drained n={len(ids)} {title}",
+                  file=sys.stderr)
+        except Exception as e:
+            print(f"  WARN [{name}] pack-drained bulk delete dl={dlid[:12]} "
+                  f"failed ({type(e).__name__}); will retry next run",
+                  file=sys.stderr)
+    return removed, handled
+
+
 def reconcile(name, base, ver, key):
     removed = wrongmap_skipped = 0
     q = api(base, ver, key, "queue?pageSize=500"
             "&includeUnknownSeriesItems=true&includeUnknownMovieItems=true")
+    packs, handled = remove_drained_packs(name, base, ver, key,
+                                          q.get("records", []))
+    removed += packs
     for rec in q.get("records", []):
+        if rec.get("id") in handled:
+            continue
         if removed >= MAX_REMOVALS:
             break
         if rec.get("trackedDownloadStatus") != "warning":
