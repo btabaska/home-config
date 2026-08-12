@@ -14,15 +14,13 @@
  2026-08-11 22:00 REWRITE (operator correction): the PS3 torrent is 4.6T
  TOTAL but was only partially downloaded — 617G real data on seedbox disk.
  Sparse-block census (allocated >= size == complete, any hole = broken
- archive): 39/575 remaining archives complete (359 GiB); 536 are sparse hulls
- (4.25T apparent, 257G allocated). The PS3 leg therefore moves ONLY the
- complete archives, via --files-from ps3-complete.list (paths relative to the
- set dir; regenerate with the find/awk census if the torrent is completed
- further). The partial hulls STAY on the seedbox so re-adding the torrent can
- resume them — do NOT delete or move them. First-run collateral (pre-census):
- 10 archives landed on the NAS at 13:14-13:54 — ALL 10 had zero-holes
- (deep scan) and sit in .rom-import/ps3-quarantine/; their pieces can be
- reclaimed by copying them back before a torrent re-add + recheck.
+ archive): 39/575 remaining archives complete (359 GiB); 536 were sparse
+ hulls. The PS3 leg moves ONLY the complete archives, via --files-from
+ ps3-complete.list. 2026-08-11 22:20 (operator decision): the hulls are NOT
+ wanted — all 536 deleted from the seedbox, and the 10 broken first-run
+ archives (all zero-holed on deep scan) deleted from the NAS quarantine.
+ Only the 39 listed games survive; the other 546 would need a fresh
+ re-download of the torrent if ever wanted.
  The NDS set censused fully complete (6573/6573 files) — moves whole.
  After both moves, a zero-run scan re-verifies every landed ps3 archive
  (any all-zero 1MiB chunk = a missed hole) and STATUS carries the count.
