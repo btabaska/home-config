@@ -1,18 +1,23 @@
 #!/bin/bash
-# move-games.sh — RELOCATE the two big already-on-disk game sets from the
-# seedbox into the NAS RomM library (2026-08-11). Uses `rclone move`: each file
-# is checksum-verified on the NAS before it is deleted from the seedbox, so
-# seedbox space frees incrementally and nothing is lost. Their Deluge torrents
-# were already removed (data kept) before this runs.
+# move-games.sh — RELOCATE the complete game payloads from the seedbox into the
+# NAS RomM library (2026-08-11). Uses `rclone move`: each file is verified on
+# the NAS before it is deleted from the seedbox.
 #
-# 2026-08-11 21:45 (resume session): first run was SIGTERMed at 13:54:39
-# (collateral of the seedbox rclone-mount remount cycle) after ~44G of ps3.
-# Re-run is safe: already-moved files are gone from source, rclone continues
-# with the rest. Size labels corrected — the PS3 set is 4.6T on seedbox disk
-# (the original 625G figure was wrong), so this leg runs ~1.5-2 days. NOTE:
-# the PS3 torrents were in Deluge Error state (incomplete) before removal —
-# archive integrity is not guaranteed; a `7z t` sweep after the move is the
-# way to find broken ones.
+# 2026-08-11 22:00 REWRITE (operator correction): the PS3 torrent is 4.6T
+# TOTAL but was only partially downloaded — 617G real data on seedbox disk.
+# Sparse-block census (allocated >= size == complete, any hole = broken
+# archive): 39/575 remaining archives complete (359 GiB); 536 are sparse hulls
+# (4.25T apparent, 257G allocated). The PS3 leg therefore moves ONLY the
+# complete archives, via --files-from ps3-complete.list (paths relative to the
+# set dir; regenerate with the find/awk census if the torrent is completed
+# further). The partial hulls STAY on the seedbox so re-adding the torrent can
+# resume them — do NOT delete or move them. First-run collateral (pre-census):
+# 10 archives landed on the NAS at 13:14-13:54 — ALL 10 had zero-holes
+# (deep scan) and sit in .rom-import/ps3-quarantine/; their pieces can be
+# reclaimed by copying them back before a torrent re-add + recheck.
+# The NDS set censused fully complete (6573/6573 files) — moves whole.
+# After both moves, a zero-run scan re-verifies every landed ps3 archive
+# (any all-zero 1MiB chunk = a missed hole) and STATUS carries the count.
 set -uo pipefail
 RSRC="seedbox:/home/hd34/btabaska/files"
 ROMS=/volume1/games/romm/roms
@@ -23,16 +28,38 @@ LOG_TS(){ printf '%s %s\n' "$(date '+%F %T')" "$*" | tee -a "$LOG"; }
 echo "RUNNING $(date '+%F %T')" > "$STATUS"
 LOG_TS "=== move-games start ==="
 
-LOG_TS "-> ps3: Sony PlayStation 3 (USA)  (4.6T on disk, 585 archives)"
-$RC move "$RSRC/Sony PlayStation 3 (USA)" "$ROMS/ps3" --delete-empty-src-dirs >>"$LOG" 2>&1
+LOG_TS "-> ps3: complete archives only (39 files, 359G; see ps3-complete.list)"
+$RC move "$RSRC/Sony PlayStation 3 (USA)" "$ROMS/ps3" --files-from /volume1/games/.rom-import/ps3-complete.list >>"$LOG" 2>&1
 LOG_TS "ps3 rc=$?"
 
-LOG_TS "-> nds: Nintendo_DS_Complete_Romset  (351G, 6573 roms)"
+LOG_TS "-> nds: Nintendo_DS_Complete_Romset  (351G, 6573 roms, censused complete)"
 $RC move "$RSRC/Nintendo_DS_Complete_Romset" "$ROMS/nds" --delete-empty-src-dirs >>"$LOG" 2>&1
 LOG_TS "nds rc=$?"
+
+LOG_TS "-> verify: ps3 zero-run scan (holes logged to $LOG)"
+PS3HOLES=$(python3 - 2>>"$LOG" <<'PYEOF'
+import glob, sys
+Z = bytes(1024*1024)
+n = 0
+for path in sorted(glob.glob("/volume1/games/romm/roms/ps3/*.7z")):
+    off = 0
+    with open(path, "rb") as f:
+        while True:
+            b = f.read(1024*1024)
+            if not b:
+                break
+            if b == Z[:len(b)]:
+                print("HOLE@%d %s" % (off, path), file=sys.stderr)
+                n += 1
+                break
+            off += len(b)
+print(n)
+PYEOF
+)
+LOG_TS "ps3 zero-scan holes: ${PS3HOLES:-scan-failed}"
 
 LOG_TS "normalizing ownership to 1026:100"
 chown -R 1026:100 "$ROMS/ps3" "$ROMS/nds" 2>>"$LOG"
 LOG_TS "summary: ps3=$(du -sh "$ROMS/ps3" 2>/dev/null|cut -f1) nds=$(du -sh "$ROMS/nds" 2>/dev/null|cut -f1)"
-echo "DONE $(date '+%F %T')" > "$STATUS"
+if [ "${PS3HOLES:-x}" = "0" ]; then echo "DONE $(date '+%F %T')" > "$STATUS"; else echo "DONE-PS3-HOLES=${PS3HOLES:-scan-failed} $(date '+%F %T')" > "$STATUS"; fi
 LOG_TS "=== move-games end ==="

@@ -19,7 +19,7 @@
 | [`install-nas-docker-health-task.sh`](install-nas-docker-health-task-sh.md) | Install NAS docker health cron + fix Task Scheduler repeat-hour bug. |
 | [`install-recycle-empty-task.sh`](install-recycle-empty-task-sh.md) | run ON the nas as root. Installs DSM Task |
 | [`install-syncthing-inotify-task.sh`](install-syncthing-inotify-task-sh.md) | run ON the nas as root. Installs DSM Task |
-| [`move-games.sh`](move-games-sh.md) | RELOCATE the two big already-on-disk game sets from the |
+| [`move-games.sh`](move-games-sh.md) | RELOCATE the complete game payloads from the seedbox into the |
 | [`mylar3-perms-guard.sh`](mylar3-perms-guard-sh.md) | run ON the nas (Synology DS920+) as root (DSM task id=16, |
 | [`nas-docker-health.sh`](nas-docker-health-sh.md) | NAS Docker stack health check + auto-recovery. |
 | [`recover-docker-stacks.sh`](recover-docker-stacks-sh.md) | Recover Synology Container Manager + NAS compose stacks after dockerd crash. |

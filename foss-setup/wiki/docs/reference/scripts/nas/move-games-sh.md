@@ -1,31 +1,36 @@
 # `move-games.sh`
 
-> RELOCATE the two big already-on-disk game sets from the
+> RELOCATE the complete game payloads from the seedbox into the
 
 **Path:** `foss-setup/scripts/nas/move-games.sh` · **Category:** [NAS tasks](index.md) · **Type:** Bash
 
 ## What it does
 
 ```text
- move-games.sh — RELOCATE the two big already-on-disk game sets from the
- seedbox into the NAS RomM library (2026-08-11). Uses `rclone move`: each file
- is checksum-verified on the NAS before it is deleted from the seedbox, so
- seedbox space frees incrementally and nothing is lost. Their Deluge torrents
- were already removed (data kept) before this runs.
+ move-games.sh — RELOCATE the complete game payloads from the seedbox into the
+ NAS RomM library (2026-08-11). Uses `rclone move`: each file is verified on
+ the NAS before it is deleted from the seedbox.
 
- 2026-08-11 21:45 (resume session): first run was SIGTERMed at 13:54:39
- (collateral of the seedbox rclone-mount remount cycle) after ~44G of ps3.
- Re-run is safe: already-moved files are gone from source, rclone continues
- with the rest. Size labels corrected — the PS3 set is 4.6T on seedbox disk
- (the original 625G figure was wrong), so this leg runs ~1.5-2 days. NOTE:
- the PS3 torrents were in Deluge Error state (incomplete) before removal —
- archive integrity is not guaranteed; a `7z t` sweep after the move is the
- way to find broken ones.
+ 2026-08-11 22:00 REWRITE (operator correction): the PS3 torrent is 4.6T
+ TOTAL but was only partially downloaded — 617G real data on seedbox disk.
+ Sparse-block census (allocated >= size == complete, any hole = broken
+ archive): 39/575 remaining archives complete (359 GiB); 536 are sparse hulls
+ (4.25T apparent, 257G allocated). The PS3 leg therefore moves ONLY the
+ complete archives, via --files-from ps3-complete.list (paths relative to the
+ set dir; regenerate with the find/awk census if the torrent is completed
+ further). The partial hulls STAY on the seedbox so re-adding the torrent can
+ resume them — do NOT delete or move them. First-run collateral (pre-census):
+ 10 archives landed on the NAS at 13:14-13:54 — ALL 10 had zero-holes
+ (deep scan) and sit in .rom-import/ps3-quarantine/; their pieces can be
+ reclaimed by copying them back before a torrent re-add + recheck.
+ The NDS set censused fully complete (6573/6573 files) — moves whole.
+ After both moves, a zero-run scan re-verifies every landed ps3 archive
+ (any all-zero 1MiB chunk = a missed hole) and STATUS carries the count.
 ```
 
 ## Environment / variables referenced
 
-`LOG`, `ROMS`, `RSRC`, `STATUS`
+`LOG`, `PS3HOLES`, `ROMS`, `RSRC`, `STATUS`
 
 ## See also
 
