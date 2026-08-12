@@ -1,20 +1,24 @@
-# `immich-db-dump.sh`
+# `resume-games.sh`
 
-> Nightly Immich Postgres dump (DSM Task Scheduler, 02:30) + Healthchecks ping.
+> sequential resume (2026-08-11 21:45) of the two seedbox->NAS
 
-**Path:** `foss-setup/scripts/nas/immich-db-dump.sh` · **Category:** [NAS tasks](index.md) · **Type:** Bash
+**Path:** `foss-setup/scripts/nas/resume-games.sh` · **Category:** [NAS tasks](index.md) · **Type:** Bash
 
 ## What it does
 
 ```text
- Nightly Immich Postgres dump (DSM Task Scheduler, 02:30) + Healthchecks ping.
- DSM rewrites /etc/crontab, so this must ONLY be scheduled as a DSM task —
- never as a raw crontab line (that's how the 2026-07-07 schedule got lost).
+ resume-games.sh — sequential resume (2026-08-11 21:45) of the two seedbox->NAS
+ game transfers that were SIGTERMed at 13:54:39 (collateral of the seedbox
+ rclone-mount remount cycle). Runs them ONE AT A TIME — two concurrent rclone
+ transfer jobs on /volume1 is a known deadlock hazard, and running both at
+ once is what the killed first attempt did. Both child scripts are idempotent
+ (rclone copy/move skip already-transferred files) and own their STATUS files.
+ Launched as root via: setsid nohup bash resume-games.sh
 ```
 
 ## Environment / variables referenced
 
-`DOCKER`, `KEEP_DAYS`, `OUT_DIR`, `PING_URL`
+`DIR`, `LOG`, `NTFY_TOKEN`, `NTFY_TOPIC`, `NTFY_URL`
 
 ## See also
 
@@ -22,6 +26,7 @@
 - [`empty-recycle-30d.sh`](empty-recycle-30d-sh.md)
 - [`ensure-navidrome-music-ignore.sh`](ensure-navidrome-music-ignore-sh.md)
 - [`harden-backups-acl.sh`](harden-backups-acl-sh.md)
+- [`immich-db-dump.sh`](immich-db-dump-sh.md)
 - [`immich-pg-dump.sh`](immich-pg-dump-sh.md)
 - [`import-roms-v3.sh`](import-roms-v3-sh.md)
 - [`import-seedbox-roms.sh`](import-seedbox-roms-sh.md)
@@ -29,5 +34,4 @@
 - [`install-immich-dump-task.sh`](install-immich-dump-task-sh.md)
 - [`install-kiwix-refresh-task.sh`](install-kiwix-refresh-task-sh.md)
 - [`install-mylar3-perms-guard-task.sh`](install-mylar3-perms-guard-task-sh.md)
-- [`install-nas-docker-health-task.sh`](install-nas-docker-health-task-sh.md)
 - [NAS tasks scripts](index.md) · [All scripts](../index.md)
