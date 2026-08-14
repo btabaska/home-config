@@ -67,9 +67,9 @@ verification triage). New services: **SearXNG** (searxng.tabaska.us), **kiwix** 
 Wikipedia (kiwix.tabaska.us), **local-deep-research** (ldr.tabaska.us), **offline maps** PMTiles+Photon
 (maps.tabaska.us), plus OWUI search/RAG/reranker/native-MCP/audio(Kokoro TTS+faster-whisper STT)/
 image(ComfyUI)/code-exec(open-terminal)/native-memory, **opencode 1.18.10** pinned on Mac+rig with the
-plugin array + skills bundle + DIY memory plugin, and reranker/comfyui/playwright/openzim/trilium/osm
-MCPs. 20 new consumer-probing checks live in `verification/checks.d/local-ai.yaml` (domain
-`--host local-ai`), all green. Final full-fleet audit-safe run: **363/377 pass, ZERO genuine AI-stack
+plugin array + skills bundle + DIY memory plugin, and reranker/comfyui/playwright/openzim/osm
+MCPs (trilium-mcp retired 2026-08-14 with the read-27 trial). 19 consumer-probing checks live in
+`verification/checks.d/local-ai.yaml` (domain `--host local-ai`), all green. Final full-fleet audit-safe run: **363/377 pass, ZERO genuine AI-stack
 regressions** (the only lai-introduced fails — 9 new AI ports missing from the fix-51 exposure baseline —
 were codified in `verification/assets/expected-listeners/`; the 1 crit + 13 other non-passes are
 pre-existing residuals in CLAUDE.md/the `reopened` ledger, or GPU-gated best-effort daily checks).
@@ -79,8 +79,9 @@ cached-sudo stdin fall-through exposed the value in a subagent transcript; cred 
 clean — follow `security-change-guard`); subscribe a phone to ntfy topic **`opencode`** (daily ~07:15
 "Agent Idle" ping is expected); ~~register an operator account at **ldr.tabaska.us**~~ (DONE 2026-08-07
 — `btabaska` account created); file the public **openZIM zim-request for strategywiki.org** then add the
-`.zim` to the NAS `zim-download-queue.sh` (unblocks `lai-15`); **Trilium-vs-Obsidian** decision at trial
-end; decide whether **Kagi** is retired or kept as a fallback engine; schedule the **OWUI 0.11.0**
+`.zim` to the NAS `zim-download-queue.sh` (unblocks `lai-15`); ~~**Trilium-vs-Obsidian** decision~~
+(DECIDED 2026-08-14 — Obsidian; Trilium + lai-16 trilium-mcp fully reverted, notes data kept at mini
+`/opt/retired/trilium-20260814` pending purge); decide whether **Kagi** is retired or kept as a fallback engine; schedule the **OWUI 0.11.0**
 upgrade (open task `lai-21`). Prior fleet-sweep follow-ups still stand (mini kernel reboot 4-7AM, rig
 Windows `RealTimeIsUniversal`, off-mini dead-man/`alert-drill` ntfy subscribe, optional Bazarr subtitle
 key). Next work is the pre-existing open queue (`ha-19`, `fix-24`, `game-*`, `media-09/10/13`, `lai-21`,

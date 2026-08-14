@@ -169,16 +169,6 @@ booklogr-api.{$DOMAIN} {
 	reverse_proxy booklogr-api:5000
 }
 
-# Trilium (TriliumNext) — self-hosted notes / knowledge base (read-27, Obsidian-replacement
-# trial). Container on the edge network; single-user login is set in the app's first-run
-# wizard (LAN/tailnet posture). The stack sets TRILIUM_NETWORK_TRUSTEDREVERSEPROXY=uniquelocal
-# so Trilium trusts this proxy. WebSocket upgrades (live UI + sync) pass through automatically.
-# Fully revertable: scripts/notes-trial/teardown-trilium.sh removes this block + everything else.
-trilium.{$DOMAIN} {
-	import local_tls
-	reverse_proxy trilium:8080
-}
-
 # Journaling stack (journal-01). Memos front-end + n8n automation, both on the
 # edge network (reached by container name). faster-whisper (:8010) is internal
 # only — deliberately NO vhost (server-side dictation stays off the edge).

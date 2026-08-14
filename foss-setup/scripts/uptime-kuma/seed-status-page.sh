@@ -74,8 +74,7 @@ main() {
     "Edge Books/CWA (vhost)" "Mini Navidrome"
 
   add_group "AI & Apps" \
-    "Rig Open WebUI" "Rig LiteLLM" "Mini Memos" "Mini n8n" "Mini Mealie" "Mini Paperless" \
-    "Edge Trilium (vhost)"
+    "Rig Open WebUI" "Rig LiteLLM" "Mini Memos" "Mini n8n" "Mini Mealie" "Mini Paperless"
 
   add_group "Game Servers" \
     "Rig Minecraft Java" "Rig Palworld" "Rig AMP panel"

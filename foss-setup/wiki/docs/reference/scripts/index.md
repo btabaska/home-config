@@ -15,7 +15,6 @@ Man-pages for every operational script in `foss-setup/scripts/`, generated from 
 | **Media pipeline** | 12 | [open](media/index.md) |
 | **NAS tasks** | 20 | [open](nas/index.md) |
 | **Network** | 6 | [open](network/index.md) |
-| **notes-trial** | 2 | [open](notes-trial/index.md) |
 | **Reading stack** | 1 | [open](reading/index.md) |
 | **secrets** | 1 | [open](secrets/index.md) |
 | **Host setup** | 5 | [open](setup/index.md) |
@@ -23,4 +22,4 @@ Man-pages for every operational script in `foss-setup/scripts/`, generated from 
 | **verification** | 7 | [open](verification/index.md) |
 | **wiki** | 1 | [open](wiki/index.md) |
 
-_Total: 93 scripts across 18 categories._
+_Total: 91 scripts across 17 categories._

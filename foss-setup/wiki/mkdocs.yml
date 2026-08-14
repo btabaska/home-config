@@ -124,7 +124,6 @@ nav:
           - komga: services/komga.md
           - miniflux: services/miniflux.md
           - mylar3: services/mylar3.md
-          - trilium: services/trilium.md
           - wallabag: services/wallabag.md
       - Requests:
           - libreseerr: services/libreseerr.md
@@ -162,7 +161,6 @@ nav:
       - Reading / CWA (Kobo sync, fork image, library hygiene): runbooks/reading-cwa.md
       - Audiobookshelf (audiobooks + podcasts, non-root port trap): runbooks/audiobookshelf.md
       - Komga (comics + manga reader, JVM / OPDS / page-stream): runbooks/komga.md
-      - Trilium (self-hosted notes / Obsidian-replacement trial): runbooks/notes-trilium.md
       - SearXNG (private metasearch / AI web-search backend): runbooks/searxng.md
       - Local reranker (llama-swap /v1/rerank / score-spread guard): runbooks/rerank.md
       - Open WebUI search + hybrid RAG (SearXNG / reranker / PersistentConfig): runbooks/owui-search-rag.md
@@ -175,7 +173,6 @@ nav:
       - openzim-mcp (ZIM tools for AI / mcpo bridge / RO zim mount): runbooks/openzim-mcp.md
       - GameFAQs corpus (PRIVATE ZIM / IA source / LAN-only / no-redistribute): runbooks/gamefaqs-zim.md
       - StrategyWiki ZIM (mwoffliner / Cloudflare-blocked / openZIM request): runbooks/strategywiki-zim.md
-      - trilium-mcp (notes tools for AI / read-mostly / rides the Trilium trial): runbooks/trilium-mcp.md
       - Offline maps (PMTiles CONUS basemap / Photon US geocoder / MapLibre viewer): runbooks/maps.md
       - Agent memory (opencode MEMORY.md plugin / OWUI native Memory): runbooks/agent-memory.md
       - Books — language & edition correctness (foreign records / grab guard / pinning): runbooks/books-language.md
@@ -302,7 +299,6 @@ nav:
       - nas-io-storm: reference/checks/nas-io-storm.md
       - nas-services: reference/checks/nas-services.md
       - network: reference/checks/network.md
-      - notes: reference/checks/notes.md
       - power-journal: reference/checks/power-journal.md
       - reading: reference/checks/reading.md
       - retro-emulation: reference/checks/retro-emulation.md
@@ -414,10 +410,6 @@ nav:
           - tailscale-ssh-enable.sh: reference/scripts/network/tailscale-ssh-enable-sh.md
           - tailscale-verify-direct.sh: reference/scripts/network/tailscale-verify-direct-sh.md
           - zbf-isolation-verify.sh: reference/scripts/network/zbf-isolation-verify-sh.md
-      - notes-trial:
-          - Index: reference/scripts/notes-trial/index.md
-          - strip-trilium-config.py: reference/scripts/notes-trial/strip-trilium-config-py.md
-          - teardown-trilium.sh: reference/scripts/notes-trial/teardown-trilium-sh.md
       - Reading stack:
           - Index: reference/scripts/reading/index.md
           - syncthing-setup-cachyos.sh: reference/scripts/reading/syncthing-setup-cachyos-sh.md

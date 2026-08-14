@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **384 checks across 42 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **382 checks across 41 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -18,7 +18,7 @@ Every acceptance/regression check the fleet runs — **384 checks across 42 doma
 | [ipod-abs-sync](ipod-abs-sync.md) | 1 | 0 | 1 |
 | [journaling](journaling.md) | 12 | 3 | 9 |
 | [lan-exposure](lan-exposure.md) | 4 | 0 | 4 |
-| [local-ai](local-ai.md) | 20 | 0 | 20 |
+| [local-ai](local-ai.md) | 19 | 0 | 19 |
 | [media](media.md) | 21 | 7 | 14 |
 | [media-aux](media-aux.md) | 6 | 1 | 5 |
 | [media-indexers](media-indexers.md) | 5 | 0 | 5 |
@@ -32,7 +32,6 @@ Every acceptance/regression check the fleet runs — **384 checks across 42 doma
 | [nas-io-storm](nas-io-storm.md) | 2 | 0 | 2 |
 | [nas-services](nas-services.md) | 24 | 3 | 21 |
 | [network](network.md) | 1 | 0 | 1 |
-| [notes](notes.md) | 1 | 0 | 1 |
 | [power-journal](power-journal.md) | 3 | 0 | 3 |
 | [reading](reading.md) | 30 | 0 | 30 |
 | [retro-emulation](retro-emulation.md) | 1 | 0 | 1 |
@@ -47,4 +46,4 @@ Every acceptance/regression check the fleet runs — **384 checks across 42 doma
 | [verification-env-integrity](verification-env-integrity.md) | 2 | 2 | 0 |
 | [verification-self](verification-self.md) | 7 | 0 | 7 |
 
-_Total: 384 checks._
+_Total: 382 checks._

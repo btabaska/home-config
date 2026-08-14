@@ -145,11 +145,6 @@
         href: https://memos.tabaska.us
         description: Journal & notes
         siteMonitor: http://memos:5230
-    - Trilium:
-        icon: trilium.png
-        href: https://trilium.tabaska.us
-        description: Notes & knowledge base (Obsidian trial)
-        siteMonitor: http://trilium:8080
     - ProtonMail:
         icon: proton-mail.png
         href: https://mail.proton.me/u/0/inbox

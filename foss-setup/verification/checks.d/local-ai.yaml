@@ -519,50 +519,6 @@ checks:
     runbook: wiki/docs/runbooks/strategywiki-zim.md
     enabled: true
 
-  # trilium-mcp-search-probe (lai-16): the CONSUMER end of the notes MCP — one real
-  # search + note fetch through the FULL chain: mini -> rig mcpo :8000 /trilium
-  # (OpenAPI bridge) -> trilium-mcp v0.1.5 (OVDEN13 static Go binary, stdio) -> the
-  # read-27 Trilium trial ETAPI (https://trilium.tabaska.us, TRILIUM_TOKEN from the
-  # mcpo container env). Green-but-broken modes this catches: mcpo up but the
-  # trilium-mcp subprocess dead (endpoint 500s), the ETAPI token revoked/expired
-  # (search returns 0 results / get_note errors), the Trilium trial down or the
-  # marker note deleted (hits=0), and a broken content read. Probes a DEDICATED
-  # stable marker note ("Fleet ETAPI Probe (lai-16)", noteId Kw6fnQALxAH3, root
-  # child) created via ETAPI specifically as this check's target so ordinary trial
-  # content churn never breaks it; its body carries the sentinel TRILIUMMCPPROBESENTINEL
-  # and a "do not delete/rename" banner. Content assert is on the FETCHED note body
-  # (sentinel present + non-trivial size), not on HTTP 200. Read-only: only
-  # search_notes + get_note are exercised (the same 2 tools OWUI is filtered to; the
-  # write tools stay opencode-only). All-LAN, no model call, warm subprocess -> fast
-  # sweep. RETIRES WITH the Trilium trial (scripts/notes-trial/teardown-trilium.sh
-  # removes this check + the coverage line); if the trial reverts to Obsidian, this
-  # MCP + probe retire with it.
-  - id: trilium-mcp-search-probe
-    name: "trilium-mcp real note search + content fetch via mcpo (lai-16 consumer end)"
-    host: mini
-    timeout: 90
-    cmd: >-
-      python3 -c "import json,urllib.request;
-      B='http://192.168.10.12:8000/trilium/';
-      sb=json.dumps({'query':'TRILIUMMCPPROBESENTINEL','limit':5}).encode();
-      sq=urllib.request.Request(B+'search_notes',data=sb,headers={'Content-Type':'application/json'});
-      sr=json.load(urllib.request.urlopen(sq,timeout=40));
-      sr=json.loads(sr) if isinstance(sr,str) else sr;
-      res=sr.get('results',[]) if isinstance(sr,dict) else [];
-      nid=res[0].get('note_id','') if res else '';
-      gb=json.dumps({'note_id':nid,'include_content':True}).encode();
-      gq=urllib.request.Request(B+'get_note',data=gb,headers={'Content-Type':'application/json'});
-      g=json.load(urllib.request.urlopen(gq,timeout=40)) if nid else {};
-      g=json.loads(g) if isinstance(g,str) else g;
-      c=str(g.get('content','')) if isinstance(g,dict) else '';
-      ok=bool(res) and 'TRILIUMMCPPROBESENTINEL' in c and len(c)>80;
-      print(('TRILIUM_MCP_OK' if ok else 'TRILIUM_MCP_BAD')+' hits=%d note=%s content_bytes=%d'%(len(res),nid or 'none',len(c)))"
-    expect: '^TRILIUM_MCP_OK '
-    severity: warn
-    task_id: lai-16
-    runbook: wiki/docs/runbooks/trilium-mcp.md
-    enabled: true
-
   # maps-pmtiles-serve (lai-17): the CONSUMER end of the offline US basemap. Liveness
   # lies (go-pmtiles answers 200 with an empty/partial archive), so this proves the whole
   # browser path through the mini Caddy vhost maps.tabaska.us: (1) the go-pmtiles TileJSON
