@@ -20,7 +20,8 @@ services:
       - BASE_URL=${MEALIE_BASE_URL:-http://localhost:9000}
       # Long random secret signing sessions/tokens.
       - MEALIE_SECRET=${MEALIE_SECRET}
-      - ALLOW_SIGNUP=false
+      # Open self-registration for household members (fleet is LAN/Tailscale-only).
+      - ALLOW_SIGNUP=true
     volumes:
       - ./data:/app/data
     networks:

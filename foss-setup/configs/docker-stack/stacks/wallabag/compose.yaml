@@ -55,6 +55,11 @@ services:
       # Outbound mail (password resets / share). Point at a real SMTP if wanted.
       - SYMFONY__ENV__MAILER_DSN=${WALLABAG_MAILER_DSN:-smtp://127.0.0.1}
       - SYMFONY__ENV__FROM_EMAIL=${WALLABAG_FROM_EMAIL:-wallabag@example.com}
+      # Open self-registration for household members (fleet is LAN/Tailscale-only).
+      # Confirmation MUST stay off while MAILER_DSN is a dummy — the confirmation
+      # email would never arrive and signups would dead-end.
+      - SYMFONY__ENV__FOSUSER_REGISTRATION=true
+      - SYMFONY__ENV__FOSUSER_CONFIRMATION=false
     ports:
       - "8085:80" # direct LAN access; also fronted by Caddy via the edge network
     volumes:
