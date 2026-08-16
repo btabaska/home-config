@@ -244,3 +244,20 @@ checks:
     task_id: game-11
     runbook: wiki/docs/guides/apollo-autostart.md
     enabled: true
+
+  # MoonDeckBuddy (re-enabled 2026-08-16, supersedes the fix-64 retirement):
+  # the deck's MoonDeck plugin drives Steam launches through Buddy's TLS API on
+  # 59999. A / probe answering 404 proves the listener + TLS stack are up on the
+  # path the deck uses; a dead unit or firewall regression cannot 404. warn:
+  # plain Moonlight streaming still works without Buddy.
+  - id: game-moondeck-buddy
+    name: "MoonDeckBuddy API answers TLS on rig:59999 (deck MoonDeck path, game-06)"
+    host: mini
+    cmd: >
+      c=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 8 https://192.168.10.12:59999/);
+      if [ "$c" = "404" ]; then echo BUDDY-OK; else echo "BUDDY-BAD code=${c:-none}"; fi
+    expect: '^BUDDY-OK$'
+    severity: warn
+    task_id: game-06
+    runbook: wiki/docs/guides/apollo-autostart.md
+    enabled: true

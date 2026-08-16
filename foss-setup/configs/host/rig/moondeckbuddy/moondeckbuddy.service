@@ -1,0 +1,13 @@
+[Unit]
+Description=MoonDeck host companion
+After=default.target
+
+[Service]
+Type=exec
+ExecStart=/bin/sh -c 'NO_GUI="${MOONDECKBUDDY_NO_GUI:-true}" /home/btabaska/Applications/MoonDeckBuddy-1.9.2-x86_64.AppImage'
+Restart=on-failure
+RestartSec=10
+SuccessExitStatus=143
+
+[Install]
+WantedBy=default.target

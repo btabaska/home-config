@@ -1,6 +1,6 @@
 # Checks — gaming
 
-`foss-setup/verification/checks.d/gaming.yaml` — 10 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/gaming.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `game-amp-backup-fresh`
 
@@ -161,6 +161,17 @@ rig streaming preconditions: dummy plug + autologin session + apollo unit (game-
 
 ```bash
 plug=$(cat /sys/class/drm/card*-HDMI-A-1/status 2>/dev/null | head -1); sess=$([ -S /run/user/1000/wayland-0 ] && echo yes || echo no); auto=$(grep -c '^User=' /etc/plasmalogin.conf 2>/dev/null | head -1); apollo=$(XDG_RUNTIME_DIR=/run/user/1000 systemctl --user is-active apollo.service 2>/dev/null); echo "plug=${plug:-absent} session=$sess autologin_user=${auto:-0} apollo=${apollo:-unknown}"
+```
+
+## `game-moondeck-buddy`
+
+MoonDeckBuddy API answers TLS on rig:59999 (deck MoonDeck path, game-06)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `game-06` · **enabled:** True
+- **expects:** `^BUDDY-OK$`
+
+```bash
+c=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 8 https://192.168.10.12:59999/); if [ "$c" = "404" ]; then echo BUDDY-OK; else echo "BUDDY-BAD code=${c:-none}"; fi
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

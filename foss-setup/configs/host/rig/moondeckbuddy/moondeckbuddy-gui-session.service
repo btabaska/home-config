@@ -1,0 +1,12 @@
+[Unit]
+Description=GUI session monitor for MoonDeckBuddy service
+After=xdg-desktop-autostart.target
+PartOf=xdg-desktop-autostart.target
+
+[Service]
+Type=exec
+ExecStart=/bin/sh -c 'sleep infinity & PID=$!; trap "kill $PID" INT TERM; systemctl --user set-environment MOONDECKBUDDY_NO_GUI=false; systemctl --user try-restart moondeckbuddy.service; wait; systemctl --user unset-environment MOONDECKBUDDY_NO_GUI; systemctl --user try-restart moondeckbuddy.service;'
+Restart=no
+
+[Install]
+WantedBy=xdg-desktop-autostart.target

@@ -65,11 +65,17 @@ paru -S apollo
 sudo pacman -S --needed nvidia-utils
 ```
 
-!!! note "NVENC on the 3090 Ti"
-    Apollo uses **NVENC** for H.264/HEVC/AV1 4K HDR encode (same encoder path as
-    stock Sunshine) — separate from the rig's render workload, so streaming costs
-    little GPU. NVENC needs only the proprietary NVIDIA driver + `nvidia-utils`;
-    the full `cuda` package is **not** required just for streaming.
+!!! note "NVENC on the 3090 Ti — CUDA zero-copy since 2026-08-16"
+    Apollo uses **NVENC** for H.264/HEVC 4K encode (AV1 encode is a hardware gap
+    on the 3090 Ti) — separate from the rig's render workload, so streaming costs
+    little GPU. NVENC itself needs only the proprietary driver + `nvidia-utils`,
+    **but without `cuda` present at *build* time** the AUR build logs
+    `Attempting to use NVENC without CUDA support. Reverting back to GPU -> RAM
+    -> GPU` and round-trips every frame through system RAM. The live rig now has
+    `cuda` (13.3.1) installed and Apollo rebuilt against it (the PKGBUILD
+    auto-enables CUDA when `pacman -Qi cuda` succeeds), giving zero-copy
+    capture→encode. **When updating Apollo via AUR, keep `cuda` installed or the
+    rebuild silently drops back to the RAM path** — the runtime log is the tell.
 
 ---
 
@@ -148,7 +154,36 @@ host.
 
 ---
 
-## 6. Verify
+## 6. MoonDeck (Steam Deck deep integration, re-enabled 2026-08-16)
+
+[MoonDeck](https://github.com/FrogTheFrog/moondeck) (Decky plugin on the deck) +
+**MoonDeckBuddy** on the rig launch Steam games from the deck's own library UI
+through Moonlight, with reliable is-Steam-running / which-game state. Plain
+Moonlight streaming works without any of this — MoonDeck is the convenience layer.
+
+Host side (all live on the rig; mirror `configs/host/rig/moondeckbuddy/`):
+
+1. `MoonDeckBuddy-1.9.2-x86_64.AppImage` in `~/Applications/` (hashless name),
+   run by `moondeckbuddy.service`; `moondeckbuddy-gui-session.service` gives it a
+   tray inside the Plasma session (needed for pairing PIN confirmation).
+2. Buddy API = TLS `:59999` (`~/.config/moondeckbuddy/settings.json`), UFW-allowed
+   from the Trusted VLAN. Probe: `curl -sk https://192.168.10.12:59999/` → `404`.
+3. Apollo **Applications** carries a `MoonDeckStream` entry:
+   `cmd = <AppImage> --exec MoonDeckStream` ("Continue streaming" off).
+
+Deck side: MoonDeck plugin (Decky) + Moonlight flatpak. **One-time pairing** (the
+PIN dialog renders on the rig desktop, which is headless — use a Moonlight
+Desktop stream to see it):
+
+1. On the deck, open Moonlight → **Desktop** — the rig's desktop appears.
+2. Open the MoonDeck plugin panel (··· menu) → host settings → scan/select
+   `cachyos` → **Pair** — a PIN shows on the deck.
+3. In the streamed rig desktop, the Buddy tray pops its pairing dialog — type
+   the PIN there (deck on-screen keyboard works inside the stream), confirm.
+4. Set MoonDeck's Buddy port to **59999** if asked; game buttons in the deck UI
+   then get the MoonDeck launch option.
+
+## 7. Verify
 
 - `systemctl --user status apollo` → `active (running)`.
 - Web UI reachable at <https://localhost:47990> and login works.

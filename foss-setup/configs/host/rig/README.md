@@ -110,14 +110,18 @@ Plasma autologin the rig boots to the greeter and game streaming is silently dea
 `plasmalogin/README.md`; guarded by the `game-apollo-*` checks in
 `verification/checks.d/gaming.yaml`.
 
-### Per-user unit: `moondeckbuddy.service` (DISABLED, fix-64/SM14)
+### Per-user unit: `moondeckbuddy.service` (RE-ENABLED 2026-08-16; unit mirror: `moondeckbuddy/`)
 
-`~/.config/systemd/user/moondeckbuddy.service` exec'd a MoonDeck AppImage that no
-longer exists, crash-looping every ~10s (76k+ restarts, exit 127). It is now
-`systemctl --user disable`d + stopped. **To restore MoonDeck:** reinstall the
-MoonDeckBuddy AppImage to `~/Applications/`, fix the `ExecStart=` path in the unit,
-then `systemctl --user enable --now moondeckbuddy.service`. Crash-loop class is
-monitored by `rig-no-crashloop-unit`.
+Was disabled under fix-64/SM14 when its AppImage vanished (76k crash-loops, exit
+127). Restored on operator request 2026-08-16: `MoonDeckBuddy-1.9.2-x86_64.AppImage`
+reinstalled to `~/Applications/` (hashless filename so upgrades don't break the
+unit again), `ExecStart=` fixed, unit re-enabled. Companion
+`moondeckbuddy-gui-session.service` flips it to GUI mode inside the Plasma session
+(the tray dialog is how MoonDeck pairing PINs get confirmed). Listens TLS :59999;
+UFW allows it from the Trusted VLAN; Apollo's `~/.config/sunshine/apps.json`
+carries the required **MoonDeckStream** app entry. Guarded by `game-moondeck-buddy`
+in `verification/checks.d/gaming.yaml`. Crash-loop class still monitored by
+`rig-no-crashloop-unit`.
 
 ## Drift coverage
 
