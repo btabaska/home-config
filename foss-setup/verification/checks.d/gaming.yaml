@@ -198,3 +198,49 @@ checks:
     task_id: game-01
     runbook: wiki/docs/runbooks/game-backups.md
     enabled: true
+
+  # ---- game-05/game-11: Apollo game streaming (rig) ----
+  # 2026-08-16 incident: Apollo sat dead for 13 days with the rig otherwise green.
+  # The Aug 3 reboot left the rig at the plasmalogin greeter (autologin User= key
+  # missing), so graphical-session.target never rose and apollo.service +
+  # display-policy.service — both session-scoped user units — never started.
+  # Nothing probed the consumer end, so nothing paged (mandate 1/2).
+  #
+  # consumer probe: the GameStream /serverinfo endpoint from the mini — the same
+  # LAN path a Moonlight client hits. Catches dead Apollo, dead session, dead
+  # host, and firewall breakage in one shot.
+  - id: game-apollo-serverinfo
+    name: "Apollo answers GameStream /serverinfo on rig:47989 (Moonlight client path, game-05)"
+    host: mini
+    cmd: >
+      out=$(curl -s --max-time 10 http://192.168.10.12:47989/serverinfo 2>&1);
+      case "$out" in
+      *'status_code="200"'*) st=$(echo "$out" | sed -n 's/.*<state>\([^<]*\)<.*/\1/p');
+      echo "APOLLO-OK state=${st:-unknown}";;
+      *) printf 'APOLLO-BAD %.120s\n' "${out:-empty-response}";;
+      esac
+    expect: '^APOLLO-OK'
+    severity: crit
+    task_id: game-05
+    runbook: wiki/docs/guides/apollo-autostart.md
+    enabled: true
+
+  # root-cause preconditions, on the rig: dummy plug present on HDMI-A-1, a
+  # btabaska Wayland session up (autologin worked), the plasmalogin autologin
+  # User= key still in place, and the apollo user unit active. Diagnoses WHICH
+  # link broke when the serverinfo probe goes red — plug pulled vs autologin
+  # regressed vs unit dead.
+  - id: game-apollo-session-display
+    name: "rig streaming preconditions: dummy plug + autologin session + apollo unit (game-11)"
+    host: rig
+    cmd: >
+      plug=$(cat /sys/class/drm/card*-HDMI-A-1/status 2>/dev/null | head -1);
+      sess=$([ -S /run/user/1000/wayland-0 ] && echo yes || echo no);
+      auto=$(grep -c '^User=' /etc/plasmalogin.conf 2>/dev/null | head -1);
+      apollo=$(XDG_RUNTIME_DIR=/run/user/1000 systemctl --user is-active apollo.service 2>/dev/null);
+      echo "plug=${plug:-absent} session=$sess autologin_user=${auto:-0} apollo=${apollo:-unknown}"
+    expect: '^plug=connected session=yes autologin_user=1 apollo=active$'
+    severity: warn
+    task_id: game-11
+    runbook: wiki/docs/guides/apollo-autostart.md
+    enabled: true

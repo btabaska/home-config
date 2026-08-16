@@ -29,6 +29,20 @@ This runbook covers installing Apollo on the CachyOS/Arch rig with NVENC (RTX
     companion `apollo-enable.sh` **only after a display exists** (dummy plug or
     real monitor). See `foss-setup/scripts/gaming/display-policy.sh`.
 
+!!! danger "The whole chain hangs off Plasma **autologin** — check it after any reboot/DM change"
+    `apollo.service` (`WantedBy=xdg-desktop-autostart.target`) and
+    `display-policy.service` (`WantedBy=graphical-session.target`) are
+    session-scoped: they start only when the btabaska Plasma Wayland session logs
+    in. `/etc/plasmalogin.conf` must contain **both** `User=btabaska` and
+    `Session=plasma` under `[Autologin]` (mirror:
+    `foss-setup/configs/host/rig/plasmalogin/`). **Incident 2026-08-16:** the
+    `User=` key went missing (SDDM → plasmalogin migration), the Aug 3 reboot
+    parked the rig at the greeter, and Apollo was dead for 13 days while the host
+    looked green. Guarded since by verification checks `game-apollo-serverinfo`
+    (consumer probe, crit) and `game-apollo-session-display` (plug + session +
+    autologin + unit, warn). Recovery: restore the conf, then
+    `sudo systemctl restart plasmalogin.service` (safe only with nobody logged in).
+
 **Authoritative docs**
 
 - Apollo project + docs (install, features, headless/virtual-display): <https://github.com/ClassicOldSong/Apollo>

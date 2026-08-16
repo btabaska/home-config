@@ -1,6 +1,6 @@
 # Checks — gaming
 
-`foss-setup/verification/checks.d/gaming.yaml` — 8 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/gaming.yaml` — 10 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `game-amp-backup-fresh`
 
@@ -139,6 +139,28 @@ if [ -n "$world" ] && [ "${w:-0}" -gt 0 ]; then
 else
   echo NOT-READY
 fi
+```
+
+## `game-apollo-serverinfo`
+
+Apollo answers GameStream /serverinfo on rig:47989 (Moonlight client path, game-05)
+
+- **host:** `mini` · **severity:** `crit` · **guards task:** `game-05` · **enabled:** True
+- **expects:** `^APOLLO-OK`
+
+```bash
+out=$(curl -s --max-time 10 http://192.168.10.12:47989/serverinfo 2>&1); case "$out" in *'status_code="200"'*) st=$(echo "$out" | sed -n 's/.*<state>\([^<]*\)<.*/\1/p'); echo "APOLLO-OK state=${st:-unknown}";; *) printf 'APOLLO-BAD %.120s\n' "${out:-empty-response}";; esac
+```
+
+## `game-apollo-session-display`
+
+rig streaming preconditions: dummy plug + autologin session + apollo unit (game-11)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `game-11` · **enabled:** True
+- **expects:** `^plug=connected session=yes autologin_user=1 apollo=active$`
+
+```bash
+plug=$(cat /sys/class/drm/card*-HDMI-A-1/status 2>/dev/null | head -1); sess=$([ -S /run/user/1000/wayland-0 ] && echo yes || echo no); auto=$(grep -c '^User=' /etc/plasmalogin.conf 2>/dev/null | head -1); apollo=$(XDG_RUNTIME_DIR=/run/user/1000 systemctl --user is-active apollo.service 2>/dev/null); echo "plug=${plug:-absent} session=$sess autologin_user=${auto:-0} apollo=${apollo:-unknown}"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

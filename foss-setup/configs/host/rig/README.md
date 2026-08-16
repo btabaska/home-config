@@ -102,6 +102,14 @@ hygiene). In short:
   before docker each boot, because `/dev/dri/cardN` numbering is not stable across
   reboots (a stale `card1` pin blocked llama-swap/comfyui from restarting).
 
+### Autologin: `plasmalogin/` (`/etc/plasmalogin.conf`) — streaming chain depends on it
+
+`apollo.service` + `display-policy.service` are session-scoped user units; without
+Plasma autologin the rig boots to the greeter and game streaming is silently dead
+(2026-08-16 incident: missing `User=` key → Apollo down 13 days). See
+`plasmalogin/README.md`; guarded by the `game-apollo-*` checks in
+`verification/checks.d/gaming.yaml`.
+
 ### Per-user unit: `moondeckbuddy.service` (DISABLED, fix-64/SM14)
 
 `~/.config/systemd/user/moondeckbuddy.service` exec'd a MoonDeck AppImage that no
