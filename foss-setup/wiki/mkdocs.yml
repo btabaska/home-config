@@ -169,6 +169,7 @@ nav:
       - local-deep-research (cited research / env-locked config / probe account): runbooks/ldr.md
       - Voice (Kokoro TTS / faster-whisper STT / OWUI audio): runbooks/voice.md
       - Image & browser tools (OWUI ComfyUI engine / comfyui-mcp / playwright-mcp): runbooks/image-browser-mcp.md
+      - Plant / species ID (BioCLIP 2 / identify_plant tool / bioclip-api): runbooks/plant-id.md
       - Kiwix (offline ZIM library / no hot-add / sequential queue): runbooks/kiwix.md
       - openzim-mcp (ZIM tools for AI / mcpo bridge / RO zim mount): runbooks/openzim-mcp.md
       - GameFAQs corpus (PRIVATE ZIM / IA source / LAN-only / no-redistribute): runbooks/gamefaqs-zim.md

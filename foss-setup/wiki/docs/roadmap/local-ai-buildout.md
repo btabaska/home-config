@@ -1,6 +1,6 @@
 # Roadmap — local-ai-buildout
 
-21 task(s). Status mirrors `docs/progress.json` (the source of truth).
+22 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -24,6 +24,7 @@
 | `lai-18` | Agent memory layer | ✅ done | 2-4 hrs |
 | `lai-19` | local-ai consolidation sweep | ✅ done | 2-4 hrs |
 | `lai-20` | local-ai buildout close-out | ✅ done | 1-3 hrs |
-| `lai-21` | Open WebUI 0.11.0 upgrade | ⬜ open | 1-3 hrs |
+| `lai-21` | Open WebUI 0.11.0 upgrade | ✅ done | 1-3 hrs |
+| `lai-22` | Local plant/species ID (BioCLIP 2 + OWUI identify_plant tool) | ✅ done | 1-3 hrs |
 
 [← Roadmap overview](index.md)

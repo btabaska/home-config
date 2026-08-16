@@ -81,10 +81,14 @@ clean — follow `security-change-guard`); subscribe a phone to ntfy topic **`op
 — `btabaska` account created); file the public **openZIM zim-request for strategywiki.org** then add the
 `.zim` to the NAS `zim-download-queue.sh` (unblocks `lai-15`); ~~**Trilium-vs-Obsidian** decision~~
 (DECIDED 2026-08-14 — Obsidian; Trilium + lai-16 trilium-mcp fully reverted, notes data kept at mini
-`/opt/retired/trilium-20260814` pending purge); decide whether **Kagi** is retired or kept as a fallback engine; schedule the **OWUI 0.11.0**
-upgrade (open task `lai-21`). Prior fleet-sweep follow-ups still stand (mini kernel reboot 4-7AM, rig
+`/opt/retired/trilium-20260814` pending purge); decide whether **Kagi** is retired or kept as a fallback engine; ~~schedule the **OWUI 0.11.0**
+upgrade~~ (DONE 2026-08-16 — `lai-21`, v0.11.0 digest-pinned, all owui+journaling checks green; also shipped
+`lai-22` **plant/species ID**: bioclip-api on rig :8199 [BioCLIP 2, CPU by design] + OWUI `identify_plant`
+tool + 2 consumer checks — runbook `runbooks/plant-id.md`. NEW follow-up: the **chat lane (gemma4-31b-qat)
+fails to load** when desktop VRAM residents [ComfyUI idle + Apollo NVENC + Steam] eat its <1GiB headroom —
+decide: trim gemma ctx-size or free residents). Prior fleet-sweep follow-ups still stand (mini kernel reboot 4-7AM, rig
 Windows `RealTimeIsUniversal`, off-mini dead-man/`alert-drill` ntfy subscribe, optional Bazarr subtitle
-key). Next work is the pre-existing open queue (`ha-19`, `fix-24`, `game-*`, `media-09/10/13`, `lai-21`,
+key). Next work is the pre-existing open queue (`ha-19`, `fix-24`, `game-*`, `media-09/10/13`,
 `fix-70`…`fix-81`, etc.) via **`/build-next`** or **`/resolve-finding`**.
 
 Prior priority (fleet-sweep 2026-08-02 remediation, `fix-49`…`fix-69` + `sec-12`) remains **COMPLETE**

@@ -595,3 +595,52 @@ checks:
     task_id: lai-18
     runbook: wiki/docs/runbooks/agent-memory.md
     enabled: true
+
+  # plant-id (lai-22): fully-local plant/species identification. bioclip-api on
+  # the rig (:8199, local-ai-tooling docker/bioclip-api — pybioclip/BioCLIP 2,
+  # TreeOfLife-200M, CPU inference BY DESIGN: llama-swap owns the 3090 Ti and the
+  # big lanes are <1GiB-headroom edge fits) + the OWUI identify_plant workspace
+  # tool (canonical: local-ai-tooling owui-tools/identify_plant.py, seeded by
+  # scripts/seed-owui-identify-plant.sh — DB-only, a volume wipe erases it).
+  # Two-stage like owui-agentic-search:
+  #   1. bioclip-identify-consumer — golden Wikimedia dandelion photo straight at
+  #      the rig service; top-1 GENUS must be Taraxacum. Genus-level assert on
+  #      purpose: Taraxacum microspecies are genuinely ambiguous (top-3 all agree
+  #      on genus), so species would flap across model bumps. GPU-free.
+  #   2. owui-plant-id-e2e — the household call path (bin/owui-plant-id-e2e.py):
+  #      upload via the OWUI files API, chat completion with
+  #      tool_ids=[identify_plant], assert the narrated reply names Taraxacum.
+  #      stream=True + function_calling "legacy" are REQUIRED (0.11.0: native
+  #      mode only executes tools inside UI sessions — raw API callers get the
+  #      unexecuted tool_calls back). PLANT_MODEL pinned to coder: the chat lane
+  #      (gemma4-31b-qat) is a 23.7G edge fit that OOMs whenever desktop VRAM
+  #      residents (ComfyUI idle + Apollo NVENC + Steam) eat its headroom
+  #      (observed 2026-08-16); coder rides the same tool chain and loads.
+  #      Involves a model load/swap -> generous timeout, daily tier.
+  - id: bioclip-identify-consumer
+    tier: daily
+    name: "bioclip-api ranks the golden dandelion as genus Taraxacum (lai-22)"
+    host: mini
+    timeout: 150
+    cmd: >-
+      g=$(curl -s -m 120 -X POST -F "file=@/opt/verification/assets/plant-id-dandelion.jpg"
+      "http://192.168.10.12:8199/identify?k=1"
+      | python3 -c 'import sys,json;print((json.load(sys.stdin).get("predictions") or [{}])[0].get("genus",""))' 2>/dev/null);
+      if [ "$g" = "Taraxacum" ]; then echo "BIOCLIP_OK genus=$g"; else echo "BIOCLIP_BAD genus=${g:-noresponse}"; fi
+    expect: '^BIOCLIP_OK '
+    severity: warn
+    task_id: lai-22
+    runbook: wiki/docs/runbooks/plant-id.md
+    enabled: true
+
+  - id: owui-plant-id-e2e
+    tier: daily
+    name: "OWUI identify_plant tool chain narrates the golden dandelion (lai-22)"
+    host: mini
+    timeout: 360
+    cmd: PLANT_MODEL=coder python3 /opt/verification/bin/owui-plant-id-e2e.py
+    expect: '^PLANT_ID_E2E_OK '
+    severity: warn
+    task_id: lai-22
+    runbook: wiki/docs/runbooks/plant-id.md
+    enabled: true

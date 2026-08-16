@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 19 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 21 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -209,6 +209,28 @@ opencode agent-memory plugin present+valid on rig AND a well-formed MEMORY.md ex
 
 ```bash
 P="$HOME/.config/opencode/plugins/memory.ts"; D="${OPENCODE_MEMORY_DIR:-$HOME/.local/share/opencode/memory}"; if [ ! -f "$P" ]; then echo MEM_NO_PLUGIN; exit 0; fi; if ! grep -q "experimental.session.compacting" "$P" || ! grep -q "session.idle" "$P" || ! grep -q "chat/completions" "$P"; then echo MEM_PLUGIN_STRUCT_BAD; exit 0; fi; if ! node --experimental-strip-types --check "$P" >/dev/null 2>&1; then echo MEM_PLUGIN_SYNTAX_BAD; exit 0; fi; f=$(ls -t "$D"/*.md 2>/dev/null | head -1); if [ -z "$f" ]; then echo MEM_NO_FILE; exit 0; fi; sec=$(grep -cE "^## .*\((idle|compacting)\)$" "$f" | tr -d "[:space:]"); bul=$(grep -cE "^- " "$f" | tr -d "[:space:]"); if [ "${sec:-0}" -ge 1 ] && [ "${bul:-0}" -ge 1 ]; then echo "MEM_OK plugin=ok syntax=ok sections=$sec bullets=$bul file=$(basename "$f")"; else echo "MEM_MALFORMED sec=${sec:-0} bul=${bul:-0}"; fi
+```
+
+## `bioclip-identify-consumer`
+
+bioclip-api ranks the golden dandelion as genus Taraxacum (lai-22)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `lai-22` · **enabled:** True
+- **expects:** `^BIOCLIP_OK `
+
+```bash
+g=$(curl -s -m 120 -X POST -F "file=@/opt/verification/assets/plant-id-dandelion.jpg" "http://192.168.10.12:8199/identify?k=1" | python3 -c 'import sys,json;print((json.load(sys.stdin).get("predictions") or [{}])[0].get("genus",""))' 2>/dev/null); if [ "$g" = "Taraxacum" ]; then echo "BIOCLIP_OK genus=$g"; else echo "BIOCLIP_BAD genus=${g:-noresponse}"; fi
+```
+
+## `owui-plant-id-e2e`
+
+OWUI identify_plant tool chain narrates the golden dandelion (lai-22)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `lai-22` · **enabled:** True
+- **expects:** `^PLANT_ID_E2E_OK `
+
+```bash
+PLANT_MODEL=coder python3 /opt/verification/bin/owui-plant-id-e2e.py
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
