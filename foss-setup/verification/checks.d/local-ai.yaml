@@ -612,10 +612,12 @@ checks:
   #      tool_ids=[identify_plant], assert the narrated reply names Taraxacum.
   #      stream=True + function_calling "legacy" are REQUIRED (0.11.0: native
   #      mode only executes tools inside UI sessions — raw API callers get the
-  #      unexecuted tool_calls back). PLANT_MODEL pinned to coder for tool-call
-  #      reliability; the chain is also verified green on chat (2026-08-16 —
-  #      first via the ctx 73728->65536 desktop-VRAM refit, then again on the
-  #      final 49152+mmproj vision config; see owui-chat-vision below).
+  #      unexecuted tool_calls back). PLANT_MODEL pinned to coder-swarm (same
+  #      qwen3.6-35b-a3b weights as coder) for tool-call reliability — coder/
+  #      code/coder-strong left OWUI when the open-webui LiteLLM key was scoped
+  #      to chat lanes (2026-08-17, seed-litellm-owui-key-scope.py). The chain
+  #      was also verified green on the gemma lane (2026-08-16; vision since
+  #      split to chat-vision — see owui-chat-vision below).
   #      Involves a model load/swap -> generous timeout, daily tier.
   - id: bioclip-identify-consumer
     tier: daily
@@ -638,26 +640,26 @@ checks:
     name: "OWUI identify_plant tool chain narrates the golden dandelion (lai-22)"
     host: mini
     timeout: 360
-    cmd: PLANT_MODEL=coder python3 /opt/verification/bin/owui-plant-id-e2e.py
+    cmd: PLANT_MODEL=coder-swarm python3 /opt/verification/bin/owui-plant-id-e2e.py
     expect: '^PLANT_ID_E2E_OK '
     severity: warn
     task_id: lai-22
     runbook: wiki/docs/runbooks/plant-id.md
     enabled: true
 
-  # owui-chat-vision (lai-22 follow-on, 2026-08-16): native vision on the chat
-  # lane — gemma4-31b-qat + unsloth mmproj-F16, ctx trimmed 65536->49152 to fit
-  # the 1.14G clip buffer (57344+mmproj OOMed; 49152+mmproj = 24.0G board, ~0.5G
-  # headroom under full desktop load — same margin class as the Mistral trio).
-  # The probe sends the golden image as an image_url content part through OWUI
-  # exactly like the frontend does for vision-capable models; a text-only
-  # regression reproduces the household's "image input is not supported" 500.
-  # Model capability flags are DB-only — canonical source is local-ai-tooling
-  # scripts/seed-owui-model-capabilities.sh (vision=true only for chat,
-  # rig-thinker, cydonia, dolphin-venice, goetia).
+  # owui-chat-vision (lai-22 follow-on, 2026-08-16; SPLIT 2026-08-17): native
+  # vision moved to its own chat-vision lane (gemma4-31b-qat-vision + unsloth
+  # mmproj-F16, ctx 49152 — the 1.14G clip buffer costs two 8k steps) while
+  # plain chat reverted to text-only ctx 65536; vision is Plant Scout's lane
+  # only (operator decision). The probe sends the golden image as an image_url
+  # content part through OWUI exactly like the frontend does for vision-capable
+  # models; a text-only regression reproduces the household's "image input is
+  # not supported" 500. Model capability flags are DB-only — canonical source
+  # is local-ai-tooling scripts/seed-owui-model-capabilities.sh (vision=true
+  # only for chat-vision, cydonia, dolphin-venice, goetia).
   - id: owui-chat-vision
     tier: daily
-    name: "chat lane native vision describes the golden image via OWUI (lai-22)"
+    name: "chat-vision lane native vision describes the golden image via OWUI (lai-22)"
     host: mini
     timeout: 360
     cmd: python3 /opt/verification/bin/owui-chat-vision.py
@@ -670,7 +672,8 @@ checks:
   # plant-scout-preset (lai-22 follow-on, 2026-08-17): the 🌿 Plant Scout one-tap
   # preset (open OWUI -> Plant Scout -> camera -> send, no text) — DB-only model
   # record, canonical source local-ai-tooling scripts/seed-owui-plant-scout.py.
-  # Drift gate only (record active, rides chat, vision on, identify_plant
+  # Drift gate only (record active, rides chat-vision since the 2026-08-17
+  # lane split, vision on, identify_plant
   # attached via meta.toolIds — the FRONTEND merges toolIds into every chat
   # request): the behavior chain is already guarded by owui-plant-id-e2e +
   # owui-chat-vision, and native tool EXECUTION is UI/websocket-side (an HTTP
@@ -678,12 +681,12 @@ checks:
   # the honest maximum here. Verified 2026-08-17: photo-only message on the
   # preset natively emits exactly one identify_plant tool_call.
   - id: plant-scout-preset
-    name: "Plant Scout preset intact (active, base=chat, vision, identify_plant tool)"
+    name: "Plant Scout preset intact (active, base=chat-vision, vision, identify_plant tool)"
     host: mini
     timeout: 30
     cmd: >-
       curl -s -m 15 -H "Authorization:Bearer $OWUI_API_KEY" "$OWUI_URL/api/v1/models/model?id=plant-scout"
-      | python3 -c 'import sys,json;d=json.load(sys.stdin);m=d.get("meta") or {};ok=(d.get("is_active") and d.get("base_model_id")=="chat" and (m.get("capabilities") or {}).get("vision") is True and "identify_plant" in (m.get("toolIds") or []) and "Rochester" in ((d.get("params") or {}).get("system") or ""));print("SCOUT_OK" if ok else "SCOUT_DRIFT "+json.dumps({"active":d.get("is_active"),"base":d.get("base_model_id"),"tools":m.get("toolIds")}))' 2>/dev/null
+      | python3 -c 'import sys,json;d=json.load(sys.stdin);m=d.get("meta") or {};ok=(d.get("is_active") and d.get("base_model_id")=="chat-vision" and (m.get("capabilities") or {}).get("vision") is True and "identify_plant" in (m.get("toolIds") or []) and "Rochester" in ((d.get("params") or {}).get("system") or ""));print("SCOUT_OK" if ok else "SCOUT_DRIFT "+json.dumps({"active":d.get("is_active"),"base":d.get("base_model_id"),"tools":m.get("toolIds")}))' 2>/dev/null
       || echo "SCOUT_DRIFT noresponse"
     expect: '^SCOUT_OK'
     severity: warn

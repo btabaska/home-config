@@ -16,17 +16,21 @@ to an Open WebUI chat, ask "what plant is this?" — no cloud API involved.
    status for Rochester NY (zone 6) → 🪴 care → 🔬 a botany lesson → ⚠️
    toxicity/lookalike safety. Follow-up questions in the same chat go deeper.
 
-Plant Scout is a workspace model preset riding the `chat` lane (vision) with
-`identify_plant` pre-attached via `meta.toolIds` (the frontend merges those
-into every request) and a Rochester-aware system prompt. Canonical source:
+Plant Scout is a workspace model preset riding the `chat-vision` lane (the
+2026-08-17 split: gemma + mmproj at ctx 49152 lives on its own LiteLLM group
+while plain `chat` reverted to text-only ctx 65536 — vision is Plant Scout's
+lane by operator decision) with `identify_plant` pre-attached via
+`meta.toolIds` (the frontend merges those into every request) and a
+Rochester-aware system prompt. Canonical source:
 `local-ai-tooling scripts/seed-owui-plant-scout.py`.
 
 **Manual flow** (any model): attach a photo and ask *"What plant is this? Use
-the identify_plant tool."* **chat** has native vision (sees the photo directly)
-*and* the tool; **coder** is the most reliable tool-caller (text-only — the
-photo goes to the tool, not the model); **cydonia / dolphin-venice / goetia**
-also have native vision. For species-level ID trust BioCLIP over the LLM's
-eyeballing.
+the identify_plant tool."* **chat-vision** has native vision (sees the photo
+directly); **chat** is text-only since the split (the photo goes to the tool,
+not the model); **cydonia / dolphin-venice / goetia** also have native vision.
+The coder lanes left OWUI 2026-08-17 (open-webui LiteLLM key scoped —
+opencode-only now); **coder-swarm** remains the pinned tool-caller for the
+e2e check. For species-level ID trust BioCLIP over the LLM's eyeballing.
 4. The model calls the **identify_plant** tool, which finds the newest image in
    the chat and returns the top-k ranked taxa; the model narrates the best match
    with its common name and confidence.
@@ -82,27 +86,33 @@ Two-stage, `checks.d/local-ai.yaml`, both `tier: daily`:
   the unexecuted `tool_calls` deltas back. Legacy mode runs
   `chat_completion_tools_handler` server-side pre-completion. UI chats are
   unaffected (native mode works there).
-- **The `chat` lane VRAM story (2026-08-16, two rounds).** Round 1: gemma at ctx
-  73728 stopped fitting once desktop residents grew (ComfyUI's CUDA context +
-  Apollo NVENC + Steam/kwin ≈ 0.8 G) — `upstream command exited prematurely` —
-  fixed by trimming to 65536. Round 2 (same day): native **vision** added — the
-  unsloth mmproj-F16 (1.2 G, sha256-verified in models.manifest) needed another
-  trim to **49152** (57344+mmproj OOMed at the 1.14 G clip buffer; final board
-  ≈ 24.0 G, ~0.5 G headroom — same margin class as the Mistral trio). Rule of
-  thumb: only 10/60 gemma layers are global attention, so each 8 k of ctx frees
-  ~340 M KV + buffer growth. If a load-fail recurs, ctx is the knob.
+- **The gemma lane VRAM story (2026-08-16 two rounds, split 2026-08-17).**
+  Round 1: gemma at ctx 73728 stopped fitting once desktop residents grew
+  (ComfyUI's CUDA context + Apollo NVENC + Steam/kwin ≈ 0.8 G) — `upstream
+  command exited prematurely` — fixed by trimming to 65536. Round 2 (same day):
+  native **vision** added — the unsloth mmproj-F16 (1.2 G, sha256-verified in
+  models.manifest) needed another trim to **49152** (57344+mmproj OOMed at the
+  1.14 G clip buffer; board ≈ 24.0 G, ~0.5 G headroom — same margin class as
+  the Mistral trio). Round 3 (2026-08-17): the 49k window proved tight for
+  tool-heavy chats (ZIM lookups), so the lane **split**: `chat` = text-only ctx
+  65536, `chat-vision` = mmproj + ctx 49152 (llama-swap
+  `gemma4-31b-qat`/`-vision`, same weights — switching lanes swaps the model,
+  ~30-60 s). Rule of thumb: only 10/60 gemma layers are global attention, so
+  each 8 k of ctx frees ~340 M KV + buffer growth. If a load-fail recurs, ctx
+  is the knob.
 - **Vision capability flags must be TRUTHFUL** — the OWUI frontend embeds
   attached images as `image_url` parts only when the model record says
   `vision=true`; a lying flag is exactly the household's
   `image input is not supported ... mmproj` 500, and a missing flag hides real
   vision. Flags are DB-only; canonical source =
   `local-ai-tooling scripts/seed-owui-model-capabilities.sh`
-  (vision=true: chat, rig-thinker, cydonia, dolphin-venice, goetia; everything
-  else false). NOTE the 0.11 models/tools APIs both want `access_grants` (list),
-  not the old `access_control`.
+  (vision=true: chat-vision, cydonia, dolphin-venice, goetia; everything else —
+  including chat and rig-thinker since the 2026-08-17 split — false). NOTE the
+  0.11 models/tools APIs both want `access_grants` (list), not the old
+  `access_control`.
 - Guarded by **owui-chat-vision** (`bin/owui-chat-vision.py`, daily): sends the
-  golden image as an image_url part through OWUI to `chat` and requires a
-  plant-ish description back.
+  golden image as an image_url part through OWUI to `chat-vision` and requires
+  a plant-ish description back.
 - **Tool returns "No attached image found"** → the user asked before attaching,
   or the attachment isn't an image. Attach the photo and re-ask in the same
   chat.

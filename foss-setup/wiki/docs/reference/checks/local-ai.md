@@ -230,12 +230,12 @@ OWUI identify_plant tool chain narrates the golden dandelion (lai-22)
 - **expects:** `^PLANT_ID_E2E_OK `
 
 ```bash
-PLANT_MODEL=coder python3 /opt/verification/bin/owui-plant-id-e2e.py
+PLANT_MODEL=coder-swarm python3 /opt/verification/bin/owui-plant-id-e2e.py
 ```
 
 ## `owui-chat-vision`
 
-chat lane native vision describes the golden image via OWUI (lai-22)
+chat-vision lane native vision describes the golden image via OWUI (lai-22)
 
 - **host:** `mini` · **severity:** `warn` · **guards task:** `lai-22` · **enabled:** True
 - **expects:** `^CHAT_VISION_OK `
@@ -246,13 +246,13 @@ python3 /opt/verification/bin/owui-chat-vision.py
 
 ## `plant-scout-preset`
 
-Plant Scout preset intact (active, base=chat, vision, identify_plant tool)
+Plant Scout preset intact (active, base=chat-vision, vision, identify_plant tool)
 
 - **host:** `mini` · **severity:** `warn` · **guards task:** `lai-22` · **enabled:** True
 - **expects:** `^SCOUT_OK`
 
 ```bash
-curl -s -m 15 -H "Authorization:Bearer $OWUI_API_KEY" "$OWUI_URL/api/v1/models/model?id=plant-scout" | python3 -c 'import sys,json;d=json.load(sys.stdin);m=d.get("meta") or {};ok=(d.get("is_active") and d.get("base_model_id")=="chat" and (m.get("capabilities") or {}).get("vision") is True and "identify_plant" in (m.get("toolIds") or []) and "Rochester" in ((d.get("params") or {}).get("system") or ""));print("SCOUT_OK" if ok else "SCOUT_DRIFT "+json.dumps({"active":d.get("is_active"),"base":d.get("base_model_id"),"tools":m.get("toolIds")}))' 2>/dev/null || echo "SCOUT_DRIFT noresponse"
+curl -s -m 15 -H "Authorization:Bearer $OWUI_API_KEY" "$OWUI_URL/api/v1/models/model?id=plant-scout" | python3 -c 'import sys,json;d=json.load(sys.stdin);m=d.get("meta") or {};ok=(d.get("is_active") and d.get("base_model_id")=="chat-vision" and (m.get("capabilities") or {}).get("vision") is True and "identify_plant" in (m.get("toolIds") or []) and "Rochester" in ((d.get("params") or {}).get("system") or ""));print("SCOUT_OK" if ok else "SCOUT_DRIFT "+json.dumps({"active":d.get("is_active"),"base":d.get("base_model_id"),"tools":m.get("toolIds")}))' 2>/dev/null || echo "SCOUT_DRIFT noresponse"
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

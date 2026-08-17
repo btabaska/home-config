@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""owui-chat-vision.py — CONSUMER-end probe of native vision on the chat lane.
+"""owui-chat-vision.py — CONSUMER-end probe of native vision on the chat-vision lane.
 
 Simulates exactly what the OWUI frontend does for a vision-capable model:
 embeds the chat-attached image as an image_url content part and sends it
-through OWUI -> LiteLLM -> llama-swap (gemma4-31b-qat + mmproj, 2026-08-16).
-The golden asset is the Koehler dandelion botanical illustration, so the
-reply (content OR reasoning — gemma thinks first) must mention one of the
-obvious words. A text-only regression (mmproj dropped, capability flag
-flipped back) fails with the exact "image input is not supported" 500 the
-household hit on 2026-08-16.
+through OWUI -> LiteLLM -> llama-swap (gemma4-31b-qat-vision + mmproj —
+split from the text-only chat lane 2026-08-17; vision is Plant Scout's lane
+only, operator decision). The golden asset is the Koehler dandelion botanical
+illustration, so the reply (content OR reasoning — gemma thinks first) must
+mention one of the obvious words. A text-only regression (mmproj dropped,
+capability flag flipped back) fails with the exact "image input is not
+supported" 500 the household hit on 2026-08-16.
 
-Env: OWUI_URL, OWUI_API_KEY (required), VISION_MODEL (default chat),
+Env: OWUI_URL, OWUI_API_KEY (required), VISION_MODEL (default chat-vision),
      PLANT_ASSET (default the plant-id golden image).
 """
 
@@ -23,7 +24,7 @@ import urllib.request
 
 BASE = os.environ.get("OWUI_URL", "http://192.168.10.12:3000").rstrip("/")
 KEY = os.environ["OWUI_API_KEY"]
-MODEL = os.environ.get("VISION_MODEL", "chat")
+MODEL = os.environ.get("VISION_MODEL", "chat-vision")
 ASSET = os.environ.get(
     "PLANT_ASSET", "/opt/verification/assets/plant-id-dandelion.jpg"
 )
