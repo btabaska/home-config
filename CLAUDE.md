@@ -84,8 +84,11 @@ clean — follow `security-change-guard`); subscribe a phone to ntfy topic **`op
 `/opt/retired/trilium-20260814` pending purge); decide whether **Kagi** is retired or kept as a fallback engine; ~~schedule the **OWUI 0.11.0**
 upgrade~~ (DONE 2026-08-16 — `lai-21`, v0.11.0 digest-pinned, all owui+journaling checks green; also shipped
 `lai-22` **plant/species ID**: bioclip-api on rig :8199 [BioCLIP 2, CPU by design] + OWUI `identify_plant`
-tool + 2 consumer checks — runbook `runbooks/plant-id.md`. the chat-lane VRAM squeeze found during e2e was RESOLVED same day —
-gemma4-31b-qat ctx 73728→65536 [local-ai-tooling cc52b1a], plant chain re-verified green on `chat`). Prior fleet-sweep follow-ups still stand (mini kernel reboot 4-7AM, rig
+tool + 2 consumer checks — runbook `runbooks/plant-id.md`. the chat-lane VRAM squeeze found during e2e was RESOLVED same day, and **native vision
+added to chat**: gemma4-31b-qat now ctx 49152 + unsloth mmproj-F16 [73728→65536 squeeze fix, then →49152
+to fit the 1.2G vision tower]; OWUI vision capability flags made truthful fleet-wide via
+`seed-owui-model-capabilities.sh` [vision=true: chat/rig-thinker/cydonia/dolphin-venice/goetia only];
+guarded by new check `owui-chat-vision`; plant chain + vision re-verified green on `chat`). Prior fleet-sweep follow-ups still stand (mini kernel reboot 4-7AM, rig
 Windows `RealTimeIsUniversal`, off-mini dead-man/`alert-drill` ntfy subscribe, optional Bazarr subtitle
 key). Next work is the pre-existing open queue (`ha-19`, `fix-24`, `game-*`, `media-09/10/13`,
 `fix-70`…`fix-81`, etc.) via **`/build-next`** or **`/resolve-finding`**.

@@ -613,9 +613,9 @@ checks:
   #      stream=True + function_calling "legacy" are REQUIRED (0.11.0: native
   #      mode only executes tools inside UI sessions — raw API callers get the
   #      unexecuted tool_calls back). PLANT_MODEL pinned to coder for tool-call
-  #      reliability; the chain is also verified green on chat (2026-08-16,
-  #      after the gemma ctx 73728->65536 refit — local-ai-tooling cc52b1a —
-  #      fixed the desktop-VRAM squeeze that had the chat lane failing to load).
+  #      reliability; the chain is also verified green on chat (2026-08-16 —
+  #      first via the ctx 73728->65536 desktop-VRAM refit, then again on the
+  #      final 49152+mmproj vision config; see owui-chat-vision below).
   #      Involves a model load/swap -> generous timeout, daily tier.
   - id: bioclip-identify-consumer
     tier: daily
@@ -640,6 +640,28 @@ checks:
     timeout: 360
     cmd: PLANT_MODEL=coder python3 /opt/verification/bin/owui-plant-id-e2e.py
     expect: '^PLANT_ID_E2E_OK '
+    severity: warn
+    task_id: lai-22
+    runbook: wiki/docs/runbooks/plant-id.md
+    enabled: true
+
+  # owui-chat-vision (lai-22 follow-on, 2026-08-16): native vision on the chat
+  # lane — gemma4-31b-qat + unsloth mmproj-F16, ctx trimmed 65536->49152 to fit
+  # the 1.14G clip buffer (57344+mmproj OOMed; 49152+mmproj = 24.0G board, ~0.5G
+  # headroom under full desktop load — same margin class as the Mistral trio).
+  # The probe sends the golden image as an image_url content part through OWUI
+  # exactly like the frontend does for vision-capable models; a text-only
+  # regression reproduces the household's "image input is not supported" 500.
+  # Model capability flags are DB-only — canonical source is local-ai-tooling
+  # scripts/seed-owui-model-capabilities.sh (vision=true only for chat,
+  # rig-thinker, cydonia, dolphin-venice, goetia).
+  - id: owui-chat-vision
+    tier: daily
+    name: "chat lane native vision describes the golden image via OWUI (lai-22)"
+    host: mini
+    timeout: 360
+    cmd: python3 /opt/verification/bin/owui-chat-vision.py
+    expect: '^CHAT_VISION_OK '
     severity: warn
     task_id: lai-22
     runbook: wiki/docs/runbooks/plant-id.md

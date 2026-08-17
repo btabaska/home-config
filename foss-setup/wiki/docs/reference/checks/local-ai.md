@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 21 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 22 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -231,6 +231,17 @@ OWUI identify_plant tool chain narrates the golden dandelion (lai-22)
 
 ```bash
 PLANT_MODEL=coder python3 /opt/verification/bin/owui-plant-id-e2e.py
+```
+
+## `owui-chat-vision`
+
+chat lane native vision describes the golden image via OWUI (lai-22)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `lai-22` · **enabled:** True
+- **expects:** `^CHAT_VISION_OK `
+
+```bash
+python3 /opt/verification/bin/owui-chat-vision.py
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
