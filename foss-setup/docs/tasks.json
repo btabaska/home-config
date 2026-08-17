@@ -14417,5 +14417,86 @@
   "mode": "ai",
   "gate": "",
   "summary": "Fully-local plant identification: bioclip-api (pybioclip/BioCLIP 2, TreeOfLife-200M) FastAPI container on the rig :8199 (CPU inference by design — 3090 Ti stays budgeted for llama-swap), OWUI workspace tool identify_plant (chat-attached photo -> ranked taxa, canonical source owui-tools/ + seed script in local-ai-tooling), plus two consumer-probing checks (direct golden-image genus assert + full OWUI chat-chain e2e)."
+ },
+ {
+  "id": "lai-23",
+  "title": "Memos → OWUI Knowledge real-time RAG lane",
+  "host": "mini",
+  "type": "sync",
+  "depends_on": [
+   "lai-21"
+  ],
+  "estimate": "1-3 hrs",
+  "required": false,
+  "track": "local-ai-buildout",
+  "run": 14,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Unified personal vector store, phase 1 (operator decisions 2026-08-17: OWUI Knowledge collections ARE the vector store — reuse the tuned lai-03 RAG pipeline [chunking/embeddings/hybrid/qwen3-reranker], no new vector DB; n8n is the ingestion engine; Wikipedia stays OUT — kiwix ZIM+Xapian via openzim-mcp already covers it). Build: n8n workflow branch on the existing Memos memo webhook that mirrors every create/update/delete into a 'memos-notes' OWUI Knowledge collection via the OWUI API (loop-guard aware, reflection comments excluded), plus a full-resync/backfill script for drift repair, plus a consumer-end check (post probe memo → OWUI retrieval query returns it → delete)."
+ },
+ {
+  "id": "lai-24",
+  "title": "Obsidian vault → Memos migration (Memos becomes sole notetaking)",
+  "host": "device",
+  "type": "sync",
+  "depends_on": [
+   "lai-23"
+  ],
+  "estimate": "1-3 hrs",
+  "required": false,
+  "track": "local-ai-buildout",
+  "run": 14,
+  "mode": "mixed",
+  "gate": "operator confirms vault location + spot-checks imported notes",
+  "summary": "Operator decision 2026-08-17: drop Obsidian entirely, Memos is the single notetaking surface (supersedes the read-27 Obsidian-over-Trilium outcome). Import the Obsidian vault's markdown into Memos via its API (preserve titles/tags/dates where representable; attachments → Memos resources), let the lai-23 lane index everything as it lands, verify counts source-vs-Memos, then archive the vault read-only (archive-before-delete rule)."
+ },
+ {
+  "id": "lai-25",
+  "title": "Batch corpora ingestion: Syncthing docs + Paperless + Mealie",
+  "host": "mini",
+  "type": "sync",
+  "depends_on": [
+   "lai-23"
+  ],
+  "estimate": "1-3 hrs",
+  "required": false,
+  "track": "local-ai-buildout",
+  "run": 14,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Extend the lai-23 n8n ingestion engine with scheduled (cron-trigger) sync workflows feeding three more OWUI Knowledge collections: Syncthing hub docs folder (NAS), Paperless documents (its API already serves OCR'd text), Mealie recipes (API). Incremental by modified-since/state file, deletions handled, one consumer-end retrieval check per corpus, coverage manifest updated. NOTE: homelab wiki needs nothing — the ai-01 'homelab-wiki' collection + daily wiki-rag-sync.timer + mini-wiki-rag-fresh check already cover it."
+ },
+ {
+  "id": "lai-26",
+  "title": "GameFAQs semantic collection (embed the lai-14 ZIM)",
+  "host": "rig",
+  "type": "sync",
+  "depends_on": [
+   "lai-23",
+   "lai-14"
+  ],
+  "estimate": "3-6 hrs",
+  "required": false,
+  "track": "local-ai-buildout",
+  "run": 14,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Semantic-search upgrade over the private GameFAQs corpus: batch-extract the 143,376 plain-text FAQs from the lai-14 ZIM (ZIM stays canonical; no re-download — source was archive.org Gamespot_Gamefaqs_TXTs) into a 'gamefaqs' OWUI Knowledge collection so chat can answer game questions semantically, complementing the existing Xapian keyword path via openzim-mcp. Long embed run — schedule GPU-friendly/off-hours, chunk per-FAQ with game/platform metadata headers, golden-question consumer check (e.g. a walkthrough detail retrievable by paraphrase)."
+ },
+ {
+  "id": "lai-27",
+  "title": "OWUI memory polish: per-user toggle + background-review decision",
+  "host": "rig",
+  "type": "sync",
+  "depends_on": [
+   "lai-18"
+  ],
+  "estimate": "<1 hr",
+  "required": false,
+  "track": "local-ai-buildout",
+  "run": 14,
+  "mode": "mixed",
+  "gate": "operator decides whether to enable memories.background_review (unattended LLM calls vs single-GPU curation rule)",
+  "summary": "Close the lai-18 loop so OWUI memory actually improves over time for the operator: verify btabaska's per-user Memory toggle is ON (tools only attach when features.memory=true in the UI path), seed/verify system-context injection, add a drift-gate check on memories.enable+system_context.enable, and put the background_review tradeoff to the operator (currently deliberately False per the single-GPU curation rule)."
  }
 ]

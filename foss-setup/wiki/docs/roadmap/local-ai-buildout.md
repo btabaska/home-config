@@ -1,6 +1,6 @@
 # Roadmap — local-ai-buildout
 
-22 task(s). Status mirrors `docs/progress.json` (the source of truth).
+27 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -26,5 +26,10 @@
 | `lai-20` | local-ai buildout close-out | ✅ done | 1-3 hrs |
 | `lai-21` | Open WebUI 0.11.0 upgrade | ✅ done | 1-3 hrs |
 | `lai-22` | Local plant/species ID (BioCLIP 2 + OWUI identify_plant tool) | ✅ done | 1-3 hrs |
+| `lai-23` | Memos → OWUI Knowledge real-time RAG lane | ⬜ open | 1-3 hrs |
+| `lai-24` | Obsidian vault → Memos migration (Memos becomes sole notetaking) | ⬜ open | 1-3 hrs |
+| `lai-25` | Batch corpora ingestion: Syncthing docs + Paperless + Mealie | ⬜ open | 1-3 hrs |
+| `lai-26` | GameFAQs semantic collection (embed the lai-14 ZIM) | ⬜ open | 3-6 hrs |
+| `lai-27` | OWUI memory polish: per-user toggle + background-review decision | ⬜ open | <1 hr |
 
 [← Roadmap overview](index.md)
