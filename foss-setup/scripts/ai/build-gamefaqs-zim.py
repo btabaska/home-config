@@ -17,6 +17,16 @@ What this does:
   * walks an extracted corpus tree, wraps each .txt FAQ as minimal HTML
     (<pre>) with a real <title> derived from the game slug + platform + faq id
     (so the ZIM title index / kiwix suggest work),
+  * CHUNKS long guides into part-articles (2026-08-17, retrieval-granularity
+    fix): a 400k-char walkthrough as ONE article made Xapian rank whole
+    documents — "Pegasus Boots" surfaced junk (every long guide contains both
+    words somewhere) and the AI chat lane had to page a 400k body 10k chars at
+    a time to find the relevant section. Guides > CHUNK_THRESHOLD chars are
+    split at blank-line boundaries into ~CHUNK_TARGET-char part pages
+    (faq-<id>-p<N>.html, title "... FAQ <id> [N/M]", prev/next nav), each its
+    own fulltext-indexed FRONT_ARTICLE, with faq-<id>.html kept as a parts
+    index (stable path) carrying a body preview. One part fits a single capped
+    openzim-mcp zim_get (24k chars),
   * builds the ZIM with libzim's Xapian FULLTEXT index (config_indexing) so
     kiwix-serve /search and openzim-mcp zim_search return real results,
   * writes library metadata (Name=gamefaqs_en_private, private tags, source
@@ -61,6 +71,51 @@ PAGE = ("<!DOCTYPE html><html><head><meta charset=\"utf-8\">"
         "<h1>{game} <small>({platform}, {gen} generation)</small></h1>"
         "<p><em>GameFAQs text guide #{faqid}. {privacy}</em></p>"
         "<pre>{body}</pre></body></html>")
+
+PART_PAGE = ("<!DOCTYPE html><html><head><meta charset=\"utf-8\">"
+             "<title>{title}</title></head><body>"
+             "<h1>{game} <small>({platform}, {gen} generation)</small></h1>"
+             "<p><em>GameFAQs text guide #{faqid}, part {num} of {total}. "
+             "{privacy}</em></p>{nav}"
+             "<pre>{body}</pre>{nav}</body></html>")
+
+PARTS_INDEX_PAGE = ("<!DOCTYPE html><html><head><meta charset=\"utf-8\">"
+                    "<title>{title}</title></head><body>"
+                    "<h1>{game} <small>({platform}, {gen} generation)</small></h1>"
+                    "<p><em>GameFAQs text guide #{faqid}. {privacy}</em></p>"
+                    "<p>Long guide, split into {total} parts for search "
+                    "granularity:</p><ol>{toc}</ol>"
+                    "<p>Preview (start of part 1):</p><pre>{preview}</pre>"
+                    "</body></html>")
+
+# Retrieval granularity (2026-08-17): guides longer than CHUNK_THRESHOLD raw
+# chars are split into ~CHUNK_TARGET-char part-articles. CHUNK_MAX must stay
+# under the openzim-mcp per-get content cap (24000 chars, mcpo env) so one
+# zim_get returns a whole part; splits prefer blank lines, then any newline.
+CHUNK_THRESHOLD = 32_000
+CHUNK_TARGET = 16_000
+CHUNK_MAX = 22_000
+
+
+def split_chunks(text: str) -> list[str]:
+    if len(text) <= CHUNK_THRESHOLD:
+        return [text]
+    chunks, start = [], 0
+    floor = int(CHUNK_TARGET * 0.6)
+    while start < len(text):
+        rest = len(text) - start
+        if rest <= CHUNK_MAX:
+            chunks.append(text[start:])
+            break
+        seg = text[start:start + CHUNK_MAX]
+        cut = seg.rfind("\n\n", floor)
+        if cut == -1:
+            cut = seg.rfind("\n", floor)
+        if cut == -1:
+            cut = CHUNK_TARGET
+        chunks.append(seg[:cut])
+        start += cut
+    return chunks
 
 
 def decode(raw: bytes) -> str:
@@ -160,22 +215,59 @@ def main() -> int:
     n = 0
     with creator:
         creator.set_mainpath("index.html")
+        n_parts = 0
         for gen, platform, gamedir, txt in iter_faqs(args.src, gens):
             m = FAQ_RE.search(txt.name)
             faqid = m.group(1) if m else txt.stem
             game = game_title(gamedir)
             title = f"{game} ({platform.upper()}) — FAQ {faqid}"
-            body = html.escape(decode(txt.read_bytes()))
-            page = PAGE.format(title=html.escape(title), game=html.escape(game),
-                               platform=html.escape(platform), gen=html.escape(gen),
-                               faqid=html.escape(faqid), privacy=PRIVACY_LINE,
-                               body=body)
-            creator.add_item(HtmlItem(
-                f"{gen}/{platform}/{gamedir}/faq-{faqid}.html", title, page))
+            text = decode(txt.read_bytes())
+            chunks = split_chunks(text)
+            common = dict(game=html.escape(game), platform=html.escape(platform),
+                          gen=html.escape(gen), faqid=html.escape(faqid),
+                          privacy=PRIVACY_LINE)
+            base = f"{gen}/{platform}/{gamedir}/faq-{faqid}"
+            if len(chunks) == 1:
+                creator.add_item(HtmlItem(
+                    f"{base}.html", title,
+                    PAGE.format(title=html.escape(title),
+                                body=html.escape(text), **common)))
+            else:
+                total = len(chunks)
+                toc_rows = []
+                for i, chunk in enumerate(chunks, 1):
+                    ptitle = f"{title} [{i}/{total}]"
+                    prev_a = (f"<a href=\"faq-{html.escape(faqid)}-p{i - 1}.html\">"
+                              f"&larr; part {i - 1}</a> · " if i > 1 else "")
+                    next_a = (f" · <a href=\"faq-{html.escape(faqid)}-p{i + 1}.html\">"
+                              f"part {i + 1} &rarr;</a>" if i < total else "")
+                    nav = (f"<p>{prev_a}<a href=\"faq-{html.escape(faqid)}.html\">"
+                           f"all {total} parts</a>{next_a}</p>")
+                    creator.add_item(HtmlItem(
+                        f"{base}-p{i}.html", ptitle,
+                        PART_PAGE.format(title=html.escape(ptitle), num=i,
+                                         total=total, nav=nav,
+                                         body=html.escape(chunk), **common)))
+                    n_parts += 1
+                    first_line = next(
+                        (ln.strip() for ln in chunk.splitlines() if ln.strip()), "")
+                    toc_rows.append(
+                        f"<li><a href=\"faq-{html.escape(faqid)}-p{i}.html\">"
+                        f"Part {i}</a> — <code>{html.escape(first_line[:100])}"
+                        f"</code></li>")
+                # stable faq-<id>.html path stays valid: a parts index with a
+                # searchable preview (guide head = title/ToC region).
+                creator.add_item(HtmlItem(
+                    f"{base}.html", title,
+                    PARTS_INDEX_PAGE.format(title=html.escape(title), total=total,
+                                            toc="".join(toc_rows),
+                                            preview=html.escape(chunks[0][:2000]),
+                                            **common)))
             counts[(gen, platform)] += 1
             n += 1
             if n % 5000 == 0:
-                print(f"[{time.time() - t0:7.0f}s] {n} FAQs added", flush=True)
+                print(f"[{time.time() - t0:7.0f}s] {n} FAQs added "
+                      f"({n_parts} part pages)", flush=True)
 
         # appendix: guides that only ever existed as HTML (not in the TXT corpus)
         appendix = ""
@@ -224,7 +316,7 @@ def main() -> int:
             creator.add_metadata(k, v)
         creator.add_illustration(48, make_icon_48())
 
-    print(f"DONE {n} FAQs -> {args.out} "
+    print(f"DONE {n} FAQs ({n_parts} part pages) -> {args.out} "
           f"({args.out.stat().st_size / 1e6:.0f} MB) in {time.time() - t0:.0f}s")
     return 0 if n else 1
 

@@ -25,6 +25,16 @@ What this does:
   * walks an extracted corpus tree, wraps each .txt FAQ as minimal HTML
     (<pre>) with a real <title> derived from the game slug + platform + faq id
     (so the ZIM title index / kiwix suggest work),
+  * CHUNKS long guides into part-articles (2026-08-17, retrieval-granularity
+    fix): a 400k-char walkthrough as ONE article made Xapian rank whole
+    documents — "Pegasus Boots" surfaced junk (every long guide contains both
+    words somewhere) and the AI chat lane had to page a 400k body 10k chars at
+    a time to find the relevant section. Guides > CHUNK_THRESHOLD chars are
+    split at blank-line boundaries into ~CHUNK_TARGET-char part pages
+    (faq-<id>-p<N>.html, title "... FAQ <id> [N/M]", prev/next nav), each its
+    own fulltext-indexed FRONT_ARTICLE, with faq-<id>.html kept as a parts
+    index (stable path) carrying a body preview. One part fits a single capped
+    openzim-mcp zim_get (24k chars),
   * builds the ZIM with libzim's Xapian FULLTEXT index (config_indexing) so
     kiwix-serve /search and openzim-mcp zim_search return real results,
   * writes library metadata (Name=gamefaqs_en_private, private tags, source

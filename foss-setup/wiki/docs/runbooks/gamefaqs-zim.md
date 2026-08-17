@@ -59,6 +59,15 @@ pulled out of it first.
   suggest work), builds the ZIM with `config_indexing(True,"eng")` (Xapian fulltext — the
   whole point), writes the private metadata + a generated 48×48 icon + an index page with
   per-platform counts and the HTML-only appendix.
+- **Chunking (2026-08-17 rebuild):** guides > 32k raw chars are split at blank-line
+  boundaries into ~16k-char **part-articles** (`faq-<id>-p<N>.html`, title
+  `… FAQ <id> [N/M]`, prev/next + all-parts nav), each its own fulltext-indexed
+  front article; the stable `faq-<id>.html` path stays as a parts index (ToC of
+  first-lines + a 2k preview). Why: the original one-article-per-guide layout made
+  Xapian rank **whole 400k-char documents** — a query like "Pegasus Boots" surfaced
+  unrelated long guides (every walkthrough contains both words somewhere) and the OWUI
+  chat lane had to page a 400k body through 24k-capped `zim_get` calls to find the
+  right section. With parts, the matching chunk ranks directly and fits one capped get.
 - **Corpus/ZIM are DATA — never in git.** Only the builder + this runbook + the check are
   versioned.
 
@@ -108,6 +117,15 @@ printf '%s\n' "$PW" | ssh nas 'sudo -S sh /volume1/docker/kiwix/kiwix-library-re
 The nightly DSM "kiwix library refresh" task (05:15) also picks it up; the manual run
 just makes it live immediately. `/mnt/nas-zim` (rig RO CIFS mount) sees the file for
 openzim-mcp automatically.
+
+**Same-filename swap gotcha (hit 2026-08-17):** the refresh script's no-op fast path
+keys on the **set of filenames** (`.zims.state`) — replacing a ZIM in place with the
+same name will NOT trigger a rebuild, leaving `library.xml` pointing at the old book
+UUID and kiwix-serve holding the deleted file. Force it:
+`sudo rm /volume1/docker/kiwix/library/.zims.state` before running the refresh script.
+Also archive-before-delete the old file
+(`mv` to `/volume1/zim/.incoming/<name>.old-<date>` — `.incoming` is not scanned), and
+**recreate mcpo** afterwards so openzim-mcp drops its cached libzim handle.
 
 ## The consumer check
 
