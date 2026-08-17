@@ -4,8 +4,9 @@
 
 Memos' BUILT-IN MCP server (/mcp, in Memos since 0.27) is wired as an agent
 tool surface: OWUI chat holds a native type-"mcp" connection (id ``memos``,
-bearer PAT, filtered to search_memos/get_memo/list_tags/create_memo — 4 of 19;
-budget 31/40 after the 2026-08-17 serena+context7 trim), and opencode (rig+Mac) speaks to the same endpoint with the full
+bearer PAT, filtered to 7 of 19 — search/get/list memos, list_tags,
+list_memo_comments, create_memo, update_memo; widened for note-taking
+2026-08-17, budget 34/40), and opencode (rig+Mac) speaks to the same endpoint with the full
 tool set via {env:MEMOS_MCP_TOKEN}. Canonical wiring: local-ai-tooling
 ``scripts/seed-owui-tool-servers.sh`` + ``clients/opencode.json``; PAT canonical
 at vault journaling.memos.mcp_token (a SEPARATE PAT from n8n's api_token — it
@@ -23,10 +24,10 @@ Two stages, both against real consumer surfaces:
   1. A REAL MCP conversation (initialize -> notifications/initialized ->
      tools/list) against the mini's /mcp with the MCP PAT — the exact protocol
      exchange OWUI's MCPClient and opencode run — asserting serverInfo.name
-     "Memos" and that all four chat tools exist in tools/list.
+     "Memos" and that all seven chat tools exist in tools/list.
   2. OWUI admin config: the ``memos`` connection is present, type "mcp",
      enabled, auth_type bearer with a non-empty key, URL on :5230/mcp, and the
-     function filter is EXACTLY the four chat tools (drift in either
+     function filter is EXACTLY the seven chat tools (drift in either
      direction — lost tools or an unfiltered 19-tool dump into the 40-cap
      budget — fails).
 
@@ -46,7 +47,8 @@ MEMOS_MCP_URL = os.environ.get("MEMOS_MCP_URL", "http://localhost:5230/mcp")
 MCP_TOK = os.environ.get("MEMOS_MCP_TOKEN", "")
 OWUI_URL = os.environ.get("OWUI_URL", "http://192.168.10.12:3000").rstrip("/")
 OWUI_API_KEY = os.environ.get("OWUI_API_KEY", "")
-CHAT_TOOLS = {"search_memos", "create_memo", "get_memo", "list_tags"}
+CHAT_TOOLS = {"search_memos", "create_memo", "get_memo", "list_tags",
+              "list_memos", "list_memo_comments", "update_memo"}
 
 
 def bad(reason):
