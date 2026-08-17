@@ -1,33 +1,35 @@
 #!/usr/bin/env python3
 """owui-mcp-tools.py — CONSUMER-END probe for OWUI's native MCP tool wiring (lai-04).
 
-lai-04 rewired Open WebUI's External Tools: fleet-mcp (rig :8765/mcp) and context7
-(hosted) are NATIVE type-"mcp" streamable-HTTP tool servers; the stdio-only servers
-(time/fetch/serena/sequential-thinking) stay bridged through mcpo. Canonical connection
-list: local-ai-tooling ``scripts/seed-owui-tool-servers.sh`` (PersistentConfig, DB-only —
-a volume wipe silently erases it; this check is the tripwire).
+lai-04 rewired Open WebUI's External Tools: fleet-mcp (rig :8765/mcp) and the other
+native type-"mcp" streamable-HTTP servers (comfyui/playwright/memos), with the
+stdio-only servers (time/fetch/sequential-thinking) bridged through mcpo. Canonical
+connection list: local-ai-tooling ``scripts/seed-owui-tool-servers.sh``
+(PersistentConfig, DB-only — a volume wipe silently erases it; this check is the
+tripwire). 2026-08-17 (journal-09 follow-up): serena (9) + context7 (2) were
+REMOVED from OWUI — coding tool-calls are opencode's job (it keeps full serena +
+context7 via its own MCP clients) — and memos widened to 4; budget 40 -> 31.
 
 What it proves (from the mini, over the LAN):
   1. The fleet-mcp streamable-HTTP endpoint completes a REAL MCP handshake
      (initialize -> notifications/initialized -> tools/list) — the exact protocol
      conversation OWUI's MCPClient runs per chat, not a liveness ping. A port that
      answers 200 but can't speak MCP (e.g. the pre-lai-04 GET 406 confusion) FAILs.
-  2. OWUI's admin API still shows BOTH native mcp servers registered + enabled
-     (ids ``fleet`` and ``context7``) with fleet's function filter non-empty —
-     catches "someone deleted/disabled the connection or cleared the filter in the UI".
-  3. The TOTAL OWUI-visible tool budget is within cap (<= 40; measured 36 at the
-     lai-11 rebalance: fleet 9 + context7 2 + serena 10 + time 2 + fetch 1 +
-     sequential-thinking 1 + comfyui 3 + playwright 8).
+  2. OWUI's admin API still shows the fleet native-mcp server registered + enabled
+     with a non-empty function filter — catches "someone deleted/disabled the
+     connection or cleared the filter in the UI".
+  3. The TOTAL OWUI-visible tool budget is within cap (<= 40; designed 31 after
+     the 2026-08-17 trim: fleet 9 + time 2 + fetch 1 + sequential-thinking 1 +
+     comfyui 3 + playwright 8 + openzim 3 + memos 4).
      Fleet's exposed count = live tools/list names intersected with the configured
      filter (same endswith allow-list semantics as OWUI's ``is_string_allowed``);
      mcpo/OpenAPI counts come from each bridge's live openapi.json operationIds
      (``tool_<name>_post`` — the names OWUI actually filters/exposes) with the
      per-connection filter applied — so a broken bridge (the 2026-08-03
      mcp-SDK-2.0 breakage mounted time/fetch with ZERO tools) or a filter that
-     matches nothing (the operationId-vs-path trap) shows up here. context7 is
-     counted as a constant 2 (resolve-library-id + query-docs) instead of
-     hammering the hosted endpoint every sweep. Other native-mcp connections
-     (comfyui/playwright, lai-11) are counted by their allow-list size and MUST
+     matches nothing (the operationId-vs-path trap) shows up here. Non-fleet
+     native-mcp connections (comfyui/playwright/memos) are counted by their
+     allow-list size and MUST
      carry a non-empty filter — budget policy; their live tools/list + filter
      validity is probed by the sibling check ``image-browser-mcp``.
 
@@ -50,7 +52,6 @@ OWUI_API_KEY = os.environ.get("OWUI_API_KEY", "")
 # mcpo as seen from the mini (OWUI's config stores the container-network name mcpo:8000)
 MCPO_LAN = os.environ.get("MCPO_LAN_URL", "http://192.168.10.12:8000").rstrip("/")
 BUDGET = 40
-CONTEXT7_TOOLS = 2  # resolve-library-id + query-docs; not live-probed (hosted, rate-limited)
 
 
 def bad(reason: str) -> None:
@@ -134,13 +135,10 @@ def main() -> None:
         bad(f"owui_config_unreachable:{type(e).__name__}")
     mcp_conns = {(c.get("info") or {}).get("id"): c for c in connections if c.get("type") == "mcp"}
     fleet = mcp_conns.get("fleet")
-    context7 = mcp_conns.get("context7")
     if not fleet or not (fleet.get("config") or {}).get("enable"):
         bad("fleet_mcp_connection_missing_or_disabled")
     if ":8765/mcp" not in fleet.get("url", ""):
         bad(f"fleet_mcp_url_drift:{fleet.get('url', '')}")
-    if not context7 or not (context7.get("config") or {}).get("enable"):
-        bad("context7_mcp_connection_missing_or_disabled")
     filter_raw = (fleet.get("config") or {}).get("function_name_filter_list", "")
     filter_entries = [e.strip() for e in filter_raw.split(",") if e.strip()] if isinstance(filter_raw, str) else list(filter_raw)
     if not filter_entries:
@@ -155,15 +153,16 @@ def main() -> None:
         raw = (c.get("config") or {}).get("function_name_filter_list", "")
         return [e.strip() for e in raw.split(",") if e.strip()] if isinstance(raw, str) else [e for e in raw if e]
 
-    # other native-mcp connections (lai-11: comfyui + playwright) count by their
-    # allow-list size; an unfiltered local mcp connection breaks the budget policy
-    # (their live tools/list + filter validity is image-browser-mcp's job).
+    # non-fleet native-mcp connections (comfyui/playwright/memos) count by their
+    # allow-list size; an unfiltered mcp connection breaks the budget policy
+    # (comfyui/playwright live filter validity is image-browser-mcp's job; memos
+    # is journaling-memos-mcp's).
     mcp_other = 0
     for c in connections:
         if c.get("type") != "mcp" or not (c.get("config") or {}).get("enable"):
             continue
         cid = (c.get("info") or {}).get("id", "?")
-        if cid in ("fleet", "context7"):
+        if cid == "fleet":
             continue
         entries = [e for e in conn_filter(c) if not e.startswith("!")]
         if not entries:
@@ -196,7 +195,7 @@ def main() -> None:
         print(f"openapi {cid}: {n}/{len(op_ids)} tools visible", file=sys.stderr)
         mcpo_total += n
 
-    total = fleet_visible + CONTEXT7_TOOLS + mcp_other + mcpo_total
+    total = fleet_visible + mcp_other + mcpo_total
     if total > BUDGET:
         bad(f"tool_budget_exceeded total={total} cap={BUDGET}")
     print(f"OWUI_MCP_OK fleet={fleet_visible} mcp_other={mcp_other} mcpo={mcpo_total} total={total}")

@@ -151,9 +151,10 @@ bundled probe WAV through Memos' own `ai:transcribe` (the real button path).
 Memos ships a **built-in MCP server** at `/mcp` (since 0.27), and it is wired into the local AI
 stack so agents can work with the journal conversationally:
 
-- **OWUI chat** (rig): native MCP connection `memos`, filtered to **`search_memos` + `create_memo`**
-  only ("what did I write about X?", "save a memo that…") — destructive tools stay out of chat, and
-  the OWUI visible-tool budget sits at exactly 40/40. Enable it per-chat via the tools picker.
+- **OWUI chat** (rig): native MCP connection `memos`, filtered to **`search_memos` + `get_memo` +
+  `list_tags` + `create_memo`** ("what did I write about X?", "save a memo that…") — destructive
+  tools stay out of chat; the OWUI visible-tool budget sits at 31/40 (serena + context7 were
+  trimmed out of OWUI as opencode-only coding tools). Enable it per-chat via the tools picker.
 - **opencode** (rig + Mac): the full 19-tool set via a remote MCP entry (`{env:MEMOS_MCP_TOKEN}`).
 
 Auth is a **dedicated PAT** (vault `journaling.memos.mcp_token` — separate from n8n's, revocable
