@@ -91,7 +91,9 @@ weights — lane switch swaps the model], Plant Scout preset rides chat-vision; 
 removed from OWUI** [opencode-only — open-webui LiteLLM key scoped via `seed-litellm-owui-key-scope.py`; plant e2e
 check re-pinned to coder-swarm]; vision flags truthful via `seed-owui-model-capabilities.sh` [vision=true:
 chat-vision/cydonia/dolphin-venice/goetia only]; guarded by `owui-chat-vision`; openzim mcpo lane capped 24k-char
-gets + 1k snippets [`seed-owui-chat-zim-tools.py` pins server:openzim on chat] — all local-ai checks green post-split). Prior fleet-sweep follow-ups still stand (mini kernel reboot 4-7AM, rig
+gets + 1k snippets; the gamefaqs ZIM rebuilt CHUNKED same day [~16k-char part-articles — whole-doc Xapian ranking was
+returning junk]; `seed-owui-chat-tools.py` pins ALL tool servers except identify_plant on chat [no per-chat toggling;
+identify_plant = Plant Scout-only] — all local-ai checks green post-split). Prior fleet-sweep follow-ups still stand (mini kernel reboot 4-7AM, rig
 Windows `RealTimeIsUniversal`, off-mini dead-man/`alert-drill` ntfy subscribe, optional Bazarr subtitle
 key). Next work is the pre-existing open queue (`ha-19`, `fix-24`, `game-*`, `media-09/10/13`,
 `fix-70`…`fix-81`, etc.) via **`/build-next`** or **`/resolve-finding`**.

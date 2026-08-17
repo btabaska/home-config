@@ -33,7 +33,7 @@ library for Open WebUI chat and opencode. Library operation itself:
 
 | Consumer | Path | Tools visible |
 |---|---|---|
-| Open WebUI | `http://mcpo:8000/openzim` (OpenAPI bridge) | **3 of 8** — `zim_query` + `zim_search` + `zim_get` (operationId filter `tool_zim_*_post`); OWUI total 40/40. **Pinned on the `chat` model** via `meta.toolIds=["server:openzim"]` (`scripts/seed-owui-chat-zim-tools.py`, 2026-08-17) — without the pin a fresh chat has no zim tools and gemma improvises with whatever IS active |
+| Open WebUI | `http://mcpo:8000/openzim` (OpenAPI bridge) | **3 of 8** — `zim_query` + `zim_search` + `zim_get` (operationId filter `tool_zim_*_post`); OWUI total 40/40. **Pinned on the `chat` model** via `meta.toolIds` (`scripts/seed-owui-chat-tools.py`, 2026-08-17 — pins ALL tool servers except identify_plant) — without a pin a fresh chat has no zim tools and gemma improvises with whatever IS active |
 | opencode (rig) | own stdio spawn: `uvx openzim-mcp==2.5.5 --mode advanced /mnt/nas-zim` | all 8 (build + plan agents, `openzim*` glob) |
 | verification / scripts | `http://192.168.10.12:8000/openzim/<tool>` POST | all 8 |
 | **Mac opencode** | **NOT wired** — deliberate | — |
@@ -73,7 +73,7 @@ VERIFICATION_STATE_DIR=$(mktemp -d) /opt/verification/bin/run-checks.sh --no-not
 | OWUI chat can't see zim tools | PersistentConfig wipe — re-run `scripts/seed-owui-tool-servers.sh` (OWUI budget incl. openzim = 40/40; guarded by `owui-mcp-tools`) |
 | opencode `openzim failed: uvx not found` | Non-login shell PATH artifact — `uvx` is `~/.local/bin`; real sessions (login shell) are fine |
 | Chat 400s `ContextWindowExceededError` mid-ZIM-lookup | Tool results outgrew the chat lane's 49152 ctx. Content caps (above) should prevent it; a chat whose HISTORY already holds a pre-cap 100k-char tool result stays broken — start a fresh chat. If it recurs, check the caps are live: `zim_get` `_meta.chars` must be ≤ ~24k |
-| Chat greps its code-exec sandbox for "zim" instead of using zim tools | The `chat` model lost its `server:openzim` toolIds pin (DB-only, e.g. PersistentConfig wipe) — re-run `scripts/seed-owui-chat-zim-tools.py` (after `seed-owui-tool-servers.sh`) |
+| Chat greps its code-exec sandbox for "zim" instead of using zim tools | The `chat` model lost its toolIds pin (DB-only, e.g. PersistentConfig wipe) — re-run `scripts/seed-owui-chat-tools.py` (after `seed-owui-tool-servers.sh`) |
 | Searches slow / time out | NAS under heavy I/O (Wikipedia queue still running, or a scrub) — expected while the library grows; the check has generous timeouts |
 
 ## Upgrade
