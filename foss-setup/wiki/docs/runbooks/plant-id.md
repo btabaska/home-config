@@ -5,15 +5,28 @@ to an Open WebUI chat, ask "what plant is this?" — no cloud API involved.
 
 ## How to use it (household)
 
-1. Open **ai.tabaska.us** (Open WebUI) on phone or desktop.
-2. Start a chat with any model. **chat** now has native vision (it sees your
-   photo directly) *and* the tool; **coder** is the most reliable tool-caller
-   (text-only — the photo goes to the tool, not the model). **cydonia /
-   dolphin-venice / goetia** also have native vision.
-3. Attach a photo of the plant (the `+`/paperclip button) and ask something like
-   *"What plant is this? Use the identify_plant tool."* (On vision models you
-   can also just ask about the photo conversationally — but for species-level
-   ID trust BioCLIP over the LLM's eyeballing.)
+**One-tap flow — 🌿 Plant Scout (added 2026-08-17):**
+
+1. Open **ai.tabaska.us** (Open WebUI) on your phone (install it as a PWA for
+   an app icon).
+2. New chat → pick **🌿 Plant Scout** from the model dropdown (tap the star in
+   the dropdown to make it your default, then this step disappears).
+3. Tap the `+`/camera button, take the picture, hit **send — no text needed**.
+4. You get the full report: 🌿 species ID (BioCLIP) → 🚨 invasive/native
+   status for Rochester NY (zone 6) → 🪴 care → 🔬 a botany lesson → ⚠️
+   toxicity/lookalike safety. Follow-up questions in the same chat go deeper.
+
+Plant Scout is a workspace model preset riding the `chat` lane (vision) with
+`identify_plant` pre-attached via `meta.toolIds` (the frontend merges those
+into every request) and a Rochester-aware system prompt. Canonical source:
+`local-ai-tooling scripts/seed-owui-plant-scout.py`.
+
+**Manual flow** (any model): attach a photo and ask *"What plant is this? Use
+the identify_plant tool."* **chat** has native vision (sees the photo directly)
+*and* the tool; **coder** is the most reliable tool-caller (text-only — the
+photo goes to the tool, not the model); **cydonia / dolphin-venice / goetia**
+also have native vision. For species-level ID trust BioCLIP over the LLM's
+eyeballing.
 4. The model calls the **identify_plant** tool, which finds the newest image in
    the chat and returns the top-k ranked taxa; the model narrates the best match
    with its common name and confidence.

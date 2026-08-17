@@ -666,3 +666,27 @@ checks:
     task_id: lai-22
     runbook: wiki/docs/runbooks/plant-id.md
     enabled: true
+
+  # plant-scout-preset (lai-22 follow-on, 2026-08-17): the 🌿 Plant Scout one-tap
+  # preset (open OWUI -> Plant Scout -> camera -> send, no text) — DB-only model
+  # record, canonical source local-ai-tooling scripts/seed-owui-plant-scout.py.
+  # Drift gate only (record active, rides chat, vision on, identify_plant
+  # attached via meta.toolIds — the FRONTEND merges toolIds into every chat
+  # request): the behavior chain is already guarded by owui-plant-id-e2e +
+  # owui-chat-vision, and native tool EXECUTION is UI/websocket-side (an HTTP
+  # probe's SSE stream closes after the tool_call delta), so a config gate is
+  # the honest maximum here. Verified 2026-08-17: photo-only message on the
+  # preset natively emits exactly one identify_plant tool_call.
+  - id: plant-scout-preset
+    name: "Plant Scout preset intact (active, base=chat, vision, identify_plant tool)"
+    host: mini
+    timeout: 30
+    cmd: >-
+      curl -s -m 15 -H "Authorization:Bearer $OWUI_API_KEY" "$OWUI_URL/api/v1/models/model?id=plant-scout"
+      | python3 -c 'import sys,json;d=json.load(sys.stdin);m=d.get("meta") or {};ok=(d.get("is_active") and d.get("base_model_id")=="chat" and (m.get("capabilities") or {}).get("vision") is True and "identify_plant" in (m.get("toolIds") or []) and "Rochester" in ((d.get("params") or {}).get("system") or ""));print("SCOUT_OK" if ok else "SCOUT_DRIFT "+json.dumps({"active":d.get("is_active"),"base":d.get("base_model_id"),"tools":m.get("toolIds")}))' 2>/dev/null
+      || echo "SCOUT_DRIFT noresponse"
+    expect: '^SCOUT_OK'
+    severity: warn
+    task_id: lai-22
+    runbook: wiki/docs/runbooks/plant-id.md
+    enabled: true
