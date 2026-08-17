@@ -1,6 +1,6 @@
 # Roadmap — journaling
 
-7 task(s). Status mirrors `docs/progress.json` (the source of truth).
+8 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -11,5 +11,6 @@
 | `journal-05` | Add the Open WebUI Journaling Coach preset + Save-to-Journal function | ✅ done | 2 hr |
 | `journal-06` | Journaling stack closeout: README, backup/export, end-to-end monitoring, wiki, coverage | ✅ done | 2 hr |
 | `journal-07` | IGDB game-metadata enrichment for #gamelog entries (journal-07, optional/opt-in — SHIPPED) | ✅ done | 3 hr |
+| `journal-08` | Memos native AI integration: in-app voice transcription via local Whisper + LiteLLM provider (SHIPPED) | ✅ done | 1 hr |
 
 [← Roadmap overview](index.md)

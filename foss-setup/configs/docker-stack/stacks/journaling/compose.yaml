@@ -128,6 +128,10 @@ services:
   # the rig's Open WebUI STT engine points at http://192.168.10.2:8010/v1 (model
   # Systran/faster-whisper-small — keep it cached in ./whisper-cache). Keyless on the
   # LAN by design; guarded by the daily voice-roundtrip check (checks.d/local-ai.yaml).
+  # journal-08: Memos' NATIVE AI transcription (the editor audio-recorder's
+  # Transcribe button) also consumes this via container name :8000 — configured in
+  # the Memos sqlite (instance/settings/AI, seed with scripts/seed-memos-ai.sh),
+  # guarded by journaling-memos-native-transcribe (checks.d/journaling.yaml).
   faster-whisper:
     image: ghcr.io/speaches-ai/speaches:0.8.3-cpu@sha256:21e3df06d842fb7802ab470dd77c25f0e8c0d22950e8d8c6ae886e851af53ef8
     container_name: faster-whisper

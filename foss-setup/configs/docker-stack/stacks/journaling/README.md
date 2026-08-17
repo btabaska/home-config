@@ -18,7 +18,8 @@ ever makes is faster-whisper's one-time model download from HuggingFace.
   `configs/docker-stack/service-enrichment.yaml`).
 - **Built by tasks:** `journal-01` (scaffold) → `journal-02` (token + webhook) → `journal-03`
   (analyze workflow + loop guard) → `journal-04` (Whisper branch) → `journal-05` (OWUI
-  front-end) → `journal-06` (this README + monitoring/backup closeout).
+  front-end) → `journal-06` (this README + monitoring/backup closeout) → `journal-07`
+  (IGDB #gamelog enrichment, opt-in) → `journal-08` (Memos native in-editor dictation).
 
 ## Architecture
 
@@ -120,6 +121,30 @@ python3 /opt/verification/bin/journaling-e2e.py         # -> E2E_OK (or E2E_SKIP
 Or by hand: create a `#journal` memo in the UI and watch a `🧭 **Reflection**` comment appear on
 it within a few seconds (only if the coach model is loaded — best-effort).
 
+## Native in-editor dictation (journal-08)
+
+Memos 0.29.1 has a built-in **Settings → AI Integrations + Transcription** panel; it is wired to
+the local stack, which lights up the **Transcribe** button on the editor's audio recorder (record →
+tap transcribe → the spoken text lands in the entry). This is server-side — the browser sends the
+audio to Memos (`/api/v1/ai:transcribe`) and *Memos* calls the provider — so the provider endpoint
+is the **container** name `http://faster-whisper:8000/v1`, exactly like n8n's branch. It is a
+separate path from the `journal-04` n8n branch (which transcribes audio *attachments* after save);
+both use the same Speaches container and model (`Systran/faster-whisper-small`).
+
+A second provider, `rig-litellm` (`http://192.168.10.12:4000/v1`, least-priv virtual key scoped
+`chat`+`utility`, canonical vault `ai_stack.litellm_memos_key`), is pre-wired for future Memos AI
+features — nothing in 0.29.1 consumes it yet.
+
+The whole panel lives **only in the Memos sqlite** (`instance/settings/AI` — no compose file owns
+it), so a DB wipe/restore loses it silently. Re-seed with:
+
+```bash
+cd /opt/stacks/journaling && MEMOS_LLM_KEY=<vault ai_stack.litellm_memos_key> ./scripts/seed-memos-ai.sh
+```
+
+The daily `journaling-memos-native-transcribe` check drift-gates the setting and then pushes the
+bundled probe WAV through Memos' own `ai:transcribe` (the real button path).
+
 ## Templates
 
 - [`templates/daily.md`](templates/daily.md) — `#journal`.
@@ -149,9 +174,10 @@ it within a few seconds (only if the coach model is loaded — best-effort).
 ## Monitoring
 
 - **Verification runner** (`foss-setup/verification/checks.d/journaling.yaml`, on the mini runner):
-  readiness probes for all three services + the rig coach dependency + wiring invariants, and the
-  consumer-end **`journaling-loop-e2e`** (one memo → exactly one comment). Alerts → ntfy topic
-  `verification`.
+  readiness probes for all three services + the rig coach dependency + wiring invariants, the
+  consumer-end **`journaling-loop-e2e`** (one memo → exactly one comment), and
+  **`journaling-memos-native-transcribe`** (the native Transcribe-button path, `journal-08`).
+  Alerts → ntfy topic `verification`.
 - **Uptime-Kuma** (mini `:3001`): `Mini Memos` + `Mini n8n` liveness tiles (health endpoints),
   seeded by `foss-setup/scripts/uptime-kuma/seed-monitors.sh`, alerting to ntfy.
 - **Homepage** `Journaling` group: two tiles for Memos + n8n.

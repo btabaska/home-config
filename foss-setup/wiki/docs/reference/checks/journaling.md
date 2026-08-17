@@ -1,6 +1,6 @@
 # Checks — journaling
 
-`foss-setup/verification/checks.d/journaling.yaml` — 12 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/journaling.yaml` — 13 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `journaling-memos-ready`
 
@@ -121,6 +121,17 @@ IGDB #gamelog enrichment reaches Twitch OAuth + IGDB from the n8n container
 
 ```bash
 python3 /opt/verification/bin/journaling-igdb-enrich.py
+```
+
+## `journaling-memos-native-transcribe`
+
+memos native AI transcription: settings wired + real ai:transcribe round-trip
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `journal-08` · **enabled:** True
+- **expects:** `^MEMOS_TRANSCRIBE_OK$`
+
+```bash
+python3 /opt/verification/bin/journaling-memos-transcribe.py
 ```
 
 ## `journaling-reflection-backlog`

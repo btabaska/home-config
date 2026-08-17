@@ -13142,6 +13142,18 @@
   ]
  },
  {
+  "id": "journal-08",
+  "host": "mini",
+  "mode": "ai",
+  "depends_on": [
+   "journal-01"
+  ],
+  "estimate": "1 hr",
+  "title": "Memos native AI integration: in-app voice transcription via local Whisper + LiteLLM provider (SHIPPED)",
+  "summary": "Wire Memos 0.29.1's built-in AI Integrations (instance/settings/AI) to the local stack: provider `local-whisper` (OPENAI-type, endpoint http://faster-whisper:8000/v1 by container name on the journaling net, dummy key — Speaches is keyless on the LAN) powering the editor's audio-recorder Transcribe button (server-side: browser -> Memos /api/v1/ai:transcribe -> speaches /v1/audio/transcriptions, model Systran/faster-whisper-small, lang en), plus provider `rig-litellm` (http://192.168.10.12:4000/v1, least-priv virtual key vault ai_stack.litellm_memos_key scoped chat+utility) pre-wired for future Memos AI features. Distinct from the journal-04 n8n branch (post-hoc attachment transcription): this is interactive, in-editor, replaces dictation-by-hand. Config lives ONLY in the Memos sqlite (no compose owns it) -> idempotent re-seed script scripts/seed-memos-ai.sh in the stack dir + daily consumer check journaling-memos-native-transcribe (drift-gate the setting, then a REAL /api/v1/ai:transcribe round-trip on the bundled probe wav).",
+  "track": "journaling"
+ },
+ {
   "id": "glue-14",
   "track": "ops",
   "title": "Immich-ML GPU yield policy: night-only rig window + NAS-iGPU daytime fallback (photos = lowest-priority tenant)",

@@ -189,6 +189,32 @@ checks:
     enabled: true
     timeout: 90
 
+  # journal-08 consumer probe: Memos 0.29.1's NATIVE AI integration (the editor
+  # audio-recorder's Transcribe button) — providers + transcription wiring live
+  # ONLY in the Memos sqlite (instance/settings/AI; no compose file owns them), so
+  # a DB wipe/restore or a stray Settings edit silently kills in-editor dictation
+  # while every container stays green (the journal-04 n8n attachment branch is a
+  # SEPARATE path and keeps working — this checks the interactive one). The helper
+  # first drift-gates the setting (local-whisper provider -> container endpoint
+  # http://faster-whisper:8000/v1 + key set, transcription -> that provider with
+  # Systran/faster-whisper-small; rig-litellm provider -> :4000 + key set, vault
+  # ai_stack.litellm_memos_key), then pushes the bundled 1 s probe WAV through
+  # Memos' own /api/v1/ai:transcribe — the full server-side chain the button
+  # exercises, not just the setting row. Re-seed after a wipe with the stack's
+  # scripts/seed-memos-ai.sh. Real CPU inference on the mini, so tier: daily like
+  # journaling-whisper-transcribes; warn — dictation degrades, entries still save.
+  - id: journaling-memos-native-transcribe
+    tier: daily
+    name: "memos native AI transcription: settings wired + real ai:transcribe round-trip"
+    host: mini
+    cmd: python3 /opt/verification/bin/journaling-memos-transcribe.py
+    expect: '^MEMOS_TRANSCRIBE_OK$'
+    severity: warn
+    task_id: journal-08
+    runbook: wiki/docs/services/journaling.md
+    enabled: true
+    timeout: 180
+
   # fix-67 / SM37 — consumer-end class check that every real #journal entry ends up
   # with a 🧭 Reflection comment. The journal-analyze loop only fires on
   # memos.memo.created, so a #journal tag ADDED BY EDIT (a memos.memo.updated event
