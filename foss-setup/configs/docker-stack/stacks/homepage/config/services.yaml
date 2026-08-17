@@ -347,6 +347,11 @@
         href: https://comfyui.tabaska.us
         description: Stable Diffusion
         siteMonitor: http://192.168.10.12:8188
+    - Unsloth Studio:
+        icon: mdi-sloth
+        href: https://unsloth.tabaska.us
+        description: Run/train GGUF + diffusion (llama-swap lanes incl. Qwen3.8-27B)
+        siteMonitor: http://192.168.10.12:8210/api/health
     - n8n:
         icon: n8n.png
         href: https://n8n.tabaska.us

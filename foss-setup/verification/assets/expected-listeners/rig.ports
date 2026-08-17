@@ -24,6 +24,7 @@
 8188    # comfyui
 8189    # gpu-arbiter
 8199    # bioclip-api — BioCLIP 2 plant/species ID (lai-22)
+8210    # unsloth-studio — Unsloth Studio web UI (2026-08-17)
 8212    # palworld — REST admin API
 8384    # syncthing — GUI
 8765    # fleet-mcp (local-ai-tooling ops/fleet_mcp.py, host)

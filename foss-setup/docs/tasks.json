@@ -14498,5 +14498,19 @@
   "mode": "mixed",
   "gate": "operator decides whether to enable memories.background_review (unattended LLM calls vs single-GPU curation rule)",
   "summary": "Close the lai-18 loop so OWUI memory actually improves over time for the operator: verify btabaska's per-user Memory toggle is ON (tools only attach when features.memory=true in the UI path), seed/verify system-context injection, add a drift-gate check on memories.enable+system_context.enable, and put the background_review tradeoff to the operator (currently deliberately False per the single-GPU curation rule)."
+ },
+ {
+  "id": "lai-28",
+  "title": "Unsloth Studio on the rig (web UI, llama-swap lanes, MCP tools)",
+  "host": "rig",
+  "type": "deploy",
+  "depends_on": [],
+  "estimate": "2-4 hrs",
+  "required": false,
+  "track": "local-ai-buildout",
+  "run": 14,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Unsloth Studio (web-UI form of Unsloth Desktop) as a docker service on the rig (:8210, unsloth.tabaska.us): digest-pinned unsloth/unsloth, CDI GPU, Studio password auth. Text models ride a saved llama_cpp provider at llama-swap :8080/v1 (no duplicate VRAM; qwen3.8-27b at its tuned ctx 98304/thinking sampler). Scan folders expose /opt/llm/models + /opt/comfyui/models RO (Z-Image/FLUX/Krea2 detected; LTX-2.3 excluded — 29GB single-file OOM-kills the validator; no image-gen route in this build, ComfyUI stays the gen path incl. via the wired comfyui MCP). 4 native-MCP servers mirrored from OWUI (fleet/comfyui/playwright/memos). DB-only config seeded by seed-unsloth-studio.py; consumer e2e check unsloth-studio-e2e."
  }
 ]

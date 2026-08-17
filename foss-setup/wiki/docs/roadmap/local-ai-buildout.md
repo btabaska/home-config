@@ -1,6 +1,6 @@
 # Roadmap — local-ai-buildout
 
-27 task(s). Status mirrors `docs/progress.json` (the source of truth).
+28 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -31,5 +31,6 @@
 | `lai-25` | Batch corpora ingestion: Syncthing docs + Paperless + Mealie | ⬜ open | 1-3 hrs |
 | `lai-26` | GameFAQs semantic collection (embed the lai-14 ZIM) | ⬜ open | 3-6 hrs |
 | `lai-27` | OWUI memory polish: per-user toggle + background-review decision | ⬜ open | <1 hr |
+| `lai-28` | Unsloth Studio on the rig (web UI, llama-swap lanes, MCP tools) | ✅ done | 2-4 hrs |
 
 [← Roadmap overview](index.md)

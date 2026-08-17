@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 24 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 25 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -253,6 +253,17 @@ chat-vision lane native vision describes the golden image via OWUI (lai-22)
 
 ```bash
 python3 /opt/verification/bin/owui-chat-vision.py
+```
+
+## `unsloth-studio-e2e`
+
+Unsloth Studio API-key chat rides llama-swap qwen3.8-27b + config drift gate
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `lai-28` · **enabled:** True
+- **expects:** `^UNSLOTH_E2E_OK `
+
+```bash
+python3 /opt/verification/bin/unsloth-studio-e2e.py
 ```
 
 ## `plant-scout-preset`

@@ -702,6 +702,29 @@ checks:
   # probe's SSE stream closes after the tool_call delta), so a config gate is
   # the honest maximum here. Verified 2026-08-17: photo-only message on the
   # preset natively emits exactly one identify_plant tool_call.
+  # unsloth-studio (2026-08-17): Unsloth Studio web UI on the rig (:8210,
+  # unsloth.tabaska.us via the mini Caddy). Text models are NOT loaded by
+  # Studio — a saved llama_cpp provider points at llama-swap :8080/v1, so all
+  # lanes (incl. qwen3.8-27b at its tuned ctx 98304 / thinking sampler set)
+  # serve without duplicate VRAM residency. DB-only config (provider, scan
+  # folders /models/gguf + /models/comfyui, 4 MCP servers, API key) — canonical
+  # source local-ai-tooling scripts/seed-unsloth-studio.py; volume wipe
+  # recovery is in the runbook (bootstrap-password dance). The e2e probes the
+  # REAL consumer chain (API key -> /v1/chat/completions -> provider ->
+  # llama-swap -> qwen3.8-27b) AND drift-gates the DB config. Model swap
+  # involved -> generous timeout, daily tier.
+  - id: unsloth-studio-e2e
+    tier: daily
+    name: "Unsloth Studio API-key chat rides llama-swap qwen3.8-27b + config drift gate"
+    host: mini
+    timeout: 360
+    cmd: python3 /opt/verification/bin/unsloth-studio-e2e.py
+    expect: '^UNSLOTH_E2E_OK '
+    severity: warn
+    task_id: lai-28
+    runbook: wiki/docs/runbooks/unsloth-studio.md
+    enabled: true
+
   - id: plant-scout-preset
     name: "Plant Scout preset intact (active, base=chat-vision, vision, identify_plant tool)"
     host: mini

@@ -308,6 +308,15 @@ lumiverse.{$DOMAIN} {
 	reverse_proxy {$RIG_IP}:3001
 }
 
+# Unsloth Studio — run/train GGUF + diffusion web UI (rig :8210, 2026-08-17).
+# Text models ride llama-swap via an in-app provider; Studio password login
+# (vault ai_stack.unsloth_studio_password) is the auth gate — LAN/tailnet
+# posture like lumiverse/LDR, never internet-exposed.
+unsloth.{$DOMAIN} {
+	import local_tls
+	reverse_proxy {$RIG_IP}:8210
+}
+
 # Marinara-Engine — creative/RP chat (rig, on-demand; ghcr pasta-devs/marinara-engine,
 # ALPHA). Its own Basic Auth is void behind Docker userland-proxy (the app only sees a
 # trusted private/Docker IP), so Caddy is the auth gate here (user+bcrypt hash in .env).
