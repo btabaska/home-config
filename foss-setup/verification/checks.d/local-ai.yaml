@@ -647,6 +647,28 @@ checks:
     runbook: wiki/docs/runbooks/plant-id.md
     enabled: true
 
+  # owui-plant-id-ui-path (2026-08-17): guards the UI-native attach shape the
+  # e2e check CANNOT see. The 0.11.0 backend reloads saved-chat messages from
+  # the DB, injects images as image_url CONTENT PARTS and strips
+  # message["files"] before tools get __messages__ — identify_plant 0.1.0 only
+  # scanned files/__files__, so every household UI chat got "No attached image
+  # found" while the raw-API e2e (files key intact) stayed green. The probe
+  # pulls the LIVE tool source from the OWUI DB (catches seed drift) and runs
+  # it in the open-webui container with the post-payload UI message shape
+  # (image only as an image_url data-URI part, __files__ empty). GPU-free
+  # (bioclip is CPU), no LLM in the loop.
+  - id: owui-plant-id-ui-path
+    tier: daily
+    name: "identify_plant resolves the image from UI-shaped messages (image_url parts, files stripped)"
+    host: mini
+    timeout: 240
+    cmd: python3 /opt/verification/bin/owui-plant-id-ui-path.py
+    expect: '^PLANT_UI_PATH_OK '
+    severity: warn
+    task_id: lai-22
+    runbook: wiki/docs/runbooks/plant-id.md
+    enabled: true
+
   # owui-chat-vision (lai-22 follow-on, 2026-08-16; SPLIT 2026-08-17): native
   # vision moved to its own chat-vision lane (gemma4-31b-qat-vision + unsloth
   # mmproj-F16, ctx 49152 — the 1.14G clip buffer costs two 8k steps) while

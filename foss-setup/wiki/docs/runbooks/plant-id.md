@@ -68,15 +68,21 @@ phone/browser → OWUI (rig :3000) → identify_plant workspace tool
 
 ## Verification
 
-Two-stage, `checks.d/local-ai.yaml`, both `tier: daily`:
+Three-stage, `checks.d/local-ai.yaml`, all `tier: daily`:
 
 - **bioclip-identify-consumer** — golden Wikimedia dandelion
   (`assets/plant-id-dandelion.jpg`) straight at rig `:8199`; top-1 **genus**
   must be `Taraxacum`. Genus on purpose: Taraxacum microspecies are genuinely
   ambiguous (top-3 all agree on genus), species-level would flap.
-- **owui-plant-id-e2e** (`bin/owui-plant-id-e2e.py`) — the real household call
-  path: upload via the OWUI files API → chat completion with
+- **owui-plant-id-e2e** (`bin/owui-plant-id-e2e.py`) — the raw-API call path:
+  upload via the OWUI files API → chat completion with
   `tool_ids=["identify_plant"]` → reply must name Taraxacum.
+- **owui-plant-id-ui-path** (`bin/owui-plant-id-ui-path.py`) — the UI-native
+  attach shape the e2e check cannot see (added 2026-08-17 after it bit the
+  household, see gotcha below): pulls the **live** tool source from the OWUI
+  DB and runs it in the open-webui container with a post-payload UI message
+  (image only as an `image_url` content part, `files` stripped) → returned
+  taxa must name Taraxacum.
 
 ## Gotchas (hard-won)
 
@@ -116,5 +122,16 @@ Two-stage, `checks.d/local-ai.yaml`, both `tier: daily`:
 - **Tool returns "No attached image found"** → the user asked before attaching,
   or the attachment isn't an image. Attach the photo and re-ask in the same
   chat.
+- **"No attached image found" on EVERY UI chat while owui-plant-id-e2e stays
+  green** (bit the household 2026-08-17, tool 0.1.0 → 0.1.1): the 0.11.0
+  backend reloads saved-chat messages from the chat DB, injects attached
+  images into content as `image_url` **parts**, then strips
+  `message["files"]` (`middleware.py` `message.pop("files", None)`) — all
+  before tools receive `__messages__`, for both legacy and native execution.
+  So in UI chats the image is findable **only** as an `image_url` content
+  part; `__messages__[*]["files"]`/`__files__` shapes exist only for raw API
+  callers (whose messages pass through untouched — which is exactly why the
+  e2e check kept passing). The tool must scan both shapes; guarded by
+  **owui-plant-id-ui-path**.
 - **First identify after a volume wipe is slow** — it re-downloads ~2 GB of
   weights from Hugging Face; needs outbound internet once.
