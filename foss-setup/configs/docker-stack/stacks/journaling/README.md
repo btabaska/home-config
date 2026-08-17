@@ -19,7 +19,8 @@ ever makes is faster-whisper's one-time model download from HuggingFace.
 - **Built by tasks:** `journal-01` (scaffold) → `journal-02` (token + webhook) → `journal-03`
   (analyze workflow + loop guard) → `journal-04` (Whisper branch) → `journal-05` (OWUI
   front-end) → `journal-06` (this README + monitoring/backup closeout) → `journal-07`
-  (IGDB #gamelog enrichment, opt-in) → `journal-08` (Memos native in-editor dictation).
+  (IGDB #gamelog enrichment, opt-in) → `journal-08` (Memos native in-editor dictation) →
+  `journal-09` (agent access via the built-in Memos MCP server).
 
 ## Architecture
 
@@ -144,6 +145,22 @@ cd /opt/stacks/journaling && MEMOS_LLM_KEY=<vault ai_stack.litellm_memos_key> ./
 
 The daily `journaling-memos-native-transcribe` check drift-gates the setting and then pushes the
 bundled probe WAV through Memos' own `ai:transcribe` (the real button path).
+
+## Agent access via MCP (journal-09)
+
+Memos ships a **built-in MCP server** at `/mcp` (since 0.27), and it is wired into the local AI
+stack so agents can work with the journal conversationally:
+
+- **OWUI chat** (rig): native MCP connection `memos`, filtered to **`search_memos` + `create_memo`**
+  only ("what did I write about X?", "save a memo that…") — destructive tools stay out of chat, and
+  the OWUI visible-tool budget sits at exactly 40/40. Enable it per-chat via the tools picker.
+- **opencode** (rig + Mac): the full 19-tool set via a remote MCP entry (`{env:MEMOS_MCP_TOKEN}`).
+
+Auth is a **dedicated PAT** (vault `journaling.memos.mcp_token` — separate from n8n's, revocable
+alone). Canonical wiring is in the **local-ai-tooling repo**: `scripts/seed-owui-tool-servers.sh`
+(injects the PAT at run time; re-run after an OWUI volume wipe) + `clients/opencode.json`. The n8n
+reflection loop does **not** use MCP — it stays webhook + REST by design. Guarded by the fast
+`journaling-memos-mcp` check (real MCP handshake + OWUI connection drift gate).
 
 ## Templates
 

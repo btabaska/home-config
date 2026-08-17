@@ -215,6 +215,29 @@ checks:
     enabled: true
     timeout: 180
 
+  # journal-09 consumer probe: the Memos built-in MCP server (/mcp) as an agent
+  # tool surface — OWUI chat (native type-"mcp" connection, bearer PAT, filtered
+  # to search_memos+create_memo; the 40/40 tool budget itself is owui-mcp-tools'
+  # job) and opencode rig+Mac (full tool set, {env:MEMOS_MCP_TOKEN}). The helper
+  # runs the REAL MCP conversation (initialize -> initialized -> tools/list) with
+  # the dedicated PAT (vault journaling.memos.mcp_token) and then drift-gates the
+  # OWUI connection (present/enabled/bearer-key/filter exact). Catches: PAT
+  # revoked without consumers following, OWUI volume-wipe/Settings drift, and a
+  # Memos upgrade renaming the chat tools (0.30 rewrote the MCP layer once
+  # already). Wiring canonical: local-ai-tooling seed-owui-tool-servers.sh +
+  # clients/opencode.json. Cheap (no inference) -> fast tier.
+  - id: journaling-memos-mcp
+    tier: fast
+    name: "memos MCP agent lane: real handshake + OWUI connection wired (journal-09)"
+    host: mini
+    cmd: python3 /opt/verification/bin/journaling-memos-mcp.py
+    expect: '^MEMOS_MCP_OK$'
+    severity: warn
+    task_id: journal-09
+    runbook: wiki/docs/services/journaling.md
+    enabled: true
+    timeout: 60
+
   # fix-67 / SM37 — consumer-end class check that every real #journal entry ends up
   # with a 🧭 Reflection comment. The journal-analyze loop only fires on
   # memos.memo.created, so a #journal tag ADDED BY EDIT (a memos.memo.updated event

@@ -1,6 +1,6 @@
 # Checks — journaling
 
-`foss-setup/verification/checks.d/journaling.yaml` — 13 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/journaling.yaml` — 14 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `journaling-memos-ready`
 
@@ -132,6 +132,17 @@ memos native AI transcription: settings wired + real ai:transcribe round-trip
 
 ```bash
 python3 /opt/verification/bin/journaling-memos-transcribe.py
+```
+
+## `journaling-memos-mcp`
+
+memos MCP agent lane: real handshake + OWUI connection wired (journal-09)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `journal-09` · **enabled:** True
+- **expects:** `^MEMOS_MCP_OK$`
+
+```bash
+python3 /opt/verification/bin/journaling-memos-mcp.py
 ```
 
 ## `journaling-reflection-backlog`
