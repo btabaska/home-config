@@ -65,12 +65,16 @@ Two-stage, `checks.d/local-ai.yaml`, both `tier: daily`:
   the unexecuted `tool_calls` deltas back. Legacy mode runs
   `chat_completion_tools_handler` server-side pre-completion. UI chats are
   unaffected (native mode works there).
-- **The `chat` lane can be VRAM-squeezed.** gemma4-31b-qat is a 23.7 G edge fit;
-  when desktop residents grow (ComfyUI idle CUDA context ~460 M + Apollo NVENC
-  ~270 M + Steam/kwin), its load fails with `upstream command exited
-  prematurely` while smaller lanes keep working (observed 2026-08-16). The e2e
-  check pins `PLANT_MODEL=coder` for this reason. If chat-model plant ID
-  matters, free desktop VRAM or trim gemma's ctx-size.
+- **The `chat` lane was VRAM-squeezed — RESOLVED 2026-08-16** (local-ai-tooling
+  cc52b1a): gemma4-31b-qat at ctx 73728 stopped fitting once desktop residents
+  grew (ComfyUI's CUDA context ~460 M + Apollo NVENC ~270 M + Steam/kwin), and
+  loads failed with `upstream command exited prematurely` while smaller lanes
+  kept working. Fix = ctx 73728 → 65536 (measured: 22.1 G, ~0.8 G headroom under
+  full desktop load; only 10/60 gemma layers are global attention, so each 8 k
+  of ctx costs ~340 M KV + buffer growth). The plant chain is verified green on
+  **both** `chat` and `coder`; the e2e check keeps `PLANT_MODEL=coder` for
+  tool-call reliability. If the squeeze ever recurs (new desktop residents),
+  this is the knob.
 - **Tool returns "No attached image found"** → the user asked before attaching,
   or the attachment isn't an image. Attach the photo and re-ask in the same
   chat.

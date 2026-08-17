@@ -612,10 +612,10 @@ checks:
   #      tool_ids=[identify_plant], assert the narrated reply names Taraxacum.
   #      stream=True + function_calling "legacy" are REQUIRED (0.11.0: native
   #      mode only executes tools inside UI sessions — raw API callers get the
-  #      unexecuted tool_calls back). PLANT_MODEL pinned to coder: the chat lane
-  #      (gemma4-31b-qat) is a 23.7G edge fit that OOMs whenever desktop VRAM
-  #      residents (ComfyUI idle + Apollo NVENC + Steam) eat its headroom
-  #      (observed 2026-08-16); coder rides the same tool chain and loads.
+  #      unexecuted tool_calls back). PLANT_MODEL pinned to coder for tool-call
+  #      reliability; the chain is also verified green on chat (2026-08-16,
+  #      after the gemma ctx 73728->65536 refit — local-ai-tooling cc52b1a —
+  #      fixed the desktop-VRAM squeeze that had the chat lane failing to load).
   #      Involves a model load/swap -> generous timeout, daily tier.
   - id: bioclip-identify-consumer
     tier: daily
