@@ -96,27 +96,52 @@ checks:
     enabled: true
 
   # owui-mcp-tools (lai-04): OWUI's native MCP tool wiring. fleet-mcp (rig :8765/mcp,
-  # fleet-mcp.service) + context7 (hosted) are native type-"mcp" streamable-HTTP tool
-  # servers; time/fetch/serena/sequential-thinking stay on the mcpo OpenAPI bridge.
+  # fleet-mcp.service) + comfyui/playwright/memos are native type-"mcp"
+  # streamable-HTTP tool servers; time/fetch/openzim/sequential-thinking stay on
+  # the mcpo OpenAPI bridge (serena + context7 trimmed to opencode-only 2026-08-17).
   # The connection list is PersistentConfig (DB-only — a volume wipe silently erases
   # it; canonical source = local-ai-tooling scripts/seed-owui-tool-servers.sh).
   # Helper (verification/bin/owui-mcp-tools.py) proves, from the mini:
   #   1. a REAL MCP handshake (initialize -> initialized -> tools/list) against
   #      fleet-mcp — the exact protocol conversation OWUI's MCPClient runs per chat;
-  #   2. OWUI's admin API still shows BOTH mcp connections registered + enabled and
-  #      fleet's function filter non-empty (9/10 tools; run_verification_checks out);
-  #   3. the TOTAL OWUI-visible tool budget stays <= 40 (36 at build: fleet 9 +
-  #      context7 2 + serena 21 + time 2 + fetch 1 + seq-thinking 1). mcpo bridges
-  #      are live-counted, so a bridge mounting ZERO tools (the 2026-08-03 mcp
-  #      SDK-2.0 McpError rename broke time+fetch exactly that way) FAILs here.
-  # All-LAN, no model call, no external fan-out (context7 counted as a constant 2,
-  # not live-probed) -> cheap enough for the fast sweep.
+  #   2. OWUI's admin API still shows the mcp connections registered + enabled and
+  #      fleet's function filter non-empty (12/14 tools since 2026-08-20:
+  #      +list_dir/find_files/disk_usage; run_verification_checks + search_web out);
+  #   3. the TOTAL OWUI-visible tool budget stays <= 40 (37 as of 2026-08-20:
+  #      fleet 12 + comfyui 3 + playwright 8 + memos 7 + time 2 + fetch 1 +
+  #      openzim 3 + seq-thinking 1 — headroom 3). mcpo bridges are live-counted,
+  #      so a bridge mounting ZERO tools (the 2026-08-03 mcp SDK-2.0 McpError
+  #      rename broke time+fetch exactly that way) FAILs here.
+  # All-LAN, no model call, no external fan-out -> cheap enough for the fast sweep.
   - id: owui-mcp-tools
     name: "OWUI native MCP tool servers wired + visible-tool budget (lai-04)"
     host: mini
     timeout: 90
     cmd: python3 /opt/verification/bin/owui-mcp-tools.py
     expect: '^OWUI_MCP_OK '
+    severity: warn
+    task_id: lai-04
+    runbook: wiki/docs/runbooks/owui-mcp-tools.md
+    enabled: true
+
+  # fleet-fs-tools (lai-04 follow-on, 2026-08-20): consumer-end probe for the
+  # read-only filesystem trio on fleet-mcp (list_dir / find_files / disk_usage —
+  # the "is X on /volume1?" chat capability, names/sizes only, never contents).
+  # One list_dir call proves the WHOLE chain: mcpo's /fleet OpenAPI bridge is
+  # FRESH (mcpo enumerates fleet's tools at startup — a stale mcpo silently
+  # hides new fleet tools, exactly what this catches) -> fleet-mcp.service ->
+  # the restricted fleet-nas ssh key -> a real NAS volume listing. Expects the
+  # stable infra dir `docker` in /volume1 (the NAS compose root) rather than
+  # media/games content, which moves.
+  - id: fleet-fs-tools
+    name: "fleet-mcp filesystem tools reach NAS volumes via the mcpo bridge (lai-04)"
+    host: mini
+    timeout: 60
+    cmd: >-
+      curl -sf -m 45 -X POST http://192.168.10.12:8000/fleet/list_dir
+      -H 'Content-Type: application/json'
+      -d '{"host":"nas","path":"/volume1"}'
+    expect: 'docker'
     severity: warn
     task_id: lai-04
     runbook: wiki/docs/runbooks/owui-mcp-tools.md

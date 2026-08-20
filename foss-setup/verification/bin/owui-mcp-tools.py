@@ -8,7 +8,9 @@ connection list: local-ai-tooling ``scripts/seed-owui-tool-servers.sh``
 (PersistentConfig, DB-only — a volume wipe silently erases it; this check is the
 tripwire). 2026-08-17 (journal-09 follow-up): serena (9) + context7 (2) were
 REMOVED from OWUI — coding tool-calls are opencode's job (it keeps full serena +
-context7 via its own MCP clients) — and memos widened to 4; budget 40 -> 31.
+context7 via its own MCP clients) — and memos widened (now 7). 2026-08-20:
+fleet grew the read-only filesystem trio (list_dir/find_files/disk_usage),
+9 -> 12 visible; designed total 37.
 
 What it proves (from the mini, over the LAN):
   1. The fleet-mcp streamable-HTTP endpoint completes a REAL MCP handshake
@@ -18,9 +20,9 @@ What it proves (from the mini, over the LAN):
   2. OWUI's admin API still shows the fleet native-mcp server registered + enabled
      with a non-empty function filter — catches "someone deleted/disabled the
      connection or cleared the filter in the UI".
-  3. The TOTAL OWUI-visible tool budget is within cap (<= 40; designed 31 after
-     the 2026-08-17 trim: fleet 9 + time 2 + fetch 1 + sequential-thinking 1 +
-     comfyui 3 + playwright 8 + openzim 3 + memos 4).
+  3. The TOTAL OWUI-visible tool budget is within cap (<= 40; designed 37 as of
+     2026-08-20: fleet 12 + time 2 + fetch 1 + sequential-thinking 1 +
+     comfyui 3 + playwright 8 + openzim 3 + memos 7).
      Fleet's exposed count = live tools/list names intersected with the configured
      filter (same endswith allow-list semantics as OWUI's ``is_string_allowed``);
      mcpo/OpenAPI counts come from each bridge's live openapi.json operationIds
@@ -34,7 +36,7 @@ What it proves (from the mini, over the LAN):
      validity is probed by the sibling check ``image-browser-mcp``.
 
 Prints exactly one classification line on stdout (runner matches ``expect``):
-  OWUI_MCP_OK fleet=9 mcp_other=11 mcpo=14 total=36   all good        -> PASS
+  OWUI_MCP_OK fleet=12 mcp_other=18 mcpo=7 total=37   all good        -> PASS
   OWUI_MCP_BAD <reason>                    handshake/config/budget bad -> FAIL
 
 Runs on the mini runner (``/etc/verification/env`` provides OWUI_URL + OWUI_API_KEY).

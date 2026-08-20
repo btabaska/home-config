@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 25 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 26 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -44,6 +44,17 @@ OWUI native MCP tool servers wired + visible-tool budget (lai-04)
 
 ```bash
 python3 /opt/verification/bin/owui-mcp-tools.py
+```
+
+## `fleet-fs-tools`
+
+fleet-mcp filesystem tools reach NAS volumes via the mcpo bridge (lai-04)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `lai-04` · **enabled:** True
+- **expects:** `docker`
+
+```bash
+curl -sf -m 45 -X POST http://192.168.10.12:8000/fleet/list_dir -H 'Content-Type: application/json' -d '{"host":"nas","path":"/volume1"}'
 ```
 
 ## `opencode-config-parity`
