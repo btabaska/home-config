@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**299/395 done** · **62 open** · **19 deferred** · 15 retired.
+**299/418 done** · **85 open** · **19 deferred** · 15 retired.
 
 ---
 
@@ -10,6 +10,10 @@
 
 ### agent-handoff
 - [ ] **`handoff-12`** Post-sprint cleanup — delete vault and rotate keys _(est 10 min)_
+
+### backups-offsite
+- [ ] **`fix-82`** B2 restic object-lock immutability decayed — restore true immutability (fix-22 regression) _(est 1-3 hrs)_
+- [ ] **`fix-93`** Backup-set coverage gaps — service persistent data outside curated restic/Hyper-Backup sets + DR template drift _(est 1-3 hrs)_
 
 ### books-cutover
 - [ ] **`books-hc-upstream-swap`** Swap rreading-glasses-hc off the temporary local image once upstream fixes Hardcover batch limit (#574) _(est 15-30 min)_
@@ -46,6 +50,12 @@
 ### media-pipeline
 - [ ] **`fix-70`** NAS Plex is one build behind — apply the pending Plex package update _(est <1 hr)_
 - [ ] **`fix-73`** Clear the residual deluge pre-import-stuck grab (Only Murders S02E05) _(est <1 hr)_
+- [ ] **`fix-86`** Immich phone-photo ingestion stalled — 0 new assets in 7-9 days (fix-35 regression) _(est 1-3 hrs)_
+- [ ] **`fix-87`** Immich ffmpeg SIGSEGV nightly crash-loop on IMG_3674.mov (fix-60 regression) _(est 1-3 hrs)_
+- [ ] **`fix-88`** whisparr->stash auto-scan silently broken (seed-13 401) + zero-throughput framing _(est 1-3 hrs)_
+- [ ] **`fix-90`** Seerr request-layer rot — 3 dangling PROCESSING requests (fix-26 regression) _(est 1-3 hrs)_
+- [ ] **`fix-94`** Media-arr acquisition hygiene — IPTorrents grab-storm worsening (fix-50) + Sonarr unmanaged 'Any' profiles (fix-45) _(est 1-3 hrs)_
+- [ ] **`fix-95`** Download/import pipeline residuals — seedbox reaper off-by-one, deluged log flood, slskd/soularr parked imports _(est 1-3 hrs)_
 - [ ] **`media-09`** fix-27 residual: re-grab 5 un-extractable titles + reclaim ~200GB of redundant library RARs _(est 1-2 hrs)_
 - [ ] **`media-10`** Seedbox: retire drained readarr label pair from deluge-reaper _(est 10 min)_ — ⛔ gate: not before 2026-08-04
 - [ ] **`media-13`** Release reclaimed disk pinned by stale 2026-07-02 Btrfs @sharesnap snapshots (volume2/volume3) _(est 20-40 min)_
@@ -54,10 +64,17 @@
 - [ ] **`fix-77`** Drain the Bazarr subtitle backlog + optional provider-key upgrade _(est 1-3 hrs)_
 
 ### ops
+- [ ] **`fix-102`** service-catalog + anti-drift documentation batch (fix-41 class) _(est 1-3 hrs)_
+- [ ] **`fix-103`** Accepted benign residuals — log-noise, self-recovered transients, minor version-lag, game-server residuals _(est 1-3 hrs)_
+- [ ] **`fix-104`** HA updates pending 3+ weeks + iPhone presence pipeline frozen 4 days (fix-36 regression) _(est 1-3 hrs)_
 - [ ] **`fix-75`** Set Windows RealTimeIsUniversal on rig — durable RTC-skew cure _(est <1 hr)_
 - [ ] **`fix-76`** Prove alert delivery reaches a device + add a whole-house dead-man _(est <1 hr)_
 - [ ] **`fix-79`** Identify + fix the down Uptime-Kuma monitor on /status/fleet _(est <1 hr)_
 - [ ] **`fix-81`** Verify the nvidia-cdi-refresh fix survives a rig reboot _(est <1 hr)_
+- [ ] **`fix-83`** rig btrfs data-checksum corruption incrementing on single-device root NVMe (leading edge of the fix-20 RO-cascade) _(est 1-3 hrs)_ — ⛔ gate: disruptive — 4-7AM window + operator approval
+- [ ] **`fix-89`** Degraded/zero-throughput background services — external-API auth rot + noisy failure floods _(est 1-3 hrs)_
+- [ ] **`fix-91`** NAS Saturday backup-window IO contention cascade (fix-55 regression) _(est 1-3 hrs)_ — ⛔ gate: disruptive — 4-7AM window + operator approval
+- [ ] **`fix-96`** Mini host residuals — scratch/log flood, unpackerr ansible-resurrection, docker-log corruption (fix-69 regression) _(est 1-3 hrs)_
 
 ### photos
 - [ ] **`fix-71`** Kaelyn Immich onboarding — enable phone photo backup for the 2nd household user _(est <1 hr)_
@@ -71,6 +88,9 @@
 - [ ] **`read-09`** Add RSS/news to KOReader (Miniflux tie-in) _(est 20 min)_
 
 ### security
+- [ ] **`fix-84`** Live playit SECRET_KEY (+ since-rotated ntfy token) committed to git history — scrub + rotate _(est 1-3 hrs)_
+- [ ] **`fix-85`** BookLogr public self-registration still OPEN — lock it down _(est 1-3 hrs)_
+- [ ] **`fix-92`** NAS /volume1/docker world-writable perms + perms-check IO-robustness (fix-23 hardening) _(est 1-3 hrs)_
 - [ ] **`foss-04`** Ente Auth adoption + YubiKey enrollment (Authy migration) _(est 1-2 hrs)_
 - [ ] **`sec-01`** Turn on MFA/2FA everywhere (hardware key on the crown jewels) _(est 1-2 hrs)_
 - [ ] **`sec-04`** Harden exposed surfaces (CrowdSec + forward-auth on the seedbox/public ports) _(est 1 hr)_ — ⛔ gate: Tailscale SSH ACL for operator → seedbox (currently blocked)
@@ -99,6 +119,13 @@
 - [ ] **`ha-28`** Withings Body Cardio scale + BPM Connect (cloud OAuth) _(est 30 min)_
 - [ ] **`ha-31`** Automations pack v1 (git-backed YAML) _(est half day)_
 - [ ] **`ha-32`** HA ops glue: SSH add-on, git-backed /config, nightly backups verify, checks.d/ha.yaml, Homepage _(est 1 h)_
+
+### verification
+- [ ] **`fix-100`** Check-integrity hardening — liveness-masquerade + fail-open + task_id drift + stale expects (mandate #1) _(est 1-3 hrs)_
+- [ ] **`fix-101`** Monitoring-coverage gaps + census enrollment + deploy tripwire (mandate #2, reconfirms verify-06/fix-68) _(est 1-3 hrs)_
+- [ ] **`fix-97`** New-service deploy completion — unsloth-studio (lai-28) + bioclip (lai-22) never finished coverage/catalog/wiki/baseline (fix-68 regression) _(est 1-3 hrs)_
+- [ ] **`fix-98`** rig listener-baseline codification — bless Steam 27036 + MoonDeckBuddy 59999 (fix-51 extension) _(est 1-3 hrs)_
+- [ ] **`fix-99`** checks.d dead runbook paths — fleet-wide catch-all _(est 1-3 hrs)_
 
 ---
 

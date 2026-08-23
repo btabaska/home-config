@@ -17,7 +17,10 @@ verified, say so plainly — never claim done.
   the **lowest-numbered remaining** one — the ids are numbered in wave order (fix-20 incident →
   fix-21-24 security → fix-25-29 pipelines → fix-30-38 infra → fix-39-45 hygiene → fix-46-48
   books-stack scan → **2026-08-02 fleet sweep: fix-49-50 active incidents → fix-51-53 security →
-  fix-54-60 pipelines → fix-61-67 service/infra → fix-68-69 hygiene/drift**), so lowest = next.
+  fix-54-60 pipelines → fix-61-67 service/infra → fix-68-69 hygiene/drift** → **2026-08-23 ultracode
+  fleet sweep: fix-82-83 critical incidents (B2 immutability, rig btrfs corruption) → fix-84-85
+  security (playit key in git, BookLogr open reg) → fix-86-90 + fix-104 broken pipelines → fix-91-96
+  service/infra → fix-97-103 hygiene/drift**), so lowest = next.
   State which item you picked and why before continuing.
 - If it's a `fix-NN`: use that task.
 - If it's a raw finding id (e.g. `H7`): use the `fix-NN` task whose `findings` array contains it.
@@ -33,8 +36,10 @@ verified, say so plainly — never claim done.
    `foss-setup/docs/quality-gate-2026-07-16.md`; books-stack items fix-46–48 (B findings) live in
    `foss-setup/docs/books-stack-scan-2026-07-20.md`; fleet-sweep items fix-49–69 (SC/SH/SM/SL/SI
    findings) live in `foss-setup/docs/fleet-sweep-2026-08-02.md` (clusters + wave rationale in
-   `fleet-sweep-2026-08-02-worklist.md`). The evidence block has the exact commands
-   that reproduced each issue — start from those.
+   `fleet-sweep-2026-08-02-worklist.md`); **ultracode fleet-sweep items fix-82–104 (UC/UH/UM/UL/UI
+   findings) live in `foss-setup/docs/fleet-sweep-2026-08-23.md`** (clusters + wave rationale in
+   `fleet-sweep-2026-08-23-worklist.md`, machine twin `fleet-sweep-2026-08-23.json`). The evidence
+   block has the exact commands that reproduced each issue — start from those.
 4. If root-cause discovery will be read-heavy (many files/hosts), delegate it to an `Explore` or
    `general-purpose` subagent and have it return only the conclusion, to keep this session lean.
 5. Consume the reopen bridge for live regression signal:

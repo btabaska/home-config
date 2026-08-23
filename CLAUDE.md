@@ -95,8 +95,30 @@ gets + 1k snippets; the gamefaqs ZIM rebuilt CHUNKED same day [~16k-char part-ar
 returning junk]; `seed-owui-chat-tools.py` pins ALL tool servers except identify_plant on chat [no per-chat toggling;
 identify_plant = Plant Scout-only] — all local-ai checks green post-split). Prior fleet-sweep follow-ups still stand (mini kernel reboot 4-7AM, rig
 Windows `RealTimeIsUniversal`, off-mini dead-man/`alert-drill` ntfy subscribe, optional Bazarr subtitle
-key). Next work is the pre-existing open queue (`ha-19`, `fix-24`, `game-*`, `media-09/10/13`,
-`fix-70`…`fix-81`, etc.) via **`/build-next`** or **`/resolve-finding`**.
+key).
+
+## Current priority: 2026-08-23 ultracode fleet-sweep remediation queue (`fix-82`…`fix-104`)
+
+The 2026-08-23 **ultracode full-fleet holistic audit** (read-only, 6-phase, ~222 lanes; **nothing was
+modified on any host** beyond authorized self-cleaning e2e probes + a first-ever restic single-file
+restore drill) shipped a fresh fix queue. Docs: **`foss-setup/docs/fleet-sweep-2026-08-23.md`** (951
+findings — 4 crit / 4 high / 121 med / 251 low / 571 info; 11 refuted, 18 severity-adjusted), machine
+twin `…-2026-08-23.json`, clusters/waves in `…-2026-08-23-worklist.md`. **23 new clusters `fix-82`…
+`fix-104`**; 56 findings reconfirm 17 open tasks (no new id). Drive with **`/resolve-finding fix-82`**
+(lowest open = next). **ON FIRE (wave 0, do first): `fix-82`** B2 restic object-lock immutability
+DECAYED — 1239 versions expired incl. both repos' config+keys, a live delete is no longer refused;
+ransomware-resistance void for all backup data >30d (fix-22 regression, non-disruptive). **`fix-83`**
+rig btrfs data-checksum corruption incrementing on the single-device no-ECC root NVMe (`corruption_errs`
+3→5 *during* the audit) — leading edge of the fix-20 RO-cascade (disruptive: scrub+memtest, 4-7AM).
+Wave 1 security: **`fix-84`** a live playit `SECRET_KEY` is committed to git history on both remotes
+(rotate + history-scrub, follow `security-change-guard`). Refuted a false-CRIT (the `/volume1/docker`
+0777 is the DSM synoacl display quirk — read+traverse only) and downgraded the NAS "IO-storm
+regression" + sonarr "427MB WAL" to a transient Saturday Hyper-Backup-window artifact that self-clears.
+Verified GREEN end-to-end: movies/TV, music Subsonic stream, books→Kobo, journaling loop, AI
+chat/ops/web-search, kiwix ZIM, Plant Scout, edge/DNS posture, game-server protocol pings.
+
+Next work is this queue (`fix-82` first) then the pre-existing open queue (`ha-19`, `fix-24`, `game-*`,
+`media-09/10/13`, `fix-70`…`fix-81`, sec-09/10/11) via **`/build-next`** or **`/resolve-finding`**.
 
 Prior priority (fleet-sweep 2026-08-02 remediation, `fix-49`…`fix-69` + `sec-12`) remains **COMPLETE**
-(commits `667e361`…`25567cf`); its residuals are folded into the follow-up list above.
+(commits `667e361`…`25567cf`); its residuals are folded into the 2026-08-23 queue (reconfirms list).

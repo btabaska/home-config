@@ -1,6 +1,6 @@
 # Roadmap — media-pipeline
 
-44 task(s). Status mirrors `docs/progress.json` (the source of truth).
+50 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -16,6 +16,12 @@
 | `fix-56` | Music acquisition hygiene: soularr failed-import backlog cycling, junk MusicBrainz albums grinding every 5 minutes, 3 albums stuck partial | ✅ done | 1-3 hrs |
 | `fix-70` | NAS Plex is one build behind — apply the pending Plex package update | ⬜ open | <1 hr |
 | `fix-73` | Clear the residual deluge pre-import-stuck grab (Only Murders S02E05) | ⬜ open | <1 hr |
+| `fix-86` | Immich phone-photo ingestion stalled — 0 new assets in 7-9 days (fix-35 regression) | ⬜ open | 1-3 hrs |
+| `fix-87` | Immich ffmpeg SIGSEGV nightly crash-loop on IMG_3674.mov (fix-60 regression) | ⬜ open | 1-3 hrs |
+| `fix-88` | whisparr->stash auto-scan silently broken (seed-13 401) + zero-throughput framing | ⬜ open | 1-3 hrs |
+| `fix-90` | Seerr request-layer rot — 3 dangling PROCESSING requests (fix-26 regression) | ⬜ open | 1-3 hrs |
+| `fix-94` | Media-arr acquisition hygiene — IPTorrents grab-storm worsening (fix-50) + Sonarr unmanaged 'Any' profiles (fix-45) | ⬜ open | 1-3 hrs |
+| `fix-95` | Download/import pipeline residuals — seedbox reaper off-by-one, deluged log flood, slskd/soularr parked imports | ⬜ open | 1-3 hrs |
 | `media-05` | Deploy Jellyfin as a fully-local media server (plex.tv-independent parallel to Plex) | ✅ done | 1-2 hrs |
 | `media-06` | Resolve the rig ~/Music mirror conflict (05:00 ALAC transcode vs 05:30 rsync --delete-after) | ✅ done | 30 min |
 | `media-07` | MusicSeerr can still create unmonitored-artist requests (upstream monitor_artist=0 default) — tripwire-covered, close the generator | ✅ done | 30-45 min |

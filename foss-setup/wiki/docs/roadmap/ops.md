@@ -1,6 +1,6 @@
 # Roadmap — ops
 
-42 task(s). Status mirrors `docs/progress.json` (the source of truth).
+49 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -20,6 +20,9 @@
 | `docker-13` | Commit the whole Docker stack to Git (rebuildable in an hour) | ✅ done | 20 min |
 | `docker-14` | Serve your own apps on the LAN — Caddy-fronted Compose stacks (optional Coolify behind Caddy) | ✅ done | 30-60 min |
 | `docker-15` | Deploy Homepage — one dashboard (your observability + the household front door) | ✅ done | 45-60 min |
+| `fix-102` | service-catalog + anti-drift documentation batch (fix-41 class) | ⬜ open | 1-3 hrs |
+| `fix-103` | Accepted benign residuals — log-noise, self-recovered transients, minor version-lag, game-server residuals | ⬜ open | 1-3 hrs |
+| `fix-104` | HA updates pending 3+ weeks + iPhone presence pipeline frozen 4 days (fix-36 regression) | ⬜ open | 1-3 hrs |
 | `fix-32` | Fix Caddy reverse-proxy routes (ha.tabaska.us 400, llamaswap not reloaded, stray placeholders/vhosts) | ✅ done | 1-3 hrs |
 | `fix-41` | Repo-vs-live drift codification (forgejo stack, manifests, .env keys, ansible units) | ✅ done | 1-3 hrs |
 | `fix-63` | Alerting-plane architecture: everything that could report a mini outage lives ON mini; rig auto-recovery only in the daily tier; ntfy history 12h; no alert-delivery proof | ✅ done | 1-3 hrs |
@@ -29,6 +32,10 @@
 | `fix-76` | Prove alert delivery reaches a device + add a whole-house dead-man | ⬜ open | <1 hr |
 | `fix-79` | Identify + fix the down Uptime-Kuma monitor on /status/fleet | ⬜ open | <1 hr |
 | `fix-81` | Verify the nvidia-cdi-refresh fix survives a rig reboot | ⬜ open | <1 hr |
+| `fix-83` | rig btrfs data-checksum corruption incrementing on single-device root NVMe (leading edge of the fix-20 RO-cascade) | ⬜ open | 1-3 hrs |
+| `fix-89` | Degraded/zero-throughput background services — external-API auth rot + noisy failure floods | ⬜ open | 1-3 hrs |
+| `fix-91` | NAS Saturday backup-window IO contention cascade (fix-55 regression) | ⬜ open | 1-3 hrs |
+| `fix-96` | Mini host residuals — scratch/log flood, unpackerr ansible-resurrection, docker-log corruption (fix-69 regression) | ⬜ open | 1-3 hrs |
 | `glue-05` | Self-host Forgejo (config-as-code forge) on the Ubuntu box | ✅ done | 30-45 min |
 | `glue-06` | Push ALL configs to Git + run the rebuild drill (capstone) | ⏸️ deferred | 1-2 hr |
 | `glue-07` | Fleet maintenance with Ansible (run one command across every box) | ✅ done | 1-1.5 hr |
