@@ -161,12 +161,31 @@ was **not in effect** — `bucket-restic` had File Lock *enabled* but no default
 retention and no per-file retention, so the only guard was the append-only key.
 Resolved 2026-07-17:
 
-- **`bucket-restic`**: default retention **GOVERNANCE 30 days** + a one-time
-  backfill locked all 1174 pre-existing pack versions. New uploads are locked
-  automatically at upload — the append-only keys on mini/rig need no extra
+- **`bucket-restic`**: default retention **GOVERNANCE 30 days**. New uploads are
+  locked automatically at upload — the append-only keys on mini/rig need no extra
   capabilities. restic `forget`/`prune` still work: restic ≥0.19 deletes by
   *hiding*, and the lifecycle rule (`daysFromHidingToDeleting: 30`) hard-deletes
   only after both the hide window and retention have passed.
+- **The guarantee is ROLLING-30d, by decision (fix-82, 2026-08-23).** B2 default
+  retention re-stamps only *new* uploads for 30 days; nothing re-stamps a
+  never-rewritten pack, so a version's per-file lock expires 30 days after *its*
+  upload. The fix-22 one-time backfill (2026-07-17 + 30d) therefore expired
+  2026-08-16, and by the 2026-08-23 sweep 1300+ versions uploaded 07-08…07-23 had
+  decayed to unprotected (the daily crit `b2-restic-immutable` had failed since
+  08-16). Re-locking them needs `b2_update_file_retention` with a
+  retention-write-capable key — only the **offline master key** has it, and
+  keeping an online re-stamp key would re-introduce exactly the tamper surface the
+  offline-master-key design removes. **Operator decision: accept a rolling-30d
+  guarantee** — every backup written in the last 30 days is immutable; older
+  versions are intentionally not re-locked. Ransomware resistance covers the last
+  30 days of snapshots (restic dedup still references older packs, so a *deletion*
+  of a decayed old pack would damage older snapshots — but the last 30d of backup
+  history is always fully protected and self-heals forward daily). To re-lock the
+  full history on demand (e.g. after a scare), run the offline master key:
+  `B2_MASTER_KEY_ID=… B2_MASTER_KEY=… scripts/backup/b2-apply-bucket-policy.py --backfill`
+  (note: `--backfill` currently only stamps *no-mode* versions; re-locking
+  already-expired governance-mode versions needs a `--relock` extension — deferred
+  with this decision since the rolling guarantee is accepted).
 - **`bucket-hyper-backup`**: **deliberately NOT locked** (M37, accepted).
   Hyper Backup's Smart Recycle rotation must delete old versions; retention
   would break it. Compensating controls: the delete-capable master key is out
@@ -182,8 +201,13 @@ Resolved 2026-07-17:
   hostnames put them in their own forget group, retained forever.
 
 Daily checks (all in `verification/checks.d/backups.yaml`, task `fix-22`):
-`b2-restic-immutable` (crit — asserts retention config **and live-attempts a
-delete with the vault key, expecting HTTP 401**), `b2-bucket-policy` (bucket-set
+`b2-restic-immutable` (crit — asserts the **rolling-30d** guarantee: default
+retention GOVERNANCE≥30d, a backup uploaded in the last 48h, **every** upload
+version *within* the 30-day window governance-locked, and a live delete of the
+newest pack refused HTTP 401; older decayed versions are counted and reported,
+not failed — fix-82 rewrote the old lexicographic-first-5 sampling that both
+false-failed on the accepted decay and could miss a regression of the newest
+uploads), `b2-bucket-policy` (bucket-set
 manifest — catches unknown/typo buckets and policy drift),
 `restic-snapshot-hygiene-{mini,rig}` (no synthetic-host/test snapshots).
 

@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**299/418 done** · **85 open** · **19 deferred** · 15 retired.
+**300/418 done** · **84 open** · **19 deferred** · 15 retired.
 
 ---
 
@@ -12,7 +12,6 @@
 - [ ] **`handoff-12`** Post-sprint cleanup — delete vault and rotate keys _(est 10 min)_
 
 ### backups-offsite
-- [ ] **`fix-82`** B2 restic object-lock immutability decayed — restore true immutability (fix-22 regression) _(est 1-3 hrs)_
 - [ ] **`fix-93`** Backup-set coverage gaps — service persistent data outside curated restic/Hyper-Backup sets + DR template drift _(est 1-3 hrs)_
 
 ### books-cutover

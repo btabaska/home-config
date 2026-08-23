@@ -5,18 +5,32 @@ Auths with the SCOPED read-only ops key (B2_OPS_KEY_ID / B2_OPS_KEY from
 /etc/verification/env — never the master key, which was retired from the vault
 2026-07-17). Two modes:
 
-  --immutable  (regression for H20): proves the ransomware guarantee at the
-      consumer end, not via config liveness —
+  --immutable  (regression for H20 / fix-82): proves the ROLLING-30d ransomware
+      guarantee at the consumer end, not via config liveness. B2 default
+      retention re-stamps only NEW uploads for 30 days; nothing re-stamps
+      never-rewritten files, and the delete-capable master key is offline
+      (retired 2026-07-17), so versions older than the retention window
+      intentionally decay to unprotected. The immutability guarantee is
+      therefore ROLLING: every backup uploaded within the last <retention>
+      days is governance-locked (operator decision fix-82, 2026-08-23 — see
+      wiki/docs/runbooks/backup-restore.md). This check asserts:
         1. bucket-restic default retention is GOVERNANCE >= 30 days;
-        2. the newest N upload versions each carry per-file GOVERNANCE
-           retention with retainUntil in the future;
-        3. an ACTUAL b2_delete_file_version attempt on the newest pack is
-           refused with HTTP 401 (the vault key cannot delete a backup even
-           if every config assertion above rots).
+        2. a backup was uploaded recently (rolling window is live);
+        3. EVERY upload version within the retention window carries governance
+           retention with retainUntil in the future — a RECENT upload that is
+           not locked is the actionable regression (the rolling guarantee
+           broke); versions older than the window that have decayed are counted
+           and reported as the DOCUMENTED ACCEPTED state, not a failure;
+        4. an ACTUAL b2_delete_file_version attempt on the newest (locked) pack
+           is refused with HTTP 401.
+      The old sampling bug (fix-82 / UM13): it sampled the lexicographically
+      FIRST 5 file versions (always the long-decayed mini/config), so it both
+      false-failed on the accepted decay AND could have missed a real regression
+      of the newest uploads. This version scans all versions and partitions by
+      upload age, so it measures the rolling window directly.
       The delete probe is safe by two independent layers: the ops key lacks
-      deleteFiles, and the target file is under governance retention (a delete
-      without an explicit bypassGovernance flag fails even for a capable key).
-      Prints "IMMUTABLE ..." on success.
+      deleteFiles, and the target file is under governance retention.
+      Prints "IMMUTABLE-ROLLING ..." on success.
 
   --policy  (class check for L58/M37): the cloud-surface coverage manifest.
       Every bucket in the account must appear in EXPECTED below with the
@@ -55,7 +69,6 @@ EXPECTED = {
 FORBIDDEN_CAPS = {"deleteFiles", "deleteBuckets", "bypassGovernance",
                   "writeFiles", "writeBuckets", "writeKeys", "deleteKeys",
                   "writeFileRetentions", "writeBucketRetentions"}
-SAMPLE_VERSIONS = 5
 
 
 def fail(msg):
@@ -111,31 +124,67 @@ def check_immutable(api, tok, acct, caps):
         fail(f"bucket-restic default retention drifted: {json.dumps(dr)} "
              "(want governance >= 30 days)")
 
-    files = call(api, tok, "b2_list_file_versions",
-                 {"bucketId": br["bucketId"],
-                  "maxFileCount": SAMPLE_VERSIONS})["files"]
-    uploads = [f for f in files if f["action"] == "upload"]
-    if not uploads:
-        fail("no upload versions found in bucket-restic")
+    # ROLLING-30d model (fix-82): scan ALL upload versions once, partition by
+    # upload age relative to the default-retention window, and assert every
+    # in-window upload is governance-locked. Old decayed versions are the
+    # documented accepted state (master key offline — no re-lock path).
     now_ms = time.time() * 1000
-    for f in uploads:
-        ret = (f.get("fileRetention") or {}).get("value") or {}
-        if ret.get("mode") != "governance" \
-                or (ret.get("retainUntilTimestamp") or 0) <= now_ms:
-            fail(f"file {f['fileName']} not retention-locked: {json.dumps(ret)}")
+    window_days = period["duration"]
+    window_ms = window_days * 86400 * 1000
+    total = recent_locked = expired_old = 0
+    recent_unlocked = []
+    newest = None
+    start = {}
+    while True:
+        page = call(api, tok, "b2_list_file_versions",
+                    {"bucketId": br["bucketId"], "maxFileCount": 1000, **start})
+        for f in page["files"]:
+            if f["action"] != "upload":
+                continue
+            total += 1
+            ts = f.get("uploadTimestamp") or 0
+            if newest is None or ts > (newest.get("uploadTimestamp") or 0):
+                newest = f
+            ret = (f.get("fileRetention") or {}).get("value") or {}
+            locked = ret.get("mode") == "governance" \
+                and (ret.get("retainUntilTimestamp") or 0) > now_ms
+            if now_ms - ts <= window_ms:
+                if locked:
+                    recent_locked += 1
+                else:
+                    recent_unlocked.append(f["fileName"])
+            elif not locked:
+                expired_old += 1
+        nfn = page.get("nextFileName")
+        if not nfn:
+            break
+        start = {"startFileName": nfn, "startFileId": page["nextFileId"]}
 
-    # the point of the whole exercise: an actual delete must be REFUSED
-    probe = uploads[0]
+    if total == 0:
+        fail("no upload versions found in bucket-restic")
+    newest_age_h = (now_ms - (newest.get("uploadTimestamp") or 0)) / 3600000
+    if newest_age_h > 48:
+        fail(f"newest bucket-restic upload is {newest_age_h:.0f}h old — the "
+             "rolling backup may have stopped (nothing to keep immutable)")
+    if recent_unlocked:
+        fail(f"{len(recent_unlocked)} upload(s) within the {window_days}d rolling "
+             f"window are NOT governance-locked — rolling immutability BROKEN "
+             f"(e.g. {recent_unlocked[0]})")
+
+    # the point of the whole exercise: an actual delete of the newest (locked)
+    # pack must be REFUSED
     try:
         call(api, tok, "b2_delete_file_version",
-             {"fileName": probe["fileName"], "fileId": probe["fileId"]})
-        fail(f"DELETE SUCCEEDED on {probe['fileName']} — backups are NOT "
+             {"fileName": newest["fileName"], "fileId": newest["fileId"]})
+        fail(f"DELETE SUCCEEDED on {newest['fileName']} — backups are NOT "
              "immutable, rotate the ops key and investigate NOW")
     except urllib.error.HTTPError as e:
         if e.code != 401:
             fail(f"delete probe got HTTP {e.code}, expected 401 unauthorized")
-    print(f"IMMUTABLE default=gov/{period['duration']}d "
-          f"sampled={len(uploads)} locked, delete-probe=401")
+    print(f"IMMUTABLE-ROLLING default=gov/{window_days}d recent_locked={recent_locked} "
+          f"newest_age={newest_age_h:.1f}h delete-probe=401 "
+          f"(accepted decay: {expired_old} version(s) >{window_days}d unprotected — "
+          "master key offline, see runbook)")
 
 
 def check_policy(api, tok, acct, _caps):

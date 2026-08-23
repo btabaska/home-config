@@ -82,14 +82,19 @@ checks:
     runbook: wiki/runbooks/backups.md
     enabled: true
 
-  # fix-22 (H20): the ransomware-immutability guarantee, probed at the CONSUMER
-  # end — not "is the config set" but "can the key in the vault actually delete
-  # a backup". b2-bucket-guard.py asserts governance/30d default retention,
-  # per-file retention on the newest packs, that the ops key is read-only, and
-  # then ATTEMPTS a real b2_delete_file_version expecting HTTP 401. Runs on the
-  # mini (daily untiered sweep) with B2_OPS_KEY_ID/B2_OPS_KEY from
-  # /etc/verification/env — the scoped key created when the master key was
-  # retired from the vault (2026-07-17).
+  # fix-22 (H20) + fix-82: the ransomware-immutability guarantee, probed at the
+  # CONSUMER end — not "is the config set" but "can the key in the vault actually
+  # delete a backup". The guarantee is ROLLING-30d by decision (fix-82,
+  # 2026-08-23): B2 re-stamps only new uploads, the delete-capable master key is
+  # offline, so versions >30d decay to unprotected (accepted). b2-bucket-guard.py
+  # asserts governance/30d default retention, a fresh upload (<48h), that EVERY
+  # in-window upload version is governance-locked, that the ops key is read-only,
+  # then ATTEMPTS a real b2_delete_file_version on the newest pack expecting HTTP
+  # 401; decayed >30d versions are counted+reported, not failed. (fix-82 replaced
+  # the old lexicographic-first-5 sampling that false-failed on the accepted decay
+  # since 2026-08-16.) Runs on the mini (daily untiered sweep) with
+  # B2_OPS_KEY_ID/B2_OPS_KEY from /etc/verification/env — the scoped read-only key
+  # created when the master key was retired from the vault (2026-07-17).
   - id: b2-restic-immutable
     name: "bucket-restic is actually immutable (retention + live delete refused 401)"
     host: mini
