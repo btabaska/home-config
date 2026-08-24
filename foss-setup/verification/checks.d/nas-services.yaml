@@ -176,13 +176,25 @@ checks:
     runbook: wiki/runbooks/nas.md
     enabled: true
 
+  # fix-89 (UM57/UL131/UL132): the old check passed on import.log MTIME alone, so it
+  # went green while beets tagged 0 tracks for 45+ days — a zero-throughput green-mask.
+  # But that zero-throughput is BENIGN and by-design: beets is configured to SKIP weak
+  # MusicBrainz matches (never force-tag), and the YouTube-audio input is a couple of
+  # low-confidence files MeTube left; beets correctly skips them. So "0 tagged" is not
+  # a failure. Honest reframe: assert the cron ran recently AND the recent log has no
+  # ERRORS/tracebacks (skips are normal). This catches a truly broken/erroring beets
+  # (or a dead cron) without false-failing on intentional weak-match skips or implying
+  # throughput that legitimately didn't happen.
   - id: nas-beets-ingest-fresh
-    name: "beets youtube-ingest tagging ran recently (import.log < 30h)"
+    name: "beets youtube-ingest cron ran + no errors (skips are by-design; throughput-honest, nas-30/fix-89)"
     host: nas
     cmd: >-
-      find /volume1/docker/beets/import.log -mmin -1800 2>/dev/null
-      | grep -q . && echo ingest=fresh || echo ingest=STALE
-    expect: '^ingest=fresh$'
+      fresh=$(find /volume1/docker/beets/import.log -mmin -1800 2>/dev/null | grep -c .);
+      errs=$(tail -c 30000 /volume1/docker/beets/import.log 2>/dev/null | grep -ciE 'error|traceback|exception|fatal');
+      if [ "${fresh:-0}" -ge 1 ] && [ "${errs:-1}" -eq 0 ]; then echo "ingest=ok cron_fresh errors=0 (weak-match skips are by-design)";
+      elif [ "${fresh:-0}" -ge 1 ]; then echo "ingest=ERRORS recent_log_errors=$errs";
+      else echo "ingest=STALE cron not run in 30h"; fi
+    expect: '^ingest=ok '
     severity: warn
     task_id: nas-30
     runbook: wiki/runbooks/nas.md

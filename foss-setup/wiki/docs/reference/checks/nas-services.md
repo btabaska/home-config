@@ -147,13 +147,13 @@ curl -s -o /dev/null -m 8 -w '%{http_code}' http://nas:8337/
 
 ## `nas-beets-ingest-fresh`
 
-beets youtube-ingest tagging ran recently (import.log < 30h)
+beets youtube-ingest cron ran + no errors (skips are by-design; throughput-honest, nas-30/fix-89)
 
 - **host:** `nas` · **severity:** `warn` · **guards task:** `nas-30` · **enabled:** True
-- **expects:** `^ingest=fresh$`
+- **expects:** `^ingest=ok `
 
 ```bash
-find /volume1/docker/beets/import.log -mmin -1800 2>/dev/null | grep -q . && echo ingest=fresh || echo ingest=STALE
+fresh=$(find /volume1/docker/beets/import.log -mmin -1800 2>/dev/null | grep -c .); errs=$(tail -c 30000 /volume1/docker/beets/import.log 2>/dev/null | grep -ciE 'error|traceback|exception|fatal'); if [ "${fresh:-0}" -ge 1 ] && [ "${errs:-1}" -eq 0 ]; then echo "ingest=ok cron_fresh errors=0 (weak-match skips are by-design)"; elif [ "${fresh:-0}" -ge 1 ]; then echo "ingest=ERRORS recent_log_errors=$errs"; else echo "ingest=STALE cron not run in 30h"; fi
 ```
 
 ## `nas-whisparr`

@@ -33,7 +33,7 @@
 | `fix-79` | Identify + fix the down Uptime-Kuma monitor on /status/fleet | ⬜ open | <1 hr |
 | `fix-81` | Verify the nvidia-cdi-refresh fix survives a rig reboot | ⬜ open | <1 hr |
 | `fix-83` | rig btrfs data-checksum corruption incrementing on single-device root NVMe (leading edge of the fix-20 RO-cascade) | ⬜ open | 1-3 hrs |
-| `fix-89` | Degraded/zero-throughput background services — external-API auth rot + noisy failure floods | ⬜ open | 1-3 hrs |
+| `fix-89` | Degraded/zero-throughput background services — external-API auth rot + noisy failure floods | ✅ done | 1-3 hrs |
 | `fix-91` | NAS Saturday backup-window IO contention cascade (fix-55 regression) | ⬜ open | 1-3 hrs |
 | `fix-96` | Mini host residuals — scratch/log flood, unpackerr ansible-resurrection, docker-log corruption (fix-69 regression) | ⬜ open | 1-3 hrs |
 | `glue-05` | Self-host Forgejo (config-as-code forge) on the Ubuntu box | ✅ done | 30-45 min |

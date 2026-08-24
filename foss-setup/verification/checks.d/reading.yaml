@@ -601,15 +601,23 @@ checks:
       norm = lambda s: re.sub(r"[^a-z0-9]", "", (s or "").lower().replace("&", " and "))
       url = "http://192.168.10.4:8790/api/v1/book/lookup?term=" + urllib.parse.quote("Pride and Prejudice Jane Austen")
       req = urllib.request.Request(url, headers={"X-Api-Key": os.environ["BOOKSHELF_API_KEY"]})
-      results = json.load(urllib.request.urlopen(req, timeout=45))
+      results = json.load(urllib.request.urlopen(req, timeout=90))
       rank = next((i for i, r in enumerate(results) if norm(r.get("title")) == "prideandprejudice" and "austen" in norm(r.get("authorTitle") or str(r.get("author", {}).get("authorName", "")))), None)
       if rank is None:
           print("CANARY_MISS results=%d: %s" % (len(results), " | ".join((r.get("title") or "?")[:30] for r in results[:5])))
       else:
           print("CANARY_OK rank=%d results=%d" % (rank, len(results)))'
+    # fix-89 (bmig-06): widened the lookup timeout 45s->90s + runner timeout 100s.
+    # The pipeline (Bookshelf -> rreading-glasses-hc -> Hardcover) returns the
+    # CORRECT result; it is just slow (25-56s observed) for cold prolific-author
+    # lookups because Hardcover's account-wide ~60/min GraphQL quota throttles the
+    # refresh-herd (429s). That is an upstream constraint we cannot remove, so the
+    # canary asserts CORRECTNESS (P&P present + ranked), not sub-45s latency, which
+    # the quota makes impossible. A true break (miss/hang) still fails within 100s.
     expect: '^CANARY_OK '
     severity: warn
     task_id: bmig-06
+    timeout: 100
     runbook: wiki/docs/runbooks/books-metadata.md
     enabled: true
 

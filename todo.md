@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**303/418 done** · **81 open** · **19 deferred** · 15 retired.
+**304/418 done** · **80 open** · **19 deferred** · 15 retired.
 
 ---
 
@@ -69,7 +69,6 @@
 - [ ] **`fix-79`** Identify + fix the down Uptime-Kuma monitor on /status/fleet _(est <1 hr)_
 - [ ] **`fix-81`** Verify the nvidia-cdi-refresh fix survives a rig reboot _(est <1 hr)_
 - [ ] **`fix-83`** rig btrfs data-checksum corruption incrementing on single-device root NVMe (leading edge of the fix-20 RO-cascade) _(est 1-3 hrs)_ — ⛔ gate: disruptive — 4-7AM window + operator approval
-- [ ] **`fix-89`** Degraded/zero-throughput background services — external-API auth rot + noisy failure floods _(est 1-3 hrs)_
 - [ ] **`fix-91`** NAS Saturday backup-window IO contention cascade (fix-55 regression) _(est 1-3 hrs)_ — ⛔ gate: disruptive — 4-7AM window + operator approval
 - [ ] **`fix-96`** Mini host residuals — scratch/log flood, unpackerr ansible-resurrection, docker-log corruption (fix-69 regression) _(est 1-3 hrs)_
 

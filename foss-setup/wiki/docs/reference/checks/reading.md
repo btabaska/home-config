@@ -392,7 +392,7 @@ import json, os, re, urllib.parse, urllib.request
 norm = lambda s: re.sub(r"[^a-z0-9]", "", (s or "").lower().replace("&", " and "))
 url = "http://192.168.10.4:8790/api/v1/book/lookup?term=" + urllib.parse.quote("Pride and Prejudice Jane Austen")
 req = urllib.request.Request(url, headers={"X-Api-Key": os.environ["BOOKSHELF_API_KEY"]})
-results = json.load(urllib.request.urlopen(req, timeout=45))
+results = json.load(urllib.request.urlopen(req, timeout=90))
 rank = next((i for i, r in enumerate(results) if norm(r.get("title")) == "prideandprejudice" and "austen" in norm(r.get("authorTitle") or str(r.get("author", {}).get("authorName", "")))), None)
 if rank is None:
     print("CANARY_MISS results=%d: %s" % (len(results), " | ".join((r.get("title") or "?")[:30] for r in results[:5])))
