@@ -5,7 +5,7 @@
 | Task | Title | Status | Effort |
 |---|---|---|---|
 | `fix-100` | Check-integrity hardening — liveness-masquerade + fail-open + task_id drift + stale expects (mandate #1) | ⬜ open | 1-3 hrs |
-| `fix-101` | Monitoring-coverage gaps + census enrollment + deploy tripwire (mandate #2, reconfirms verify-06/fix-68) | ⬜ open | 1-3 hrs |
+| `fix-101` | Monitoring-coverage gaps + census enrollment + deploy tripwire (mandate #2, reconfirms verify-06/fix-68) | ✅ done | 1-3 hrs |
 | `fix-29` | Close the liveness-vs-reality monitoring gap (end-to-end checks for the failure classes just found) | ✅ done | 1-3 hrs |
 | `fix-30` | Repair the verification framework itself (LLM triage, false positives, deploy drift) | ✅ done | 1-3 hrs |
 | `fix-61` | Verification framework repair: daily run killed by its own 30-min timeout mid-incident (dead-man dark, no self-page), triage 91% nonfunctional, chronic false-positive + flapping checks | ✅ done | 1-3 hrs |

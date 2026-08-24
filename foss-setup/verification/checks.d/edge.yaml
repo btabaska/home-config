@@ -18,17 +18,30 @@ checks:
   #    Catches a new router forward, a future UPnP enable, or any sibling
   #    exposure. Probes the audit's 18-port list + 80/443 + 32400, in parallel
   #    on the seedbox to stay under the 60s check cap.
+  # fix-101 (UM37): the WAN posture scan used a HARDCODED 22-port list frozen at the
+  # 2026-07-17 fix-24 audit, but the fleet now listens on ~91 ports — a newly-opened
+  # service not in that stale list would leak to WAN unnoticed. Now derives the scan
+  # set from the union of the DEPLOYED expected-listeners baselines (every port the
+  # fleet actually listens on, mini+nas+rig), minus 32400 (the one allowed WAN pinhole
+  # for Plex). Any fleet port that answers from the seedbox's off-net vantage = a leak.
+  # The baselines are the same source of truth the lan-listeners-drift checks bless, so
+  # this stays comprehensive automatically as services are added (fix-51/fix-98 flow).
   - id: edge-wan-port-posture
-    name: "edge: no unexpected WAN ports open (only 32400/Plex allowed)"
+    name: "edge: no fleet port open to WAN except 32400/Plex (scans the full listener baseline)"
     host: mini
     cmd: >-
       WAN=$(curl -s -m 10 https://ifconfig.me);
       echo "$WAN" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$' || { echo NO_WAN_IP; exit 0; };
+      PORTS=$(cat /opt/verification/assets/expected-listeners/mini.ports
+      /opt/verification/assets/expected-listeners/nas.ports
+      /opt/verification/assets/expected-listeners/rig.ports 2>/dev/null
+      | grep -oE '^[0-9]+' | sort -un | grep -v '^32400$' | tr '\n' ' ');
+      n=$(printf '%s' "$PORTS" | wc -w);
       extra=$(ssh -o BatchMode=yes -o ConnectTimeout=10 seedbox
-      "for p in 22 80 443 853 2222 3000 3254 5000 5001 5945 6969 7878 8123 8443 8686 8787 8789 8790 8989 9696 13091 32400;
-      do (timeout 4 bash -c \"</dev/tcp/$WAN/\$p\" >/dev/null 2>&1 && echo \$p) & done; wait"
-      | grep -v '^32400$' | sort -n | xargs); [ -z "$extra" ] && echo NO_UNEXPECTED_PORTS || echo "UNEXPECTED_OPEN:$extra"
-    expect: '^NO_UNEXPECTED_PORTS$'
+      "for p in $PORTS; do (timeout 4 bash -c \"</dev/tcp/$WAN/\$p\" >/dev/null 2>&1 && echo \$p) & done; wait"
+      | grep -v '^32400$' | sort -n | xargs);
+      [ -z "$extra" ] && echo "NO_UNEXPECTED_PORTS (scanned $n fleet ports)" || echo "UNEXPECTED_OPEN:$extra"
+    expect: '^NO_UNEXPECTED_PORTS'
     severity: crit
     task_id: fix-24
     runbook: wiki/docs/runbooks/edge-exposure.md

@@ -44,6 +44,24 @@ checks:
     runbook: wiki/docs/runbooks/alerting.md
     enabled: true
 
+  # fix-101 (UM49): the two checks above are container-LIVENESS only — Diun's actual
+  # job is detecting image updates and delivering ntfy, so a healthy container with a
+  # dead watch loop is the exact "green-but-dead notify chain" class. This probes the
+  # CONSUMER end: the mini Diun logs "Found N image(s) to analyze" + "Next run in …"
+  # every scheduled cycle (06:00 daily), so a cycle within 30h proves the watch loop
+  # (and thus the update-detection → ntfy path) is alive, not just the process.
+  - id: alert-diun-cycle-fresh
+    name: "Diun (mini) ran an image-analysis watch cycle within 30h (notify path alive, not just up)"
+    host: mini
+    cmd: >-
+      docker logs diun --since 30h 2>&1 | grep -qE 'image\(s\) to analyze|Next run in'
+      && echo DIUN_CYCLE_FRESH || echo DIUN_CYCLE_STALE
+    expect: '^DIUN_CYCLE_FRESH$'
+    severity: warn
+    task_id: docker-12
+    runbook: wiki/docs/runbooks/alerting.md
+    enabled: true
+
   - id: alert-healthchecks-checks-defined
     name: "Healthchecks has its dead-man checks (>=6) and ntfy channel"
     host: mini

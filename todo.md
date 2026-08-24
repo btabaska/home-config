@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**313/418 done** · **71 open** · **19 deferred** · 15 retired.
+**314/418 done** · **70 open** · **19 deferred** · 15 retired.
 
 ---
 
@@ -109,7 +109,6 @@
 
 ### verification
 - [ ] **`fix-100`** Check-integrity hardening — liveness-masquerade + fail-open + task_id drift + stale expects (mandate #1) _(est 1-3 hrs)_
-- [ ] **`fix-101`** Monitoring-coverage gaps + census enrollment + deploy tripwire (mandate #2, reconfirms verify-06/fix-68) _(est 1-3 hrs)_
 
 ---
 

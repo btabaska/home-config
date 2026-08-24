@@ -4,13 +4,13 @@
 
 ## `edge-wan-port-posture`
 
-edge: no unexpected WAN ports open (only 32400/Plex allowed)
+edge: no fleet port open to WAN except 32400/Plex (scans the full listener baseline)
 
 - **host:** `mini` · **severity:** `crit` · **guards task:** `fix-24` · **enabled:** True
-- **expects:** `^NO_UNEXPECTED_PORTS$`
+- **expects:** `^NO_UNEXPECTED_PORTS`
 
 ```bash
-WAN=$(curl -s -m 10 https://ifconfig.me); echo "$WAN" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$' || { echo NO_WAN_IP; exit 0; }; extra=$(ssh -o BatchMode=yes -o ConnectTimeout=10 seedbox "for p in 22 80 443 853 2222 3000 3254 5000 5001 5945 6969 7878 8123 8443 8686 8787 8789 8790 8989 9696 13091 32400; do (timeout 4 bash -c \"</dev/tcp/$WAN/\$p\" >/dev/null 2>&1 && echo \$p) & done; wait" | grep -v '^32400$' | sort -n | xargs); [ -z "$extra" ] && echo NO_UNEXPECTED_PORTS || echo "UNEXPECTED_OPEN:$extra"
+WAN=$(curl -s -m 10 https://ifconfig.me); echo "$WAN" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$' || { echo NO_WAN_IP; exit 0; }; PORTS=$(cat /opt/verification/assets/expected-listeners/mini.ports /opt/verification/assets/expected-listeners/nas.ports /opt/verification/assets/expected-listeners/rig.ports 2>/dev/null | grep -oE '^[0-9]+' | sort -un | grep -v '^32400$' | tr '\n' ' '); n=$(printf '%s' "$PORTS" | wc -w); extra=$(ssh -o BatchMode=yes -o ConnectTimeout=10 seedbox "for p in $PORTS; do (timeout 4 bash -c \"</dev/tcp/$WAN/\$p\" >/dev/null 2>&1 && echo \$p) & done; wait" | grep -v '^32400$' | sort -n | xargs); [ -z "$extra" ] && echo "NO_UNEXPECTED_PORTS (scanned $n fleet ports)" || echo "UNEXPECTED_OPEN:$extra"
 ```
 
 ## `edge-plex-remote-identity`

@@ -1,6 +1,6 @@
 # Checks — alerting
 
-`foss-setup/verification/checks.d/alerting.yaml` — 15 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/alerting.yaml` — 16 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `alert-ntfy-healthy`
 
@@ -44,6 +44,17 @@ Diun (NAS) container running
 
 ```bash
 sudo -n /usr/local/bin/docker inspect -f '{{.State.Status}}' diun
+```
+
+## `alert-diun-cycle-fresh`
+
+Diun (mini) ran an image-analysis watch cycle within 30h (notify path alive, not just up)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `docker-12` · **enabled:** True
+- **expects:** `^DIUN_CYCLE_FRESH$`
+
+```bash
+docker logs diun --since 30h 2>&1 | grep -qE 'image\(s\) to analyze|Next run in' && echo DIUN_CYCLE_FRESH || echo DIUN_CYCLE_STALE
 ```
 
 ## `alert-healthchecks-checks-defined`
