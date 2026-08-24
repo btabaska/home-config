@@ -46,7 +46,13 @@ services:
       # slower fill is fine; 3 still ingests hundreds/30min (keeps bitmagnet-dht-ingesting green).
       # NB: bitmagnet maps env->config as UPPERCASE(path) with dots->underscores and NO prefix
       # (e.g. postgres.host <- POSTGRES_HOST), so this is DHT_CRAWLER_SCALING_FACTOR, not BITMAGNET_*.
-      - DHT_CRAWLER_SCALING_FACTOR=3
+      # fix-91 (2026-08-23): dropped 3->1. Root cause of the recurring SQLite-lock storms is
+      # HDD-IOPS saturation (NOT RAM — the NAS has 11GB free), and the 2026-08-23 sweep found
+      # bitmagnet-postgres still the top DB writer with slow-SQL inserts up to 868s under
+      # contention. bitmagnet is demoted to interactive-only (fix-50) so the crawl fill-rate is
+      # low-value; scaling=1 keeps ingestion alive (bitmagnet-dht-ingesting stays green) at the
+      # minimum disk-write rate, cutting its contribution to the arr/immich/scrutiny IO contention.
+      - DHT_CRAWLER_SCALING_FACTOR=1
     command:                              # run everything: DHT crawler + queue + HTTP/Torznab server
       - worker
       - run

@@ -150,6 +150,34 @@ Under sustained pressure the arrs' SQLite `fsync` runs slower than their
 only `LogLevel`) and their DB files are already `nodatacow` (`lsattr` shows `C`),
 so the remedy is to **remove the I/O pressure, not tune SQLite**.
 
+### fix-91 (2026-08-23): it is HDD-IOPS, not RAM — reduce concurrent disk writers
+
+The 2026-08-23 sweep re-confirmed the storm recurs (Sat weekly Hyper Backup verify,
+and lower nightly contention from the 19:10 daily backup + immich thumbnailing).
+**Ruled OUT memory pressure**: `free -h` showed 19 GB total with **11 GB available**
+(the 5.6 GB swap-used is stale cumulative-over-uptime, not active thrash), and only
+the *I/O* component of the load is high (`io_load15` 13-20 evenings, 26 during the
+Saturday verify; morning baseline ~3, so the daily 10:29 sweep passes). The DS920+'s
+spinning SATA disks are IOPS-bound under concurrent DB writers — `bitmagnet-postgres`
+was still the top writer (slow-SQL inserts up to 868 s under contention).
+
+Autonomous mitigation applied: **bitmagnet DHT crawler `DHT_CRAWLER_SCALING_FACTOR`
+3 → 1** (fix-55 had already gone 10 → 3). bitmagnet is demoted to interactive-only
+(fix-50) so a slower crawl fill is low-cost; scaling=1 keeps `bitmagnet-dht-ingesting`
+green at the minimum disk-write rate. Consumer impact was already soft — the
+movies-tv chain probe confirmed imports *complete* during contention (bursty-slow,
+not stalled); `arr-sqlite-not-locked` (locks in 15 min) is the sharp consumer signal,
+`nas-io-pressure` (raw io_load) is the leading indicator.
+
+**Operator handoff (the primary remaining lever — do via the Hyper Backup UI, NOT by
+hand-editing the critical backup `.task` files):** move the S3 backup schedule out of
+usage hours into the 4–7 AM window — the **daily** backup (currently 19:10) and the
+**weekly integrity verify** (Sat 21:10, the >1 h full-read that produced the 26-load
+storm). Hyper Backup → task → Settings → Schedule → 04:00. That removes the evening/
+Saturday IO spikes from when the arrs/immich/plex are in use. Storage-tier option if
+it ever worsens: an SSD read/write cache for the DB volumes (not urgent — the impact
+is transient and imports complete).
+
 Diagnose (light, sequential — do not pile parallel heavy reads onto an already
 saturated NAS):
 
