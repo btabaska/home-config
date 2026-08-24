@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**305/418 done** · **79 open** · **19 deferred** · 15 retired.
+**306/418 done** · **78 open** · **19 deferred** · 15 retired.
 
 ---
 
@@ -84,7 +84,6 @@
 
 ### security
 - [ ] **`fix-84`** Live playit SECRET_KEY (+ since-rotated ntfy token) committed to git history — scrub + rotate _(est 1-3 hrs)_
-- [ ] **`fix-92`** NAS /volume1/docker world-writable perms + perms-check IO-robustness (fix-23 hardening) _(est 1-3 hrs)_
 - [ ] **`foss-04`** Ente Auth adoption + YubiKey enrollment (Authy migration) _(est 1-2 hrs)_
 - [ ] **`sec-01`** Turn on MFA/2FA everywhere (hardware key on the crown jewels) _(est 1-2 hrs)_
 - [ ] **`sec-04`** Harden exposed surfaces (CrowdSec + forward-auth on the seedbox/public ports) _(est 1 hr)_ — ⛔ gate: Tailscale SSH ACL for operator → seedbox (currently blocked)

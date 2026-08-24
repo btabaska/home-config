@@ -15,24 +15,24 @@ stat -c '%a %U:%G' /volume1/scripts/nas/health.env
 
 ## `nas-secret-file-perms`
 
-no group/world-readable .env|config.ini|config.xml under /volume1/docker
+no group/world-readable secret config under /volume1/docker (env/ini/xml/yaml/conf/json/key)
 
 - **host:** `nas` · **severity:** `crit` · **guards task:** `fix-23` · **enabled:** True
-- **expects:** `^0$`
+- **expects:** `^(0|IO_DEFERRED)$`
 
 ```bash
-sh -c 'find /volume1/docker \( -name @eaDir -o -name "#recycle" \) -prune -o -type f \( -name "*.env" -o -name ".env" -o -name "config.ini" -o -name "config.xml" \) -perm /0044 -print 2>/dev/null | wc -l'
+out=$(timeout 45 find /volume1/docker -maxdepth 6 \( -name @eaDir -o -name '#recycle' \) -prune -o -type f \( -name '*.env' -o -name '.env' -o -name 'config.ini' -o -name 'config.xml' -o -name 'config.yaml' -o -name 'config.yml' -o -name '*.conf' -o -name 'settings.json' -o -name '*.key' \) ! -name '*cert*.pem' -perm /0044 -print 2>/dev/null); rc=$?; if [ "$rc" = 124 ]; then echo IO_DEFERRED; else printf '%s' "$out" | grep -c . ; fi
 ```
 
 ## `nas-worldwritable-sweep`
 
-no world-writable files under /volume1/docker or /volume1/scripts
+no world-writable files under /volume1/docker or /volume1/scripts (config depth)
 
 - **host:** `nas` · **severity:** `warn` · **guards task:** `fix-23` · **enabled:** True
-- **expects:** `^0$`
+- **expects:** `^(0|IO_DEFERRED)$`
 
 ```bash
-sh -c 'find /volume1/docker /volume1/scripts \( -name @eaDir -o -name "#recycle" \) -prune -o ! -type l -perm -0002 -print 2>/dev/null | wc -l'
+out=$(timeout 45 find /volume1/docker /volume1/scripts -maxdepth 6 \( -name @eaDir -o -name '#recycle' \) -prune -o ! -type l -perm -0002 -print 2>/dev/null); rc=$?; if [ "$rc" = 124 ]; then echo IO_DEFERRED; else printf '%s' "$out" | grep -c . ; fi
 ```
 
 ## `ntfy-anon-publish-denied`

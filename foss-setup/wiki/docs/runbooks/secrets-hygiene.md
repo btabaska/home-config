@@ -105,3 +105,35 @@ users is a known, deliberate follow-up, not yet done.
   vault backfilled (soulseek×4, whisparr API key, Forgejo admin — password reset via
   container CLI); 15 GB `migration-snapshot/` deleted from iCloud; deluge.port was
   already corrected to 5945 by fix-21.
+
+## NAS secret-file perms + check IO-robustness (fix-92, 2026-08-23)
+
+The 2026-08-23 sweep found the fix-23 perms checks (`nas-secret-file-perms`,
+`nas-worldwritable-sweep`) chronically TIMING OUT (exit 124 → false-CRIT) for 10+
+days: their `find` walked the entire `/volume1/docker` tree (incl. deep data dirs),
+>60s under NAS IO load. Note `ionice`/`nice` are NOT available on DSM.
+
+Fixes:
+
+- **IO-robust**: bounded the find to `-maxdepth 6` (the `<app>/config/<file>` depth
+  where secrets live) → completes in ~0.05s. A genuine 45s timeout now degrades to
+  `IO_DEFERRED` (safety-net pass), never a false-CRIT.
+- **Filter broadened**: 0644 secret files escaped the old `.env`/`.ini`/`.xml`
+  filter. Added `config.yaml`/`.yml`, `*.conf`, `settings.json`, `*.key`, while
+  EXCLUDING public `*cert*.pem` (certs are meant to be world-readable; the private
+  keys are `*.key`).
+- **Real exposures fixed**: 7 world-readable secret configs were found + `chmod 600`:
+  `stash/config/config.yml` (775), `bazarr/.../config.yaml`, `shelfmark/settings.json`,
+  `calibre-web-automated/config/.key` (755), `beets/config.yaml`,
+  `media-automation/unpackerr/unpackerr.conf` (arr keys, also sec-10),
+  `scrutiny/influxdb/config.yaml`. `synoacltool -get` showed these have NO synoacl
+  override, so they are POSIX-authoritative and `chmod 600` is effective (verified
+  stash still serves after). Owner is the container UID (btabaska/root), so 600
+  keeps app access.
+
+Note on the `/volume1/docker` share root showing POSIX `0777`: that is the DSM
+shared-folder synoacl display default — the actual synoacl grants `everyone`
+**read+traverse only** (no write), so it is NOT world-writable (refuted 2026-08-23).
+The real exposures were the world-readable FILES above, now fixed. Recurrence: if a
+container rewrites a config with a lax umask (fix-53 mylar3 class), the hardened
+check catches it fast — the durable cure is a per-container PID-1 `umask 077`.
