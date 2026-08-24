@@ -7,7 +7,7 @@ MeTube — web UI for yt-dlp: paste a URL, get the video/audio
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | https://metube.tabaska.us |
 | **Source** | `foss-setup/configs/docker-stack/stacks/metube/compose.yaml` |
-| **Notes** | One-off YouTube downloads (host-network; proxied via HOST_IP). |
+| **Notes** | One-off YouTube downloads — on the edge Docker network (fix-102 corrected — was mislabelled host-network). |
 | **Upstream docs** | <https://github.com/alexta69/metube> |
 
 ## About

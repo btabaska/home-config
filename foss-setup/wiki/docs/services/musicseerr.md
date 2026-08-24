@@ -36,7 +36,6 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `PGID`
 - `TZ`
 - `MUSIC_FOLDER`
-- `LIDARR_API_KEY`
 
 ## Troubleshooting
 

@@ -35,7 +35,7 @@ services:
     port: 8081
     url: https://metube.tabaska.us
     on_demand: false
-    notes: One-off YouTube downloads (host-network; proxied via HOST_IP).
+    notes: One-off YouTube downloads — on the edge Docker network (fix-102 corrected — was mislabelled host-network).
   - name: pinchflat
     category: Media
     host: mini
@@ -180,11 +180,11 @@ services:
   - name: beets
     category: Media Automation
     host: nas
-    port: null
+    port: 8337
     url: null
-    ui: false
+    ui: true
     on_demand: false
-    notes: Music tagger/importer worker — no UI; watch for hung one-off `-run-` containers.
+    notes: Music tagger/importer (YouTube-audio path) with a web UI on :8337; watch for hung one-off `-run-` containers. (fix-102 corrected — was mislabelled no-UI/port-null).
   - name: soularr
     category: Media Automation
     host: nas
@@ -196,7 +196,7 @@ services:
   - name: unpackerr
     category: Media Automation
     host: nas
-    port: null
+    port: 5656
     url: null
     ui: false
     on_demand: false
@@ -212,7 +212,7 @@ services:
   - name: deluge
     category: Media Automation
     host: seedbox
-    port: 8112
+    port: 5945  # 5945 is our web port; 8112 is another seedbox tenant (fix-102)
     url: https://deluge.tabaska.us
     on_demand: false
     notes: Off-site torrents (Betty seedbox over Tailscale).
@@ -339,7 +339,7 @@ services:
     port: 8123
     url: https://ha.tabaska.us
     on_demand: false
-    notes: Answers 400 via proxy until trusted_proxies configured (run-5); direct :8123 works.
+    notes: HA Green — trusted_proxies configured, so ha.tabaska.us serves through Caddy (fix-102 corrected — the old "answers 400 via proxy" note was stale); direct :8123 also works.
 
   # --- AI & Gaming (rig, 24/7 as of 2026-07-08; rig down = incident) ------------
   - name: open-webui
@@ -607,6 +607,14 @@ services:
     url: https://dns.tabaska.us
     on_demand: false
     notes: DNS filtering; admin UI proxied (container :80). Unbound (:5335) is its upstream resolver — no UI.
+  - name: adguardhome-nas
+    category: Infrastructure & Ops
+    host: nas
+    port: 53
+    url: null
+    ui: false
+    on_demand: false
+    notes: Secondary DNS resolver on the NAS (fix-102 catalog completeness) — the failover for the mini primary. Upstreams are DoH with failover (Quad9 + Cloudflare, fix-89). LAN-only, no public vhost.
   - name: unbound
     category: Infrastructure & Ops
     host: mini
@@ -644,6 +652,14 @@ services:
     ui: false
     on_demand: false
     notes: Image-update notifier → ntfy. No web UI.
+  - name: diun-nas
+    category: Infrastructure & Ops
+    host: nas
+    port: null
+    url: null
+    ui: false
+    on_demand: false
+    notes: Image-update notifier on the NAS (fix-102 catalog completeness) — the mini diun watches mini images, this one watches NAS images. → ntfy. No web UI.
 
   # --- Wiki & Docs -------------------------------------------------------------
   - name: wiki
