@@ -6,7 +6,7 @@
 
 ansible-pull last run succeeded
 
-- **host:** `mini` · **severity:** `crit` · **guards task:** `glue-03` · **enabled:** True
+- **host:** `mini` · **severity:** `crit` · **guards task:** `glue-08` · **enabled:** True
 - **expects:** `^ExecMainStatus=0$`
 
 ```bash
@@ -17,7 +17,7 @@ systemctl show ansible-pull.service -p ExecMainStatus
 
 no failed systemd units on mini
 
-- **host:** `mini` · **severity:** `warn` · **guards task:** `glue-03` · **enabled:** True
+- **host:** `mini` · **severity:** `warn` · **guards task:** `glue-08` · **enabled:** True
 - **expects:** `^0$`
 
 ```bash
@@ -28,7 +28,7 @@ systemctl --failed --no-legend | wc -l
 
 root filesystem below 85% used
 
-- **host:** `mini` · **severity:** `crit` · **guards task:** `glue-04` · **enabled:** True
+- **host:** `mini` · **severity:** `crit` · **guards task:** `glue-08` · **enabled:** True
 - **expects:** `^([0-7]?[0-9]|8[0-5])$`
 
 ```bash

@@ -158,7 +158,7 @@ checks:
     name: "marinara in-app connections present (LiteLLM Creative + 3 ComfyUI image conns)"
     host: url
     cmd: curl -s -m 8 http://cachyos.tailb31641.ts.net:3002/api/connections
-    expect: '(?s)(?=.*LiteLLM Creative)(?=.*https://llm\.tabaska\.us/v1)(?=.*Anime Image)(?=.*Z-Image Turbo)(?=.*Flux\.2 Klein)(?=.*https://comfyui\.tabaska\.us)'
+    expect: '(?s)(?=.*LiteLLM Creative)(?=.*https://llm\.tabaska\.us/v1)(?=.*Anime Image)(?=.*Z-Image Turbo)(?=.*Flux\.2 Klein)(?=.*http://comfyui-arbiter:8189)'
     severity: warn
     task_id: ai-01
     runbook: wiki/docs/runbooks/rig-host-stability.md
@@ -178,7 +178,7 @@ checks:
       const i=db.query('select name,api_url from image_gen_connections').all();
       console.log('llm='+l.map(r=>r.name+'|'+r.api_url+'|key'+r.has_api_key).join(';'));
       console.log('img='+i.map(r=>r.name+'|'+r.api_url).join(';'))"
-    expect: '(?s)(?=.*LiteLLM Creative\|https://llm\.tabaska\.us/v1\|key1)(?=.*NoobAI-XL\)\|https://comfyui\.tabaska\.us)(?=.*Z-Image Turbo)(?=.*Flux\.2 Klein)'
+    expect: '(?s)(?=.*LiteLLM Creative\|https://llm\.tabaska\.us/v1\|key1)(?=.*NoobAI-XL\)\|http://comfyui-arbiter:8189)(?=.*Z-Image Turbo)(?=.*Flux\.2 Klein)'
     severity: warn
     task_id: ai-01
     runbook: wiki/docs/runbooks/rig-host-stability.md

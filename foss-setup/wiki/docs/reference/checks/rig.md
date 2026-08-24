@@ -117,7 +117,7 @@ curl -s -o /dev/null -m 8 -w '%{http_code}' --resolve marinara.tabaska.us:443:12
 marinara in-app connections present (LiteLLM Creative + 3 ComfyUI image conns)
 
 - **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
-- **expects:** `(?s)(?=.*LiteLLM Creative)(?=.*https://llm\.tabaska\.us/v1)(?=.*Anime Image)(?=.*Z-Image Turbo)(?=.*Flux\.2 Klein)(?=.*https://comfyui\.tabaska\.us)`
+- **expects:** `(?s)(?=.*LiteLLM Creative)(?=.*https://llm\.tabaska\.us/v1)(?=.*Anime Image)(?=.*Z-Image Turbo)(?=.*Flux\.2 Klein)(?=.*http://comfyui-arbiter:8189)`
 
 ```bash
 curl -s -m 8 http://cachyos.tailb31641.ts.net:3002/api/connections
@@ -128,7 +128,7 @@ curl -s -m 8 http://cachyos.tailb31641.ts.net:3002/api/connections
 lumiverse in-app connections present (LLM row w/ key + 3 ComfyUI image conns)
 
 - **host:** `rig` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
-- **expects:** `(?s)(?=.*LiteLLM Creative\|https://llm\.tabaska\.us/v1\|key1)(?=.*NoobAI-XL\)\|https://comfyui\.tabaska\.us)(?=.*Z-Image Turbo)(?=.*Flux\.2 Klein)`
+- **expects:** `(?s)(?=.*LiteLLM Creative\|https://llm\.tabaska\.us/v1\|key1)(?=.*NoobAI-XL\)\|http://comfyui-arbiter:8189)(?=.*Z-Image Turbo)(?=.*Flux\.2 Klein)`
 
 ```bash
 docker exec lumiverse bun -e "const {Database}=require('bun:sqlite'); const db=new Database('/app/data/lumiverse.db',{readonly:true}); const l=db.query('select name,api_url,has_api_key from connection_profiles').all(); const i=db.query('select name,api_url from image_gen_connections').all(); console.log('llm='+l.map(r=>r.name+'|'+r.api_url+'|key'+r.has_api_key).join(';')); console.log('img='+i.map(r=>r.name+'|'+r.api_url).join(';'))"

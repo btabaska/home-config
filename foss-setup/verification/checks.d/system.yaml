@@ -6,7 +6,7 @@ checks:
     cmd: systemctl show ansible-pull.service -p ExecMainStatus
     expect: '^ExecMainStatus=0$'
     severity: crit
-    task_id: glue-03
+    task_id: glue-08
     runbook: wiki/docs/runbooks/git-hygiene.md
     enabled: true
 
@@ -16,7 +16,7 @@ checks:
     cmd: systemctl --failed --no-legend | wc -l
     expect: '^0$'
     severity: warn
-    task_id: glue-03
+    task_id: glue-08
     runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
@@ -26,7 +26,7 @@ checks:
     cmd: df --output=pcent / | tail -1 | tr -dc '0-9'
     expect: '^([0-7]?[0-9]|8[0-5])$'
     severity: crit
-    task_id: glue-04
+    task_id: glue-08
     runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
