@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**310/418 done** · **74 open** · **19 deferred** · 15 retired.
+**311/418 done** · **73 open** · **19 deferred** · 15 retired.
 
 ---
 
@@ -110,7 +110,6 @@
 ### verification
 - [ ] **`fix-100`** Check-integrity hardening — liveness-masquerade + fail-open + task_id drift + stale expects (mandate #1) _(est 1-3 hrs)_
 - [ ] **`fix-101`** Monitoring-coverage gaps + census enrollment + deploy tripwire (mandate #2, reconfirms verify-06/fix-68) _(est 1-3 hrs)_
-- [ ] **`fix-97`** New-service deploy completion — unsloth-studio (lai-28) + bioclip (lai-22) never finished coverage/catalog/wiki/baseline (fix-68 regression) _(est 1-3 hrs)_
 - [ ] **`fix-98`** rig listener-baseline codification — bless Steam 27036 + MoonDeckBuddy 59999 (fix-51 extension) _(est 1-3 hrs)_
 - [ ] **`fix-99`** checks.d dead runbook paths — fleet-wide catch-all _(est 1-3 hrs)_
 

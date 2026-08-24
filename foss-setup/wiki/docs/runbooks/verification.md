@@ -133,3 +133,24 @@ Verification is **read-only by design**, at every layer:
 3. Remediation happens exclusively through an interactive AI session (Claude), and anything that would change system state requires **explicit operator approval first**, presented as: *what is broken (evidence) -> what the fix will do -> what could go wrong*. Reply-to-approve in chat.
 
 If any future change to this framework would let a model execute commands autonomously, that change itself requires operator approval and a note here.
+
+## New-service deploy-completion checklist (fix-97, 2026-08-23)
+
+lai-28 (unsloth-studio) and lai-22 (bioclip-api) shipped without the anti-drift
+trailers — the fix-68 gap recurred. When deploying ANY new service, complete ALL of:
+
+1. **Coverage manifest** — add the container to `verification/coverage/<host>.containers`
+   AND deploy it to the runner: `scripts/verification/deploy.sh` (syncs coverage/ +
+   expected-listeners/ to /opt/verification). `containers-manifest-<host>` fails until
+   the DEPLOYED copy matches live — editing only the repo is not enough.
+2. **service-catalog row** — add `configs/docker-stack/service-catalog.yaml`
+   (name/category/host/port/url; `url: null` + `ui: false` for internal/no-vhost
+   services). `catalog-vhost-parity` fails on a live vhost with no catalog url.
+3. **Listener baseline** — if it opens a new all-interface port, bless it in
+   `verification/assets/expected-listeners/<host>.ports` AND deploy (deploy.sh).
+   `lan-listeners-drift-<host>` fails otherwise.
+4. **Regenerate** wiki + tracker (`gen-wiki-services.py`, etc.) in the same commit.
+
+The three checks above ARE the deploy-completion tripwire — they catch a skipped
+step within a day. The recurring failure mode is doing (1)/(3) in the repo but not
+running deploy.sh, so the runner keeps the stale copy.

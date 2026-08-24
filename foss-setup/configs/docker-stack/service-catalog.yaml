@@ -442,6 +442,21 @@ services:
     url: https://ldr.tabaska.us
     on_demand: false
     notes: Iterative deep-research assistant (lai-08, local-ai buildout) — LearningCircuit LDR 1.10.1 (digest-pinned). Multi-step search + synthesis with citations, fully local — LLM = LiteLLM openai_endpoint alias coder-strong (qwen3.6-27b via llama-swap, scoped virtual key), search = the mini SearXNG (lai-01). Per-user SQLCipher-encrypted DBs (no password reset possible); registration open, app login is the auth gate (LAN/tailnet posture like lumiverse). Env-locked config — model/search changes go through the compose, not the UI. Daily consumer check ldr-research-e2e (best-effort under GPU contention).
+  - name: unsloth-studio
+    category: AI & Gaming
+    host: rig
+    port: 8210
+    url: https://unsloth.tabaska.us
+    on_demand: false
+    notes: LLM fine-tuning / experimentation web UI (lai-28) on the rig. Provider type must be the HIDDEN llama_cpp (openai type filters lanes empty); auth = bootstrap diceware file, not the env. Rig runs 24/7, LAN/tailnet posture. Catalog row added fix-97 (deploy-completion — lai-28 shipped without it).
+  - name: bioclip-api
+    category: AI & Gaming
+    host: rig
+    port: 8199
+    url: null
+    ui: false
+    on_demand: false
+    notes: BioCLIP 2 plant/species classifier (lai-22), CPU-by-design. Internal only — no public vhost; consumed by the OWUI identify_plant tool (Plant Scout). Catalog row added fix-97 (deploy-completion — lai-22 shipped without it).
   - name: gpu-arbiter
     category: AI & Gaming
     host: rig
@@ -638,6 +653,13 @@ services:
     url: https://wiki.tabaska.us
     on_demand: false
     notes: Static site served by Caddy from /opt/stacks/wiki/site — live; rebuild/publish via scripts/docs/build-wiki.sh.
+  - name: principal-ai
+    category: Wiki & Docs
+    host: mini
+    port: null
+    url: https://principal-ai.tabaska.us
+    on_demand: false
+    notes: Static file_server site (Caddy, /opt/stacks/caddy/site/principal-ai-engineer-track) — the principal-AI-engineer track content, linked from the Homepage AI group. Catalog row added fix-97 for catalog-vhost-parity (the vhost shipped without one).
 
   # --- Private -----------------------------------------------------------------
   - name: stash
