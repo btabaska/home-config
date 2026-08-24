@@ -794,3 +794,22 @@ checks:
     task_id: read-26
     runbook: wiki/docs/services/booklogr.md
     enabled: true
+
+  # fix-85 (UM11): registration was left OPEN (AUTH_ALLOW_REGISTRATION=True) after
+  # the initial signup, so anyone reaching the API vhost could create an account.
+  # Flipped to False + recreated once the sole account existed. This probes the
+  # consumer path (through Caddy): a real POST to the register endpoint must be
+  # REFUSED 403 (registration disabled). If a redeploy ever re-opens it (the
+  # .env.example ships False now, but .env is live-only), this fires.
+  - id: booklogr-registration-closed
+    name: "BookLogr public self-registration is closed (POST /v1/register refused 403)"
+    host: mini
+    cmd: >-
+      curl -sk -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json'
+      -d '{}' --resolve booklogr-api.tabaska.us:443:127.0.0.1
+      https://booklogr-api.tabaska.us/v1/register
+    expect: '^403$'
+    severity: warn
+    task_id: fix-85
+    runbook: wiki/docs/services/booklogr.md
+    enabled: true

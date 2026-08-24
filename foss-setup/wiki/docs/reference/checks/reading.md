@@ -1,6 +1,6 @@
 # Checks — reading
 
-`foss-setup/verification/checks.d/reading.yaml` — 30 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/reading.yaml` — 31 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `cwa-kobo-sync-consumer`
 
@@ -505,6 +505,17 @@ BookLogr: SPA served + bundle carries API endpoint + API answers cross-origin wi
 
 ```bash
 python3 /opt/verification/bin/booklogr-serves.py
+```
+
+## `booklogr-registration-closed`
+
+BookLogr public self-registration is closed (POST /v1/register refused 403)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-85` · **enabled:** True
+- **expects:** `^403$`
+
+```bash
+curl -sk -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' --resolve booklogr-api.tabaska.us:443:127.0.0.1 https://booklogr-api.tabaska.us/v1/register
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

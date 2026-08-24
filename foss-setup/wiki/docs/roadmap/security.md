@@ -11,7 +11,7 @@
 | `fix-52` | Seedbox Syncthing: syncs nothing (0 folders, 0 peers, 0 bytes ever) while its plaintext-HTTP GUI is open to the public internet | ✅ done | 1-3 hrs |
 | `fix-53` | File-permission regressions: mylar3 writes 0644 secret-bearing config + world-writable cache (fix-23 regression), HA offsite tars group-writable to every NAS group | ✅ done | 1-3 hrs |
 | `fix-84` | Live playit SECRET_KEY (+ since-rotated ntfy token) committed to git history — scrub + rotate | ⬜ open | 1-3 hrs |
-| `fix-85` | BookLogr public self-registration still OPEN — lock it down | ⬜ open | 1-3 hrs |
+| `fix-85` | BookLogr public self-registration still OPEN — lock it down | ✅ done | 1-3 hrs |
 | `fix-92` | NAS /volume1/docker world-writable perms + perms-check IO-robustness (fix-23 hardening) | ⬜ open | 1-3 hrs |
 | `foss-01` | Password + secrets consolidation → Proton Pass (Vaultwarden retired) | ✅ done | 1-2 hrs |
 | `foss-04` | Ente Auth adoption + YubiKey enrollment (Authy migration) | ⬜ open | 1-2 hrs |
