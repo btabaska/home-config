@@ -35,7 +35,9 @@
 11434   # ollama (host)
 22000   # syncthing — sync protocol
 25565   # amp — Minecraft Java
+27036   # steam — Steam client Remote Play / in-home-streaming discovery (host; fix-98)
 47984   # apollo/sunshine — game streaming (HTTPS)
 47989   # apollo/sunshine — game streaming (HTTP)
 47990   # apollo/sunshine — web UI
 48010   # apollo/sunshine — control
+59999   # MoonDeckBuddy — MoonDeck game-streaming helper (re-enabled 2026-08-16 commit 0e2ff0d, supersedes fix-64; host; fix-98)
