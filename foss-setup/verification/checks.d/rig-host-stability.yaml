@@ -135,3 +135,32 @@ checks:
     task_id: fix-64
     runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
+
+  # ── fix-83 · btrfs data-integrity counters (the gap that let corruption grow
+  # silently 1->5 over 2026-08-03..08-23). rig's root+/home is a SINGLE-device
+  # btrfs on nvme2n1p2 with NO mirror and NO ECC RAM, so a csum failure is
+  # UNRECOVERABLE (mirror 1 only) and the counter only climbs. `btrfs device
+  # stats` is the authoritative kernel counter (needs no sudo). Any non-zero
+  # value is a crit: it means data was silently corrupted (in-flight — SMART is
+  # clean, so DRAM/controller/PCIe, not the NAND). A scrub identifies which files;
+  # the durable cure is a memtest86 + RAM swap (headless-unreachable — operator
+  # handoff), after which reset the baseline with `btrfs device stats -z /`.
+  - id: rig-btrfs-integrity
+    tier: daily
+    name: "rig root btrfs device-error counters all zero (fix-83 single-device csum-corruption tripwire)"
+    host: rig
+    cmd: >-
+      s=$(btrfs device stats / 2>/dev/null);
+      c=$(echo "$s" | awk -F'[. ]+' '/corruption_errs/{print $(NF)}');
+      w=$(echo "$s" | awk -F'[. ]+' '/write_io_errs/{print $(NF)}');
+      r=$(echo "$s" | awk -F'[. ]+' '/[^_]read_io_errs/{print $(NF)}');
+      f=$(echo "$s" | awk -F'[. ]+' '/flush_io_errs/{print $(NF)}');
+      g=$(echo "$s" | awk -F'[. ]+' '/generation_errs/{print $(NF)}');
+      tot=$(( ${c:-0} + ${w:-0} + ${r:-0} + ${f:-0} + ${g:-0} ));
+      if [ "$tot" -eq 0 ]; then echo "BTRFS_CLEAN corruption=${c:-0} wr=${w:-0} rd=${r:-0} flush=${f:-0} gen=${g:-0}";
+      else echo "BTRFS_ERRORS corruption=${c:-0} wr=${w:-0} rd=${r:-0} flush=${f:-0} gen=${g:-0} (single-device NVMe: UNRECOVERABLE; memtest+RAM swap then 'btrfs device stats -z /' to reset)"; fi
+    expect: '^BTRFS_CLEAN'
+    severity: crit
+    task_id: fix-83
+    runbook: wiki/docs/runbooks/rig-host-stability.md
+    enabled: true

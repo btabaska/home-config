@@ -135,6 +135,50 @@ unexplained abrupt end — the only true crash, watched via `rig-crash-storm-qui
 | `rig-ml-window-catchup-clean` | SL10 | `immich-ml-window@on` not left failed |
 | `rig-crash-storm-quiet` | SM13 / SM25 / SL9 | no binary segfaults >3×/24h |
 | `rig-mdns-fw-quiet` | SM15 / SL12 | avahi conflicts 0, UFW block rate low |
+| `rig-btrfs-integrity` | fix-83 | `btrfs device stats /` all-zero (data-corruption tripwire) |
 
 The existing `rig-immich-ml-window` check separately asserts the ML container is
 **off by day** (VRAM contention guard, task nas-32).
+
+## btrfs data-checksum corruption (fix-83, 2026-08-23)
+
+The 2026-08-23 sweep (UC4) found rig's root+/home btrfs
+(`/dev/nvme2n1p2`, single device, **no mirror**) logging **incrementing**
+`corruption_errs`: `corrupt 1` at mount 2026-08-03, `2` on 2026-08-20 (root 257
+ino 85429), `3` on 2026-08-23 15:49 (root 256 ino 1626645), and **`5` within the
+same audit** — two more csum failures logged after the first scan. Clocks were
+cross-checked (rig↔mini within 1s, NTP synced) so the timestamps are real, not
+RTC skew. This is the leading edge of the taxonomy-#1 read-only cascade that took
+the fleet down in fix-20 (btrfs `corrupt leaf` → forced RO → DB segfaults) — the
+FS is still `rw`, so it is the *precursor*, not yet a cascade.
+
+**Root cause is in-flight corruption, not the disk.** The NVMe's own SMART is
+clean (Media/Data-Integrity errors 0, 1% wear, no critical warning), so the NAND
+is fine — the bad data entered *before* it was written (DRAM / memory-controller /
+PCIe / write-path). rig runs **non-ECC** consumer RAM (no `edac` node), and the
+corruption correlates with heavy memory pressure from the AI stack. On a
+single-device btrfs a csum failure is **unrecoverable** (only `mirror 1` exists),
+so each hit is permanent data loss for that block and the counter only climbs.
+
+**What the sweep did (autonomous):**
+
+- Added `rig-btrfs-integrity` (crit) — the counter had **no** monitoring, which is
+  why it grew 1→5 unseen. It reads the authoritative kernel counter and fails on
+  any non-zero value. It is **RED now** (corruption=5) — correct: the corruption
+  is real and unhealed.
+- Ran a full `btrfs scrub /` to identify whether the corrupt blocks are still
+  referenced (result recorded in the fix-83 commit).
+
+**Operator handoff — the physical/root-cause leg (cannot be done headless):**
+
+1. **memtest86** across a full boot (headless-unreachable — its results only show
+   on the console; `memtester` from userspace can only test unallocated RAM and
+   won't cover the in-use regions where the AI stack lives). Boot rig into
+   memtest86, run ≥2 full passes. If it flags a DIMM, swap it; strongly consider
+   **ECC-capable RAM** given this host's write-integrity role.
+2. After the RAM is proven good, restore any still-corrupt files from the rig
+   restic backup (scrub output names them; on single-device they cannot self-heal)
+   and reset the baseline: `sudo btrfs device stats -z /`. `rig-btrfs-integrity`
+   goes green and re-fires only on genuinely new corruption.
+3. Durable option to weigh: a second NVMe as a btrfs `raid1` data/metadata mirror
+   so future csum failures are auto-corrected instead of permanent.
