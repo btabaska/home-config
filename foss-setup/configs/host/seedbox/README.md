@@ -90,8 +90,8 @@ assert, sonarr→Deluge e2e test, slskd LoggedIn e2e, service manifest). Runbook
 
 ```cron
 0 5 * * * ~/venvs/deluge/bin/python ~/scripts/deluge-reaper.py --live >/dev/null 2>>~/logs/deluge-reaper.err
-30 5 * * * find /home/hd34/btabaska/media/extracted -type f -mtime +7 -delete; find /home/hd34/btabaska/media/extracted -mindepth 1 -type d -empty -delete
-20 4 * * * /usr/sbin/logrotate -s ~/.config/logrotate/deluged.state ~/.config/logrotate/deluged.conf >/dev/null 2>&1
+30 5 * * * find /home/hd34/btabaska/media/extracted -type f -mtime +6 -delete; find /home/hd34/btabaska/media/extracted -mindepth 1 -type d -empty -delete   # fix-95: +7->+6 closes the reaper-vs-check(>7d) timing window
+20 * * * * /usr/sbin/logrotate -s ~/.config/logrotate/deluged.state ~/.config/logrotate/deluged.conf >/dev/null 2>&1   # fix-95: daily->HOURLY so the ~3MB/h libtorrent-WARNING flood never crosses the 50M check before rotation (size 20M trigger). Flood stops at source on the next deluged restart (launcher already has -L error).
 ```
 
 ## Dead rootless-docker experiment removed (2026-08-03, fix-69 / SL44)
