@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**315/418 done** · **69 open** · **19 deferred** · 15 retired.
+**316/418 done** · **68 open** · **19 deferred** · 15 retired.
 
 ---
 
@@ -55,7 +55,6 @@
 - [ ] **`fix-77`** Drain the Bazarr subtitle backlog + optional provider-key upgrade _(est 1-3 hrs)_
 
 ### ops
-- [ ] **`fix-103`** Accepted benign residuals — log-noise, self-recovered transients, minor version-lag, game-server residuals _(est 1-3 hrs)_
 - [ ] **`fix-104`** HA updates pending 3+ weeks + iPhone presence pipeline frozen 4 days (fix-36 regression) _(est 1-3 hrs)_
 - [ ] **`fix-75`** Set Windows RealTimeIsUniversal on rig — durable RTC-skew cure _(est <1 hr)_
 - [ ] **`fix-76`** Prove alert delivery reaches a device + add a whole-house dead-man _(est <1 hr)_

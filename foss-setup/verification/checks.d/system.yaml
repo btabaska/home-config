@@ -128,3 +128,31 @@ checks:
     task_id: glue-10
     runbook: wiki/docs/runbooks/fleet-hygiene.md
     enabled: true
+
+  # fix-103 (UL68): sys-disk-smart-health above asserts drives are PRESENT + SMART-
+  # passing, but Scrutiny retains the last-known payload across restarts, so if the
+  # daily 06:00 collector→hub publish genuinely STOPPED landing the rollup would keep
+  # showing stale-but-green data — the exact "green-masks-a-real-failure" gap UL68
+  # flagged (the collector logs a client-side POST timeout on ~12/21 days yet exits 0,
+  # and the data does land, so the timeout log is NOT a reliable failure signal). This
+  # reframes to the CONSUMER end: assert every device's smart.collector_date is within
+  # 40h (daily 06:00 cadence + one grace day). A device whose publish truly stopped
+  # goes stale here and pages, decoupled from the benign client-side timeout noise.
+  - id: sys-disk-smart-fresh
+    name: "Scrutiny SMART data is fresh for all disks (collector→hub publish still landing, not stale-green)"
+    host: mini
+    cmd: >-
+      curl -sm 10 http://nas:8080/api/summary
+      | python3 -c 'import sys,json,datetime;
+      d=json.load(sys.stdin); s=d.get("data",{}).get("summary",{});
+      now=datetime.datetime.now(datetime.timezone.utc);
+      ages={k:(now-datetime.datetime.fromisoformat((((v.get("smart") or {}).get("collector_date")) or "1970-01-01T00:00:00Z").replace("Z","+00:00"))).total_seconds()/3600.0 for k,v in s.items()};
+      stale=[k for k,a in ages.items() if a>40];
+      mx=max(ages.values(), default=1e9);
+      print("smart_fresh drives=%d max_age=%.1fh" % (len(s), mx)) if (d.get("success") and len(s)>=7 and not stale) else print("smart_STALE drives=%d stale=%d max_age=%.1fh" % (len(s), len(stale), mx))'
+      || echo smart_fresh_ERR
+    expect: '^smart_fresh drives=[0-9]+ '
+    severity: warn
+    task_id: glue-10
+    runbook: wiki/docs/runbooks/fleet-hygiene.md
+    enabled: true

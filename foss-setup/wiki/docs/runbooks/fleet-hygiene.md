@@ -126,3 +126,44 @@ re-grabbing owned titles). Recalibrated `arr-grab-indexer-share.py`: a PRIMARY i
 other indexer dead); the 60% dominance rule still applies to NON-primary indexers.
 Observation (not yet failing): IPT runs ~430 searches/day ≈ 72% of its 600/24h cap —
 if it ever exhausts, add indexers or reduce arr search frequency.
+
+## Accepted benign residuals + one monitor reframe (fix-103, 2026-08-23)
+
+The 2026-08-23 ultracode sweep's low-severity long tail: 26 findings that are
+log-noise, self-recovered transients, truthful stable residue, minor version-lag,
+or known game-server residuals. Each was re-probed live and confirmed benign /
+self-recovering (not a hidden real break), then **accepted with rationale** — the
+value is proving they are noise, not silence-masking a fault. The register:
+
+| finding(s) | what | why accepted (re-verified 2026-08-23) |
+|---|---|---|
+| UL11, UL61 | Navidrome 46/3525 (1.3%) greyed missing tracks, 4 albums | Truthful residue of a Jul-31 NAS mp3→FLAC re-org; live count still exactly **46/3525** (stable, not worsening), well under the mass-missing guard. |
+| UL14 | arr-queue-reconcile + sonarr-backlog-season-search each failed once | Single transient upstream-API blips (Aug 11 / Aug 13); both units carry `OnFailure=ntfy-notify@%n` so they *paged and recovered*. No storm, zero auth-rot. |
+| UL50 | kometa v2.4.6 vs upstream 2.4.8 | Two patch releases behind; every run clean. Hygiene image-bump, not a break. |
+| UL51, UL124 | 3 stale duplicate Kometa/Plex franchise playlists (Jul-10 run) | Cosmetic Plex cruft beside the live managed copies; managed copies match the current run summary. Deletion is a Plex-UI housekeeping action. |
+| UL52 | libreseerr author-gate rejected 'The Odyssey' by Όμηρος (Greek script) | The bmig-04 gate compares author strings without cross-script transliteration; the failure path itself worked as designed (fail-loudly WARNING). Niche edge case — accept; a transliteration-normalization pass is a future enhancement, not a fault. |
+| UL68 | Scrutiny 06:00 publish POST times out client-side 12/21 days, exits 0 | **Reframed — see below.** Data does land (hub `collector_date` fresh); the timeout log is not a reliable failure signal, and the presence-only check could stale-green. |
+| UL70 | SearXNG external-engine noise (~11/day): startpage CAPTCHA, brave/google-cse rate-limits | All EXTERNAL-engine transients; SearXNG falls back to other engines. Not rotated (under the 1MB cap), no internal fault. |
+| UL79 | Tautulli clear_recently_added_queue KeyError (23 since Aug 2) | Known Tautulli behavior when a library item's metadata vanishes before the queue drains; `get_notifiers` = 0 agents, so no consumer is affected. |
+| UL128 | ABS Patreon-gated podcast RSS fetch errors | External content-gate / DNS EAI_AGAIN on Patreon feeds; non-fatal, no retry storm. |
+| UL129 | Bazarr ffprobe 'cannot analyze' on old junk `.avi` rips (~800 events) | Data-quality on low-quality legacy rips ffprobe rejects; Bazarr skips them, no service fault. |
+| UL134 | CWA cosmetic log noise (author display-order, auto-zipper 'no files', startup warns) | Benign Calibre-Web chatter on inconsistently-entered author names; no crash loop, no 5xx. |
+| UL145 | Jellyfin ffprobe on 2 malformed FMA-Brotherhood external subtitle files | Data-quality on specific `.ass`/`.srt` files (null streams); playback unaffected. |
+| UL161 | Sonarr: RetroToon (Prowlarr) indexer unavailable — 1 health warning | Niche retro/cartoon indexer for the current backfill; `sonarr-indexer-redundancy` passes searchable=5 (min-3 floor), redundancy intact. |
+| UL173 | unpackerr transient arr-queue fetch errors (10 in ~22 days, IO-load) | Momentary SQLite-lock / client-timeout single-cycle transients unpackerr retries next 2m poll; not a storm. |
+| UL190 | OWUI bake-off capability-flag asymmetry (chat full flags vs trial lanes {vision:False}) | Fairness caveat on the 3-way chat bake-off (tool belt IS identical across lanes, so the comparison stands); not a runtime break. Owner: `seed-owui-model-capabilities.sh`. |
+| UL193 | VSCodium Continue 2.0.0 missing `ort-wasm-simd-threaded.wasm` | Bundled local-ONNX embed/rerank degraded; exthost exits 0. Remote inference (rig LiteLLM) is the actual path, so non-fatal. |
+| UL197 | immich-ml transient CUDA BFC OOM at night-window start (Aug 18/20, none since) | glue-14 GPU-VRAM contention class: a leftover chat/ComfyUI tenant briefly overlaps ML start; self-recovers, night-gated by design. |
+| UL205 | Palworld RestartCount=9 = cumulative UE SIGSEGV/heap-corruption over 37d | `unless-stopped` auto-recovers; container stable ~6d since last start (ExitCode 0, not OOM, not a loop). Known UE engine flakiness. |
+| UL206–209, UL220 | playit UDP-claim register error ~1/day (fix-34 / M30 residual) | `game-playit-udp-register-errors` FAILs by-design when count>0; re-verified stable ~1/day (last 24h=1, not worsened), `playit-udp-guard.timer` self-heals, tunnels/consumer path unaffected. |
+| UL211 | Old exit-1 transients on record (playit-udp-guard Aug 5 ×3, immich-ml-window@on Aug 12 ×1) | Both fully recovered, clean since, no recurrence. |
+
+**Monitor reframe (UL68 → `sys-disk-smart-fresh`, task glue-10):** `sys-disk-smart-health`
+asserts drives are *present + SMART-passing*, but Scrutiny retains the last-known payload
+across restarts, so if the daily 06:00 collector→hub publish genuinely *stopped landing*
+the rollup would keep showing stale-but-green data (the collector logs a client-side POST
+timeout on ~12/21 days yet exits 0, and the data does land — so that timeout log is not a
+reliable failure signal). The new check probes the **consumer end**: every device's
+`smart.collector_date` on the NAS hub must be within **40h** (daily 06:00 cadence + one
+grace day). A device whose publish truly stopped goes stale and pages, decoupled from the
+benign client-side timeout noise. Live/green 2026-08-23: `smart_fresh drives=7 max_age=20.9h`.

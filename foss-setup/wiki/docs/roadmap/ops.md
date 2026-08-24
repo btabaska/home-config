@@ -21,7 +21,7 @@
 | `docker-14` | Serve your own apps on the LAN — Caddy-fronted Compose stacks (optional Coolify behind Caddy) | ✅ done | 30-60 min |
 | `docker-15` | Deploy Homepage — one dashboard (your observability + the household front door) | ✅ done | 45-60 min |
 | `fix-102` | service-catalog + anti-drift documentation batch (fix-41 class) | ✅ done | 1-3 hrs |
-| `fix-103` | Accepted benign residuals — log-noise, self-recovered transients, minor version-lag, game-server residuals | ⬜ open | 1-3 hrs |
+| `fix-103` | Accepted benign residuals — log-noise, self-recovered transients, minor version-lag, game-server residuals | ✅ done | 1-3 hrs |
 | `fix-104` | HA updates pending 3+ weeks + iPhone presence pipeline frozen 4 days (fix-36 regression) | ⬜ open | 1-3 hrs |
 | `fix-32` | Fix Caddy reverse-proxy routes (ha.tabaska.us 400, llamaswap not reloaded, stray placeholders/vhosts) | ✅ done | 1-3 hrs |
 | `fix-41` | Repo-vs-live drift codification (forgejo stack, manifests, .env keys, ansible units) | ✅ done | 1-3 hrs |

@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **401 checks across 41 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **402 checks across 41 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -42,8 +42,8 @@ Every acceptance/regression check the fleet runs — **401 checks across 41 doma
 | [seedbox](seedbox.md) | 13 | 5 | 8 |
 | [soularr-backlog](soularr-backlog.md) | 2 | 0 | 2 |
 | [sync](sync.md) | 3 | 0 | 3 |
-| [system](system.md) | 10 | 5 | 5 |
+| [system](system.md) | 11 | 5 | 6 |
 | [verification-env-integrity](verification-env-integrity.md) | 2 | 2 | 0 |
 | [verification-self](verification-self.md) | 7 | 0 | 7 |
 
-_Total: 401 checks._
+_Total: 402 checks._

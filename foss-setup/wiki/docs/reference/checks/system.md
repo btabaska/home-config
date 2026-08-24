@@ -1,6 +1,6 @@
 # Checks — system
 
-`foss-setup/verification/checks.d/system.yaml` — 10 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/system.yaml` — 11 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `sys-ansible-pull`
 
@@ -110,6 +110,17 @@ Scrutiny reports all 7 fleet disks present with 0 failed SMART status
 
 ```bash
 curl -sm 10 http://nas:8080/api/summary | python3 -c 'import sys,json;d=json.load(sys.stdin);s=d.get("data",{}).get("summary",{});bad=[k for k,v in s.items() if v.get("device",{}).get("device_status",0)];print("smart_ok drives=%d" % len(s)) if (d.get("success") and len(s)>=7 and not bad) else print("smart_FAIL drives=%d failed=%d" % (len(s),len(bad)))' || echo smart_ERR
+```
+
+## `sys-disk-smart-fresh`
+
+Scrutiny SMART data is fresh for all disks (collector→hub publish still landing, not stale-green)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `glue-10` · **enabled:** True
+- **expects:** `^smart_fresh drives=[0-9]+ `
+
+```bash
+curl -sm 10 http://nas:8080/api/summary | python3 -c 'import sys,json,datetime; d=json.load(sys.stdin); s=d.get("data",{}).get("summary",{}); now=datetime.datetime.now(datetime.timezone.utc); ages={k:(now-datetime.datetime.fromisoformat((((v.get("smart") or {}).get("collector_date")) or "1970-01-01T00:00:00Z").replace("Z","+00:00"))).total_seconds()/3600.0 for k,v in s.items()}; stale=[k for k,a in ages.items() if a>40]; mx=max(ages.values(), default=1e9); print("smart_fresh drives=%d max_age=%.1fh" % (len(s), mx)) if (d.get("success") and len(s)>=7 and not stale) else print("smart_STALE drives=%d stale=%d max_age=%.1fh" % (len(s), len(stale), mx))' || echo smart_fresh_ERR
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
