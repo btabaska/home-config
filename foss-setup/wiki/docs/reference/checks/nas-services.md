@@ -1,6 +1,6 @@
 # Checks — nas-services
 
-`foss-setup/verification/checks.d/nas-services.yaml` — 24 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/nas-services.yaml` — 25 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `nas-ssh`
 
@@ -165,6 +165,17 @@ whisparr answers its /ping (adult automation :6969, seed-13)
 
 ```bash
 curl -s -m 8 http://nas:6969/ping
+```
+
+## `whisparr-stash-scan-authed`
+
+whisparr->stash Connect scan sends the Stash ApiKey (fix-88, no more silent 401)
+
+- **host:** `nas` · **severity:** `warn` · **guards task:** `fix-88` · **enabled:** True
+- **expects:** `^SCAN_AUTH_WIRED$`
+
+```bash
+grep -q 'ApiKey' /volume1/docker/whisparr/config/stash-scan.sh && echo SCAN_AUTH_WIRED || echo SCAN_AUTH_MISSING
 ```
 
 ## `nas-immich-backup-freshness`

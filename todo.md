@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**301/418 done** · **83 open** · **19 deferred** · 15 retired.
+**302/418 done** · **82 open** · **19 deferred** · 15 retired.
 
 ---
 
@@ -51,7 +51,6 @@
 - [ ] **`fix-73`** Clear the residual deluge pre-import-stuck grab (Only Murders S02E05) _(est <1 hr)_
 - [ ] **`fix-86`** Immich phone-photo ingestion stalled — 0 new assets in 7-9 days (fix-35 regression) _(est 1-3 hrs)_
 - [ ] **`fix-87`** Immich ffmpeg SIGSEGV nightly crash-loop on IMG_3674.mov (fix-60 regression) _(est 1-3 hrs)_
-- [ ] **`fix-88`** whisparr->stash auto-scan silently broken (seed-13 401) + zero-throughput framing _(est 1-3 hrs)_
 - [ ] **`fix-90`** Seerr request-layer rot — 3 dangling PROCESSING requests (fix-26 regression) _(est 1-3 hrs)_
 - [ ] **`fix-94`** Media-arr acquisition hygiene — IPTorrents grab-storm worsening (fix-50) + Sonarr unmanaged 'Any' profiles (fix-45) _(est 1-3 hrs)_
 - [ ] **`fix-95`** Download/import pipeline residuals — seedbox reaper off-by-one, deluged log flood, slskd/soularr parked imports _(est 1-3 hrs)_

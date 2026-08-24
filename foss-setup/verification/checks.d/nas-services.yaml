@@ -202,6 +202,26 @@ checks:
     runbook: wiki/runbooks/nas.md
     enabled: true
 
+  # fix-88 (seed-13 regression): the whisparr->stash Connect scan POSTed
+  # metadataScan with NO ApiKey header, so Stash (auth enforced) 401'd every
+  # auto-scan silently — a green-but-dead handoff. Fixed by injecting STASH_API_KEY
+  # into whisparr's env (compose ${STASH_API_KEY:?} self-guards the env half —
+  # whisparr won't start without it) and adding the header to /config/stash-scan.sh.
+  # This guards the script half (a redeploy that drops the header). The authenticated
+  # GraphQL path itself is covered by stash-serving above. Read is no-sudo (the
+  # script is btabaska-owned).
+  - id: whisparr-stash-scan-authed
+    name: "whisparr->stash Connect scan sends the Stash ApiKey (fix-88, no more silent 401)"
+    host: nas
+    cmd: >-
+      grep -q 'ApiKey' /volume1/docker/whisparr/config/stash-scan.sh
+      && echo SCAN_AUTH_WIRED || echo SCAN_AUTH_MISSING
+    expect: '^SCAN_AUTH_WIRED$'
+    severity: warn
+    task_id: fix-88
+    runbook: wiki/runbooks/nas.md
+    enabled: true
+
   # ---------------------------------------------------------------------------
   # IMMICH content checks (fix-35, 2026-07-18). The 2026-07-16 audit found the
   # flagship monitoring-vs-reality gap: every Immich probe (ping/version/dump

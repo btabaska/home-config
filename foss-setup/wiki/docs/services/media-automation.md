@@ -81,6 +81,7 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `RG_DB_USER`
 - `RG_DB_PASSWORD`
 - `SOULARR_INTERVAL`
+- `STASH_API_KEY`
 
 ## Troubleshooting
 

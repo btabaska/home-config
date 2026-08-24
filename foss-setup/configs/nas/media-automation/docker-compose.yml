@@ -419,7 +419,13 @@ services:
   whisparr:
     image: ghcr.io/hotio/whisparr@sha256:dfa198dc37a89f9f6b7a0fad39e66cfaa1153659a80e22fd9d9475b8b08bcac5   # v2 (2.2.0-release.108)
     container_name: whisparr
-    environment: *common-env
+    environment:
+      <<: *common-env
+      # fix-88 (seed-13): the /config/stash-scan.sh Connect script must send the
+      # Stash API key — Stash enforces auth, so metadataScan 401'd silently without
+      # it (whisparr->stash auto-scan was a green-but-dead chain). Value from vault
+      # homepage_widgets.stash_api_key (same Stash instance), injected via .env.
+      STASH_API_KEY: ${STASH_API_KEY:?set in .env from vault homepage_widgets.stash_api_key}
     volumes:
       - ${DOCKER_ROOT:-/volume1/docker}/whisparr/config:/config
       - ${WHISPARR_LIBRARY:-/volume1/stash/root/whisparr}:/data
