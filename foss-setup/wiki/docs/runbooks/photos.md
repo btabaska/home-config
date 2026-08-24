@@ -252,3 +252,24 @@ up -d`, then confirm `/api/server/version`. Postgres major upgrades are **not**
 automatic — never float the DB image. Take a pre-upgrade dump:
 `sudo bash /volume1/scripts/nas/immich-db-dump.sh` (the canonical dump script DSM task 9
 runs; `immich-pg-dump.sh` is deprecated).
+
+## Phone photo backup not flowing (fix-86, 2026-08-23)
+
+`nas-immich-backup-freshness` reports `backup=STALE assets=36208 fresh_7d=0`. The
+2026-08-23 sweep diagnosed the true cause (admin-key session query, not visible to
+the scoped check key): **no Immich mobile app is paired.** All four active sessions
+are browsers (Firefox/macOS, Firefox/Linux, Safari/macOS + one blank), newest
+2026-08-21; every one of the 36,208 assets was uploaded via the browser, and the
+"newest" asset (`IMG_1902.WEBP`, `fileCreatedAt` 2026-08-14) came from a Firefox
+web-upload burst, not a phone. So this is **not** a broken sync or a poller stall —
+Immich's primary purpose (automatic phone photo backup) was never set up. The check
+is working as designed: it is the standing reminder (fix-35 H17/H28) that phone
+backup isn't happening.
+
+**Operator handoff (phone-side, cannot be done from the fleet):** install the Immich
+app on Brandon's phone, log in to `https://immich.tabaska.us`, and enable background
+Auto Backup for the camera roll. (Same class as fix-71, Kaelyn's onboarding.) Once a
+mobile session appears and photos land, `nas-immich-backup-freshness` goes green.
+Diagnosis command (admin key from vault `immich.admin_api_key`, never echoed):
+`curl -H "x-api-key: $AKEY" http://192.168.10.4:2283/api/sessions` — look for an
+`iOS`/`Android` deviceType. fix-86 stays OPEN until the app is paired.
