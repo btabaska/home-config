@@ -81,13 +81,13 @@ curl -s -m 12 -H "Authorization: Bearer $HA_TOKEN" http://192.168.10.50:8123/api
 
 ## `ha-iphone-presence`
 
-iPhone companion presence pipeline alive (tracker + battery report real values)
+iPhone companion presence pipeline alive AND fresh (tracker+battery report real, recent values)
 
 - **host:** `mini` · **severity:** `warn` · **guards task:** `fix-36` · **enabled:** True
-- **expects:** `^presence=ok$`
+- **expects:** `^presence=ok fresh=`
 
 ```bash
-curl -s -m 12 -H "Authorization: Bearer $HA_TOKEN" http://192.168.10.50:8123/api/states | python3 -c "import sys,json; d={e['entity_id']:e['state'] for e in json.load(sys.stdin)}; dt=d.get('device_tracker.brandon_iphone','missing'); bl=d.get('sensor.btiphone_battery_level','missing'); ok=dt not in ('missing','unavailable','unknown') and bl.replace('.','',1).isdigit(); print('presence=ok' if ok else 'presence=DEAD:dt=%s,batt=%s'%(dt,bl))"
+curl -s -m 12 -H "Authorization: Bearer $HA_TOKEN" http://192.168.10.50:8123/api/states | python3 -c "import sys,json,datetime; m={e['entity_id']:e for e in json.load(sys.stdin)}; now=datetime.datetime.now(datetime.timezone.utc); dt=m.get('device_tracker.brandon_iphone'); bl=m.get('sensor.btiphone_battery_level'); dts=(dt or {}).get('state','missing'); bls=(bl or {}).get('state','missing'); ages=[(now-datetime.datetime.fromisoformat(x['last_updated'])).total_seconds()/3600.0 for x in (dt,bl) if x]; fresh=min(ages) if ages else 1e9; valid=dts not in ('missing','unavailable','unknown') and bls.replace('.','',1).isdigit(); print('presence=ok fresh=%.1fh'%fresh) if (valid and fresh<=24) else print('presence=DEAD:dt=%s,batt=%s,fresh=%.1fh'%(dts,bls,fresh))"
 ```
 
 ## `ha-backup-offsite-fresh`

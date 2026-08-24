@@ -41,6 +41,16 @@ The call blocks/times out while HA restarts — poll `/api/config` for the new
 (`ha-backup-offsite-fresh`) are the rollback path; the key is vault
 `hosts.ha.backup_password`.
 
+> **Do this in the 4–7 AM window, operator-present** (mandate #4). The OS update
+> **reboots the household hub** and a Core minor-version jump can break
+> automations — and HA is **LAN-only with SSH refused**, so if a HAOS reboot
+> wedges there is **no remote-recovery path**. An automated agent must not apply
+> these unattended; `ha-updates-pending` (warn) nags until they are applied.
+> **fix-104 (2026-08-23) recurrence** (`ha-updates-pending` firing
+> `updates=STALE:core,os,matter`): Core `2026.7.2 → 2026.8.3` (26d), HAOS
+> `18.1 → 18.2` (23d), Matter Server `9.1.0 → 9.2.0` (25d). Order: Matter add-on
+> → Core → OS last.
+
 ## `ha-availability-drift` fired
 
 The message names the condition:
@@ -56,13 +66,29 @@ The message names the condition:
   That's a dead bulb or a fixture someone forgot, not wall-switch churn.
   Replace the bulb or retire the entity.
 
-## `ha-iphone-presence` fired — the companion pipeline is actually dead
+## `ha-iphone-presence` fired — the companion pipeline is dead OR frozen
 
-`device_tracker.brandon_iphone` or battery stopped reporting real values —
-this is the part we rely on (presence), not the accepted-dead telemetry.
-On the iPhone: open the HA companion app so it reconnects; if still dead,
-check app Settings → Companion App → *Reset front-end cache / reconnect*, and
-that the server URL points at `http://192.168.10.50:8123`.
+`device_tracker.brandon_iphone` or `sensor.btiphone_battery_level` either
+stopped reporting real values **or stopped updating** — this is the part we
+rely on (presence), not the accepted-dead telemetry. The message tells you which:
+
+- `presence=DEAD:dt=<missing|unavailable|unknown>,...` — the integration itself
+  died (no valid value).
+- `presence=DEAD:dt=home,batt=90,fresh=105.6h` — **the feed is FROZEN** (valid
+  last-known values but `fresh=` age > 24h). This is the failure the value-only
+  check false-greened before **fix-104** (2026-08-23): the companion app's
+  persistent connection died 2026-08-19T17:26 and HA kept serving the stale
+  `home`/`90` state, so `presence=ok` printed for 4.4 days while presence was
+  dark. The check now gates on freshness (active feed's newest `last_updated`
+  must be ≤ 24h) so a multi-day freeze pages instead of hiding.
+
+On the iPhone (this is the operator/phone-side leg — HA is LAN-only, nothing on
+the network can revive a dead companion socket): open the HA companion app so it
+reconnects; if still dead, app Settings → Companion App → *Reset front-end cache
+/ reconnect*, confirm the server URL is `http://192.168.10.50:8123`, and that
+iOS Settings → Home Assistant has Background App Refresh + Location *Always* on.
+The `sensor.btiphone_*` active feed leaves the frozen timestamp within minutes of
+the app reconnecting; the check clears on its next run.
 
 ## Deferred hands-on fixes (do these when convenient, then delete the baseline)
 
