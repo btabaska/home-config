@@ -218,3 +218,28 @@ manifest — catches unknown/typo buckets and policy drift),
   `restic-backup-rig`, `immich-dump-nas`).
 - Monthly: `restore-test.sh`; quarterly: a real restore drill, logged in the
   tracker (glue-06 / sbom-05 — both still open).
+
+## Backup-set coverage of docker named volumes (fix-93, 2026-08-23)
+
+The curated `BACKUP_PATHS` overrides in the hand-seeded `/etc/restic/env` (which drop
+the default wholesale `/var/lib/docker/volumes` to skip huge regenerable model/scratch
+volumes) had silently EXCLUDED non-ephemeral state. Added the state volumes:
+
+- **mini**: `caddy_caddy_data` (76 Let's Encrypt certs — rate-limited to re-issue),
+  `romm_romm_db_data` (RomM catalog, 222 MB).
+- **rig**: `docker_lumiverse-data` (Lumiverse **master key** + user/chat secrets, 9 MB),
+  `docker_unsloth_studio_data` (auth/config, 152 KB), `/opt/stacks/suwayomi/data`.
+
+Excluded by design (documented): `docker_unsloth_work` (3 GB scratch), the comfyui/llm
+model binds (huge, re-downloadable). Verified with `restic backup --dry-run` on both
+hosts; the `backup-paths-{mini,rig}-critical` checks assert these stay listed so a
+future re-curation can't silently drop them. When adding/removing a service's
+persistent state, update `BACKUP_PATHS` in `/etc/restic/env` (mirror the intent in
+`scripts/backup/restic-backup.env.example`).
+
+**Operator handoffs (lower priority, not data-loss-critical):** (1) add `/volume1/manga`
+(1.9 GB, re-downloadable via Suwayomi) to the NAS Hyper Backup include list via the
+Hyper Backup UI if desired; (2) refresh `.handoff-secrets.yaml.example` to cover all
+vault sections (currently ~20 of ~61 — a DR-template completeness item); (3) add
+pre-backup dumps for the hot-snapshotted SQLite/MariaDB (pinchflat, uptime-kuma's
+embedded MariaDB) for crash-consistent restores.

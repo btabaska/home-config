@@ -240,3 +240,36 @@ checks:
     task_id: fix-42
     runbook: wiki/runbooks/backup-restore.md
     enabled: true
+
+  # fix-93 (2026-08-23): the curated restic BACKUP_PATHS overrides (hand-seeded in
+  # /etc/restic/env, dropping the wholesale /var/lib/docker/volumes to skip huge
+  # regenerable model/scratch volumes) had silently EXCLUDED non-ephemeral state:
+  # mini's caddy certs + RomM DB, rig's lumiverse master-key + unsloth auth volumes.
+  # These checks assert the critical named volumes are still listed in BACKUP_PATHS,
+  # so a future re-curation can't silently drop them again. (grep of the paths line
+  # only — never sources the secret env, per the sec-12 leak hazard.)
+  - id: backup-paths-mini-critical
+    name: "mini restic BACKUP_PATHS covers caddy certs + RomM DB volumes (fix-93)"
+    host: mini
+    cmd: >-
+      p=$(sudo grep '^BACKUP_PATHS' /etc/restic/env);
+      echo "$p" | grep -q caddy_caddy_data && echo "$p" | grep -q romm_romm_db_data
+      && echo BACKUP_PATHS_OK || echo BACKUP_PATHS_MISSING_VOLUME
+    expect: '^BACKUP_PATHS_OK$'
+    severity: warn
+    task_id: fix-93
+    runbook: wiki/docs/runbooks/backup-restore.md
+    enabled: true
+
+  - id: backup-paths-rig-critical
+    name: "rig restic BACKUP_PATHS covers lumiverse master-key + unsloth + suwayomi state (fix-93)"
+    host: rig
+    cmd: >-
+      p=$(sudo grep '^export BACKUP_PATHS' /etc/restic/env 2>/dev/null || sudo grep 'BACKUP_PATHS' /etc/restic/env);
+      echo "$p" | grep -q docker_lumiverse-data && echo "$p" | grep -q docker_unsloth_studio_data
+      && echo "$p" | grep -q '/opt/stacks/suwayomi/data' && echo BACKUP_PATHS_OK || echo BACKUP_PATHS_MISSING_VOLUME
+    expect: '^BACKUP_PATHS_OK$'
+    severity: warn
+    task_id: fix-93
+    runbook: wiki/docs/runbooks/backup-restore.md
+    enabled: true

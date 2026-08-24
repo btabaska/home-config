@@ -1,6 +1,6 @@
 # Checks — backups
 
-`foss-setup/verification/checks.d/backups.yaml` — 13 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/backups.yaml` — 15 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `backup-immich-dump-fresh`
 
@@ -143,6 +143,28 @@ ansible-pull last run on rig succeeded (DR convergence loop alive)
 
 ```bash
 systemctl show ansible-pull.service -p ExecMainStatus
+```
+
+## `backup-paths-mini-critical`
+
+mini restic BACKUP_PATHS covers caddy certs + RomM DB volumes (fix-93)
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-93` · **enabled:** True
+- **expects:** `^BACKUP_PATHS_OK$`
+
+```bash
+p=$(sudo grep '^BACKUP_PATHS' /etc/restic/env); echo "$p" | grep -q caddy_caddy_data && echo "$p" | grep -q romm_romm_db_data && echo BACKUP_PATHS_OK || echo BACKUP_PATHS_MISSING_VOLUME
+```
+
+## `backup-paths-rig-critical`
+
+rig restic BACKUP_PATHS covers lumiverse master-key + unsloth + suwayomi state (fix-93)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `fix-93` · **enabled:** True
+- **expects:** `^BACKUP_PATHS_OK$`
+
+```bash
+p=$(sudo grep '^export BACKUP_PATHS' /etc/restic/env 2>/dev/null || sudo grep 'BACKUP_PATHS' /etc/restic/env); echo "$p" | grep -q docker_lumiverse-data && echo "$p" | grep -q docker_unsloth_studio_data && echo "$p" | grep -q '/opt/stacks/suwayomi/data' && echo BACKUP_PATHS_OK || echo BACKUP_PATHS_MISSING_VOLUME
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)
