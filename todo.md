@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**309/418 done** · **75 open** · **19 deferred** · 15 retired.
+**310/418 done** · **74 open** · **19 deferred** · 15 retired.
 
 ---
 
@@ -64,7 +64,6 @@
 - [ ] **`fix-81`** Verify the nvidia-cdi-refresh fix survives a rig reboot _(est <1 hr)_
 - [ ] **`fix-83`** rig btrfs data-checksum corruption incrementing on single-device root NVMe (leading edge of the fix-20 RO-cascade) _(est 1-3 hrs)_ — ⛔ gate: disruptive — 4-7AM window + operator approval
 - [ ] **`fix-91`** NAS Saturday backup-window IO contention cascade (fix-55 regression) _(est 1-3 hrs)_ — ⛔ gate: disruptive — 4-7AM window + operator approval
-- [ ] **`fix-96`** Mini host residuals — scratch/log flood, unpackerr ansible-resurrection, docker-log corruption (fix-69 regression) _(est 1-3 hrs)_
 
 ### photos
 - [ ] **`fix-71`** Kaelyn Immich onboarding — enable phone photo backup for the 2nd household user _(est <1 hr)_
