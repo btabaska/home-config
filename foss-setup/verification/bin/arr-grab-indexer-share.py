@@ -38,8 +38,17 @@ ARRS = {
     "sonarr": ("http://192.168.10.4:8989", "v3", "SONARR_API_KEY"),
 }
 BITMAGNET = "Bitmagnet (DHT)"
-DOMINATE_SHARE = 0.60   # a single indexer at >=60% of recent grabs = dominating
+DOMINATE_SHARE = 0.60   # a NON-primary indexer at >=60% of recent grabs = dominating
 MIN_GRABS = 10          # need a real sample before judging a "storm"
+# fix-94 (2026-08-23): a designated PRIMARY paid tracker is EXPECTED to dominate the
+# grab stream — the fleet's whole library is WEB-1080p sourced from IPTorrents, so
+# IPT at 70%+ is normal, not a junk-storm (the fix-50 original was Bitmagnet, a
+# runaway DHT indexer re-grabbing owned titles). The 60% rule only makes sense for
+# NON-primary indexers. A primary is only flagged at near-total share (every other
+# indexer effectively dead). This kills the chronic false-positive (UL154) while
+# still catching (a) a non-primary indexer suddenly storming and (b) monoculture.
+PRIMARY_INDEXERS = {"IPTorrents"}
+PRIMARY_MAX_SHARE = 0.95
 
 
 def api(base, ver, key, path):
@@ -94,11 +103,17 @@ def mode_share():
     top, cnt = Counter(grabs).most_common(1)[0]
     share = cnt / n
     top_live = enabled.get(top, False)
-    if share >= DOMINATE_SHARE and top_live:
+    is_primary = any(p in top for p in PRIMARY_INDEXERS)
+    limit = PRIMARY_MAX_SHARE if is_primary else DOMINATE_SHARE
+    if share >= limit and top_live:
+        why = ("primary indexer at near-total share — every other indexer is "
+               "effectively dead, investigate" if is_primary
+               else "a live non-primary indexer is dominating (junk-grab storm)")
         print(f"SHARE_STORM top='{top}' share={share:.0%} n={n} auto_enabled=YES "
-              "— a live indexer is dominating grabs (junk-grab storm)")
+              f"primary={'YES' if is_primary else 'no'} — {why}")
         sys.exit(1)
     print(f"SHARE_OK top='{top}' share={share:.0%} n={n} "
+          f"primary={'YES' if is_primary else 'no'} "
           f"auto_enabled={'YES' if top_live else 'no(demoted/benign)'}")
 
 

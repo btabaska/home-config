@@ -106,3 +106,23 @@ Documented here so future audits don't re-flag them:
   `DELETE /api/v1/files/{id}`, so every changed wiki page leaks a file row +
   chroma collection + upload on the rig. The 2026-07-19 cleanup zeroed the
   backlog; expect slow regrowth until the sync script is patched (follow-up).
+
+## Sonarr unmanaged-profile drift + IPT grab-share false-positive (fix-94, 2026-08-23)
+
+**Sonarr profiles**: 10 monitored series (old cartoons/anime — Teen Titans Go!,
+Animaniacs, Zoids, Cardcaptor Sakura, …) had drifted onto the `Any` quality profile
+(id 1), which accepts junk/cam releases (the fix-27 sample-file risk). The fleet
+standard is `WEB-1080p` (id 7 — 158 of 168 series). Re-pinned all 10 to WEB-1080p via
+the Sonarr series-editor API (`PUT /api/v3/series/editor {seriesIds, qualityProfileId:7}`);
+`sonarr-unmanaged-profile` now `PROFILE_OK n=0`. When adding a series, confirm it lands
+on a managed profile, not `Any`.
+
+**IPT grab-share**: `arr-grab-source-not-storming` (fix-50) chronically false-fired at
+IPTorrents 60-71% share. IPTorrents is the fleet's DELIBERATE primary paid tracker (the
+whole WEB-1080p library is sourced from it), so it is EXPECTED to dominate the grab
+stream — that is not the fix-50 junk-storm (which was Bitmagnet, a runaway DHT indexer
+re-grabbing owned titles). Recalibrated `arr-grab-indexer-share.py`: a PRIMARY indexer
+(`PRIMARY_INDEXERS = {IPTorrents}`) is only flagged at near-total ≥95% share (every
+other indexer dead); the 60% dominance rule still applies to NON-primary indexers.
+Observation (not yet failing): IPT runs ~430 searches/day ≈ 72% of its 600/24h cap —
+if it ever exhausts, add indexers or reduce arr search frequency.
