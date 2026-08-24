@@ -3,7 +3,7 @@
 # Palworld etc. later) — tunnels are created in the playit.gg dashboard and
 # forward to localhost ports on the rig.
 # .env (not committed): SECRET_KEY from playit.gg -> Agents -> Add Agent (Docker);
-# also vaulted as playit.secret_key.
+# also vaulted as playit_gg.secret_key. Exposed once in a committed audit doc (fix-84) -> rotate at playit.gg.
 services:
   playit:
     image: ghcr.io/playit-cloud/playit-agent:latest

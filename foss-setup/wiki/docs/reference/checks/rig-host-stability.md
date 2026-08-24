@@ -1,6 +1,6 @@
 # Checks — rig-host-stability
 
-`foss-setup/verification/checks.d/rig-host-stability.yaml` — 6 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/rig-host-stability.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `rig-poweroff-inhibit`
 
@@ -66,6 +66,17 @@ rig mDNS conflict-free + cachyos.local resolves + UFW noise silenced (SM15/SL12)
 
 ```bash
 ac=$(journalctl -u avahi-daemon --since '-5 min' 2>/dev/null | grep -c 'Host name conflict'); res=$(avahi-resolve -4 -n cachyos.local 2>/dev/null | grep -c '192.168.10.12'); noisy=$(journalctl -k --since '-2 min' 2>/dev/null | grep 'UFW BLOCK' | grep -cE 'DPT=21027|SRC=192.168.10.177'); if [ "${ac:-99}" -le 5 ] && [ "${res:-0}" -ge 1 ] && [ "${noisy:-99}" -eq 0 ]; then echo "QUIET conflicts5m=$ac fwnoise2m=$noisy resolves=$res"; else echo "NOISY conflicts5m=$ac fwnoise2m=$noisy resolves=$res"; fi
+```
+
+## `rig-btrfs-integrity`
+
+rig root btrfs device-error counters all zero (fix-83 single-device csum-corruption tripwire)
+
+- **host:** `rig` · **severity:** `crit` · **guards task:** `fix-83` · **enabled:** True
+- **expects:** `^BTRFS_CLEAN`
+
+```bash
+s=$(btrfs device stats / 2>/dev/null); c=$(echo "$s" | awk -F'[. ]+' '/corruption_errs/{print $(NF)}'); w=$(echo "$s" | awk -F'[. ]+' '/write_io_errs/{print $(NF)}'); r=$(echo "$s" | awk -F'[. ]+' '/[^_]read_io_errs/{print $(NF)}'); f=$(echo "$s" | awk -F'[. ]+' '/flush_io_errs/{print $(NF)}'); g=$(echo "$s" | awk -F'[. ]+' '/generation_errs/{print $(NF)}'); tot=$(( ${c:-0} + ${w:-0} + ${r:-0} + ${f:-0} + ${g:-0} )); if [ "$tot" -eq 0 ]; then echo "BTRFS_CLEAN corruption=${c:-0} wr=${w:-0} rd=${r:-0} flush=${f:-0} gen=${g:-0}"; else echo "BTRFS_ERRORS corruption=${c:-0} wr=${w:-0} rd=${r:-0} flush=${f:-0} gen=${g:-0} (single-device NVMe: UNRECOVERABLE; memtest+RAM swap then 'btrfs device stats -z /' to reset)"; fi
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

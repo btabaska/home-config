@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **394 checks across 41 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **396 checks across 41 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -36,9 +36,9 @@ Every acceptance/regression check the fleet runs — **394 checks across 41 doma
 | [reading](reading.md) | 30 | 0 | 30 |
 | [retro-emulation](retro-emulation.md) | 1 | 0 | 1 |
 | [rig](rig.md) | 32 | 2 | 30 |
-| [rig-host-stability](rig-host-stability.md) | 6 | 0 | 6 |
+| [rig-host-stability](rig-host-stability.md) | 7 | 1 | 6 |
 | [rig-immich-ml](rig-immich-ml.md) | 5 | 1 | 4 |
-| [secrets](secrets.md) | 6 | 3 | 3 |
+| [secrets](secrets.md) | 7 | 4 | 3 |
 | [seedbox](seedbox.md) | 13 | 5 | 8 |
 | [soularr-backlog](soularr-backlog.md) | 2 | 0 | 2 |
 | [sync](sync.md) | 3 | 0 | 3 |
@@ -46,4 +46,4 @@ Every acceptance/regression check the fleet runs — **394 checks across 41 doma
 | [verification-env-integrity](verification-env-integrity.md) | 2 | 2 | 0 |
 | [verification-self](verification-self.md) | 7 | 0 | 7 |
 
-_Total: 394 checks._
+_Total: 396 checks._

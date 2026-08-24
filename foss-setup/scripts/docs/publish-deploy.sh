@@ -27,6 +27,15 @@ cd "${ROOT}"
 echo "[publish] linting the secrets vault..."
 python3 "${ROOT}/foss-setup/scripts/secrets/vault-lint.py"
 
+# fix-84 (UH2): vault-lint only checks the vault file itself — nothing scanned the
+# rest of the tree, so a live playit SECRET_KEY (+ adguard_nas admin password) got
+# pasted into a committed audit doc and pushed to both remotes. This gate scans
+# every tracked file for verbatim vault secrets + secret-shaped strings and REFUSES
+# to push if any NEW leak is found (known-tracked leaks are allowlisted with their
+# task id in the scanner). This is the gate the original leak slipped through.
+echo "[publish] repo secret-scan gate (fix-84)..."
+python3 "${ROOT}/foss-setup/scripts/verification/repo-secret-scan.py"
+
 # fix-68 (SM48 / wiki-05): same-commit regen gate. ai-04's commit 554c560 added a
 # check without regenerating its wiki page, so the published wiki drifted and the
 # wiki-drift check went red for days. Fail the publish BEFORE it reaches the

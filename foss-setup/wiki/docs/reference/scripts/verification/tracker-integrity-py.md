@@ -48,6 +48,7 @@ these sources; this checks the sources themselves.
 - [`catalog-vhost-parity.py`](catalog-vhost-parity-py.md)
 - [`deploy.sh`](deploy-sh.md)
 - [`reopen-report.py`](reopen-report-py.md)
+- [`repo-secret-scan.py`](repo-secret-scan-py.md)
 - [`stack-mirror-check.sh`](stack-mirror-check-sh.md)
 - [`tracker-count-check.py`](tracker-count-check-py.md)
 - [`unit-drift-check.sh`](unit-drift-check-sh.md)

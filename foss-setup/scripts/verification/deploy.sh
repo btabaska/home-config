@@ -10,6 +10,7 @@
 #   scripts/gaming/mc-bedrock-ping.py            -> checks.d/rig.yaml  playit-bedrock-public
 #   scripts/ai/wiki-rag-sync.py                  -> wiki-rag-sync.service ExecStart
 #   scripts/media/window-maint-unpackerr-rclone.sh -> window-maint units
+#   scripts/verification/repo-secret-scan.py     -> checks.d/secrets.yaml repo-secret-scan-clean
 # The old README deploy — `rsync -a --delete foss-setup/verification/ -> /opt/
 # verification/` — would DELETE all four (they are not under verification/),
 # breaking two live checks and a service. This script assembles a COMPLETE
@@ -35,6 +36,7 @@ EXTERNAL_BIN=(
   "scripts/gaming/mc-bedrock-ping.py"
   "scripts/ai/wiki-rag-sync.py"
   "scripts/media/window-maint-unpackerr-rclone.sh"
+  "scripts/verification/repo-secret-scan.py"  # fix-84: checks.d/secrets.yaml repo-secret-scan-clean
 )
 
 echo "==> assembling staging tree from $SRC + ${#EXTERNAL_BIN[@]} external scripts"

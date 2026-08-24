@@ -1,6 +1,6 @@
 # Checks — secrets
 
-`foss-setup/verification/checks.d/secrets.yaml` — 6 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/secrets.yaml` — 7 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `nas-health-env-perms`
 
@@ -66,6 +66,17 @@ HA offsite backup tars: only administrators/ha-backup can write/delete (SM42)
 
 ```bash
 n=$(printf '%s\n' "$NAS_SUDO_PASSWORD" | ssh -o BatchMode=yes -o ConnectTimeout=10 nas "sudo -S -p '' sh -c 'F=\$(ls -1t /volume1/backups/*.tar 2>/dev/null | head -1); /usr/syno/bin/synoacltool -get /volume1/backups; [ -n \"\$F\" ] && /usr/syno/bin/synoacltool -get \"\$F\"'" 2>/dev/null | grep -Ec 'group:(media|users|http|household|docker-service):allow:rwxpdD'); echo "backup_open_write_aces=${n:-query_failed}"
+```
+
+## `repo-secret-scan-clean`
+
+no secret-shaped strings in pushed origin/main (fix-84 recurrence monitor)
+
+- **host:** `mini` · **severity:** `crit` · **guards task:** `fix-84` · **enabled:** True
+- **expects:** `^SECRETS-CLEAN`
+
+```bash
+cd /opt/foss-setup 2>/dev/null && git fetch -q origin main 2>/dev/null; hits=$(git -C /opt/foss-setup grep -I -n -E 'tk_[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}' origin/main -- . ':!*.example' ':!*unpackerr.conf' 2>/dev/null | grep -vi redacted | wc -l | tr -d ' '); if [ "${hits:-1}" -eq 0 ]; then echo "SECRETS-CLEAN pushed origin/main pattern-scan 0 hits"; else echo "SECRETS-FOUND $hits secret-shaped string(s) in origin/main"; fi
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

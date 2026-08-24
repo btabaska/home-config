@@ -24,6 +24,7 @@ scripts/verification/deploy.sh            # deploy
    scripts/gaming/mc-bedrock-ping.py            -> checks.d/rig.yaml  playit-bedrock-public
    scripts/ai/wiki-rag-sync.py                  -> wiki-rag-sync.service ExecStart
    scripts/media/window-maint-unpackerr-rclone.sh -> window-maint units
+   scripts/verification/repo-secret-scan.py     -> checks.d/secrets.yaml repo-secret-scan-clean
  The old README deploy — `rsync -a --delete foss-setup/verification/ -> /opt/
  verification/` — would DELETE all four (they are not under verification/),
  breaking two live checks and a service. This script assembles a COMPLETE
@@ -44,6 +45,7 @@ scripts/verification/deploy.sh            # deploy
 
 - [`catalog-vhost-parity.py`](catalog-vhost-parity-py.md)
 - [`reopen-report.py`](reopen-report-py.md)
+- [`repo-secret-scan.py`](repo-secret-scan-py.md)
 - [`stack-mirror-check.sh`](stack-mirror-check-sh.md)
 - [`tracker-count-check.py`](tracker-count-check-py.md)
 - [`tracker-integrity.py`](tracker-integrity-py.md)

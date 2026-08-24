@@ -927,14 +927,14 @@ failed_imports.json: "5030": {... "failed_at": "2026-07-10T01:08:12", "folder_pa
 **Host:** nas · **Component:** security / secrets perms · **Auditor:** host:nas
 
 
-/volume1/scripts/nas/health.env is mode 0777 (rwxrwxrwx+) and holds NTFY_TOKEN=tk_ahl18uonl83eaj3pbqi57h01mfg87 in plaintext, readable by any local user/container. Most service dirs and files under /volume1/docker are likewise 0777 (adguard-nas, beets, soularr logs, stash .env, etc.). Impact is bounded (scoped ntfy publish token, LAN), but it is a plaintext secret with no read restriction. By contrast soularr/config.ini and immich/.env are correctly 0600/root — so the tight perms exist elsewhere, this file just drifted.
+/volume1/scripts/nas/health.env is mode 0777 (rwxrwxrwx+) and holds NTFY_TOKEN=<REDACTED-ntfy-token since-rotated (fix-84)> in plaintext, readable by any local user/container. Most service dirs and files under /volume1/docker are likewise 0777 (adguard-nas, beets, soularr logs, stash .env, etc.). Impact is bounded (scoped ntfy publish token, LAN), but it is a plaintext secret with no read restriction. By contrast soularr/config.ini and immich/.env are correctly 0600/root — so the tight perms exist elsewhere, this file just drifted.
 
 
 <details><summary>Evidence</summary>
 
 ```
 ls -la health.env -> -rwxrwxrwx+ 1 root root 104 ... health.env
-cat health.env -> NTFY_TOKEN=tk_ahl18uonl83eaj3pbqi57h01mfg87
+cat health.env -> NTFY_TOKEN=<REDACTED-ntfy-token since-rotated (fix-84)>
 (stash/.env, beets/*, soularr/*.log all -rwxrwxrwx+)
 ```
 
@@ -1346,7 +1346,7 @@ The 'ALL credentials live in .handoff-secrets.yaml' mandate is broken in three p
 vault: soulseek: {username: '', password: '', slskd_web_password: '', slskd_api_key: ''}; deluge: {host: betty, port: 58846}; arr_api_keys has sonarr/radarr/lidarr/readarr/prowlarr only
 ssh nas ls -l /volume1/docker/soularr/config.ini -> -rw------- (contains live [Slskd] api_key; soularr.log active 12:29 today)
 ssh seedbox ss -tln | grep -E ':5030|:58846|:5945' -> 5030, 5031, 5945, 50300 listening; 58846 ABSENT
-ssh nas grep '<ApiKey>' /volume1/docker/whisparr/config/config.xml -> ffa708068d354043be79329b3526aa0e
+ssh nas grep '<ApiKey>' /volume1/docker/whisparr/config/config.xml -> <REDACTED-secret matches a live vault value (fix-84)>
 ```
 
 </details>
@@ -1450,7 +1450,7 @@ ERROR playit_agent_core::agent_control::connected_control: got unexpected respon
 docker logs --since 11h playit | grep account_status →
 2026-07-15T10:51:20 INFO playitd::daemon: playit connected; tunnels loaded agent_id=9f821bee... tunnel_count=3 pending_tunnel_count=0 disabled_tunnel_count=0 account_status="verified"
 
-docker inspect playit env: SECRET_KEY=83e2263969d3ced334c1f28e09a0c527dd73f49dfdcf75018c9f2cd4479a9817 (matches vault playit_gg.secret_key)
+docker inspect playit env: SECRET_KEY=<REDACTED-playit-secret-key see vault playit_gg.secret_key — exposed, rotate at playit.gg (fix-84)> (matches vault playit_gg.secret_key)
 ```
 
 </details>

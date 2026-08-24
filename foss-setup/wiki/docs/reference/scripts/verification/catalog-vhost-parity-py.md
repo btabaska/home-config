@@ -43,6 +43,7 @@ Exit 0 + CATALOG-VHOST-PARITY-OK, or exit 1 with one line per violation, exit 2 
 
 - [`deploy.sh`](deploy-sh.md)
 - [`reopen-report.py`](reopen-report-py.md)
+- [`repo-secret-scan.py`](repo-secret-scan-py.md)
 - [`stack-mirror-check.sh`](stack-mirror-check-sh.md)
 - [`tracker-count-check.py`](tracker-count-check-py.md)
 - [`tracker-integrity.py`](tracker-integrity-py.md)
