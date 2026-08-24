@@ -224,7 +224,7 @@ n=$(printf '%s\n' "$NAS_SUDO_PASSWORD" | ssh -o BatchMode=yes -o ConnectTimeout=
 
 ## `nas-immich-ffmpeg-nocrash`
 
-no Immich ffmpeg core dump at /volume1 root (transcode crash-loop class, SM1)
+no Immich ffmpeg core dump at /volume1 root (transcode crash-loop class, SM1/fix-87)
 
 - **host:** `nas` · **severity:** `warn` · **guards task:** `fix-60` · **enabled:** True
 - **expects:** `^0$`

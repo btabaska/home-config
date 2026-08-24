@@ -273,3 +273,27 @@ mobile session appears and photos land, `nas-immich-backup-freshness` goes green
 Diagnosis command (admin key from vault `immich.admin_api_key`, never echoed):
 `curl -H "x-api-key: $AKEY" http://192.168.10.4:2283/api/sessions` — look for an
 `iOS`/`Android` deviceType. fix-86 stays OPEN until the app is paired.
+
+## Immich ffmpeg SIGSEGV crash-loop on a corrupt asset (fix-87, 2026-08-23)
+
+Symptom: `nas-immich-ffmpeg-nocrash` / `nas-core-dumps` fire — a fresh
+`@ffmpeg.synology_geminilake_920+.<pid>.<container-id>.core.gz` appears at the
+`/volume1` root, dated ~00:00 (last night). Cause: the `nightlyTasks.missingThumbnails`
+job (Immich admin → System Settings, runs 00:00) re-feeds a **corrupt** asset to
+jellyfin-ffmpeg, which SIGSEGVs (signal 11) and dumps core — every night. fix-60's
+DB-placeholder preview row did NOT stop this (the nightly job re-queues regardless).
+
+Remediation (durable, reversible):
+1. Identify the asset: `sudo docker logs immich_server --since 30h | grep -iE 'SIGSEGV|dumped core'`
+   → the ffmpeg cmdline names the file, e.g. `/data/library/admin/2021/2021-06-28/IMG_3674.mov`.
+   Map path→asset id in postgres: `select id from asset where "originalFileName"='IMG_3674.MOV';`
+2. **Trash** it (reversible 30-day, excludes it from every job via `deletedAt`):
+   `curl -X DELETE -H "x-api-key: $IMMICH_ADMIN_KEY" -H 'Content-Type: application/json' -d '{"ids":["<id>"],"force":false}' https://immich.tabaska.us/api/assets` → 204.
+   (Trash, not force-delete, so the original stays recoverable if it turns out salvageable.)
+3. Clear the read core: `sudo rm -f /volume1/@ffmpeg*core.gz`.
+4. The next 00:00 run no longer touches the trashed asset; the checks stay green.
+
+Note: corrupt HEICs (`bad seek`, or `ipma box > 256 security limit`) throw HANDLED
+errors in the same job (no core, container stays healthy) — the ipma one may be a
+VALID photo hitting libheif's limit, so do NOT reflexively trash HEICs; they are
+cosmetic log noise, not a crash.

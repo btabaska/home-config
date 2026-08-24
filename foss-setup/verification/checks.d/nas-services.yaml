@@ -352,8 +352,14 @@ checks:
   # (@ffmpeg…) and the immich_server container id, so this pins a RECURRING
   # transcode/preview crash-loop specifically to Immich (any corrupt asset the
   # nightly job keeps retrying), not just "a core exists somewhere on the NAS".
+  # fix-87 (2026-08-23): fix-60's DB-placeholder "quarantine" did NOT stop the
+  # crash — the nightlyTasks.missingThumbnails job (00:00) kept re-feeding the
+  # corrupt IMG_3674.mov to jellyfin-ffmpeg, SIGSEGV + fresh core.gz every night.
+  # DURABLE FIX: TRASH the corrupt asset (reversible; deletedAt excludes it from
+  # every job), then clear the read core. When this fires, identify the asset in
+  # immich_server logs ("SIGSEGV … <path>") and trash it — see photos.md.
   - id: nas-immich-ffmpeg-nocrash
-    name: "no Immich ffmpeg core dump at /volume1 root (transcode crash-loop class, SM1)"
+    name: "no Immich ffmpeg core dump at /volume1 root (transcode crash-loop class, SM1/fix-87)"
     host: nas
     cmd: ls /volume1/ 2>/dev/null | grep -c '@ffmpeg.*core\.gz' || true
     expect: '^0$'

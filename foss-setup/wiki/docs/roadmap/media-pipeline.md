@@ -17,7 +17,7 @@
 | `fix-70` | NAS Plex is one build behind — apply the pending Plex package update | ⬜ open | <1 hr |
 | `fix-73` | Clear the residual deluge pre-import-stuck grab (Only Murders S02E05) | ⬜ open | <1 hr |
 | `fix-86` | Immich phone-photo ingestion stalled — 0 new assets in 7-9 days (fix-35 regression) | ⬜ open | 1-3 hrs |
-| `fix-87` | Immich ffmpeg SIGSEGV nightly crash-loop on IMG_3674.mov (fix-60 regression) | ⬜ open | 1-3 hrs |
+| `fix-87` | Immich ffmpeg SIGSEGV nightly crash-loop on IMG_3674.mov (fix-60 regression) | ✅ done | 1-3 hrs |
 | `fix-88` | whisparr->stash auto-scan silently broken (seed-13 401) + zero-throughput framing | ✅ done | 1-3 hrs |
 | `fix-90` | Seerr request-layer rot — 3 dangling PROCESSING requests (fix-26 regression) | ⬜ open | 1-3 hrs |
 | `fix-94` | Media-arr acquisition hygiene — IPTorrents grab-storm worsening (fix-50) + Sonarr unmanaged 'Any' profiles (fix-45) | ⬜ open | 1-3 hrs |
