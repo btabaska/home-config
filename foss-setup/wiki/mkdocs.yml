@@ -434,6 +434,7 @@ nav:
       - verification:
           - Index: reference/scripts/verification/index.md
           - catalog-vhost-parity.py: reference/scripts/verification/catalog-vhost-parity-py.md
+          - checksd-runbook-lint.py: reference/scripts/verification/checksd-runbook-lint-py.md
           - deploy.sh: reference/scripts/verification/deploy-sh.md
           - reopen-report.py: reference/scripts/verification/reopen-report-py.md
           - repo-secret-scan.py: reference/scripts/verification/repo-secret-scan-py.md

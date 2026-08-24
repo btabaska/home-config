@@ -25,7 +25,7 @@ checks:
     expect: '^game_saves_mesh=ok '
     severity: warn
     task_id: game-12
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   - id: ludusavi-backup-timer-alive
@@ -39,5 +39,5 @@ checks:
     expect: '^ludusavi_timer=active last_result=success$'
     severity: warn
     task_id: game-12
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true

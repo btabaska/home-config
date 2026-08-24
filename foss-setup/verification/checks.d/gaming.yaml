@@ -222,7 +222,7 @@ checks:
     expect: '^APOLLO-OK'
     severity: crit
     task_id: game-05
-    runbook: wiki/docs/guides/apollo-autostart.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # root-cause preconditions, on the rig: dummy plug present on HDMI-A-1, a
@@ -242,7 +242,7 @@ checks:
     expect: '^plug=connected session=yes autologin_user=1 apollo=active$'
     severity: warn
     task_id: game-11
-    runbook: wiki/docs/guides/apollo-autostart.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # MoonDeckBuddy (re-enabled 2026-08-16, supersedes the fix-64 retirement):
@@ -259,5 +259,5 @@ checks:
     expect: '^BUDDY-OK$'
     severity: warn
     task_id: game-06
-    runbook: wiki/docs/guides/apollo-autostart.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true

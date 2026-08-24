@@ -10,7 +10,7 @@ checks:
     expect: '^nas-ssh-ok$'
     severity: crit
     task_id: nas-01
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   # observability hardening (2026-07-14): flaresolverr + rreading-glasses had
@@ -27,7 +27,7 @@ checks:
     expect: '"ok"'
     severity: warn
     task_id: nas-01
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   # nas-rreading-glasses (goodreads :8788) removed 2026-07-20 — container
@@ -45,7 +45,7 @@ checks:
     expect: '^200$'
     severity: warn
     task_id: bmig-01
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   - id: nas-immich
@@ -56,7 +56,7 @@ checks:
     expect: 'pong'
     severity: crit
     task_id: nas-09
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   - id: nas-plex
@@ -67,7 +67,7 @@ checks:
     expect: '^401$'
     severity: crit
     task_id: media-01
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   - id: nas-cwa
@@ -77,7 +77,7 @@ checks:
     expect: '^302$'
     severity: warn
     task_id: ebook-04
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   - id: nas-sonarr
@@ -87,7 +87,7 @@ checks:
     expect: '^302$'
     severity: warn
     task_id: media-02
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   - id: nas-radarr
@@ -97,7 +97,7 @@ checks:
     expect: '^302$'
     severity: warn
     task_id: media-02
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   - id: nas-lidarr
@@ -107,7 +107,7 @@ checks:
     expect: '^302$'
     severity: warn
     task_id: media-03
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   - id: nas-prowlarr
@@ -117,7 +117,7 @@ checks:
     expect: '^302$'
     severity: warn
     task_id: media-02
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   # nas-readarr (:8787) removed 2026-07-20 — readarr decommissioned in bmig-05;
@@ -133,7 +133,7 @@ checks:
     expect: '^302$'
     severity: warn
     task_id: bmig-02
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   # observability hardening (2026-07-14): stash had container coverage only. This
@@ -158,7 +158,7 @@ checks:
     expect: '^stash=ok '
     severity: warn
     task_id: nas-01
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   # beets = the YouTube-audio tagging layer (nas-30): MeTube writes audio to
@@ -173,7 +173,7 @@ checks:
     expect: '^200$'
     severity: warn
     task_id: nas-30
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   # fix-89 (UM57/UL131/UL132): the old check passed on import.log MTIME alone, so it
@@ -197,7 +197,7 @@ checks:
     expect: '^ingest=ok '
     severity: warn
     task_id: nas-30
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   # seed-13 (2026-07-14): Whisparr v2 adult-scene automation feeds the Stash
@@ -211,7 +211,7 @@ checks:
     expect: '"status":\s*"OK"'
     severity: warn
     task_id: seed-13
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   # fix-88 (seed-13 regression): the whisparr->stash Connect scan POSTed
@@ -231,7 +231,7 @@ checks:
     expect: '^SCAN_AUTH_WIRED$'
     severity: warn
     task_id: fix-88
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true
 
   # ---------------------------------------------------------------------------
@@ -279,7 +279,7 @@ checks:
     expect: '^backup=fresh$'
     severity: warn
     task_id: fix-35
-    runbook: wiki/runbooks/photos.md
+    runbook: wiki/docs/runbooks/photos.md
     enabled: true
 
   # RETIRED (nas-31, 2026-07-28): this was a PROXY for "a consumer is connected /
@@ -310,7 +310,7 @@ checks:
     expect: '^paired=yes$'
     severity: warn
     task_id: fix-35
-    runbook: wiki/runbooks/photos.md
+    runbook: wiki/docs/runbooks/photos.md
     enabled: false
 
   # ═══ fix-60 (Immich cluster, 2026-08-02 fleet sweep) ═════════════════════════
@@ -449,5 +449,5 @@ checks:
     expect: '^JELLYFIN_OK'
     severity: warn
     task_id: media-05
-    runbook: wiki/runbooks/nas.md
+    runbook: wiki/docs/runbooks/nas-host-hygiene.md
     enabled: true

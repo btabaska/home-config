@@ -13,7 +13,7 @@ checks:
     expect: '^DUPES_OK'
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # ---------------------------------------------------------------------------
@@ -42,7 +42,7 @@ checks:
     expect: '^stuck=[0-5]$'
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # seed-11 redundancy guard: the original gap was "IPT-only TV search returns ~0
@@ -64,7 +64,7 @@ checks:
     expect: '^searchable=(?:[3-9]|[1-9][0-9]+)$'
     severity: warn
     task_id: seed-11
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   - id: radarr-queue-stuck
@@ -79,7 +79,7 @@ checks:
     expect: '^stuck=[0-5]$'
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # Sonarr/Radarr self-diagnostics for the PLUMBING only — download client
@@ -108,7 +108,7 @@ checks:
     expect: '^pipeline=ok$'
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   - id: radarr-pipeline-health
@@ -124,7 +124,7 @@ checks:
     expect: '^pipeline=ok$'
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # The shared SPOF. The rclone SFTP mount is the single path every *arr import
@@ -144,7 +144,7 @@ checks:
     expect: '^mount=ok$'
     severity: crit
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # ---------------------------------------------------------------------------
@@ -179,7 +179,7 @@ checks:
     expect: '^COVERAGE_OK'
     severity: crit
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # CAUSE: the specific ACL invariant. The Plex service user must be able to
@@ -198,7 +198,7 @@ checks:
     expect: '^plexacl=ok$'
     severity: crit
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # ---------------------------------------------------------------------------
@@ -229,7 +229,7 @@ checks:
     expect: '^drops=0$'
     severity: crit
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # The CWA side: files copied into the ingest folder must get consumed. A book
@@ -247,7 +247,7 @@ checks:
     expect: '^ingest=ok$'
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # ---------------------------------------------------------------------------
@@ -280,7 +280,7 @@ checks:
     expect: '^COVERAGE_OK'
     severity: crit
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   - id: sonarr-tv-in-plex
@@ -297,7 +297,7 @@ checks:
     expect: '^COVERAGE_OK'
     severity: crit
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # ---------------------------------------------------------------------------
@@ -319,7 +319,7 @@ checks:
     expect: '^PHANTOM_OK'
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # ---------------------------------------------------------------------------

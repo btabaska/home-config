@@ -9,7 +9,7 @@ checks:
     expect: '"healthy"\s*:\s*true'
     severity: crit
     task_id: docker-09
-    runbook: wiki/runbooks/alerting.md
+    runbook: wiki/docs/runbooks/alerting.md
     enabled: true
 
   - id: alert-ntfy-upstream-relay
@@ -19,7 +19,7 @@ checks:
     expect: 'ntfy\.sh'
     severity: warn
     task_id: docker-09
-    runbook: wiki/runbooks/alerting.md
+    runbook: wiki/docs/runbooks/alerting.md
     enabled: true
 
   - id: alert-diun-mini-up
@@ -29,7 +29,7 @@ checks:
     expect: '^healthy$'
     severity: warn
     task_id: docker-12
-    runbook: wiki/runbooks/alerting.md
+    runbook: wiki/docs/runbooks/alerting.md
     enabled: true
 
   - id: alert-diun-nas-up
@@ -41,7 +41,7 @@ checks:
     expect: '^running$'
     severity: warn
     task_id: docker-12
-    runbook: wiki/runbooks/alerting.md
+    runbook: wiki/docs/runbooks/alerting.md
     enabled: true
 
   - id: alert-healthchecks-checks-defined
@@ -56,7 +56,7 @@ checks:
     expect: 'checks=([6-9]|[1-9][0-9]+) ntfy=[1-9]'
     severity: warn
     task_id: sec-03
-    runbook: wiki/runbooks/alerting.md
+    runbook: wiki/docs/runbooks/alerting.md
     enabled: true
 
   # NAMES the down dead-mans (not just a count) so the daily re-page + last-summary
@@ -74,7 +74,7 @@ checks:
     expect: '^down_checks=NONE$'
     severity: crit
     task_id: sec-03
-    runbook: wiki/runbooks/alerting.md
+    runbook: wiki/docs/runbooks/alerting.md
     enabled: true
 
   - id: alert-dsm-immich-task-scheduled
@@ -84,7 +84,7 @@ checks:
     expect: '^1$'
     severity: crit
     task_id: nas-08
-    runbook: wiki/runbooks/backups.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   - id: alert-dsm-health-task-allday
@@ -94,7 +94,7 @@ checks:
     expect: '^1$'
     severity: warn
     task_id: nas-08
-    runbook: wiki/runbooks/alerting.md
+    runbook: wiki/docs/runbooks/alerting.md
     enabled: true
 
   - id: media-youtube-mounts-rw
@@ -104,7 +104,7 @@ checks:
     expect: '^RW_OK$'
     severity: warn
     task_id: read-14
-    runbook: wiki/runbooks/media.md
+    runbook: wiki/docs/runbooks/media-aux.md
     enabled: true
 
   - id: alert-kuma-none-down
@@ -114,7 +114,7 @@ checks:
     expect: '^down=0$'
     severity: warn
     task_id: sec-03
-    runbook: wiki/runbooks/alerting.md
+    runbook: wiki/docs/runbooks/alerting.md
     enabled: true
 
   # needs BESZEL_ADMIN_USER/BESZEL_ADMIN_PASSWORD in /etc/verification/env
@@ -133,7 +133,7 @@ checks:
     expect: '^down=0$'
     severity: warn
     task_id: sec-03
-    runbook: wiki/runbooks/alerting.md
+    runbook: wiki/docs/runbooks/alerting.md
     enabled: true
 
   # ─── fix-63 · alerting-plane resilience (SH19/SM54/SL45/SL23/SM39) ─────────
@@ -155,7 +155,7 @@ checks:
     expect: 'armed age=[0-9]+s FRESH'
     severity: warn
     task_id: fix-63
-    runbook: wiki/runbooks/alerting.md
+    runbook: wiki/docs/runbooks/alerting.md
     enabled: true
 
   # SM54: rig-down WoL recovery must live in the FAST tier (10-min), not only in
@@ -171,7 +171,7 @@ checks:
     expect: '^WOL_FAST_TIER_OK$'
     severity: warn
     task_id: fix-63
-    runbook: wiki/runbooks/alerting.md
+    runbook: wiki/docs/runbooks/alerting.md
     enabled: true
 
   # SL23: the published status page must be REAL — probe the exact JSON the
@@ -186,7 +186,7 @@ checks:
     expect: 'groups=[1-9][0-9]* monitors=[1-9][0-9]*'
     severity: warn
     task_id: fix-63
-    runbook: wiki/runbooks/alerting.md
+    runbook: wiki/docs/runbooks/alerting.md
     enabled: true
 
   # SM39: prove the alert-delivery drill is actually being SENT (device receipt
@@ -203,5 +203,5 @@ checks:
     expect: 'drill_age_days=[0-9]+ FRESH'
     severity: warn
     task_id: fix-63
-    runbook: wiki/runbooks/alerting.md
+    runbook: wiki/docs/runbooks/alerting.md
     enabled: true

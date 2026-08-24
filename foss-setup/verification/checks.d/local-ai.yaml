@@ -201,7 +201,7 @@ checks:
     expect: '^OPENCODE_RUN_OK'
     severity: warn
     task_id: lai-05
-    runbook: wiki/docs/architecture/local-ai-build.md
+    runbook: wiki/docs/runbooks/owui-mcp-tools.md
     enabled: true
 
   # skills-manifest-parity (lai-06): the curated skills bundle is dual-rooted on the rig —
@@ -271,7 +271,7 @@ checks:
     expect: AI-IMAGES-PINNED-OK
     severity: warn
     task_id: lai-07
-    runbook: wiki/docs/architecture/local-ai-build.md
+    runbook: wiki/docs/runbooks/owui-mcp-tools.md
     enabled: true
 
   # ldr-research-e2e (lai-08): the CONSUMER end of local-deep-research — a real

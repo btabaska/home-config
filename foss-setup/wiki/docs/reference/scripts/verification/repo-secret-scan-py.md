@@ -40,6 +40,7 @@ Usage:  repo-secret-scan.py [repo_root]     # default: git toplevel of cwd
 ## See also
 
 - [`catalog-vhost-parity.py`](catalog-vhost-parity-py.md)
+- [`checksd-runbook-lint.py`](checksd-runbook-lint-py.md)
 - [`deploy.sh`](deploy-sh.md)
 - [`reopen-report.py`](reopen-report-py.md)
 - [`stack-mirror-check.sh`](stack-mirror-check-sh.md)

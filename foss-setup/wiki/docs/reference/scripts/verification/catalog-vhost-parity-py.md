@@ -41,6 +41,7 @@ Exit 0 + CATALOG-VHOST-PARITY-OK, or exit 1 with one line per violation, exit 2 
 
 ## See also
 
+- [`checksd-runbook-lint.py`](checksd-runbook-lint-py.md)
 - [`deploy.sh`](deploy-sh.md)
 - [`reopen-report.py`](reopen-report-py.md)
 - [`repo-secret-scan.py`](repo-secret-scan-py.md)

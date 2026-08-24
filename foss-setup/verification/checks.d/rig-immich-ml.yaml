@@ -57,7 +57,7 @@ checks:
     expect: '^SEARCH_OK$'
     severity: crit
     task_id: nas-32
-    runbook: wiki/runbooks/photos.md
+    runbook: wiki/docs/runbooks/photos.md
     enabled: true
 
   # ── (2) POLICY — rig ML on the GPU only at night, off (no VRAM theft) by day ─
@@ -83,7 +83,7 @@ checks:
     expect: '^(NIGHT_ENCODE_OK|DAY_OFF_OK)$'
     severity: warn
     task_id: nas-32
-    runbook: wiki/runbooks/photos.md
+    runbook: wiki/docs/runbooks/photos.md
     enabled: true
 
   - id: rig-immich-ml-configured
@@ -100,7 +100,7 @@ checks:
     expect: '^present$'
     severity: warn
     task_id: nas-32
-    runbook: wiki/runbooks/photos.md
+    runbook: wiki/docs/runbooks/photos.md
     enabled: true
 
   # ── (5) DEDUP TUNING drift — maxDistance stays tuned for SigLIP2 (nas-33) ────
@@ -126,7 +126,7 @@ checks:
     expect: '^tuned$'
     severity: warn
     task_id: nas-33
-    runbook: wiki/runbooks/photos.md
+    runbook: wiki/docs/runbooks/photos.md
     enabled: true
 
   - id: rig-immich-ml-version-match
@@ -143,5 +143,5 @@ checks:
     expect: '^match=v'
     severity: warn
     task_id: nas-32
-    runbook: wiki/runbooks/photos.md
+    runbook: wiki/docs/runbooks/photos.md
     enabled: true

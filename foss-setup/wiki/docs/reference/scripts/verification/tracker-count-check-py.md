@@ -24,6 +24,7 @@ Prints TRACKER-COUNTS-OK on success; prints the mismatch and exits 1 otherwise.
 ## See also
 
 - [`catalog-vhost-parity.py`](catalog-vhost-parity-py.md)
+- [`checksd-runbook-lint.py`](checksd-runbook-lint-py.md)
 - [`deploy.sh`](deploy-sh.md)
 - [`reopen-report.py`](reopen-report-py.md)
 - [`repo-secret-scan.py`](repo-secret-scan-py.md)

@@ -36,6 +36,11 @@ python3 "${ROOT}/foss-setup/scripts/secrets/vault-lint.py"
 echo "[publish] repo secret-scan gate (fix-84)..."
 python3 "${ROOT}/foss-setup/scripts/verification/repo-secret-scan.py"
 
+# fix-99: every checks.d runbook: field must resolve to a real wiki page (dead
+# runbook links dead-end an operator mid-incident). This is the recurrence guard.
+echo "[publish] checks.d runbook-resolution lint (fix-99)..."
+python3 "${ROOT}/foss-setup/scripts/verification/checksd-runbook-lint.py"
+
 # fix-68 (SM48 / wiki-05): same-commit regen gate. ai-04's commit 554c560 added a
 # check without regenerating its wiki page, so the published wiki drifted and the
 # wiki-drift check went red for days. Fail the publish BEFORE it reaches the

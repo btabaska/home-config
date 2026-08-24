@@ -9,7 +9,7 @@ checks:
     expect: '^running$'
     severity: crit
     task_id: docker-02
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # CONFIG-DRIFT TRIPWIRE (added 2026-07-18, fix-32; class check for H8/H18).
@@ -48,7 +48,7 @@ checks:
     expect: '^running$'
     severity: crit
     task_id: dns-01
-    runbook: wiki/runbooks/dns.md
+    runbook: wiki/docs/runbooks/dns-outage.md
     enabled: true
 
   # fix-62/SL35: deepened from a bare `/`->302 redirect to a consumer-end probe.
@@ -63,7 +63,7 @@ checks:
     expect: '^Paperless$'
     severity: crit
     task_id: docker-05
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: mini-forgejo
@@ -73,7 +73,7 @@ checks:
     expect: '^200$'
     severity: crit
     task_id: docker-09
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: mini-ntfy
@@ -84,7 +84,7 @@ checks:
     expect: '^200$'
     severity: crit
     task_id: docker-10
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: mini-homepage
@@ -94,7 +94,7 @@ checks:
     expect: '^200$'
     severity: warn
     task_id: docker-06
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: mini-healthchecks
@@ -104,7 +104,7 @@ checks:
     expect: '^302$'
     severity: warn
     task_id: docker-07
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: mini-uptime-kuma
@@ -114,7 +114,7 @@ checks:
     expect: '^302$'
     severity: warn
     task_id: docker-08
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # fix-62/SL35: deepened from `/`->302 to the app's own /api/info, which returns
@@ -128,7 +128,7 @@ checks:
     expect: '^"appname":"wallabag"$'
     severity: warn
     task_id: read-07
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: mini-miniflux
@@ -138,7 +138,7 @@ checks:
     expect: '^200$'
     severity: warn
     task_id: read-14
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # fix-33 regression (quality-gate H7): a 14h docker-DNS outage on 2026-07-09 pushed
@@ -205,7 +205,7 @@ checks:
     expect: '^"version":"v[0-9]'
     severity: warn
     task_id: docker-11
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: mini-navidrome
@@ -215,7 +215,7 @@ checks:
     expect: '^302$'
     severity: warn
     task_id: media-03
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: mini-seerr
@@ -225,7 +225,7 @@ checks:
     expect: '^307$'
     severity: warn
     task_id: media-02
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # fix-62/SL35: deepened from `/`->303 (login redirect) to Tautulli's own /status
@@ -239,7 +239,7 @@ checks:
     expect: '^"result": "success"$'
     severity: warn
     task_id: media-02
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: mini-beszel
@@ -249,7 +249,7 @@ checks:
     expect: '^200$'
     severity: warn
     task_id: docker-13
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: mini-dockge
@@ -259,7 +259,7 @@ checks:
     expect: '^200$'
     severity: warn
     task_id: docker-01
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # RomM FUNCTIONAL probe (added 2026-07-14, research.md §3 hygiene). Container
@@ -278,7 +278,7 @@ checks:
     expect: '^romm=ok:'
     severity: warn
     task_id: retro-02
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # RetroAchievements integration tripwire (added 2026-07-21). The RA metadata +
@@ -297,7 +297,7 @@ checks:
     expect: '^ra=on$'
     severity: warn
     task_id: retro-02
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # observability hardening (2026-07-14): functional probes for two YouTube-pipeline
@@ -315,7 +315,7 @@ checks:
     expect: '"yt-dlp": "[0-9]'
     severity: warn
     task_id: docker-02
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: bgutil-pot-serving
@@ -327,7 +327,7 @@ checks:
     expect: '"version":"[0-9]'
     severity: warn
     task_id: docker-02
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # ai-01 RAG freshness: wiki-rag-sync.timer (daily 05:10) keeps the OWUI
@@ -346,7 +346,7 @@ checks:
     expect: 'RAG_FRESH'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/mini.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # fix-62/SL46: mini-wiki-rag-fresh above only proves the PRODUCER (the sync timer
@@ -397,7 +397,7 @@ checks:
     expect: '^RAG_RETRIEVAL_OK'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/mini.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # fix-20 CLASS check (2026-07-16): the rig's root btrfs silently went read-only

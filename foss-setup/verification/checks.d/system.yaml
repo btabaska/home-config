@@ -7,7 +7,7 @@ checks:
     expect: '^ExecMainStatus=0$'
     severity: crit
     task_id: glue-03
-    runbook: wiki/runbooks/ansible-pull.md
+    runbook: wiki/docs/runbooks/git-hygiene.md
     enabled: true
 
   - id: sys-failed-units
@@ -17,7 +17,7 @@ checks:
     expect: '^0$'
     severity: warn
     task_id: glue-03
-    runbook: wiki/runbooks/system.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: sys-disk-root
@@ -27,7 +27,7 @@ checks:
     expect: '^([0-7]?[0-9]|8[0-5])$'
     severity: crit
     task_id: glue-04
-    runbook: wiki/runbooks/system.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: sys-docker-restart-loops
@@ -37,7 +37,7 @@ checks:
     expect: '^0$'
     severity: warn
     task_id: docker-12
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: sys-tailscale-peers
@@ -47,7 +47,7 @@ checks:
     expect: '^[1-9][0-9]*$'
     severity: crit
     task_id: net-05
-    runbook: wiki/runbooks/network.md
+    runbook: wiki/docs/runbooks/dns-outage.md
     enabled: true
 
   - id: sys-home-assistant
@@ -57,7 +57,7 @@ checks:
     expect: '^200$'
     severity: crit
     task_id: ha-01
-    runbook: wiki/runbooks/home-assistant.md
+    runbook: wiki/docs/runbooks/ha-health.md
     enabled: true
 
   # seedbox: SSH blocked by provider network ACL — no probe path from the LAN.
@@ -69,7 +69,7 @@ checks:
     expect: '^seedbox-ok$'
     severity: info
     task_id: seed-01
-    runbook: wiki/runbooks/seedbox.md
+    runbook: wiki/docs/runbooks/seedbox-exposure.md
     enabled: false   # SSH blocked by ACL — skip until a probe path exists
 
   - id: sys-docker-subnet-squat
@@ -81,7 +81,7 @@ checks:
     expect: '^0$'
     severity: warn
     task_id: ha-19
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # fix-66 (SH6) — sharper, CONSUMER-END sibling of sys-docker-subnet-squat above.
@@ -106,7 +106,7 @@ checks:
     expect: '^VLAN_OVERLAP_OK n=[0-9]+$'
     severity: crit
     task_id: fix-66
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # glue-10 — per-disk SMART health, the blind spot Beszel/Kuma don't cover.
@@ -126,5 +126,5 @@ checks:
     expect: '^smart_ok drives=[0-9]+$'
     severity: warn
     task_id: glue-10
-    runbook: wiki/runbooks/fleet-hygiene.md
+    runbook: wiki/docs/runbooks/fleet-hygiene.md
     enabled: true

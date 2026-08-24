@@ -32,5 +32,5 @@ checks:
     expect: '^reach=ok$'
     severity: warn
     task_id: net-05
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true

@@ -9,7 +9,7 @@ checks:
     expect: '\.sql\.gz'
     severity: crit
     task_id: nas-08
-    runbook: wiki/runbooks/backups.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   # restic → B2 offsite (nas-04/05). The env file is root 0600 and the runner is
@@ -23,7 +23,7 @@ checks:
     expect: '^FRESH'
     severity: crit
     task_id: nas-04
-    runbook: wiki/runbooks/backups.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   # Same wrapper+sudoers deployed on the rig. The rig runs 24/7 now (decision
@@ -37,7 +37,7 @@ checks:
     expect: '^FRESH'
     severity: warn
     task_id: nas-05
-    runbook: wiki/runbooks/backups.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   - id: backup-immich-dump-nonempty
@@ -47,7 +47,7 @@ checks:
     expect: '\.sql\.gz'
     severity: warn
     task_id: nas-08
-    runbook: wiki/runbooks/backups.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   # nas-02: NAS Tier-1 Hyper Backup → Backblaze B2. Verified live 2026-07-13:
@@ -79,7 +79,7 @@ checks:
     expect: '^tok=ok$'
     severity: crit
     task_id: nas-02
-    runbook: wiki/runbooks/backups.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   # fix-22 (H20) + fix-82: the ransomware-immutability guarantee, probed at the
@@ -102,7 +102,7 @@ checks:
     expect: '^IMMUTABLE'
     severity: crit
     task_id: fix-22
-    runbook: wiki/runbooks/backup-restore.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   # fix-22 class check (L58/M37): cloud-surface coverage manifest. Every bucket
@@ -117,7 +117,7 @@ checks:
     expect: '^POLICY-OK'
     severity: warn
     task_id: fix-22
-    runbook: wiki/runbooks/backup-restore.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   # fix-22 class check (L57): junk/test snapshots with synthetic hostnames fall
@@ -132,7 +132,7 @@ checks:
     expect: '^HYGIENE-OK'
     severity: warn
     task_id: fix-22
-    runbook: wiki/runbooks/backup-restore.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   - id: restic-snapshot-hygiene-rig
@@ -142,7 +142,7 @@ checks:
     expect: '^HYGIENE-OK'
     severity: warn
     task_id: fix-22
-    runbook: wiki/runbooks/backup-restore.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   # ---- fix-42 (M52): the ansible backup role is the deployer of record ---------
@@ -180,7 +180,7 @@ checks:
     expect: '^RESTIC-ROLE-OK$'
     severity: warn
     task_id: fix-42
-    runbook: wiki/runbooks/backup-restore.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   - id: restic-role-matches-source-rig
@@ -203,7 +203,7 @@ checks:
     expect: '^RESTIC-ROLE-OK$'
     severity: warn
     task_id: fix-42
-    runbook: wiki/runbooks/backup-restore.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   # fix-42 class check: whole-site convergence is REAL, not vacuous — a --check
@@ -225,7 +225,7 @@ checks:
     expect: 'changed=0\s+unreachable=0\s+failed=0'
     severity: warn
     task_id: fix-42
-    runbook: wiki/runbooks/backup-restore.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   # fix-42: the rig's nightly ansible-pull is the mechanism that keeps its DR
@@ -238,7 +238,7 @@ checks:
     expect: '^ExecMainStatus=0$'
     severity: crit
     task_id: fix-42
-    runbook: wiki/runbooks/backup-restore.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   # fix-93 (2026-08-23): the curated restic BACKUP_PATHS overrides (hand-seeded in

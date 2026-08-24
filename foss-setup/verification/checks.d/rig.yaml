@@ -21,7 +21,7 @@ checks:
     expect: '^200$'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true    # rig is 24/7 — failure here is an incident
 
   - id: rig-litellm
@@ -31,7 +31,7 @@ checks:
     expect: '^(200|401)$'
     severity: warn
     task_id: game-10
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true    # rig is 24/7 — failure here is an incident
 
   - id: rig-open-webui
@@ -41,7 +41,7 @@ checks:
     expect: '^200$'
     severity: warn
     task_id: game-10
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true    # rig is 24/7 — failure here is an incident
 
   # ai-01: the shim must keep HA Assist's model. (The old expect qwen3-coder:30b
@@ -54,7 +54,7 @@ checks:
     expect: 'llama3.2:3b'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true    # HA Assist voice LLM depends on this exact model
 
   # ---- ai-01 llama.cpp stack (llama-swap + llama-server, replaces ollama) ----
@@ -70,7 +70,7 @@ checks:
     expect: '^OK$'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   - id: rig-llama-swap-models
@@ -80,7 +80,7 @@ checks:
     expect: '(?s)qwen3.6-35b-a3b.*qwen3-embed|qwen3-embed.*qwen3.6-35b-a3b'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # 2026-07-18: three creative/RP models added (cydonia, dolphin-venice, goetia —
@@ -96,7 +96,7 @@ checks:
     expect: '(?s)(?=.*cydonia-24b)(?=.*dolphin-venice-24b)(?=.*goetia-24b)'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # ---- creative/RP frontends (added 2026-07-18): lumiverse + marinara-engine ----
@@ -122,7 +122,7 @@ checks:
     expect: '^200$'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   - id: rig-marinara
@@ -132,7 +132,7 @@ checks:
     expect: '^200$'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # Consumer-path guard: marinara.tabaska.us MUST stay auth-gated at Caddy. A
@@ -146,7 +146,7 @@ checks:
     expect: '^401$'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # ai-01 consumer-end (2026-07-18): marinara's connections are rows in its
@@ -161,7 +161,7 @@ checks:
     expect: '(?s)(?=.*LiteLLM Creative)(?=.*https://llm\.tabaska\.us/v1)(?=.*Anime Image)(?=.*Z-Image Turbo)(?=.*Flux\.2 Klein)(?=.*https://comfyui\.tabaska\.us)'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # Same class for lumiverse, but its API needs a BetterAuth session (and sign-in
@@ -181,7 +181,7 @@ checks:
     expect: '(?s)(?=.*LiteLLM Creative\|https://llm\.tabaska\.us/v1\|key1)(?=.*NoobAI-XL\)\|https://comfyui\.tabaska\.us)(?=.*Z-Image Turbo)(?=.*Flux\.2 Klein)'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # ai-01 scoped-key consumer check: the frontends' virtual keys through the
@@ -202,7 +202,7 @@ checks:
     expect: '(?s)KEYSCOPE=cydonia,dolphin-venice,goetia.*KEYSCOPE=cydonia,dolphin-venice,goetia'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # ---- ComfyUI image-gen backend + gpu-arbiter (added 2026-07-18) ----
@@ -221,7 +221,7 @@ checks:
     expect: '(?s)(?=.*z_image_turbo_bf16)(?=.*NoobAI-XL)(?=.*flux-2-klein-9b)'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   - id: rig-comfyui-arbiter
@@ -231,7 +231,7 @@ checks:
     expect: '^200$'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # Regression guard for the 2026-07-18 arbiter fix: the unload hook originally
@@ -248,7 +248,7 @@ checks:
     expect: '^[1-9]$'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # ai-01 GPU-yield behavioral check: a model loads ON DEMAND, answers, then
@@ -272,7 +272,7 @@ checks:
     expect: 'YIELD_OK'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # ai-01 ops pillar: fleet-mcp serves the read-only fleet tools for ollmcp,
@@ -287,7 +287,7 @@ checks:
     expect: 'svc=active http=406'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # ai-01: mcpo must actually EXPOSE the fleet tools (an "Up but bridge broken"
@@ -300,7 +300,7 @@ checks:
     expect: 'gpu_status'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # ai-01 ops-agent liveness: one bounded agentic loop — LLM (LiteLLM `coder`)
@@ -318,7 +318,7 @@ checks:
     expect: '(?i)(vram|mib|gpu)'
     severity: warn
     task_id: ai-01
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # game-13 GPU-contention policy: the single 3090 Ti is shared by the Apollo
@@ -340,7 +340,7 @@ checks:
     expect: 'OLLAMA_KEEP_ALIVE=0(?![.0-9a-zA-Z])'
     severity: warn
     task_id: game-13
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true    # rig is 24/7 — a reverted keep-alive contends VRAM with gaming/streaming
 
   # game-09 idle-power baseline (rig is 24/7): the GPU power-limit + persistence
@@ -360,7 +360,7 @@ checks:
     expect: 'svc=active persist=Enabled'
     severity: warn
     task_id: game-09
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # game-09 idle-power baseline, half 2 (the plasmashell busy-loop): the 24/7 rig
@@ -386,7 +386,7 @@ checks:
     expect: 'OK'
     severity: warn
     task_id: game-09
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # media-06: the rig's ~/Music is an ALAC-only derived mirror (FLAC lives on the
@@ -401,7 +401,7 @@ checks:
     expect: '^0$'
     severity: warn
     task_id: media-06
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # observability-audit (2026-07-14): palworld was the #1 blind spot — a 24/7
@@ -422,7 +422,7 @@ checks:
     expect: '"serverfps":'
     severity: warn
     task_id: game-10
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # Public game paths through the playit edge (dedicated IP). Real protocol
@@ -446,7 +446,7 @@ checks:
     expect: '"version"'
     severity: warn
     task_id: game-10
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   - id: playit-bedrock-public
@@ -460,7 +460,7 @@ checks:
     expect: "version"
     severity: warn
     task_id: game-10
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # 2026-07-09 regression: rig UFW hardening (LAN+tailnet scoping) silently blocked
@@ -480,7 +480,7 @@ checks:
     expect: '^200$'
     severity: warn
     task_id: game-10
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # ai-01 (2026-07-15): this now exercises litellm -> llama-swap -> llama-server
@@ -498,7 +498,7 @@ checks:
     expect: '"finish_reason"'
     severity: warn
     task_id: game-10
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true    # rig is 24/7 — failure here is an incident
 
   # 2026-07-16 incident: the btrfs-recovery reinstall dropped the (live-only,
@@ -515,7 +515,7 @@ checks:
     expect: '^masked\s*$'
     severity: crit
     task_id: game-08
-    runbook: wiki/runbooks/rig.md
+    runbook: wiki/docs/runbooks/rig-host-stability.md
     enabled: true
 
   # ==== fix-20 (2026-07-16 incident): rig root btrfs went READ-ONLY ====

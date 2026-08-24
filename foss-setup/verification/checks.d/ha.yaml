@@ -10,7 +10,7 @@ checks:
     expect: '^200$'
     severity: crit
     task_id: ha-01
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # PROXY E2E (added 2026-07-18, fix-32). ha-http above probes HA DIRECT on
@@ -44,7 +44,7 @@ checks:
     expect: '^1$'
     severity: warn
     task_id: ha-32
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   - id: ha-hue-lights
@@ -56,7 +56,7 @@ checks:
     expect: '^([5-9][0-9]|[1-9][0-9]{2,})$'
     severity: warn
     task_id: ha-05
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # observability hardening (2026-07-14): ha-hue-lights only counts REGISTERED
@@ -80,7 +80,7 @@ checks:
     expect: '^lights_avail=ok$'
     severity: warn
     task_id: ha-05
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # UPDATE STALENESS (added 2026-07-19, fix-36/M9). The audit found Core one
@@ -185,7 +185,7 @@ checks:
     expect: '^backup=fresh$'
     severity: crit
     task_id: ha-11
-    runbook: wiki/runbooks/backup-restore.md
+    runbook: wiki/docs/runbooks/backup-restore.md
     enabled: true
 
   # ASSIST LLM ENDPOINT (added 2026-07-13, #12). HA Assist had NO LLM
@@ -213,7 +213,7 @@ checks:
     expect: '^assist_llm=ok$'
     severity: warn
     task_id: ha-12
-    runbook: wiki/runbooks/docker.md
+    runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
   # HACS (ha-04, 2026-07-28). HACS 2.0.5 files were installed into

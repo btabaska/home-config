@@ -23,6 +23,6 @@ checks:
     expect: '^IPOD_(SYNC_OK|MOUNTED_UNSYNCED|ABSENT)'
     severity: warn
     task_id: read-19
-    runbook: wiki/docs/guides/ipod-sync.md
+    runbook: wiki/docs/runbooks/audiobookshelf.md
     enabled: true
     timeout: 60

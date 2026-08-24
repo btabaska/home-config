@@ -27,7 +27,7 @@ checks:
     expect: COVERAGE_OK
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   - id: containers-health-mini
@@ -40,7 +40,7 @@ checks:
     expect: HEALTH_OK
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   - id: containers-manifest-nas
@@ -55,7 +55,7 @@ checks:
     expect: COVERAGE_OK
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   - id: containers-health-nas
@@ -70,7 +70,7 @@ checks:
     expect: HEALTH_OK
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # glue-14: immich_machine_learning is time-gated OFF by day (night-only GPU
@@ -88,7 +88,7 @@ checks:
     expect: COVERAGE_OK
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # glue-14: exclude immich_machine_learning — it is time-gated OFF by day, and a
@@ -107,7 +107,7 @@ checks:
     expect: HEALTH_OK
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # Job-level check: soularr's PROCESS stays "running" while the job inside
@@ -128,7 +128,7 @@ checks:
     expect: '^fatal_errors=0$'
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   # Native-service blanket: any failed systemd unit = something stopped working.
@@ -139,7 +139,7 @@ checks:
     expect: NO_FAILED_UNITS
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
   - id: systemd-failed-rig
@@ -149,5 +149,5 @@ checks:
     expect: NO_FAILED_UNITS
     severity: warn
     task_id: verify-06
-    runbook: wiki/runbooks/verification.md
+    runbook: wiki/docs/runbooks/verification.md
     enabled: true
