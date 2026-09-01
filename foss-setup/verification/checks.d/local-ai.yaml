@@ -763,3 +763,25 @@ checks:
     task_id: lai-22
     runbook: wiki/docs/runbooks/plant-id.md
     enabled: true
+
+  # lai-29: qwen38-27b-rtx3090 vLLM option lane. STOPPED by design (one GPU,
+  # one server at a time — llama-swap owns the 3090 by default). This check
+  # asserts the OPTION POSTURE, not liveness: image present + every model
+  # artifact present, and either cleanly stopped (default) or running with
+  # /health OK (user switched it on). Fails on model-dir rot, image GC, or a
+  # half-started (unhealthy) server squatting the GPU.
+  - id: qwen38-vllm-option-ready
+    name: "qwen38 vLLM option lane ready (stopped+prepared or running+healthy) (lai-29)"
+    host: rig
+    timeout: 60
+    cmd: >-
+      cd /opt/stacks/qwen38-27b-rtx3090 || { echo "VLLM_OPT_BAD no-dir"; exit 1; };
+      M=models/Qwen3.8-27B-W4A16-AutoRound;
+      for f in $M/config.json $M/model.safetensors.index.json $M/tokenizer.json $M/mtp_draft_vocab_ids.pt models/Qwen3.8-27B-W4A16-AutoRound-fast/model.safetensors.index.json models/Qwen3.8-27B-DFlash2-W4A16/model.safetensors; do [ -f "$f" ] || { echo "VLLM_OPT_BAD missing=$f"; exit 1; }; done;
+      docker image inspect ghcr.io/syv-ai/qwen38-27b-rtx3090:latest >/dev/null 2>&1 || { echo "VLLM_OPT_BAD image-missing"; exit 1; };
+      if docker ps --format '{{.Names}}' | grep -q 'qwen38-27b-rtx3090-single'; then curl -sf -m 10 http://127.0.0.1:18020/health >/dev/null && echo "VLLM_OPT_OK state=running" || echo "VLLM_OPT_BAD running-unhealthy"; else echo "VLLM_OPT_OK state=stopped"; fi
+    expect: '^VLLM_OPT_OK '
+    severity: warn
+    task_id: lai-29
+    runbook: wiki/docs/runbooks/qwen38-vllm.md
+    enabled: true

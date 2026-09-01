@@ -1,6 +1,6 @@
 # Roadmap — local-ai-buildout
 
-28 task(s). Status mirrors `docs/progress.json` (the source of truth).
+29 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -32,5 +32,6 @@
 | `lai-26` | GameFAQs semantic collection (embed the lai-14 ZIM) | ⬜ open | 3-6 hrs |
 | `lai-27` | OWUI memory polish: per-user toggle + background-review decision | ⬜ open | <1 hr |
 | `lai-28` | Unsloth Studio on the rig (web UI, llama-swap lanes, MCP tools) | ✅ done | 2-4 hrs |
+| `lai-29` | Qwen3.8-27B vLLM option lane on the rig (qwen38-27b-rtx3090, stopped-by-default) | ✅ done | 2-4 hrs |
 
 [← Roadmap overview](index.md)

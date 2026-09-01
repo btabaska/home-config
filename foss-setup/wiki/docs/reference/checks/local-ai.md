@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 26 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 27 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -286,6 +286,17 @@ Plant Scout preset intact (active, base=chat-vision, vision, identify_plant tool
 
 ```bash
 curl -s -m 15 -H "Authorization:Bearer $OWUI_API_KEY" "$OWUI_URL/api/v1/models/model?id=plant-scout" | python3 -c 'import sys,json;d=json.load(sys.stdin);m=d.get("meta") or {};ok=(d.get("is_active") and d.get("base_model_id")=="chat-vision" and (m.get("capabilities") or {}).get("vision") is True and "identify_plant" in (m.get("toolIds") or []) and "Rochester" in ((d.get("params") or {}).get("system") or ""));print("SCOUT_OK" if ok else "SCOUT_DRIFT "+json.dumps({"active":d.get("is_active"),"base":d.get("base_model_id"),"tools":m.get("toolIds")}))' 2>/dev/null || echo "SCOUT_DRIFT noresponse"
+```
+
+## `qwen38-vllm-option-ready`
+
+qwen38 vLLM option lane ready (stopped+prepared or running+healthy) (lai-29)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `lai-29` · **enabled:** True
+- **expects:** `^VLLM_OPT_OK `
+
+```bash
+cd /opt/stacks/qwen38-27b-rtx3090 || { echo "VLLM_OPT_BAD no-dir"; exit 1; }; M=models/Qwen3.8-27B-W4A16-AutoRound; for f in $M/config.json $M/model.safetensors.index.json $M/tokenizer.json $M/mtp_draft_vocab_ids.pt models/Qwen3.8-27B-W4A16-AutoRound-fast/model.safetensors.index.json models/Qwen3.8-27B-DFlash2-W4A16/model.safetensors; do [ -f "$f" ] || { echo "VLLM_OPT_BAD missing=$f"; exit 1; }; done; docker image inspect ghcr.io/syv-ai/qwen38-27b-rtx3090:latest >/dev/null 2>&1 || { echo "VLLM_OPT_BAD image-missing"; exit 1; }; if docker ps --format '{{.Names}}' | grep -q 'qwen38-27b-rtx3090-single'; then curl -sf -m 10 http://127.0.0.1:18020/health >/dev/null && echo "VLLM_OPT_OK state=running" || echo "VLLM_OPT_BAD running-unhealthy"; else echo "VLLM_OPT_OK state=stopped"; fi
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

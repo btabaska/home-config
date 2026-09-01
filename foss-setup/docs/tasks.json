@@ -14514,6 +14514,20 @@
   "summary": "Unsloth Studio (web-UI form of Unsloth Desktop) as a docker service on the rig (:8210, unsloth.tabaska.us): digest-pinned unsloth/unsloth, CDI GPU, Studio password auth. Text models ride a saved llama_cpp provider at llama-swap :8080/v1 (no duplicate VRAM; qwen3.8-27b at its tuned ctx 98304/thinking sampler). Scan folders expose /opt/llm/models + /opt/comfyui/models RO (Z-Image/FLUX/Krea2 detected; LTX-2.3 excluded — 29GB single-file OOM-kills the validator; no image-gen route in this build, ComfyUI stays the gen path incl. via the wired comfyui MCP). 4 native-MCP servers mirrored from OWUI (fleet/comfyui/playwright/memos). DB-only config seeded by seed-unsloth-studio.py; consumer e2e check unsloth-studio-e2e."
  },
  {
+  "id": "lai-29",
+  "title": "Qwen3.8-27B vLLM option lane on the rig (qwen38-27b-rtx3090, stopped-by-default)",
+  "host": "rig",
+  "type": "deploy",
+  "depends_on": [],
+  "estimate": "2-4 hrs",
+  "required": false,
+  "track": "local-ai-buildout",
+  "run": 15,
+  "mode": "ai",
+  "gate": "",
+  "summary": "syv-ai/qwen38-27b-rtx3090 (patched vLLM 0.27.1, int8 GEMMs, MTP/DFlash2 speculation) as an OPTION lane for the rig's 3090: repo cloned at /opt/stacks/qwen38-27b-rtx3090, .env with VLLM_API_KEY (vault ai_stack.vllm_qwen38_api_key), image ghcr.io/syv-ai/qwen38-27b-rtx3090:latest pulled, model prepared (CPU-only, ~22 GB: W4A16 base int8-requantized + -fast variant + DFlash2 drafter). Configured exactly per the repo quick start (stock --profile single: MTP, 8 slots, 64k CTX=fast, ~120 tok/s; SPEC=dflash2/PREFIX_CACHE=1 documented as the one-user upgrade). SERVICE STOPPED BY DEFAULT — one GPU, one server at a time, llama-swap owns the 3090. Port 18020, served model name qwen3.8-27b (same as the llama-swap lane -> client switch is a base_url change). Switch ON/OFF procedure + coverage-manifest step in the runbook. Guarded by qwen38-vllm-option-ready (daily): image + all model artifacts present AND (stopped OR running+/health OK)."
+ },
+ {
   "id": "fix-82",
   "title": "B2 restic object-lock immutability decayed — restore true immutability (fix-22 regression)",
   "host": "mini",
