@@ -93,7 +93,21 @@ check re-pinned to coder-swarm]; vision flags truthful via `seed-owui-model-capa
 chat-vision/cydonia/dolphin-venice/goetia only]; guarded by `owui-chat-vision`; openzim mcpo lane capped 24k-char
 gets + 1k snippets; the gamefaqs ZIM rebuilt CHUNKED same day [~16k-char part-articles — whole-doc Xapian ranking was
 returning junk]; `seed-owui-chat-tools.py` pins ALL tool servers except identify_plant on chat [no per-chat toggling;
-identify_plant = Plant Scout-only] — all local-ai checks green post-split). Prior fleet-sweep follow-ups still stand (mini kernel reboot 4-7AM, rig
+identify_plant = Plant Scout-only] — all local-ai checks green post-split).
+
+**Model roster COLLAPSED 2026-09-01 (`lai-30`) — the above lane names are historical.** Live roster is now
+exactly: **`q38`** (the sole Qwen chat/code model — ISTA-DASLab GSQ-RCO **IQ3_S+MTP**, ctx **245760**; won a
+20-card bake-off vs unsloth UD-Q4_K_XL v3.0 — level on quality when both answered cleanly, but ~2x the ctx and
+5 GiB less card) + the **embed/rerank** Qwen pair; **`chat`** = gemma-4-31B-it-uncensored-**heretic** Q4_K_S
+@65536; **`chat-vision`** = same weights + *that repo's own* mmproj @**40960**; **`chat-fast`** = HauhauCS
+Gemma4-12B-QAT + MTP drafter @**262144** (native max, 11.7 GiB card free), carrying the same pinned tool belt
+as `chat`. **DELETED: `coder`/`code`/`coder-strong`/`coder-swarm`/`fast`** — everything agentic now points at
+`q38` (opencode, ops-agent, LDR, llm_triage, Plant Scout e2e). 153.76 GiB of GGUFs removed (btrfs has not
+reclaimed it — 51 snapper snapshots pin the extents). **Trap worth remembering: `/health` LIES for vision
+lanes** — llama-server logs a failed CLIP-buffer cudaMalloc, reports "model loaded" + 200, then SEGFAULTS on
+the first image; size vision ctx with `bakeoff/vision-probe.sh` (scores a real image), never a load probe.
+
+Prior fleet-sweep follow-ups still stand (mini kernel reboot 4-7AM, rig
 Windows `RealTimeIsUniversal`, off-mini dead-man/`alert-drill` ntfy subscribe, optional Bazarr subtitle
 key).
 
