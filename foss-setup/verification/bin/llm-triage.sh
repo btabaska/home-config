@@ -16,7 +16,7 @@ ENV_FILE="${VERIFICATION_ENV_FILE:-/etc/verification/env}"
 # litellm :4000 requires an API key so it is not the default).
 LLM_BASE_URL="${LLM_BASE_URL:-http://cachyos.tailb31641.ts.net:9292/v1}"
 export LLM_BASE_URL
-export LLM_MODEL="${LLM_MODEL:-qwen3.6-35b-a3b}"
+export LLM_MODEL="${LLM_MODEL:-qwen3.8-27b}"
 
 RIG_MAC="50:eb:f6:b5:82:c6"
 RIG_BCAST="192.168.10.255"

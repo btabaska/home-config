@@ -59,10 +59,10 @@ curl -s -m 8 http://cachyos.tailb31641.ts.net:9292/health
 
 ## `rig-llama-swap-models`
 
-llama-swap serves the coder lineup (bake-off winner + embedder)
+llama-swap serves the q38 coding lane + embedder
 
 - **host:** `url` · **severity:** `warn` · **guards task:** `ai-01` · **enabled:** True
-- **expects:** `(?s)qwen3.6-35b-a3b.*qwen3-embed|qwen3-embed.*qwen3.6-35b-a3b`
+- **expects:** `(?s)qwen3.8-27b.*qwen3-embed|qwen3-embed.*qwen3.8-27b`
 
 ```bash
 curl -s -m 8 http://cachyos.tailb31641.ts.net:9292/v1/models

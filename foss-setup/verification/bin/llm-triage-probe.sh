@@ -22,7 +22,7 @@ ENV_FILE="${VERIFICATION_ENV_FILE:-/etc/verification/env}"
 [ -r "$ENV_FILE" ] && { set -a; . "$ENV_FILE"; set +a; }
 # Defaults MUST match llm-triage.sh / llm_triage.py (ai-01, 2026-07-15; fix-61).
 BASE="${LLM_BASE_URL:-http://cachyos.tailb31641.ts.net:9292/v1}"
-MODEL="${LLM_MODEL:-qwen3.6-35b-a3b}"
+MODEL="${LLM_MODEL:-qwen3.8-27b}"
 MAX_TOKENS="${TRIAGE_MAX_TOKENS:-4000}"
 AUTH=(); [ -n "${LLM_API_KEY:-}" ] && AUTH=(-H "Authorization: Bearer ${LLM_API_KEY}")
 

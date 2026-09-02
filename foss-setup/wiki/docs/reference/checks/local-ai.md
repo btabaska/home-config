@@ -103,7 +103,7 @@ cd ~/Documents/GitHub/local-ai-tooling && rolling=$(grep -E '^ *image: ' docker/
 
 ## `ldr-research-e2e`
 
-local-deep-research completes a cited SearXNG+coder-strong research (lai-08)
+local-deep-research completes a cited SearXNG+q38 research (lai-08)
 
 - **host:** `rig` · **severity:** `warn` · **guards task:** `lai-08` · **enabled:** True
 - **expects:** `^LDR_E2E_(OK|SKIP_GPU_BUSY)`
@@ -241,7 +241,7 @@ OWUI identify_plant tool chain narrates the golden dandelion (lai-22)
 - **expects:** `^PLANT_ID_E2E_OK `
 
 ```bash
-PLANT_MODEL=coder-swarm python3 /opt/verification/bin/owui-plant-id-e2e.py
+PLANT_MODEL=q38 python3 /opt/verification/bin/owui-plant-id-e2e.py
 ```
 
 ## `owui-plant-id-ui-path`

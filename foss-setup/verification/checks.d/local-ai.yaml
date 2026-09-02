@@ -278,7 +278,7 @@ checks:
   # quick-mode research must complete with a cited report, which proves the whole
   # chain: LDR web app (per-user SQLCipher login, probe account auto-re-registered
   # after a volume wipe) -> LiteLLM openai_endpoint (scoped `ldr` virtual key) ->
-  # llama-swap coder-strong (qwen3.6-27b), AND LDR -> mini SearXNG for real web
+  # llama-swap q38 (qwen3.8-27b), AND LDR -> mini SearXNG for real web
   # results. Helper is repo-canonical on the rig (local-ai-tooling
   # scripts/ldr-e2e.py, kept deployed==repo by ai-tooling-clean-pushed); creds
   # come from docker/.env exactly like opencode-run-probe. Best-effort aware
@@ -293,7 +293,7 @@ checks:
   # cold 27B load (~1-2 min) + research (measured 100 s warm, 2026-08-06).
   - id: ldr-research-e2e
     tier: daily
-    name: "local-deep-research completes a cited SearXNG+coder-strong research (lai-08)"
+    name: "local-deep-research completes a cited SearXNG+q38 research (lai-08)"
     host: rig
     timeout: 900
     cmd: python3 $HOME/Documents/GitHub/local-ai-tooling/scripts/ldr-e2e.py
@@ -637,10 +637,11 @@ checks:
   #      tool_ids=[identify_plant], assert the narrated reply names Taraxacum.
   #      stream=True + function_calling "legacy" are REQUIRED (0.11.0: native
   #      mode only executes tools inside UI sessions — raw API callers get the
-  #      unexecuted tool_calls back). PLANT_MODEL pinned to coder-swarm (same
-  #      qwen3.6-35b-a3b weights as coder) for tool-call reliability — coder/
-  #      code/coder-strong left OWUI when the open-webui LiteLLM key was scoped
-  #      to chat lanes (2026-08-17, seed-litellm-owui-key-scope.py). The chain
+  #      unexecuted tool_calls back). PLANT_MODEL pinned to q38 — the sole
+  #      Qwen coding/agentic lane after the 2026-09-01 lai-30 collapse
+  #      (coder/code/coder-strong/coder-swarm deleted outright; the open-webui
+  #      LiteLLM key stays scoped to the chat lanes + q38, via
+  #      seed-litellm-owui-key-scope.py). The chain
   #      was also verified green on the gemma lane (2026-08-16; vision since
   #      split to chat-vision — see owui-chat-vision below).
   #      Involves a model load/swap -> generous timeout, daily tier.
@@ -665,7 +666,7 @@ checks:
     name: "OWUI identify_plant tool chain narrates the golden dandelion (lai-22)"
     host: mini
     timeout: 360
-    cmd: PLANT_MODEL=coder-swarm python3 /opt/verification/bin/owui-plant-id-e2e.py
+    cmd: PLANT_MODEL=q38 python3 /opt/verification/bin/owui-plant-id-e2e.py
     expect: '^PLANT_ID_E2E_OK '
     severity: warn
     task_id: lai-22

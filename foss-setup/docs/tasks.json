@@ -14528,6 +14528,20 @@
   "summary": "syv-ai/qwen38-27b-rtx3090 (patched vLLM 0.27.1, int8 GEMMs, MTP/DFlash2 speculation) as an OPTION lane for the rig's 3090: repo cloned at /opt/stacks/qwen38-27b-rtx3090, .env with VLLM_API_KEY (vault ai_stack.vllm_qwen38_api_key), image ghcr.io/syv-ai/qwen38-27b-rtx3090:latest pulled, model prepared (CPU-only, ~22 GB: W4A16 base int8-requantized + -fast variant + DFlash2 drafter). Configured exactly per the repo quick start (stock --profile single: MTP, 8 slots, 64k CTX=fast, ~120 tok/s; SPEC=dflash2/PREFIX_CACHE=1 documented as the one-user upgrade). SERVICE STOPPED BY DEFAULT — one GPU, one server at a time, llama-swap owns the 3090. Port 18020, served model name qwen3.8-27b (same as the llama-swap lane -> client switch is a base_url change). Switch ON/OFF procedure + coverage-manifest step in the runbook. Guarded by qwen38-vllm-option-ready (daily): image + all model artifacts present AND (stopped OR running+/health OK)."
  },
  {
+  "id": "lai-30",
+  "title": "Collapse the local model roster: one Qwen3.8-27B + heretic-31B chat / HauhauCS-12B chat-fast, delete the rest",
+  "host": "rig",
+  "type": "deploy",
+  "depends_on": [],
+  "estimate": "4-6 hrs",
+  "required": false,
+  "track": "local-ai-buildout",
+  "run": 15,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Operator decision 2026-09-01: keep exactly ONE Qwen (the best 3.8-27B variant) plus the retrieval pair (qwen3-embed + qwen3-reranker), and exactly TWO Gemmas - llmfan46/gemma-4-31B-it-uncensored-heretic (chat, + its own mmproj for chat-vision) and HauhauCS/Gemma4-12B-QAT-Uncensored-Balanced (new chat-fast lane) - both baked to their measured max in-VRAM context. Everything else goes. Qwen3.8 quant bake-off ran the round3 65-card eval harness on two candidates at equal ctx: the Unsloth UD-Q4_K_XL Dynamic-v3.0 rebuild (the live Aug-15 file was a SUPERSEDED build - same filename, different content, HF rebuilt 2026-08-20) vs ISTA-DASLab GSQ-RCO IQ3_S+MTP. Measured MTP ctx ceilings (q8_0 KV unless noted): v3 131072 (212992 with q4_0 KV), ista-iq3s 245760, heretic-31B Q4_K_S text/vision, hauhau-12B 262144 = native max with its MTP drafter at only 12.5 GiB peak. Lane collapse: coder/code/coder-strong/coder-swarm/fast aliases DELETED, everything repointed to the single q38 alias (opencode x5 configs + 4 agent files, llm_triage, LDR, Plant Scout e2e, rig llama-swap check); LiteLLM model-scoped keys re-scoped and negative-tested. Frees ~165 GB on the rig root NVMe."
+ },
+ {
   "id": "fix-82",
   "title": "B2 restic object-lock immutability decayed — restore true immutability (fix-22 regression)",
   "host": "mini",

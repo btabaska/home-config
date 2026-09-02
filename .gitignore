@@ -7,6 +7,10 @@
 **/.env
 .handoff-secrets.yaml
 **/.handoff-secrets.yaml
+# any editor/sed backup of the vault is ALSO secret (lai-30: `sed -i.bak`
+# would otherwise drop a world-readable copy of every key into the repo)
+.handoff-secrets.yaml.*
+**/.handoff-secrets.yaml.*
 
 # Runtime state / bind-mount data (back up separately, don't version)
 **/data/

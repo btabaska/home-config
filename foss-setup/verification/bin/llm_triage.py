@@ -25,11 +25,11 @@ STATE_DIR = os.environ.get("VERIFICATION_STATE_DIR", "/var/lib/verification")
 # bites a standalone `python3 llm_triage.py`, so it must point live too.
 BASE_URL = os.environ.get("LLM_BASE_URL",
                           "http://cachyos.tailb31641.ts.net:9292/v1").rstrip("/")
-MODEL = os.environ.get("LLM_MODEL", "qwen3.6-35b-a3b")
+MODEL = os.environ.get("LLM_MODEL", "qwen3.8-27b")
 API_KEY = os.environ.get("LLM_API_KEY", "")
 MAX_CHECKS = int(os.environ.get("TRIAGE_MAX_CHECKS", "15"))
 # SH17 (fix-61, 2026-08-02): triage was 91% nonfunctional (68/75 verdicts were the
-# hardcoded fallback) because qwen3.6-35b-a3b is a REASONING model — with the old
+# hardcoded fallback) because qwen3.8-27b is a REASONING model — with the old
 # max_tokens=600 the <think> phase consumed the entire budget and the message
 # `content` came back EMPTY, so every parse failed. This build ignores `/no_think`,
 # so the fix is simply a budget large enough for reasoning + the JSON verdict.

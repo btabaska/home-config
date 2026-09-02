@@ -1,6 +1,6 @@
 # Roadmap — local-ai-buildout
 
-29 task(s). Status mirrors `docs/progress.json` (the source of truth).
+30 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -33,5 +33,6 @@
 | `lai-27` | OWUI memory polish: per-user toggle + background-review decision | ⬜ open | <1 hr |
 | `lai-28` | Unsloth Studio on the rig (web UI, llama-swap lanes, MCP tools) | ✅ done | 2-4 hrs |
 | `lai-29` | Qwen3.8-27B vLLM option lane on the rig (qwen38-27b-rtx3090, stopped-by-default) | ✅ done | 2-4 hrs |
+| `lai-30` | Collapse the local model roster: one Qwen3.8-27B + heretic-31B chat / HauhauCS-12B chat-fast, delete the rest | ✅ done | 4-6 hrs |
 
 [← Roadmap overview](index.md)
