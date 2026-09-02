@@ -78,13 +78,13 @@ python3 /opt/verification/bin/mc-bedrock-ping.py 127.0.0.1 19132 | grep -q 'Join
 
 ## `game-playit-udp-register-errors`
 
-playit agent logged no UDP-claim register errors in 24h (M30 class)
+playit UDP-claim register churn stays in band (<=4/24h, M30 class rate tripwire)
 
 - **host:** `rig` · **severity:** `warn` · **guards task:** `fix-34` · **enabled:** True
-- **expects:** `^REGISTER-OK`
+- **expects:** `^REGISTER-IN-BAND`
 
 ```bash
-n=$(docker logs --since 24h playit 2>&1 | grep -ac 'unexpected response from register'); if [ "${n:-0}" -eq 0 ]; then echo REGISTER-OK; else echo "REGISTER-ERRORS:${n}"; fi
+n=$(docker logs --since 24h playit 2>&1 | grep -ac 'unexpected response from register'); if [ "${n:-0}" -le 4 ]; then echo "REGISTER-IN-BAND:${n:-0}/24h (baseline ~0.7/day, threshold 4)"; else echo "REGISTER-CHURN-STORM:${n}/24h exceeds the 4 baseline - check playit-udp-guard + tunnel"; fi
 ```
 
 ## `terraria-join-handshake`

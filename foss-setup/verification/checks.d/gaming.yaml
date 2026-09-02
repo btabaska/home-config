@@ -120,13 +120,29 @@ checks:
   # M30 class guard: the register-error signature in the agent log covers ALL
   # UDP tunnels (Palworld has no query protocol to probe directly). The guard
   # self-heals within 10 min; this surfaces that the class recurred at all.
+  # REFRAMED 2026-09-02: this was `-eq 0` and therefore flapped forever. fix-34
+  # never eliminated this log line - its actual resolution was to make the class
+  # SELF-HEAL (playit-udp-guard.timer, 10 min, end-to-end RakNet probe through
+  # the tunnel + flap-guarded restart -> healthchecks dead-man playit-udp-rig).
+  # The line is benign upstream noise on a control-channel reconnect: the agent
+  # sends a register request and gets a UdpChannelDetails response back.
+  # MEASURED baseline over the container's 46-day log (2026-07-18..09-02): 33
+  # occurrences = ~0.7/day, never more than 4 in any one day, and ZERO
+  # guard-triggered restarts in 24h. So >4/24h is ~6x the mean and a rate never
+  # actually observed while healthy - that is the escalation signal worth paging
+  # on, exactly like rig-crash-storm-quiet does for coredumps.
+  # The TUNNEL itself is covered consumer-end by three separate checks and they
+  # are the ones that must stay green: game-playit-bedrock-udp (below),
+  # playit-java-public + playit-bedrock-public (rig.yaml). This check is only a
+  # churn-rate tripwire, so it must not fail on the normal band.
   - id: game-playit-udp-register-errors
-    name: "playit agent logged no UDP-claim register errors in 24h (M30 class)"
+    name: "playit UDP-claim register churn stays in band (<=4/24h, M30 class rate tripwire)"
     host: rig
     cmd: >
       n=$(docker logs --since 24h playit 2>&1 | grep -ac 'unexpected response from register');
-      if [ "${n:-0}" -eq 0 ]; then echo REGISTER-OK; else echo "REGISTER-ERRORS:${n}"; fi
-    expect: '^REGISTER-OK'
+      if [ "${n:-0}" -le 4 ]; then echo "REGISTER-IN-BAND:${n:-0}/24h (baseline ~0.7/day, threshold 4)";
+      else echo "REGISTER-CHURN-STORM:${n}/24h exceeds the 4 baseline - check playit-udp-guard + tunnel"; fi
+    expect: '^REGISTER-IN-BAND'
     severity: warn
     task_id: fix-34
     runbook: wiki/docs/runbooks/game-backups.md
