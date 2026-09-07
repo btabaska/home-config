@@ -21,6 +21,13 @@ rreading-glasses/Bookshelf/libreseerr.
   token in the vault (`books.hardcover_api_token`), set `METADATA_PROVIDER=hardcover`
   + `OPENLIBRARY_ENABLED=false`, and `docker compose up -d --force-recreate shelfmark`
   (an env_file change requires a **recreate**, not a restart).
+- **Metadata cache off (2026-09-06):** `METADATA_CACHE_ENABLED=false`.
+  Shelfmark's `@cacheable` decorator stores any non-`None` result, and a
+  transient OpenLibrary egress timeout (slow cold start / 429) returns `[]` —
+  so the *empty* result was cached for 300s, turning a rare timeout into a
+  5-minute "No results found" for that query. With caching off, every search
+  hits OpenLibrary live and a bad result self-clears on the next request.
+  (Trade-off: slightly more OpenLibrary egress — acceptable at this query rate.)
 - **Secrets** in `shelfmark.env` (chmod 600, gitignored; see `shelfmark.env.example`).
 - **Settings persisted in `/config`** (not env), set once via the settings API:
   `USE_DOH=false`, `AA_MIRROR_URLS=[annas-archive.gs, .li]`,
