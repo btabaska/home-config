@@ -13,6 +13,14 @@ for MAM ratio) → on completion Shelfmark **copies** the file into the CWA inge
 rreading-glasses/Bookshelf/libreseerr.
 
 ## Non-obvious setup
+- **Metadata provider (2026-09-06):** `METADATA_PROVIDER=openlibrary` in `shelfmark.env`
+  (keyless). The deployed Hardcover token is a valid JWT (exp 2027-07-20) but the
+  **Hardcover account behind it went inactive upstream** → every search 401'd
+  ("No results found" even for "The cat in the hat"). OpenLibrary answers the same
+  queries. `HARDCOVER_ENABLED=true` stays on: to flip back, put a fresh `Bearer …`
+  token in the vault (`books.hardcover_api_token`), set `METADATA_PROVIDER=hardcover`
+  + `OPENLIBRARY_ENABLED=false`, and `docker compose up -d --force-recreate shelfmark`
+  (an env_file change requires a **recreate**, not a restart).
 - **Secrets** in `shelfmark.env` (chmod 600, gitignored; see `shelfmark.env.example`).
 - **Settings persisted in `/config`** (not env), set once via the settings API:
   `USE_DOH=false`, `AA_MIRROR_URLS=[annas-archive.gs, .li]`,

@@ -8,7 +8,37 @@ provider and its database are gone (dropped in bmig-06; pgdump archived at
 `nas:/volume1/archive/books-cutover-bmig05/rreading-glasses-goodreads-db.pgdump`).
 **Checks:** `hardcover-token-valid`, `metadata-search-canary` (in `checks.d/reading.yaml`,
 host mini), `nas-rreading-glasses-hc` + `nas-bookshelf` liveness (in
-`checks.d/nas-services.yaml`).
+`checks.d/nas-services.yaml`), and the Shelfmark pair
+`shelfmark-mam-path-ready` + `shelfmark-search-consumer` (host nas, in
+`checks.d/reading.yaml`).
+
+## Shelfmark (search frontend, nas :8084 / shelfmark.tabaska.us)
+
+- **2026-09-06 provider incident:** every search returned "No results found"
+  while the container was healthy. The Hardcover token in
+  `/volume1/docker/shelfmark/shelfmark.env` was a valid JWT (exp 2027-07-20,
+  correctly `Bearer`-prefixed — shelfmark strips/re-adds the prefix) but the
+  **Hardcover account behind it is inactive** → API returns
+  `401 {"error":"invalid_token","error_description":"User account is not active"}`
+  on every GraphQL call. `METADATA_PROVIDER` is hardcoded per deployment with
+  no auto-fallback, so the UI silently showed empty results.
+- **Fix applied 2026-09-06:** `METADATA_PROVIDER=openlibrary` +
+  `OPENLIBRARY_ENABLED=true` in `shelfmark.env` (keyless provider;
+  `HARDCOVER_ENABLED=true` kept). Env change ⇒ **recreate**, not restart:
+  `docker compose up -d --force-recreate shelfmark` in
+  `/volume1/docker/shelfmark` (`--pull never` if the pull hangs).
+  Verified: `/api/metadata/search?query=the cat in the hat` → 40 books,
+  "The Cat in the Hat" first.
+- **Flip back to Hardcover:** log into hardcover.app (account must be ACTIVE),
+  Settings → Hardcover API → copy the token **including the leading `Bearer `
+  prefix** → vault `books.hardcover_api_token` → env `METADATA_PROVIDER=hardcover`
+  + `OPENLIBRARY_ENABLED=false` → recreate (above) → re-run
+  `shelfmark-search-consumer`.
+- **If `shelfmark-search-consumer` fails:** `books=0` = provider credential
+  dead or provider unselected (check `shelfmark.env` `METADATA_PROVIDER` +
+  `<PROVIDER>_ENABLED`, then `docker logs shelfmark | grep -iE "hardcover|401"`);
+  `books>0 hit=0` = provider reachable but returning wrong results (language
+  filter / provider regression).
 
 ## If `hardcover-token-valid` fails
 

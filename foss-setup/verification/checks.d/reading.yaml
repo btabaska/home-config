@@ -635,6 +635,32 @@ checks:
     runbook: wiki/docs/runbooks/books-metadata.md
     enabled: true
 
+  # Shelfmark search consumer end (2026-09-06): the "green but broken" class that
+  # hid for a week — the container was healthy and /api/health 200 while EVERY
+  # search returned 0 books because the metadata provider's credential died
+  # upstream (Hardcover account inactive → 401 on every GraphQL call; the
+  # hardcoded METADATA_PROVIDER had no auto-fallback, so the UI just said
+  # "No results found"). This probe hits the REAL search endpoint with a
+  # canonical query and asserts non-empty results INCLUDING the expected title.
+  # Provider is currently OpenLibrary (keyless) — see shelfmark.env.example.
+  # Fix: see the Shelfmark section of the runbook (renew token / flip provider).
+  - id: shelfmark-search-consumer
+    name: "Shelfmark search returns real books for a canonical query (consumer end)"
+    host: nas
+    cmd: |-
+      python3 -c '
+      import json, urllib.request
+      req = urllib.request.Request("http://127.0.0.1:8084/api/metadata/search?query=the%20cat%20in%20the%20hat")
+      d = json.load(urllib.request.urlopen(req, timeout=30))
+      books = d.get("books", [])
+      hit = any("cat in the hat" in (b.get("title") or "").lower() for b in books)
+      print("SHELFMARK_SEARCH_OK books=%d hit=%d" % (len(books), int(hit)) if books and hit else "SHELFMARK_SEARCH_BAD books=%d hit=%d" % (len(books), int(hit)))'
+    expect: '^SHELFMARK_SEARCH_OK books=[1-9] hit=1'
+    severity: warn
+    task_id: bmig-06
+    runbook: wiki/docs/runbooks/books-metadata.md
+    enabled: true
+
   # Audiobookshelf (read-16, 2026-07-23): audiobook + podcast server on the NAS.
   # CONSUMER end, not liveness: authenticate with the SAME long-lived API key the
   # Homepage tile + mobile apps use (vault homepage_widgets.audiobookshelf_key ->

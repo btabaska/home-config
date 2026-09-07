@@ -1,6 +1,6 @@
 # Checks — reading
 
-`foss-setup/verification/checks.d/reading.yaml` — 31 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/reading.yaml` — 32 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `cwa-kobo-sync-consumer`
 
@@ -409,6 +409,23 @@ Shelfmark up + seedbox mount rshared (MAM→CWA-ingest path intact)
 
 ```bash
 h=$(curl -s -o /dev/null -w "%{http_code}" --max-time 8 http://127.0.0.1:8084/api/health); p=$(grep seedbox-files /proc/self/mountinfo 2>/dev/null | grep -oE "shared:[0-9]+" | head -1); if [ "$h" = "200" ] && [ -n "$p" ]; then echo "SHELFMARK_OK health=$h prop=$p"; else echo "SHELFMARK_BAD health=$h prop=$p"; fi
+```
+
+## `shelfmark-search-consumer`
+
+Shelfmark search returns real books for a canonical query (consumer end)
+
+- **host:** `nas` · **severity:** `warn` · **guards task:** `bmig-06` · **enabled:** True
+- **expects:** `^SHELFMARK_SEARCH_OK books=[1-9] hit=1`
+
+```bash
+python3 -c '
+import json, urllib.request
+req = urllib.request.Request("http://127.0.0.1:8084/api/metadata/search?query=the%20cat%20in%20the%20hat")
+d = json.load(urllib.request.urlopen(req, timeout=30))
+books = d.get("books", [])
+hit = any("cat in the hat" in (b.get("title") or "").lower() for b in books)
+print("SHELFMARK_SEARCH_OK books=%d hit=%d" % (len(books), int(hit)) if books and hit else "SHELFMARK_SEARCH_BAD books=%d hit=%d" % (len(books), int(hit)))'
 ```
 
 ## `audiobookshelf-libraries-consumer`
