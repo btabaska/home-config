@@ -15,52 +15,68 @@ host mini), `nas-rreading-glasses-hc` + `nas-bookshelf` liveness (in
 ## Shelfmark (search frontend, nas :8084 / shelfmark.tabaska.us)
 
 - **2026-09-06 provider incident:** every search returned "No results found"
-  while the container was healthy. The Hardcover token in
-  `/volume1/docker/shelfmark/shelfmark.env` was a valid JWT (exp 2027-07-20,
-  correctly `Bearer`-prefixed — shelfmark strips/re-adds the prefix) but the
-  **Hardcover account behind it is inactive** → API returns
+  while the container was healthy. The deployed Hardcover token was a valid JWT
+  (exp 2027-07-20, correctly `Bearer`-prefixed — shelfmark strips/re-adds the
+  prefix) but the **Hardcover account behind it went inactive** → API returned
   `401 {"error":"invalid_token","error_description":"User account is not active"}`
   on every GraphQL call. `METADATA_PROVIDER` is hardcoded per deployment with
-  no auto-fallback, so the UI silently showed empty results.
+  no auto-fallback, so the UI silently showed empty results. A second, latent
+  bug compounded it: the `@cacheable` metadata cache stored the empty `[]` a
+  transient timeout returns, so a one-off failure was cached for 300s
+  (`METADATA_CACHE_ENABLED=false` since 2026-09-06).
 - **Fix applied 2026-09-06:** `METADATA_PROVIDER=openlibrary` +
-  `OPENLIBRARY_ENABLED=true` in `shelfmark.env` (keyless provider;
+  `OPENLIBRARY_ENABLED=true` in `shelfmark.env` (keyless stopgap;
   `HARDCOVER_ENABLED=true` kept). Env change ⇒ **recreate**, not restart:
   `docker compose up -d --force-recreate shelfmark` in
   `/volume1/docker/shelfmark` (`--pull never` if the pull hangs).
-  Verified: `/api/metadata/search?query=the cat in the hat` → 40 books,
-  "The Cat in the Hat" first.
-- **Flip back to Hardcover:** log into hardcover.app (account must be ACTIVE),
-  Settings → Hardcover API → copy the token **including the leading `Bearer `
-  prefix** → vault `books.hardcover_api_token` → env `METADATA_PROVIDER=hardcover`
-  + `OPENLIBRARY_ENABLED=false` → recreate (above) → re-run
-  `shelfmark-search-consumer`.
+- **Restored to Hardcover 2026-09-07:** a fresh `hc_pat_` personal-access-token
+  (account `RobitFarmer`, active) landed in the vault. `METADATA_PROVIDER=hardcover`
+  (back to the richer provider), `OPENLIBRARY_ENABLED` left `true` as a one-line
+  fallback. Free-plan limits: 60 req/min, burst 10, 5,000/day. Verified:
+  `/api/metadata/search?query=the cat in the hat` → 25 books (Hardcover), "Cat in
+  the Hat" first.
+- **Flip to/from a provider:** vault `books.hardcover_api_token` (token
+  **includes the leading `Bearer ` prefix**) → env `METADATA_PROVIDER=hardcover`
+  or `openlibrary` (+ matching `<PROVIDER>_ENABLED`) → recreate (above) →
+  re-run `shelfmark-search-consumer`.
 - **If `shelfmark-search-consumer` fails:** `books=0` = provider credential
   dead or provider unselected (check `shelfmark.env` `METADATA_PROVIDER` +
-  `<PROVIDER>_ENABLED`, then `docker logs shelfmark | grep -iE "hardcover|401"`);
+  `<PROVIDER>_ENABLED`, then `docker logs shelfmark | grep -iE "hardcover|401|timeout"`);
   `books>0 hit=0` = provider reachable but returning wrong results (language
   filter / provider regression).
 
 ## If `hardcover-token-valid` fails
 
-- **`HC_TOKEN_EXPIRING days_left=N`** — Hardcover API tokens expire every **Jan 1**;
-  the check warns from ~17 days out (≈ Dec 15). Renew BEFORE Jan 1 or book metadata
-  refreshes/searches silently go stale (rg-hc keeps serving its warm postgres cache, so
-  the outage would otherwise surface weeks later as rot):
-  1. Log into hardcover.app → Settings → Hardcover API → copy the token
-     **including the leading `Bearer ` prefix**.
+The deployed credential (vault `books.hardcover_api_token`) is now an opaque
+`hc_pat_` **personal-access-token** (since 2026-09-07), not a JWT — it has no
+embedded `exp`, so the Jan-1 rotation no longer applies to it. The check always
+proves the token authenticates; it only emits `HC_TOKEN_EXPIRING` when the token
+is a JWT (legacy form).
+
+- **`HC_TOKEN_INVALID http=NNN`** — the token no longer authenticates (revoked,
+  or the account went inactive — the 2026-09-06 failure mode: `401 "User
+  account is not active"`). Renew/rotate:
+  1. Log into hardcover.app (account must be **ACTIVE**) → Settings →
+     Hardcover API → copy the token **including the leading `Bearer ` prefix**.
   2. Vault: update `books.hardcover_api_token` (merge-edit, never blind-assign —
      see vault-edit-hazard).
-  3. NAS: update `HARDCOVER_API_TOKEN` in `/volume1/docker/media-automation/.env`,
-     then `docker compose up -d rreading-glasses-hc` (recreate, env changed).
+  3. NAS: update `HARDCOVER_API_TOKEN` in `/volume1/docker/media-automation/.env`
+     and `HARDCOVER_API_KEY` in `/volume1/docker/shelfmark/shelfmark.env`, then
+     recreate both: `docker compose up -d rreading-glasses-hc` and
+     `docker compose up -d --force-recreate shelfmark`.
   4. Mini: update `HARDCOVER_API_TOKEN` in `/etc/verification/env`
      (mode 640 root:btabaska).
-  5. Re-run the check; confirm `HC_TOKEN_OK days_left≈365`.
-- **`HC_TOKEN_INVALID`** — the token died early (revoked/account issue). Same renewal
-  path. Note Hardcover's ~60 req/min account quota: while rg-hc author refreshes are
-  storming, API calls can 429/403 — the check retries once, but re-run it after a quiet
-  minute before believing a hard failure.
-- **`HC_TOKEN_ERROR`** — env var missing from `/etc/verification/env` or the token is
-  not a JWT; fix the env line (the silent-blank 640-perms hazard applies).
+  5. Re-run the check; confirm `HC_TOKEN_OK ... fmt=pat` (or `fmt=jwt`).
+  Note the Free-plan quota (60 req/min, burst 10, 5,000/day): while rg-hc author
+  refreshes are storming, API calls can 429 — the check retries once, but re-run
+  after a quiet minute before believing a hard failure.
+- **`HC_TOKEN_EXPIRING days_left=N`** — only for **JWT** tokens (legacy): they
+  expire every **Jan 1**; the check warns from ~17 days out (≈ Dec 15). Renew
+  BEFORE Jan 1 via the path above (rg-hc keeps serving its warm postgres cache,
+  so an expiry would otherwise surface weeks later as rot).
+- **`HC_TOKEN_ERROR`** — env var missing from `/etc/verification/env`, or a
+  non-PAT token that isn't a decodable JWT; fix the env line (the silent-blank
+  640-perms hazard applies).
 
 ## If `metadata-search-canary` fails
 

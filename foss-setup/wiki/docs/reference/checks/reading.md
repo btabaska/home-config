@@ -323,7 +323,7 @@ print("BAD:"+";".join(bad[:5]) if bad else ("NOOK" if not any_ok else "OK"))');
 
 ## `hardcover-token-valid`
 
-hardcover API token authenticates and is >17d from Jan-1 expiry (bmig-06)
+hardcover API token authenticates (and, if a JWT, >17d from Jan-1 expiry) (bmig-06)
 
 - **host:** `mini` · **severity:** `warn` · **guards task:** `bmig-06` · **enabled:** True
 - **expects:** `^HC_TOKEN_OK `
@@ -336,12 +336,15 @@ if not tok:
     print("HC_TOKEN_ERROR missing HARDCOVER_API_TOKEN"); raise SystemExit
 if not tok.lower().startswith("bearer "):
     tok = "Bearer " + tok
-try:
-    pay = tok.split(" ", 1)[1].split(".")[1]
-    exp = json.loads(base64.urlsafe_b64decode(pay + "=" * (-len(pay) % 4)))["exp"]
-    days = (exp - time.time()) / 86400
-except Exception as e:
-    print("HC_TOKEN_ERROR cannot decode JWT exp: %r" % e); raise SystemExit
+is_pat = "hc_pat_" in tok
+days = None
+if not is_pat:
+    try:
+        pay = tok.split(" ", 1)[1].split(".")[1]
+        exp = json.loads(base64.urlsafe_b64decode(pay + "=" * (-len(pay) % 4)))["exp"]
+        days = (exp - time.time()) / 86400
+    except Exception as e:
+        print("HC_TOKEN_ERROR cannot decode JWT exp: %r" % e); raise SystemExit
 body = json.dumps({"query": "query { me { username } }"}).encode()
 user, code = "", 0
 for attempt in (1, 2):
@@ -361,11 +364,12 @@ for attempt in (1, 2):
     except Exception:
         break
 if not user:
-    print("HC_TOKEN_INVALID http=%s days_left=%.0f" % (code, days))
-elif days < 17:
+    print("HC_TOKEN_INVALID http=%s" % code)
+elif days is not None and days < 17:
     print("HC_TOKEN_EXPIRING days_left=%.1f user=%s - renew at hardcover.app before Jan 1" % (days, user))
 else:
-    print("HC_TOKEN_OK days_left=%.0f user=%s" % (days, user))'
+    extra = " days_left=%.0f" % days if days is not None else ""
+    print("HC_TOKEN_OK user=%s fmt=%s%s" % (user, "pat" if is_pat else "jwt", extra))'
 ```
 
 ## `request-author-parity`

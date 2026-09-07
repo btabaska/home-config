@@ -13,14 +13,14 @@ for MAM ratio) → on completion Shelfmark **copies** the file into the CWA inge
 rreading-glasses/Bookshelf/libreseerr.
 
 ## Non-obvious setup
-- **Metadata provider (2026-09-06):** `METADATA_PROVIDER=openlibrary` in `shelfmark.env`
-  (keyless). The deployed Hardcover token is a valid JWT (exp 2027-07-20) but the
-  **Hardcover account behind it went inactive upstream** → every search 401'd
-  ("No results found" even for "The cat in the hat"). OpenLibrary answers the same
-  queries. `HARDCOVER_ENABLED=true` stays on: to flip back, put a fresh `Bearer …`
-  token in the vault (`books.hardcover_api_token`), set `METADATA_PROVIDER=hardcover`
-  + `OPENLIBRARY_ENABLED=false`, and `docker compose up -d --force-recreate shelfmark`
-  (an env_file change requires a **recreate**, not a restart).
+- **Metadata provider (Hardcover, restored 2026-09-07):** `METADATA_PROVIDER=hardcover`
+  in `shelfmark.env`. History: 2026-09-06 the deployed JWT's **Hardcover account went
+  inactive upstream** → every search 401'd ("No results found" even for "The cat in the
+  hat"), so we ran OpenLibrary (keyless) as a stopgap. A fresh `hc_pat_`
+  personal-access-token (account `RobitFarmer`, active) then landed in the vault
+  (`books.hardcover_api_token`) → back on Hardcover for richer edition metadata.
+  Free-plan limits: 60 req/min, burst 10, 5,000/day. `OPENLIBRARY_ENABLED=true` stays
+  on: to fall back, set `METADATA_PROVIDER=openlibrary` and recreate.
 - **Metadata cache off (2026-09-06):** `METADATA_CACHE_ENABLED=false`.
   Shelfmark's `@cacheable` decorator stores any non-`None` result, and a
   transient OpenLibrary egress timeout (slow cold start / 429) returns `[]` —
