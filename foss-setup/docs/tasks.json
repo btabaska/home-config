@@ -15375,5 +15375,69 @@
   ],
   "verify": "Every listed finding re-probed and confirmed resolved end-to-end (consumer-level, not liveness); a regression + class check is live and green; wiki updated; progress.json updated. Source: docs/fleet-sweep-2026-08-23.md.",
   "source": "ultracode fleet sweep 2026-08-23 (docs/fleet-sweep-2026-08-23.md)"
+ },
+ {
+  "id": "retire-gaming-01",
+  "title": "Final verified archives of all game-server data (pre-retirement backup)",
+  "host": "rig",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "30-60 min",
+  "steps": [
+   "Palworld (rig): stop container, tar Pal/Saved (world + config) -> /opt/stacks/palworld/game/backups/palworld-final-20260910.tar.gz; restart container (30-day grace keeps service live).",
+   "Minecraft (rig): tar AMP MinecraftCross01 Minecraft/world + instance .kvp/AMPConfig.conf -> /opt/stacks/amp/amp-minecraftcross01-final-20260910.tar.gz (world already covered by 24 hourly AMP zips + restic).",
+   "Terraria (mini): tar world + tshock-config -> /opt/stacks/backups/terraria-final-20260910.tar.gz (world already daily .wld.bak/.bak2; mini restic BACKUP_PATHS covers all of /opt/stacks).",
+   "BedrockConnect (mini): tar config dir (stateless proxy) -> /opt/stacks/backups/bedrock-connect-final-20260910.tar.gz.",
+   "Cross-checks: restore spot-check (extract one file from each archive), SHA-256 all four, copy both rig archives to NAS second domain /volume1/homes/btabaska/game-server-archives/ (NAS sha256 verified equal), explicit restic snapshot e3b27d50 of both rig archives to B2 (nightly snapshot predates the archives and /opt/stacks/amp root is not in BACKUP_PATHS)."
+  ],
+  "verify": "All four archives: tar listing OK, spot-checked extraction OK, sha256 recorded in progress.json, NAS copies checksum-match, B2 snapshot e3b27d50 contains both rig archives. Palworld container restarted (Up, health: starting).",
+  "track": "gaming",
+  "required": false,
+  "run": 7,
+  "mode": "ai"
+ },
+ {
+  "id": "retire-gaming-02",
+  "title": "Stop & isolate all game servers (30-day grace, 4-7AM ET window)",
+  "host": "rig",
+  "type": "sync",
+  "depends_on": [
+   "retire-gaming-01"
+  ],
+  "estimate": "1-2 h",
+  "steps": [
+   "docker compose stop: palworld + amp (rig), terraria + bedrock-connect (mini). Palworld daily 4AM auto-update stops with it (expected).",
+   "Retire playit: stop container, disable playit-udp-guard.timer+unit, remove healthchecks dead-man playit-udp-rig, release UDP claims (palworld :1105, bedrock :1111, java) at playit.gg; palworld.tabaska.us + bedrock.tabaska.us go dark.",
+   "Homepage: remove Palworld/Minecraft/Terraria tiles (live + repo mirror configs/docker-stack/stacks/homepage/config/services.yaml), reseed.",
+   "Disable (keep) checks: gaming.yaml game-amp-backup-fresh/-policy, restic-bloat-rig, game-playit-bedrock-udp, game-playit-udp-register-errors, game-bedrockconnect-serverlist, terraria-join-handshake, terraria-world-loaded; rig.yaml palworld-rest-liveness, playit-java-public, playit-bedrock-public.",
+   "Coverage tripwire: mark the five stacks retired in verification/coverage manifests, remove game ports from expected-listeners/mini.ports.",
+   "Docs: service-catalog.yaml + service-enrichment.yaml rows -> retired, inventory.md, wiki/docs/network.md, mark runbooks/game-backups.md historical (keep restore procedure). Regenerate tracker + wiki (same commit), publish-deploy.sh."
+  ],
+  "verify": "All five containers stopped; no game ports in expected-listeners; verification suite green with disabled checks; publish gates green.",
+  "track": "gaming",
+  "required": false,
+  "run": 7,
+  "mode": "ai"
+ },
+ {
+  "id": "retire-gaming-03",
+  "title": "Delete game-server stacks after 30-day grace (next 4-7AM ET window)",
+  "host": "rig",
+  "type": "sync",
+  "depends_on": [
+   "retire-gaming-02"
+  ],
+  "estimate": "1 h",
+  "steps": [
+   "Re-verify final archives: rig + NAS copies + B2 (restic ls), checksums match progress.json.",
+   "docker compose down + rm -rf: rig /opt/stacks/palworld /opt/stacks/amp /opt/stacks/playit; mini /opt/stacks/terraria /opt/stacks/bedrock-connect.",
+   "rig restic: drop retired BACKUP_PATHS entries (palworld Saved/backups, amp instances, playit) + AMP Backups exclusion line (source scripts/backup/excludes-rig.txt); B2 data ages out via forget/prune.",
+   "Remove rig playit-udp-guard unit files from configs/host/rig/; close retire-gaming-* in progress.json; regenerate tracker+wiki; publish-deploy.sh."
+  ],
+  "verify": "Disk reclaimed (~15 GB rig + 15 MB mini); verification suite green; no drift (coverage manifest, listeners, docs all updated).",
+  "track": "gaming",
+  "required": false,
+  "run": 7,
+  "mode": "ai"
  }
 ]

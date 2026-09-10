@@ -1,6 +1,6 @@
 # Roadmap — gaming
 
-23 task(s). Status mirrors `docs/progress.json` (the source of truth).
+26 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -19,6 +19,9 @@
 | `game-12` | Save-game sync with Ludusavi + Syncthing | ✅ done | 30 min |
 | `game-13` | GPU contention policy (one 3090 Ti shared by stream/servers/AI) | ✅ done | 15 min |
 | `game-14` | Game launcher (Heroic/Lutris) + RomM retro library | ⏸️ deferred | 45 min |
+| `retire-gaming-01` | Final verified archives of all game-server data (pre-retirement backup) | ✅ done | 30-60 min |
+| `retire-gaming-02` | Stop & isolate all game servers (30-day grace, 4-7AM ET window) | ⬜ open | 1-2 h |
+| `retire-gaming-03` | Delete game-server stacks after 30-day grace (next 4-7AM ET window) | ⬜ open | 1 h |
 | `retro-01` | NAS ROM library layout | ✅ done | 30 min |
 | `retro-02` | RomM — self-hosted ROM manager | ✅ done | 60-90 min |
 | `retro-03` | Save/state sync mesh (Syncthing) | ⬜ open | 60 min |
