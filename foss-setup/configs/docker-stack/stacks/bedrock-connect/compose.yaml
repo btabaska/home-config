@@ -1,3 +1,5 @@
+# RETIRED 2026-09-10 (retire-gaming-02) — stopped; stateless proxy, config archived to bedrock-connect-final-20260910.tar.gz (mini /opt/stacks/backups); deletion in retire-gaming-03, revival via compose up -d.
+#
 # BedrockConnect — lets consoles (Switch 2) join self-hosted Bedrock servers.
 # AdGuard rewrites hijack the featured-server domains -> this box; the console
 # opens any featured server tile and lands in a server-list UI pre-seeded with

@@ -1,5 +1,7 @@
 # palworld
 
+**RETIRED 2026-09-10 (retire-gaming-02) — "Robits Farm" stopped; world archived to palworld-final-20260910.tar.gz (rig + NAS + B2); 30-day grace, deletion in retire-gaming-03, revival via compose up -d.**
+
 Palworld dedicated server — Going Analogue homelab.
 
 | | |
@@ -7,9 +9,15 @@ Palworld dedicated server — Going Analogue homelab.
 | **Host** | [rig](../hosts/rig.md) |
 | **URL** | — (no web UI / not proxied) |
 | **Source** | `foss-setup/configs/gaming/palworld/compose.yaml` |
-| **Notes** | Palworld dedicated server "Robits Farm" (UDP 8211; public = palworld.tabaska.us:1105 via playit; REST admin :8212). |
+| **Notes** | RETIRED 2026-09-10 (retire-gaming-02) — stopped; world archived to palworld-final-20260910.tar.gz (rig + NAS + B2). 30-day grace, deletion in retire-gaming-03, revival via compose up -d. Palworld dedicated server "Robits Farm" (UDP 8211; public = palworld.tabaska.us:1105 via playit; REST admin :8212). |
 
 ## About
+
+> **RETIRED 2026-09-10 (retire-gaming-02, temporary).** "Robits Farm"
+> stopped; world archived to palworld-final-20260910.tar.gz (rig + NAS +
+> B2, sha256 in progress.json). Checks disabled; 30-day grace — deletion
+> in retire-gaming-03, revival via `compose up -d`. Everything below
+> describes it as it was.
 
 Dedicated Palworld server ("Robits Farm") running as the single `palworld` container (`ghcr.io/thijsvanloef/palworld-server-docker:latest`) on the 24/7 rig under `/opt/stacks/palworld`, with the world mounted at `./game:/palworld`. It deliberately runs on this standard glibc image rather than AMP, because AMP's minimal Alpine/musl container can't run the SteamCMD/Palworld binaries; the image self-manages the steamcmd install and daily updates (`AUTO_UPDATE_ENABLED=true` at 4AM ET, `AUTO_REBOOT_ENABLED=false`). Public play is UDP-only over a shared playit.gg tunnel (game port `8211/udp` -> `127.0.0.1:8211`, exposed as `palworld.tabaska.us:1105`) with the router left closed; the REST admin API (`8212/tcp`) is LAN-only and RCON (`25575/tcp`) is bound to localhost. Crucially `COMMUNITY=false` keeps the home IP out of the in-game community browser, and gameplay is tuned to Hard difficulty with softened pal damage (`PAL_DAMAGE_RATE_DEFENSE=0.8`) and 2x enemy drops.
 

@@ -51,6 +51,13 @@ services:
       This is the dns-03 gap — the UniFi fail-open DHCP chain (`192.168.10.2, 192.168.10.4, 192.168.10.1`) is not yet applied to all client VLANs, so a client may sit on a single dead resolver. Immediate fix: UniFi → set affected VLAN DHCP DNS to `192.168.10.1` (gateway), renew leases. Long-term: complete dns-03 so the NAS secondary is actually second in the client chain. Do NOT enable the dns-05 NAT :53 redirect until dns-03 is verified.
 - name: amp
   about: |-
+    > **RETIRED 2026-09-10 (retire-gaming-02, temporary).** AMP +
+    > MinecraftCross01 stopped; world archived to
+    > amp-minecraftcross01-final-20260910.tar.gz (rig + NAS + B2, sha256 in
+    > progress.json). Checks disabled; 30-day grace — deletion in
+    > retire-gaming-03, revival via `compose up -d`. Everything below
+    > describes it as it was.
+
     CubeCoders AMP game panel running on the 24/7 `rig` (192.168.10.12) as the ImageGenius container `ghcr.io/imagegenius/amp:latest`, deployed from `foss-setup/configs/gaming/amp/compose.yaml` at `/opt/stacks/amp` and fronted by Caddy at https://amp.tabaska.us. It runs the ADS module (the panel that provisions/monitors game instances) plus a `MinecraftCross01` Java+Bedrock (Geyser) instance, exposing `8080` (web panel), `25565/tcp` (Java), `19132/udp` (Bedrock) and `8000-8010/udp` for provisioned games. Runs as the `abc` user and driven via the `ampinstmgr` CLI; the base Alpine image ships no Java, so `openjdk21-jre-headless` is added via the `linuxserver/mods:universal-package-install` DOCKER_MOD and Minecraft 26.x additionally uses a persisted Temurin musl Java 25 at `/config/java/jdk-25.0.3+9-jre` behind a `java25-paperfix.sh` wrapper. The critical decision: AMP's licence is machine-id-bound, so both `hostname: c5f46f35aee3` AND `mac_address: 5e:c4:36:bf:b4:43` are pinned in compose — and empty-server sleep-mode is disabled because Bedrock clients cannot wake a sleeping server. Backups (fix-34): MinecraftCross01 takes an hourly local zip into `Backups/` with `Limits.MaxBackupCount=24` + `Limits.ReplacePolicy=ReplaceOldest` ("Delete Single Oldest") — a rolling 24 h of restore points (~7 G). The policy must NEVER be `DoNothing`: paired with a count limit it silently refuses every backup once the limit fills (H10 froze backups for 5 days with only a log-line warning). The zips are a local-only convenience tier — restic deliberately excludes `instances/*/Backups` (compressed zips dedup terribly and once bloated B2 by ~12 G) and snapshots the live world dir nightly instead. Guarded by `game-amp-backup-fresh`, `game-amp-backup-policy` and the restic-snapshot-hygiene BLOAT scan.
   troubleshoot:
   - symptom: |-
@@ -70,6 +77,12 @@ services:
       Benign — this is a cosmetic linker warning from the ImageGenius Alpine build and does not affect AMP or the instances (both Main and MinecraftCross01 run normally alongside it). No action needed.
 - name: bedrock-connect
   about: |-
+    > **RETIRED 2026-09-10 (retire-gaming-02, temporary).** Stateless proxy
+    > stopped; config archived to bedrock-connect-final-20260910.tar.gz (mini
+    > /opt/stacks/backups, sha256 in progress.json). Check disabled; 30-day
+    > grace — deletion in retire-gaming-03, revival via `compose up -d`.
+    > Everything below describes it as it was.
+
     BedrockConnect (Pugmatt project, `strausmann/minecraft-bedrock-connect:latest`, currently v1.68.0) is a UDP `19132` gateway on the mini (`/opt/stacks/bedrock-connect`) that lets Minecraft consoles — which cannot type an arbitrary server IP and can only reach servers via the built-in "featured server" tiles — join Brandon's self-hosted Bedrock worlds. AdGuard on the LAN rewrites the featured-server (Hive/etc.) domains to this container, so when a console opens any featured tile it lands in a server-list UI pre-seeded from `./config/custom_servers.json` with two entries: "MinecraftCross (Home)" → `192.168.10.12:19132` (the rig's Geyser/Paper server) and "MinecraftCross (Remote/playit)" → `bedrock.tabaska.us:1111` (the playit tunnel). It runs `NODB=true` (file-based player storage, no external DB) on the external `edge` docker network, so no console-side settings are needed — the LAN's AdGuard DNS does all the redirection.
   troubleshoot:
   - symptom: |-
@@ -614,6 +627,12 @@ services:
       `NTFY_BASE_URL` in `.env` must exactly match the public Caddy domain (`https://ntfy.tabaska.us`); Web Push and topic links are derived from it. Also keep `NTFY_BEHIND_PROXY=true` since Caddy terminates TLS. Fix `.env`, then `docker compose up -d`.
 - name: palworld
   about: |-
+    > **RETIRED 2026-09-10 (retire-gaming-02, temporary).** "Robits Farm"
+    > stopped; world archived to palworld-final-20260910.tar.gz (rig + NAS +
+    > B2, sha256 in progress.json). Checks disabled; 30-day grace — deletion
+    > in retire-gaming-03, revival via `compose up -d`. Everything below
+    > describes it as it was.
+
     Dedicated Palworld server ("Robits Farm") running as the single `palworld` container (`ghcr.io/thijsvanloef/palworld-server-docker:latest`) on the 24/7 rig under `/opt/stacks/palworld`, with the world mounted at `./game:/palworld`. It deliberately runs on this standard glibc image rather than AMP, because AMP's minimal Alpine/musl container can't run the SteamCMD/Palworld binaries; the image self-manages the steamcmd install and daily updates (`AUTO_UPDATE_ENABLED=true` at 4AM ET, `AUTO_REBOOT_ENABLED=false`). Public play is UDP-only over a shared playit.gg tunnel (game port `8211/udp` -> `127.0.0.1:8211`, exposed as `palworld.tabaska.us:1105`) with the router left closed; the REST admin API (`8212/tcp`) is LAN-only and RCON (`25575/tcp`) is bound to localhost. Crucially `COMMUNITY=false` keeps the home IP out of the in-game community browser, and gameplay is tuned to Hard difficulty with softened pal damage (`PAL_DAMAGE_RATE_DEFENSE=0.8`) and 2x enemy drops.
   troubleshoot:
   - symptom: |-
@@ -669,6 +688,12 @@ services:
       Three escalating layers, all baked into the image since fix-37: (1) stale yt-dlp — rebuild for the latest nightly: ssh mini 'cd /opt/stacks/pinchflat && docker compose build --pull && docker compose up -d'; (2) PO tokens — verify the bgutil plugin is live with the pinchflat-pot-provider check or docker exec pinchflat yt-dlp -v --simulate <url> (look for "bgutil:http-x.y.z (external)" WITHOUT ", unavailable"; plugin and bgutil-pot server versions must match); (3) hard LOGIN_REQUIRED — if a video bot-checks even with a POT attached (confirmed for the 7 items stranded 2026-07-14; ids 409/702/895/915/939/1008/1333 accepted in the pinchflat-stuck-media check), the egress IP is hard-flagged for that video and only sign-in cookies would recover it — a deliberate non-goal (account-flagging risk). New items in that state page via pinchflat-stuck-media.
 - name: playit
   about: |-
+    > **RETIRED 2026-09-10 (retire-gaming-02).** The agent is stopped, the
+    > playit-udp-guard timer disabled, the playit-udp-rig dead-man removed,
+    > and the public UDP paths verified dark (dashboard claim release pending
+    > operator action). 30-day grace — deletion in retire-gaming-03.
+    > Everything below describes it as it was.
+
     `playit` is the playit.gg tunnel agent (`ghcr.io/playit-cloud/playit-agent:latest`, `container_name: playit`, `network_mode: host`) running on the rig at `/opt/stacks/playit`, source at `foss-setup/configs/gaming/playit/compose.yaml`. It is the live public path for the rig's game servers: on a premium dedicated IP (69.9.181.17) it forwards NS-delegated hostnames (e.g. `minecraft.tabaska.us`) to localhost ports without opening the Dream Wall or leaking the home IP — Minecraft Java (SRV :1105), Bedrock (:1111), and Palworld (:1105). ONE agent serves MANY tunnels: tunnels are created in the playit.gg dashboard and only `SECRET_KEY` (a read-only agent key, vaulted as `playit_gg.secret_key`, injected via `.env`, never committed) lives on the host. The agent maintains a persistent control session to playit's edge and periodically reconnects.
   troubleshoot:
   - symptom: |-
@@ -1060,6 +1085,12 @@ services:
       The collector cannot reach the hub. It POSTs to `COLLECTOR_API_ENDPOINT=http://192.168.10.4:8080` — confirm reachability from the container's host (`curl -s http://192.168.10.4:8080/api/health`) and that the NAS `scrutiny` container is up. Then force a run: `docker exec scrutiny-collector /opt/scrutiny/bin/scrutiny-collector-metrics run`.
 - name: terraria
   about: |-
+    > **RETIRED 2026-09-10 (retire-gaming-02, temporary).** TShock stopped;
+    > world archived to terraria-final-20260910.tar.gz (mini
+    > /opt/stacks/backups + restic, sha256 in progress.json). Checks disabled;
+    > 30-day grace — deletion in retire-gaming-03, revival via `compose up -d`.
+    > Everything below describes it as it was.
+
     Terraria is the Mac mini's single always-on light co-op game server (game-01). Because the mini is an 8GB box already running Seerr/Caddy/AdGuard/LiteLLM and 30-plus other containers, the capacity rule is one lightweight game server only — this is it. It runs the community TShock dedicated server as `ryshe/terraria:tshock-1.4.5.6-6.1.0` on `mini` from `foss-setup/configs/docker-stack/stacks/terraria/compose.yaml`, capped at `mem_limit: 1g` so it can never OOM its neighbours (it idles around 320 MB). On first boot `bootstrap.sh` auto-creates a small normal world named `AnalogueCoop` from the `WORLD_FILENAME`/`-autocreate 1` flags; later boots load the saved world. Friends join over the LAN or tailnet at the mini's address on TCP `7777` (Terraria menu -> Multiplayer -> Join via IP) — there is no web UI. The server is deliberately NOT internet-exposed: exposing it to friends over Tailscale is a separate downstream task (game-04), which must also set a `ServerPassword` before any external reach. The TShock REST API is enabled but bound to `127.0.0.1:7878` only; it is not a user surface, it exists purely so the verification sweep can read `/v2/server/status`. Runtime state (`world/`, `logs/`, the TShock-rewritten `tshock-config/config.json`) is gitignored; a fresh host seeds `config.json` from the committed `config.json.example`.
   troubleshoot:
   - symptom: |-

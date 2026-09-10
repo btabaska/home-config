@@ -2,6 +2,11 @@
 
 **Task:** `fix-34` · **Findings:** H10, M29, M30 · **Host:** rig (AMP/MinecraftCross01 + playit)
 
+> **HISTORICAL (2026-09-10, retire-gaming-02):** all game servers are retired — the five
+> stacks are stopped, their verification checks disabled, and the playit tunnels dark.
+> The failure classes below can no longer recur; the restore + archive-recovery procedure
+> at the end is retained for Phase 2 (deletion) and any revival during the 30-day grace.
+
 ## The failure class
 
 Three ways the game stack rots while every liveness check stays green:

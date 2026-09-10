@@ -423,7 +423,8 @@ checks:
     severity: warn
     task_id: game-10
     runbook: wiki/docs/runbooks/rig-host-stability.md
-    enabled: true
+    enabled: false
+    # RETIRED 2026-09-10 (retire-gaming-02): game server retired 2026-09-10 (retire-gaming-02): palworld + playit public paths stopped; deleted after 30-day grace (retire-gaming-03).
 
   # Public game paths through the playit edge (dedicated IP). Real protocol
   # pings, NOT port probes: when the agent's claim leg wedges (seen live
@@ -447,7 +448,8 @@ checks:
     severity: warn
     task_id: game-10
     runbook: wiki/docs/runbooks/rig-host-stability.md
-    enabled: true
+    enabled: false
+    # RETIRED 2026-09-10 (retire-gaming-02): game server retired 2026-09-10 (retire-gaming-02): palworld + playit public paths stopped; deleted after 30-day grace (retire-gaming-03).
 
   - id: playit-bedrock-public
     tier: fast
@@ -461,7 +463,8 @@ checks:
     severity: warn
     task_id: game-10
     runbook: wiki/docs/runbooks/rig-host-stability.md
-    enabled: true
+    enabled: false
+    # RETIRED 2026-09-10 (retire-gaming-02): game server retired 2026-09-10 (retire-gaming-02): palworld + playit public paths stopped; deleted after 30-day grace (retire-gaming-03).
 
   # 2026-07-09 regression: rig UFW hardening (LAN+tailnet scoping) silently blocked
   # docker containers -> host ollama (172.x hits INPUT chain, no rule matched), so

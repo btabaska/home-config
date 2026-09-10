@@ -270,7 +270,7 @@ find /home/btabaska/Music -type f -iname '*.flac' 2>/dev/null | wc -l | tr -d ' 
 
 palworld game server alive (REST :8212 reports serverfps)
 
-- **host:** `url` · **severity:** `warn` · **guards task:** `game-10` · **enabled:** True
+- **host:** `url` · **severity:** `warn` · **guards task:** `game-10` · **enabled:** False
 - **expects:** `"serverfps":`
 
 ```bash
@@ -281,7 +281,7 @@ curl -sm 8 -u "admin:$PALWORLD_ADMIN_PASSWORD" http://cachyos.tailb31641.ts.net:
 
 Minecraft Java public path (playit edge 69.9.181.17:1105, real status ping)
 
-- **host:** `url` · **severity:** `warn` · **guards task:** `game-10` · **enabled:** True
+- **host:** `url` · **severity:** `warn` · **guards task:** `game-10` · **enabled:** False
 - **expects:** `"version"`
 
 ```bash
@@ -292,7 +292,7 @@ for i in 1 2 3 4; do python3 /opt/verification/bin/mc-status-ping.py 69.9.181.17
 
 Minecraft Bedrock public path (playit edge 69.9.181.17:1111, RakNet ping)
 
-- **host:** `url` · **severity:** `warn` · **guards task:** `game-10` · **enabled:** True
+- **host:** `url` · **severity:** `warn` · **guards task:** `game-10` · **enabled:** False
 - **expects:** `version`
 
 ```bash

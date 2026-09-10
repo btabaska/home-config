@@ -1,5 +1,7 @@
 # playit
 
+**RETIRED 2026-09-10 (retire-gaming-02) — agent stopped, playit-udp-guard timer disabled, dead-man playit-udp-rig removed, public UDP paths verified dark; dashboard claim release pending operator action; deletion in retire-gaming-03.**
+
 playit.gg tunnel agent — public game-server access without opening the Dream Wall
 
 | | |
@@ -7,9 +9,15 @@ playit.gg tunnel agent — public game-server access without opening the Dream W
 | **Host** | [rig](../hosts/rig.md) |
 | **URL** | — (no web UI / not proxied) |
 | **Source** | `foss-setup/configs/gaming/playit/compose.yaml` |
-| **Notes** | playit.gg tunnel agent — public game paths on dedicated IP 69.9.181.17 (Java SRV:1105, Bedrock :1111, Palworld :1105). Restart the container after tunnel changes (claim-wedge gotcha). |
+| **Notes** | RETIRED 2026-09-10 (retire-gaming-02) — agent stopped, playit-udp-guard timer disabled, dead-man removed, public UDP paths verified dark (dashboard claim release pending). 30-day grace, deletion in retire-gaming-03. playit.gg tunnel agent — public game paths on dedicated IP 69.9.181.17 (Java SRV:1105, Bedrock :1111, Palworld :1105). Restart the container after tunnel changes (claim-wedge gotcha). |
 
 ## About
+
+> **RETIRED 2026-09-10 (retire-gaming-02).** The agent is stopped, the
+> playit-udp-guard timer disabled, the playit-udp-rig dead-man removed,
+> and the public UDP paths verified dark (dashboard claim release pending
+> operator action). 30-day grace — deletion in retire-gaming-03.
+> Everything below describes it as it was.
 
 `playit` is the playit.gg tunnel agent (`ghcr.io/playit-cloud/playit-agent:latest`, `container_name: playit`, `network_mode: host`) running on the rig at `/opt/stacks/playit`, source at `foss-setup/configs/gaming/playit/compose.yaml`. It is the live public path for the rig's game servers: on a premium dedicated IP (69.9.181.17) it forwards NS-delegated hostnames (e.g. `minecraft.tabaska.us`) to localhost ports without opening the Dream Wall or leaking the home IP — Minecraft Java (SRV :1105), Bedrock (:1111), and Palworld (:1105). ONE agent serves MANY tunnels: tunnels are created in the playit.gg dashboard and only `SECRET_KEY` (a read-only agent key, vaulted as `playit_gg.secret_key`, injected via `.env`, never committed) lives on the host. The agent maintains a persistent control session to playit's edge and periodically reconnects.
 

@@ -1,3 +1,5 @@
+# RETIRED 2026-09-10 (retire-gaming-02) — TShock stopped; world archived to terraria-final-20260910.tar.gz (mini /opt/stacks/backups + restic); 30-day grace, deletion in retire-gaming-03, revival via compose up -d.
+#
 # Terraria (TShock) — the Mac mini's single always-on light co-op server.
 # game-01: 8GB box → ONE lightweight always-on game server only (do not stack
 # more alongside Seerr/Caddy/AdGuard/LiteLLM). TShock dedicated server, small

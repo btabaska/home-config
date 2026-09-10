@@ -494,7 +494,7 @@ services:
     port: 8080
     url: https://amp.tabaska.us
     on_demand: false
-    notes: CubeCoders AMP game panel (MinecraftCross Java+Bedrock instance). Licence is hostname-pinned — never change the compose hostname casually.
+    notes: "RETIRED 2026-09-10 (retire-gaming-02) — stopped; world archived to amp-minecraftcross01-final-20260910.tar.gz (rig + NAS + B2). 30-day grace, deletion in retire-gaming-03, revival via compose up -d. CubeCoders AMP game panel (MinecraftCross Java+Bedrock instance). Licence is hostname-pinned — never change the compose hostname casually."
   - name: palworld
     category: AI & Gaming
     host: rig
@@ -502,7 +502,7 @@ services:
     url: null
     ui: false
     on_demand: false
-    notes: Palworld dedicated server "Robits Farm" (UDP 8211; public = palworld.tabaska.us:1105 via playit; REST admin :8212).
+    notes: "RETIRED 2026-09-10 (retire-gaming-02) — stopped; world archived to palworld-final-20260910.tar.gz (rig + NAS + B2). 30-day grace, deletion in retire-gaming-03, revival via compose up -d. Palworld dedicated server \"Robits Farm\" (UDP 8211; public = palworld.tabaska.us:1105 via playit; REST admin :8212)."
   - name: playit
     category: AI & Gaming
     host: rig
@@ -510,7 +510,7 @@ services:
     url: null
     ui: false
     on_demand: false
-    notes: playit.gg tunnel agent — public game paths on dedicated IP 69.9.181.17 (Java SRV:1105, Bedrock :1111, Palworld :1105). Restart the container after tunnel changes (claim-wedge gotcha).
+    notes: "RETIRED 2026-09-10 (retire-gaming-02) — agent stopped, playit-udp-guard timer disabled, dead-man removed, public UDP paths verified dark (dashboard claim release pending). 30-day grace, deletion in retire-gaming-03. playit.gg tunnel agent — public game paths on dedicated IP 69.9.181.17 (Java SRV:1105, Bedrock :1111, Palworld :1105). Restart the container after tunnel changes (claim-wedge gotcha)."
   - name: bedrock-connect
     category: AI & Gaming
     host: mini
@@ -518,7 +518,7 @@ services:
     url: null
     ui: false
     on_demand: false
-    notes: BedrockConnect gateway (UDP 19132) — consoles reach LAN/playit Minecraft via AdGuard featured-server rewrites.
+    notes: "RETIRED 2026-09-10 (retire-gaming-02) — stopped; stateless proxy, config archived to bedrock-connect-final-20260910.tar.gz (mini /opt/stacks/backups). Deletion in retire-gaming-03, revival via compose up -d. BedrockConnect gateway (UDP 19132) — consoles reach LAN/playit Minecraft via AdGuard featured-server rewrites."
   - name: terraria
     category: AI & Gaming
     host: mini
@@ -526,7 +526,7 @@ services:
     url: null
     ui: false
     on_demand: false
-    notes: "Terraria (TShock) co-op — the mini's single always-on light game server (game-01). Join at <mini-ip>:7777 (TCP) on LAN/tailnet; no internet exposure (game-04 owns Tailscale friend reach). REST 7878 is localhost-only for the verification probe."
+    notes: "RETIRED 2026-09-10 (retire-gaming-02) — stopped; world archived to terraria-final-20260910.tar.gz (mini /opt/stacks/backups + restic). Deletion in retire-gaming-03, revival via compose up -d. Terraria (TShock) co-op — the mini's single always-on light game server (game-01). Join at <mini-ip>:7777 (TCP) on LAN/tailnet; no internet exposure (game-04 owns Tailscale friend reach). REST 7878 is localhost-only for the verification probe."
   - name: romm
     category: AI & Gaming
     host: mini

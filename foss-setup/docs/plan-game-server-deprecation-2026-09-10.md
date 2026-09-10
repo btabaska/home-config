@@ -1,6 +1,8 @@
 # Plan — retire all homelab game servers (backup first)
 
-**Date:** 2026-09-10 · **Status:** Phase 0 DONE (2026-09-10) — awaiting Phase 1 window · **Task ledger:** `retire-gaming-01…` in `docs/tasks.json`
+**Date:** 2026-09-10 · **Status:** Phase 1 DONE (2026-09-10, operator waived the 4–7AM window) — 30-day grace until ~2026-10-10, then Phase 2 · **Task ledger:** `retire-gaming-01…` in `docs/tasks.json`
+
+**Phase 1 completion record (2026-09-10):** all five stacks stopped on disk (palworld/amp/playit rig, terraria/bedrock-connect mini); playit-udp-guard timer disabled; healthchecks dead-man `playit-udp-rig` deleted; public UDP tunnels verified dark; Kuma game monitors 49/50/54 paused; 12 checks disabled (11 plan-scope + `terraria-tile-present`) and deployed to mini; coverage manifests + expected-listeners updated and verified against live `docker ps`; homepage game tiles removed (live + Home repo mirror); compose banners, catalog/enrichment, network.md, and this runbook marked retired/historical. **Pending operator:** release the playit.gg dashboard UDP claims (agent `secret_key` alone cannot call the web API — 401 on all variants); the claim removal and NS-delegation deletion ride in Phase 2. Full record in `docs/progress.json` (`retire-gaming-02`).
 
 **Phase 0 completion record:** archives `palworld-final-20260910.tar.gz` (rig), `amp-minecraftcross01-final-20260910.tar.gz` (rig), `terraria-final-20260910.tar.gz` + `bedrock-connect-final-20260910.tar.gz` (mini `/opt/stacks/backups/`) — all listing-verified, restore spot-checked, SHA-256 in `progress.json`; rig archives mirrored to NAS `/volume1/homes/btabaska/game-server-archives/` (checksums verified equal) and to B2 restic snapshot `e3b27d50`. Mini restic covers all of `/opt/stacks` (nightly). Palworld was stopped only for the tar and restarted.
 

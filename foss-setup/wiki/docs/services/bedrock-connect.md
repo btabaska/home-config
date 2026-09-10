@@ -1,5 +1,7 @@
 # bedrock-connect
 
+**RETIRED 2026-09-10 (retire-gaming-02) — stopped; stateless proxy, config archived to bedrock-connect-final-20260910.tar.gz (mini /opt/stacks/backups); deletion in retire-gaming-03, revival via compose up -d.**
+
 BedrockConnect — lets consoles (Switch 2) join self-hosted Bedrock servers.
 
 | | |
@@ -7,9 +9,15 @@ BedrockConnect — lets consoles (Switch 2) join self-hosted Bedrock servers.
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | — (no web UI / not proxied) |
 | **Source** | `foss-setup/configs/docker-stack/stacks/bedrock-connect/compose.yaml` |
-| **Notes** | BedrockConnect gateway (UDP 19132) — consoles reach LAN/playit Minecraft via AdGuard featured-server rewrites. |
+| **Notes** | RETIRED 2026-09-10 (retire-gaming-02) — stopped; stateless proxy, config archived to bedrock-connect-final-20260910.tar.gz (mini /opt/stacks/backups). Deletion in retire-gaming-03, revival via compose up -d. BedrockConnect gateway (UDP 19132) — consoles reach LAN/playit Minecraft via AdGuard featured-server rewrites. |
 
 ## About
+
+> **RETIRED 2026-09-10 (retire-gaming-02, temporary).** Stateless proxy
+> stopped; config archived to bedrock-connect-final-20260910.tar.gz (mini
+> /opt/stacks/backups, sha256 in progress.json). Check disabled; 30-day
+> grace — deletion in retire-gaming-03, revival via `compose up -d`.
+> Everything below describes it as it was.
 
 BedrockConnect (Pugmatt project, `strausmann/minecraft-bedrock-connect:latest`, currently v1.68.0) is a UDP `19132` gateway on the mini (`/opt/stacks/bedrock-connect`) that lets Minecraft consoles — which cannot type an arbitrary server IP and can only reach servers via the built-in "featured server" tiles — join Brandon's self-hosted Bedrock worlds. AdGuard on the LAN rewrites the featured-server (Hive/etc.) domains to this container, so when a console opens any featured tile it lands in a server-list UI pre-seeded from `./config/custom_servers.json` with two entries: "MinecraftCross (Home)" → `192.168.10.12:19132` (the rig's Geyser/Paper server) and "MinecraftCross (Remote/playit)" → `bedrock.tabaska.us:1111` (the playit tunnel). It runs `NODB=true` (file-based player storage, no external DB) on the external `edge` docker network, so no console-side settings are needed — the LAN's AdGuard DNS does all the redirection.
 

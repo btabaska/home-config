@@ -12,16 +12,16 @@
 
 | Stack | Host | URL |
 |---|---|---|
-| [amp](amp.md) | rig | https://amp.tabaska.us |
-| [bedrock-connect](bedrock-connect.md) | mini | — |
+| [amp](amp.md) *(retired)* | rig | — |
+| [bedrock-connect](bedrock-connect.md) *(retired)* | mini | — |
 | [kiwix](kiwix.md) | nas | https://kiwix.tabaska.us |
 | [maps](maps.md) | mini | https://maps.tabaska.us |
 | [open-terminal](open-terminal.md) | mini | — |
-| [palworld](palworld.md) | rig | — |
-| [playit](playit.md) | rig | — |
+| [palworld](palworld.md) *(retired)* | rig | — |
+| [playit](playit.md) *(retired)* | rig | — |
 | [romm](romm.md) | mini | https://romm.tabaska.us |
 | [searxng](searxng.md) | mini | https://searxng.tabaska.us |
-| [terraria](terraria.md) | mini | — |
+| [terraria](terraria.md) *(retired)* | mini | — |
 
 ## Documents & Life
 

@@ -50,7 +50,7 @@ python3 /opt/verification/bin/homepage-unifi-tile.py
 
 homepage Games group still lists the Terraria server tile (SL24)
 
-- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-67` · **enabled:** True
+- **host:** `mini` · **severity:** `warn` · **guards task:** `fix-67` · **enabled:** False
 - **expects:** `Terraria`
 
 ```bash

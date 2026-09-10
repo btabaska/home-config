@@ -1,5 +1,7 @@
 # terraria
 
+**RETIRED 2026-09-10 (retire-gaming-02) — TShock stopped; world archived to terraria-final-20260910.tar.gz (mini /opt/stacks/backups + restic); 30-day grace, deletion in retire-gaming-03, revival via compose up -d.**
+
 Terraria (TShock) — the Mac mini's single always-on light co-op server.
 
 | | |
@@ -7,9 +9,15 @@ Terraria (TShock) — the Mac mini's single always-on light co-op server.
 | **Host** | [mini](../hosts/mini.md) |
 | **URL** | — (no web UI / not proxied) |
 | **Source** | `foss-setup/configs/docker-stack/stacks/terraria/compose.yaml` |
-| **Notes** | Terraria (TShock) co-op — the mini's single always-on light game server (game-01). Join at <mini-ip>:7777 (TCP) on LAN/tailnet; no internet exposure (game-04 owns Tailscale friend reach). REST 7878 is localhost-only for the verification probe. |
+| **Notes** | RETIRED 2026-09-10 (retire-gaming-02) — stopped; world archived to terraria-final-20260910.tar.gz (mini /opt/stacks/backups + restic). Deletion in retire-gaming-03, revival via compose up -d. Terraria (TShock) co-op — the mini's single always-on light game server (game-01). Join at <mini-ip>:7777 (TCP) on LAN/tailnet; no internet exposure (game-04 owns Tailscale friend reach). REST 7878 is localhost-only for the verification probe. |
 
 ## About
+
+> **RETIRED 2026-09-10 (retire-gaming-02, temporary).** TShock stopped;
+> world archived to terraria-final-20260910.tar.gz (mini
+> /opt/stacks/backups + restic, sha256 in progress.json). Checks disabled;
+> 30-day grace — deletion in retire-gaming-03, revival via `compose up -d`.
+> Everything below describes it as it was.
 
 Terraria is the Mac mini's single always-on light co-op game server (game-01). Because the mini is an 8GB box already running Seerr/Caddy/AdGuard/LiteLLM and 30-plus other containers, the capacity rule is one lightweight game server only — this is it. It runs the community TShock dedicated server as `ryshe/terraria:tshock-1.4.5.6-6.1.0` on `mini` from `foss-setup/configs/docker-stack/stacks/terraria/compose.yaml`, capped at `mem_limit: 1g` so it can never OOM its neighbours (it idles around 320 MB). On first boot `bootstrap.sh` auto-creates a small normal world named `AnalogueCoop` from the `WORLD_FILENAME`/`-autocreate 1` flags; later boots load the saved world. Friends join over the LAN or tailnet at the mini's address on TCP `7777` (Terraria menu -> Multiplayer -> Join via IP) — there is no web UI. The server is deliberately NOT internet-exposed: exposing it to friends over Tailscale is a separate downstream task (game-04), which must also set a `ServerPassword` before any external reach. The TShock REST API is enabled but bound to `127.0.0.1:7878` only; it is not a user surface, it exists purely so the verification sweep can read `/v2/server/status`. Runtime state (`world/`, `logs/`, the TShock-rewritten `tshock-config/config.json`) is gitignored; a fresh host seeds `config.json` from the committed `config.json.example`.
 

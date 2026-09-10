@@ -6,7 +6,7 @@
 
 MinecraftCross01 hourly AMP backup ran within 4h and wasn't refused (H10)
 
-- **host:** `rig` · **severity:** `warn` · **guards task:** `fix-34` · **enabled:** True
+- **host:** `rig` · **severity:** `warn` · **guards task:** `fix-34` · **enabled:** False
 - **expects:** `^BACKUP-OK`
 
 ```bash
@@ -17,7 +17,7 @@ B=/opt/stacks/amp/config/.ampdata/instances/MinecraftCross01/Backups; D="/opt/st
 
 no AMP instance has Backup ReplacePolicy=DoNothing (H10 root cause)
 
-- **host:** `rig` · **severity:** `crit` · **guards task:** `fix-34` · **enabled:** True
+- **host:** `rig` · **severity:** `crit` · **guards task:** `fix-34` · **enabled:** False
 - **expects:** `^POLICY-OK`
 
 ```bash
@@ -28,7 +28,7 @@ bad=$(grep -l '^Limits.ReplacePolicy=DoNothing' /opt/stacks/amp/config/.ampdata/
 
 rig restic latest snapshot free of AMP backup-zip bloat (M29)
 
-- **host:** `rig` · **severity:** `warn` · **guards task:** `fix-34` · **enabled:** True
+- **host:** `rig` · **severity:** `warn` · **guards task:** `fix-34` · **enabled:** False
 - **expects:** `^BLOAT-OK`
 
 ```bash
@@ -39,7 +39,7 @@ sudo -n /usr/local/bin/restic-snapshot-hygiene
 
 Bedrock answers a RakNet ping via playit UDP tunnel bedrock.tabaska.us:1111 (M30)
 
-- **host:** `mini` · **severity:** `crit` · **guards task:** `fix-34` · **enabled:** True
+- **host:** `mini` · **severity:** `crit` · **guards task:** `fix-34` · **enabled:** False
 - **expects:** `^PONG`
 
 ```bash
@@ -69,7 +69,7 @@ PY
 
 BedrockConnect serverlist answers a RakNet ping on mini:19132 (console-join path, SM45)
 
-- **host:** `mini` · **severity:** `warn` · **guards task:** `game-04` · **enabled:** True
+- **host:** `mini` · **severity:** `warn` · **guards task:** `game-04` · **enabled:** False
 - **expects:** `^BEDROCKCONNECT_OK$`
 
 ```bash
@@ -80,7 +80,7 @@ python3 /opt/verification/bin/mc-bedrock-ping.py 127.0.0.1 19132 | grep -q 'Join
 
 playit UDP-claim register churn stays in band (<=4/24h, M30 class rate tripwire)
 
-- **host:** `rig` · **severity:** `warn` · **guards task:** `fix-34` · **enabled:** True
+- **host:** `rig` · **severity:** `warn` · **guards task:** `fix-34` · **enabled:** False
 - **expects:** `^REGISTER-IN-BAND`
 
 ```bash
@@ -91,7 +91,7 @@ n=$(docker logs --since 24h playit 2>&1 | grep -ac 'unexpected response from reg
 
 Terraria game port 7777 completes the join handshake (game-01)
 
-- **host:** `mini` · **severity:** `crit` · **guards task:** `game-01` · **enabled:** True
+- **host:** `mini` · **severity:** `crit` · **guards task:** `game-01` · **enabled:** False
 - **expects:** `^JOINABLE`
 
 ```bash
@@ -126,7 +126,7 @@ PY
 
 Terraria has world AnalogueCoop loaded with open slots (game-01)
 
-- **host:** `mini` · **severity:** `warn` · **guards task:** `game-01` · **enabled:** True
+- **host:** `mini` · **severity:** `warn` · **guards task:** `game-01` · **enabled:** False
 - **expects:** `^WORLD-LOADED`
 
 ```bash

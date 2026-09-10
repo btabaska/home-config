@@ -92,7 +92,8 @@ checks:
     severity: warn
     task_id: fix-67
     runbook: wiki/docs/runbooks/monitoring-coverage.md
-    enabled: true
+    enabled: false
+    # RETIRED 2026-09-10 (retire-gaming-02): Terraria tile removed from the homepage Games group 2026-09-10 (retire-gaming-02) — no tile to guard.
 
   # ── M21 · every Uptime-Kuma monitor has an alert channel ─────────────────
   # bootstrap-nas-monitors.sh used to insert monitors and leave "attach ntfy" as

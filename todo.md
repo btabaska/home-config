@@ -2,7 +2,7 @@
 
 **The single todo list for this project.** Generated from `foss-setup/docs/tasks.json` (task definitions) + `foss-setup/docs/progress.json` (status) by `foss-setup/scripts/docs/gen-todo.py`. The wiki is the browsable mirror + the reference source of truth: <https://wiki.tabaska.us/roadmap/>. Re-run the generator after any change.
 
-**319/423 done** · **70 open** · **19 deferred** · 15 retired.
+**320/423 done** · **69 open** · **19 deferred** · 15 retired.
 
 ---
 
@@ -31,7 +31,6 @@
 
 ### gaming
 - [ ] **`game-09`** Rig idle-power tuning (24/7 baseline) _(est 20-30 min)_
-- [ ] **`retire-gaming-02`** Stop & isolate all game servers (30-day grace, 4-7AM ET window) _(est 1-2 h)_
 - [ ] **`retire-gaming-03`** Delete game-server stacks after 30-day grace (next 4-7AM ET window) _(est 1 h)_
 - [ ] **`retro-03`** Save/state sync mesh (Syncthing) _(est 60 min)_ — ⛔ gate: device pairing approvals
 - [ ] **`retro-04`** SteamDeck: EmuDeck/RetroDeck wiring _(est 45 min)_ — ⛔ gate: on-device steps

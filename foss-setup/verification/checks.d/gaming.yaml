@@ -32,7 +32,8 @@ checks:
     severity: warn
     task_id: fix-34
     runbook: wiki/docs/runbooks/game-backups.md
-    enabled: true
+    enabled: false
+    # RETIRED 2026-09-10 (retire-gaming-02): game server retired 2026-09-10 (retire-gaming-02): AMP/Minecraft + playit + Terraria + BedrockConnect stopped; deleted after 30-day grace (retire-gaming-03). Kept (not deleted) for history.
 
   # class guard for H10's root cause: no AMP instance may carry the
   # silently-refusing DoNothing replace policy (catches future instances too).
@@ -48,7 +49,8 @@ checks:
     severity: crit
     task_id: fix-34
     runbook: wiki/docs/runbooks/game-backups.md
-    enabled: true
+    enabled: false
+    # RETIRED 2026-09-10 (retire-gaming-02): game server retired 2026-09-10 (retire-gaming-02): AMP/Minecraft + playit + Terraria + BedrockConnect stopped; deleted after 30-day grace (retire-gaming-03). Kept (not deleted) for history.
 
   # M29 class guard: latest AMP-bearing restic snapshot ships no app-internal
   # backup zips (the dedup-hostile bloat that inflated B2 by ~12G). Scan lives
@@ -62,7 +64,8 @@ checks:
     severity: warn
     task_id: fix-34
     runbook: wiki/docs/runbooks/game-backups.md
-    enabled: true
+    enabled: false
+    # RETIRED 2026-09-10 (retire-gaming-02): game server retired 2026-09-10 (retire-gaming-02): AMP/Minecraft + playit + Terraria + BedrockConnect stopped; deleted after 30-day grace (retire-gaming-03). Kept (not deleted) for history.
 
   # M30 consumer-end regression: RakNet unconnected ping from mini through the
   # PUBLIC playit UDP tunnel to Geyser — the exact path a Bedrock player uses,
@@ -95,7 +98,8 @@ checks:
     severity: crit
     task_id: fix-34
     runbook: wiki/docs/runbooks/game-backups.md
-    enabled: true
+    enabled: false
+    # RETIRED 2026-09-10 (retire-gaming-02): game server retired 2026-09-10 (retire-gaming-02): AMP/Minecraft + playit + Terraria + BedrockConnect stopped; deleted after 30-day grace (retire-gaming-03). Kept (not deleted) for history.
 
   # fix-62/SM45: BedrockConnect (mini:19132) is the serverlist entry point console
   # Bedrock players hit to reach the server, and it had ZERO functional coverage —
@@ -115,7 +119,8 @@ checks:
     severity: warn
     task_id: game-04
     runbook: wiki/docs/runbooks/game-backups.md
-    enabled: true
+    enabled: false
+    # RETIRED 2026-09-10 (retire-gaming-02): game server retired 2026-09-10 (retire-gaming-02): AMP/Minecraft + playit + Terraria + BedrockConnect stopped; deleted after 30-day grace (retire-gaming-03). Kept (not deleted) for history.
 
   # M30 class guard: the register-error signature in the agent log covers ALL
   # UDP tunnels (Palworld has no query protocol to probe directly). The guard
@@ -146,7 +151,8 @@ checks:
     severity: warn
     task_id: fix-34
     runbook: wiki/docs/runbooks/game-backups.md
-    enabled: true
+    enabled: false
+    # RETIRED 2026-09-10 (retire-gaming-02): game server retired 2026-09-10 (retire-gaming-02): AMP/Minecraft + playit + Terraria + BedrockConnect stopped; deleted after 30-day grace (retire-gaming-03). Kept (not deleted) for history.
 
   # ---- game-01: Terraria (TShock) — the mini's single always-on co-op server ----
   # Consumer-end, not liveness. The mini is an 8GB box hosting ONE light game
@@ -191,7 +197,8 @@ checks:
     severity: crit
     task_id: game-01
     runbook: wiki/docs/runbooks/game-backups.md
-    enabled: true
+    enabled: false
+    # RETIRED 2026-09-10 (retire-gaming-02): game server retired 2026-09-10 (retire-gaming-02): AMP/Minecraft + playit + Terraria + BedrockConnect stopped; deleted after 30-day grace (retire-gaming-03). Kept (not deleted) for history.
 
   # world-loaded: TShock REST /v2/server/status (localhost-only, 7878) must
   # report the world actually loaded and open join slots — real game state the
@@ -213,7 +220,8 @@ checks:
     severity: warn
     task_id: game-01
     runbook: wiki/docs/runbooks/game-backups.md
-    enabled: true
+    enabled: false
+    # RETIRED 2026-09-10 (retire-gaming-02): game server retired 2026-09-10 (retire-gaming-02): AMP/Minecraft + playit + Terraria + BedrockConnect stopped; deleted after 30-day grace (retire-gaming-03). Kept (not deleted) for history.
 
   # ---- game-05/game-11: Apollo game streaming (rig) ----
   # 2026-08-16 incident: Apollo sat dead for 13 days with the rig otherwise green.

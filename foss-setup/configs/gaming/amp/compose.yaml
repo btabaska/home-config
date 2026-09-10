@@ -1,3 +1,5 @@
+# RETIRED 2026-09-10 (retire-gaming-02) — AMP + MinecraftCross01 stopped; world archived to amp-minecraftcross01-final-20260910.tar.gz (rig + NAS + B2); 30-day grace, deletion in retire-gaming-03, revival via compose up -d.
+#
 # AMP (CubeCoders) game panel — containerized so it never touches the CachyOS host (ImageGenius image).
 # License activates non-interactively via LICENCE. ADS module = the panel that
 # provisions/monitors game instances.

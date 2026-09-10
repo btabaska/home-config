@@ -58,7 +58,9 @@ Two checks cover this: `net-trusted-to-iot-reachable` (net-05 — probes the Hue
 bridge from the mini) and `sys-docker-vlan-overlap` (fix-66 — subnet arithmetic
 that CRITs if any docker bridge overlaps the routable Trusted/IoT VLANs). The
 broader `sys-docker-subnet-squat` (ha-19) still warns on the two remaining
-`192.168.x` squatters (`scrutiny-collector`, `terraria`) pending their re-home.
+`192.168.x` squatters (`scrutiny-collector`, `terraria` — the latter is
+retired 2026-09-10, retire-gaming-02, and disappears with its Phase 2
+deletion, retire-gaming-03).
 
 ## DNS — the resolver chain
 
@@ -110,11 +112,12 @@ Ground truth (established 2026-07-17, quality-gate fix-24 — M61/L53):
   `/identity` endpoint is reachable from the internet by design (version +
   machine id disclosure); everything token-gated stays token-gated.
 - **Public DNS for `tabaska.us` contains no host records.** The zone is Proton
-  mail records, playit.gg NS delegations (`minecraft`/`palworld`/`bedrock`),
-  and TXT only; every service name is NXDOMAIN publicly and resolves only via
-  the AdGuard split-horizon rewrites. The old `www → 192.168.10.2` public A
-  record (RFC1918 leak, finding L53) was deleted from the Cloudflare zone
-  2026-07-17.
+  mail records, playit.gg NS delegations (`minecraft`/`palworld`/`bedrock` —
+  now dark: the playit agent is stopped, retire-gaming-02; the delegations are
+  removed in Phase 2, retire-gaming-03), and TXT only; every service name is
+  NXDOMAIN publicly and resolves only via the AdGuard split-horizon rewrites.
+  The old `www → 192.168.10.2` public A record (RFC1918 leak, finding L53)
+  was deleted from the Cloudflare zone 2026-07-17.
 - **Continuously guarded** by `verification/checks.d/edge.yaml`: a WAN port
   sweep from the seedbox (true off-net vantage — LAN-side probes only test NAT
   hairpin) that pages `crit` on any port besides 32400; a pinned
