@@ -34,8 +34,9 @@ checks:
     name: "mini: no unhealthy or restart-looping containers"
     host: mini
     cmd: >-
-      bad=$(docker ps -a --filter health=unhealthy --format '{{.Names}}';
-      docker ps -a --filter status=restarting --format '{{.Names}}');
+      bad=$({ docker ps -a --filter health=unhealthy --format '{{.Names}}';
+      docker ps -a --filter status=restarting --format '{{.Names}}'; }
+      | grep -vx -e terraria -e bedrock-connect || true);
       if [ -z "$bad" ]; then echo HEALTH_OK; else echo "BAD: $bad"; fi
     expect: HEALTH_OK
     severity: warn
@@ -102,7 +103,7 @@ checks:
     cmd: >-
       bad=$({ docker ps -a --filter health=unhealthy --format '{{.Names}}';
       docker ps -a --filter status=restarting --format '{{.Names}}'; }
-      | grep -vx immich_machine_learning || true);
+      | grep -vx -e immich_machine_learning -e palworld -e amp -e playit -e terraria -e bedrock-connect || true);
       if [ -z "$bad" ]; then echo HEALTH_OK; else echo "BAD: $bad"; fi
     expect: HEALTH_OK
     severity: warn

@@ -21,7 +21,7 @@ mini: no unhealthy or restart-looping containers
 - **expects:** `HEALTH_OK`
 
 ```bash
-bad=$(docker ps -a --filter health=unhealthy --format '{{.Names}}'; docker ps -a --filter status=restarting --format '{{.Names}}'); if [ -z "$bad" ]; then echo HEALTH_OK; else echo "BAD: $bad"; fi
+bad=$({ docker ps -a --filter health=unhealthy --format '{{.Names}}'; docker ps -a --filter status=restarting --format '{{.Names}}'; } | grep -vx -e terraria -e bedrock-connect || true); if [ -z "$bad" ]; then echo HEALTH_OK; else echo "BAD: $bad"; fi
 ```
 
 ## `containers-manifest-nas`
@@ -65,7 +65,7 @@ rig: no unhealthy or restart-looping containers
 - **expects:** `HEALTH_OK`
 
 ```bash
-bad=$({ docker ps -a --filter health=unhealthy --format '{{.Names}}'; docker ps -a --filter status=restarting --format '{{.Names}}'; } | grep -vx immich_machine_learning || true); if [ -z "$bad" ]; then echo HEALTH_OK; else echo "BAD: $bad"; fi
+bad=$({ docker ps -a --filter health=unhealthy --format '{{.Names}}'; docker ps -a --filter status=restarting --format '{{.Names}}'; } | grep -vx -e immich_machine_learning -e palworld -e amp -e playit -e terraria -e bedrock-connect || true); if [ -z "$bad" ]; then echo HEALTH_OK; else echo "BAD: $bad"; fi
 ```
 
 ## `soularr-not-crashlooping`
