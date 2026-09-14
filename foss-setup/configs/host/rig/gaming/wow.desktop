@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=World of Warcraft
+Comment=Launches via Battle.net --exec="launch WoW" (Steam, GE-Proton11-WC3-CertFix)
+Exec=steam steam://rungameid/13911188326322274304
+Icon=wow
+Terminal=false
+Categories=Game;
+StartupNotify=false

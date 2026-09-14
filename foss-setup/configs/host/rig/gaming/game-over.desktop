@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Game Over — Free VRAM for AI
+Comment=Quit Battle.net/Proton games and hand the GPU back to the AI lanes
+Exec=/home/btabaska/.local/bin/game-over.sh
+Icon=preferences-system-performance
+Terminal=true
+Categories=Game;Utility;
+StartupNotify=false

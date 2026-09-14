@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Battle.net
+Comment=Blizzard launcher via Steam (GE-Proton11-WC3-CertFix)
+Exec=steam steam://rungameid/12675669403702919168
+Icon=battlenet
+Terminal=false
+Categories=Game;
+StartupNotify=false
