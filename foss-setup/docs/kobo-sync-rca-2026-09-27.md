@@ -61,12 +61,20 @@ idle-disk-slow code path, fw add-device 404, edge/DNS) individually refuted.
 the row delete — a sync GET *mutates* state and would re-strand book 115. The
 re-delivery must come from the device itself.
 
-## Verification still owed
+## Verification
 
-- **Device-side:** sync the Forma any evening ≥19:30 EDT — expect success and
-  Practical Magic appearing. If the row re-appears in `kobo_synced_books` but the
-  book still doesn't display, the device has tombstoned the UUID → L2 procedure
-  (change `books.uuid`, see memory `cwa-kobo-sync-quirks`).
+- **Device-side: CONFIRMED 2026-09-27 ~11:16 EDT** — operator synced the Forma,
+  sync succeeded; server-side the device re-marked book 115 (kobo_synced_books
+  row 249, user 3 back to 104 rows) and updated its reading state
+  (2026-09-27 15:16:33 UTC). If Practical Magic ever fails to *display* despite
+  the row, that's the device UUID-tombstone case → L2 procedure (change
+  `books.uuid`, see memory `cwa-kobo-sync-quirks`).
+- **First 01:10 backup run:** confirm the morning after 2026-09-28 that
+  `dsmbackup --backup 3` ran at the new slot and completed
+  (`/var/packages/HyperBackup/var/log/hyperbackup.log`).
+
+## Still owed
+
 - **`media-14` (tracker):** the daily `cwa-kobo-sync-consumer` check is a no-op —
   the env URLs are bare `/kobo/<token>` roots hitting TopLevelEndpoint (`{}` in
   0.07s); the sync path has never been monitored. Fix needs a dedicated monitor
