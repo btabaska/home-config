@@ -127,7 +127,11 @@ rig btrfs data-checksum corruption incrementing on the single-device no-ECC root
 Wave 1 security: **`fix-84`** a live playit `SECRET_KEY` is committed to git history on both remotes
 (rotate + history-scrub, follow `security-change-guard`). Refuted a false-CRIT (the `/volume1/docker`
 0777 is the DSM synoacl display quirk — read+traverse only) and downgraded the NAS "IO-storm
-regression" + sonarr "427MB WAL" to a transient Saturday Hyper-Backup-window artifact that self-clears.
+regression" + sonarr "427MB WAL" to a transient Saturday Hyper-Backup-window artifact that self-clears
+(**SUPERSEDED 2026-09-27**: the S3 Hyper Backup was in fact **daily** at 19:10 EDT and froze /volume1
+nightly — kernel-proven btrfs fsync stalls >120s; it was the root cause of the Kobo Forma "Sync Failed.
+No Internet access" — rescheduled to 01:10 daily / Sat 08:10 integrity, stranded book re-flowed; RCA +
+fix log in `foss-setup/docs/kobo-sync-rca-2026-09-27.md`, follow-up check fix = `media-14`).
 Verified GREEN end-to-end: movies/TV, music Subsonic stream, books→Kobo, journaling loop, AI
 chat/ops/web-search, kiwix ZIM, Plant Scout, edge/DNS posture, game-server protocol pings.
 
