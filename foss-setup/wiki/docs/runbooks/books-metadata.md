@@ -10,7 +10,7 @@ provider and its database are gone (dropped in bmig-06; pgdump archived at
 host mini), `nas-rreading-glasses-hc` + `nas-bookshelf` liveness (in
 `checks.d/nas-services.yaml`), and the Shelfmark set
 `shelfmark-mam-path-ready` + `shelfmark-search-consumer` + `shelfmark-downloads-healthy`
-+ `prowlarr-mam-search-novip` (host nas, in `checks.d/reading.yaml`).
++ `prowlarr-mam-search-alive` (host nas, in `checks.d/reading.yaml`).
 
 ## Shelfmark (search frontend, nas :8084 / shelfmark.tabaska.us)
 
@@ -55,7 +55,7 @@ CWA. Each failure class, its fix, and where to look
 
 | status_message | cause | fix |
 |---|---|---|
-| `Failed to add to deluge: Failed to fetch torrent file` (MAM) | MAM refuses **VIP** torrents for a non-VIP account: `406 Download blocked: VIP torrent and you are not VIP or higher` (Prowlarr logs it as 401). Each refusal also backs MAM off in Prowlarr (`429 Indexer is disabled till …`), starving the next searches | Prowlarr → MyAnonamouse → **Search Type = "Not VIP"** (`searchType=5`), so VIP releases never reach Shelfmark/Bookshelf. Alternative: buy VIP with MAM bonus points |
+| `Failed to add to deluge: Failed to fetch torrent file` (MAM) | MAM refuses **VIP** torrents for a non-VIP account: `406 Download blocked: VIP torrent and you are not VIP or higher` (Prowlarr logs it as 401). Each refusal also backs MAM off in Prowlarr (`429 Indexer is disabled till …`), starving the next searches | **Resolved 2026-10-16: the account bought VIP**, so Search Type stays **"All"** (`searchType=0`, VIP releases included). If VIP lapses, either renew it (bonus points) or set Search Type = "Not VIP" (`5`) |
 | `Path '…' is not accessible from Shelfmark's container` | the NAS rclone seedbox mount caches dir listings `--dir-cache-time 3m`; Shelfmark gave up after the default 60s `DOWNLOAD_CLIENT_COMPLETED_PATH_TIMEOUT` | Shelfmark → Advanced → **completed-path timeout = 300s** (> the 3m dir cache) |
 | `<x>.zip: No book files found in archive` (IPT scene) | IPT BitBook/NODE releases are zip → **RAR5, often multi-volume** → epub. Shelfmark unpacks one level only, and the container's `unrar-free` can't read RAR5 or join volumes anyway | Shelfmark searches **MAM first** (MAM is the main source). To recover a stuck release by hand, extract on the NAS **host** with RARLAB `/usr/bin/unrar` (never the container's — it emits truncated ~5 MB epubs) and copy the epub into `/volume1/docker/calibre-web-automated/ingest` |
 | Anna's Archive `No results table found` | `annas-archive.li` is parked, `annas-archive.gs` now 302s to an ad/scam domain; the live official mirrors (`.gl` `.pk` `.gd`) sit behind a DDoS-Guard **manual** check that flaresolverr cannot pass | mirrors set to `.gl/.pk/.gd`; default release source is now **Prowlarr** (AA is a best-effort secondary tab) |
@@ -67,8 +67,8 @@ the settings API (auth is `none`, so no login): e.g.
 backup: `/volume1/docker/shelfmark/config-plugins.bak.20261016.tgz`.
 
 Checks: **`shelfmark-downloads-healthy`** (≤50% of last-7d terminal downloads
-errored; prints the per-class breakdown) and **`prowlarr-mam-search-novip`**
-(daily: a MAM-scoped Torznab search returns >0 items and zero `[VIP]`).
+errored; prints the per-class breakdown) and **`prowlarr-mam-search-alive`**
+(daily: a MAM-scoped Torznab search returns >0 items — proves the session is alive).
 
 ### MAM session (`mam_id`) — never use it outside Prowlarr
 
@@ -81,9 +81,9 @@ session blocks every indexer edit too. Recover:
 
 1. myanonamouse.net → Preferences → **Security** → create a new session for the
    NAS's public IP (or ASN-locked), copy the `mam_id`.
-2. Prowlarr → Indexers → MyAnonamouse → paste into **Mam Id**, and set **Search
-   Type = Not VIP** in the same save → Test → Save.
-3. Re-run `prowlarr-mam-search-novip`; expect `MAM_OK items=N vip=0`.
+2. Prowlarr → Indexers → MyAnonamouse → paste into **Mam Id** (Search Type stays
+   **All**) → Test → Save.
+3. Re-run `prowlarr-mam-search-alive`; expect `MAM_OK items=N`.
 
 Read-only probing goes through Prowlarr's own API (`/api/v1/search?indexerIds=2`,
 `/2/api?t=search`), never directly at MAM.

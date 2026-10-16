@@ -700,13 +700,17 @@ checks:
   # MyAnonamouse via Prowlarr (2026-10-16): MAM is Shelfmark's MAIN release source
   # and nothing probed it. A real Torznab search scoped to the MAM indexer (id 2)
   # must return >0 items (proves the mam_id session is alive — MAM ROTATES it on
-  # every response, so any out-of-band use of Prowlarr's cookie kills it) AND none
-  # tagged [VIP] (proves Search Type = "Not VIP": this account is Power User, so
-  # every VIP torrent is refused "Download blocked: VIP torrent and you are not VIP").
+  # every response, so any out-of-band use of Prowlarr's cookie kills it). Search
+  # Type is "All" (VIP releases included): the account was Power User on 2026-10-16
+  # and every VIP torrent was refused "Download blocked: VIP torrent and you are not
+  # VIP" — the operator then bought VIP, so VIP releases are wanted. If VIP lapses,
+  # Shelfmark history fills with "Failed to fetch torrent file" again and
+  # shelfmark-downloads-healthy (vip_or_fetch class) catches it. vip=N is reported
+  # for context only.
   # Daily tier = 1 MAM query/day. API key self-sourced from Prowlarr's config.xml.
   # Fix: runbook books-metadata.md → "MAM session / VIP filter".
-  - id: prowlarr-mam-search-novip
-    name: "Prowlarr->MyAnonamouse: session alive (search returns items) + VIP releases filtered out"
+  - id: prowlarr-mam-search-alive
+    name: "Prowlarr->MyAnonamouse: session alive (a scoped search returns real items)"
     host: nas
     tier: daily
     timeout: 90
@@ -715,9 +719,9 @@ checks:
       x=$(curl -sm 60 "http://localhost:9696/2/api?t=search&cat=7000&q=terry%20pratchett&apikey=$k");
       n=$(printf '%s' "$x" | grep -o '<item>' | wc -l | tr -d '[:space:]');
       v=$(printf '%s' "$x" | grep -o '\[VIP\]' | wc -l | tr -d '[:space:]');
-      if [ "${n:-0}" -gt 0 ] && [ "${v:-0}" -eq 0 ]; then echo "MAM_OK items=$n vip=$v";
+      if [ "${n:-0}" -gt 0 ]; then echo "MAM_OK items=$n vip=$v";
       else echo "MAM_BAD items=${n:-0} vip=${v:-0} err=$(printf '%s' "$x" | grep -o 'description="[^"]*"' | head -1)"; fi
-    expect: '^MAM_OK items=[1-9][0-9]* vip=0$'
+    expect: '^MAM_OK items=[1-9][0-9]* '
     severity: warn
     task_id: bmig-06
     runbook: wiki/docs/runbooks/books-metadata.md

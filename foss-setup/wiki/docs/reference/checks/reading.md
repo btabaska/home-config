@@ -450,15 +450,15 @@ tag = "IDLE" if len(rows) < 4 else ("OK" if len(err) * 2 <= len(rows) else "BAD"
 print("SHELFMARK_DL_%s terminal=%d errors=%d %s" % (tag, len(rows), len(err), dict(cls)))'
 ```
 
-## `prowlarr-mam-search-novip`
+## `prowlarr-mam-search-alive`
 
-Prowlarr->MyAnonamouse: session alive (search returns items) + VIP releases filtered out
+Prowlarr->MyAnonamouse: session alive (a scoped search returns real items)
 
 - **host:** `nas` · **severity:** `warn` · **guards task:** `bmig-06` · **enabled:** True
-- **expects:** `^MAM_OK items=[1-9][0-9]* vip=0$`
+- **expects:** `^MAM_OK items=[1-9][0-9]* `
 
 ```bash
-k=$(sed -n 's:.*<ApiKey>\(.*\)</ApiKey>.*:\1:p' /volume1/docker/prowlarr/config/config.xml | tr -d '[:space:]'); x=$(curl -sm 60 "http://localhost:9696/2/api?t=search&cat=7000&q=terry%20pratchett&apikey=$k"); n=$(printf '%s' "$x" | grep -o '<item>' | wc -l | tr -d '[:space:]'); v=$(printf '%s' "$x" | grep -o '\[VIP\]' | wc -l | tr -d '[:space:]'); if [ "${n:-0}" -gt 0 ] && [ "${v:-0}" -eq 0 ]; then echo "MAM_OK items=$n vip=$v"; else echo "MAM_BAD items=${n:-0} vip=${v:-0} err=$(printf '%s' "$x" | grep -o 'description="[^"]*"' | head -1)"; fi
+k=$(sed -n 's:.*<ApiKey>\(.*\)</ApiKey>.*:\1:p' /volume1/docker/prowlarr/config/config.xml | tr -d '[:space:]'); x=$(curl -sm 60 "http://localhost:9696/2/api?t=search&cat=7000&q=terry%20pratchett&apikey=$k"); n=$(printf '%s' "$x" | grep -o '<item>' | wc -l | tr -d '[:space:]'); v=$(printf '%s' "$x" | grep -o '\[VIP\]' | wc -l | tr -d '[:space:]'); if [ "${n:-0}" -gt 0 ]; then echo "MAM_OK items=$n vip=$v"; else echo "MAM_BAD items=${n:-0} vip=${v:-0} err=$(printf '%s' "$x" | grep -o 'description="[^"]*"' | head -1)"; fi
 ```
 
 ## `audiobookshelf-libraries-consumer`

@@ -41,8 +41,9 @@ rreading-glasses/Bookshelf/libreseerr.
   - `AA_MIRROR_URLS=[annas-archive.gl, .pk, .gd]` — `.gs`/`.li` are dead/hijacked
     (`.gs` 302s to an ad domain). The live mirrors are behind a DDoS-Guard manual
     check flaresolverr can't pass, so Anna's Archive is best-effort only.
-- **MAM in Prowlarr:** Search Type **"Not VIP"** (this account is Power User; VIP
-  torrents are refused). Never use Prowlarr's `mam_id` cookie outside Prowlarr —
+- **MAM in Prowlarr:** Search Type **"All"** — the account has VIP (bought
+  2026-10-16), so VIP releases download. If VIP lapses, VIP grabs fail with
+  "Failed to fetch torrent file" (renew VIP or switch to "Not VIP"). Never use Prowlarr's `mam_id` cookie outside Prowlarr —
   MAM rotates it per response. Full incident + recovery: runbook
   `wiki/docs/runbooks/books-metadata.md` → "Shelfmark downloads".
 - **Seedbox mount propagation (critical):** the container bind-mounts the seedbox rclone
