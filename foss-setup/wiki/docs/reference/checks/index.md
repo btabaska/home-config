@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **404 checks across 41 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **406 checks across 41 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -33,7 +33,7 @@ Every acceptance/regression check the fleet runs — **404 checks across 41 doma
 | [nas-services](nas-services.md) | 25 | 3 | 22 |
 | [network](network.md) | 1 | 0 | 1 |
 | [power-journal](power-journal.md) | 3 | 0 | 3 |
-| [reading](reading.md) | 32 | 0 | 32 |
+| [reading](reading.md) | 34 | 0 | 34 |
 | [retro-emulation](retro-emulation.md) | 1 | 0 | 1 |
 | [rig](rig.md) | 32 | 2 | 30 |
 | [rig-host-stability](rig-host-stability.md) | 7 | 1 | 6 |
@@ -46,4 +46,4 @@ Every acceptance/regression check the fleet runs — **404 checks across 41 doma
 | [verification-env-integrity](verification-env-integrity.md) | 2 | 2 | 0 |
 | [verification-self](verification-self.md) | 7 | 0 | 7 |
 
-_Total: 404 checks._
+_Total: 406 checks._

@@ -648,7 +648,10 @@ checks:
   # hardcoded METADATA_PROVIDER had no auto-fallback, so the UI just said
   # "No results found"). This probe hits the REAL search endpoint with a
   # canonical query and asserts non-empty results INCLUDING the expected title.
-  # Provider is currently OpenLibrary (keyless) — see shelfmark.env.example.
+  # Provider is Hardcover again since 2026-09-07 (OpenLibrary = fallback) — see
+  # shelfmark.env.example. The count is multi-digit on Hardcover (25 hits): the
+  # original `books=[1-9] hit=1` only admitted 1-9 and false-FAILed every daily
+  # run from 2026-09-07 to 2026-10-16 while search was healthy.
   # Fix: see the Shelfmark section of the runbook (renew token / flip provider).
   - id: shelfmark-search-consumer
     name: "Shelfmark search returns real books for a canonical query (consumer end)"
@@ -661,7 +664,60 @@ checks:
       books = d.get("books", [])
       hit = any("cat in the hat" in (b.get("title") or "").lower() for b in books)
       print("SHELFMARK_SEARCH_OK books=%d hit=%d" % (len(books), int(hit)) if books and hit else "SHELFMARK_SEARCH_BAD books=%d hit=%d" % (len(books), int(hit)))'
-    expect: '^SHELFMARK_SEARCH_OK books=[1-9] hit=1'
+    expect: '^SHELFMARK_SEARCH_OK books=[1-9][0-9]* hit=1'
+    severity: warn
+    task_id: bmig-06
+    runbook: wiki/docs/runbooks/books-metadata.md
+    enabled: true
+
+  # Shelfmark DOWNLOAD consumer end (2026-10-16): search + /api/health were green
+  # while only 6 of ~38 requested books in the 2026-10-15 batch reached CWA. Three
+  # silent failure classes: (1) MAM VIP torrents 401/406 for a non-VIP account
+  # ("Failed to fetch torrent file"), (2) the seedbox rclone mount's 3m dir-cache
+  # outliving Shelfmark's 60s completed-path timeout ("Path ... is not accessible"),
+  # (3) IPT scene zips nesting a .rar ("No book files found in archive"). This reads
+  # Shelfmark's own download_history (read-only) and fails when, over the last 7
+  # days with >=4 terminal downloads, more than half ended in error. Quiet weeks
+  # (<4 downloads) pass as IDLE so it never pages on no activity.
+  - id: shelfmark-downloads-healthy
+    name: "Shelfmark downloads actually deliver: <=50% of last-7d terminal downloads errored (consumer end)"
+    host: nas
+    cmd: |-
+      python3 -c '
+      import collections, sqlite3
+      c = sqlite3.connect("file:/volume1/docker/shelfmark/config/users.db?mode=ro", uri=True)
+      rows = c.execute("select final_status, coalesce(status_message,\"\") from download_history where terminal_at > datetime(\"now\",\"-7 days\") and final_status in (\"complete\",\"error\")").fetchall()
+      err = [m for s, m in rows if s == "error"]
+      cls = collections.Counter("vip_or_fetch" if "fetch torrent" in m else "path_race" if "not accessible" in m else "archive" if "archive" in m else "other" for m in err)
+      tag = "IDLE" if len(rows) < 4 else ("OK" if len(err) * 2 <= len(rows) else "BAD")
+      print("SHELFMARK_DL_%s terminal=%d errors=%d %s" % (tag, len(rows), len(err), dict(cls)))'
+    expect: '^SHELFMARK_DL_(OK|IDLE) '
+    severity: warn
+    task_id: bmig-06
+    runbook: wiki/docs/runbooks/books-metadata.md
+    enabled: true
+
+  # MyAnonamouse via Prowlarr (2026-10-16): MAM is Shelfmark's MAIN release source
+  # and nothing probed it. A real Torznab search scoped to the MAM indexer (id 2)
+  # must return >0 items (proves the mam_id session is alive — MAM ROTATES it on
+  # every response, so any out-of-band use of Prowlarr's cookie kills it) AND none
+  # tagged [VIP] (proves Search Type = "Not VIP": this account is Power User, so
+  # every VIP torrent is refused "Download blocked: VIP torrent and you are not VIP").
+  # Daily tier = 1 MAM query/day. API key self-sourced from Prowlarr's config.xml.
+  # Fix: runbook books-metadata.md → "MAM session / VIP filter".
+  - id: prowlarr-mam-search-novip
+    name: "Prowlarr->MyAnonamouse: session alive (search returns items) + VIP releases filtered out"
+    host: nas
+    tier: daily
+    timeout: 90
+    cmd: >-
+      k=$(sed -n 's:.*<ApiKey>\(.*\)</ApiKey>.*:\1:p' /volume1/docker/prowlarr/config/config.xml | tr -d '[:space:]');
+      x=$(curl -sm 60 "http://localhost:9696/2/api?t=search&cat=7000&q=terry%20pratchett&apikey=$k");
+      n=$(printf '%s' "$x" | grep -o '<item>' | wc -l | tr -d '[:space:]');
+      v=$(printf '%s' "$x" | grep -o '\[VIP\]' | wc -l | tr -d '[:space:]');
+      if [ "${n:-0}" -gt 0 ] && [ "${v:-0}" -eq 0 ]; then echo "MAM_OK items=$n vip=$v";
+      else echo "MAM_BAD items=${n:-0} vip=${v:-0} err=$(printf '%s' "$x" | grep -o 'description="[^"]*"' | head -1)"; fi
+    expect: '^MAM_OK items=[1-9][0-9]* vip=0$'
     severity: warn
     task_id: bmig-06
     runbook: wiki/docs/runbooks/books-metadata.md

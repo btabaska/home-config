@@ -1,6 +1,6 @@
 # Checks — reading
 
-`foss-setup/verification/checks.d/reading.yaml` — 32 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/reading.yaml` — 34 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `cwa-kobo-sync-consumer`
 
@@ -420,7 +420,7 @@ h=$(curl -s -o /dev/null -w "%{http_code}" --max-time 8 http://127.0.0.1:8084/ap
 Shelfmark search returns real books for a canonical query (consumer end)
 
 - **host:** `nas` · **severity:** `warn` · **guards task:** `bmig-06` · **enabled:** True
-- **expects:** `^SHELFMARK_SEARCH_OK books=[1-9] hit=1`
+- **expects:** `^SHELFMARK_SEARCH_OK books=[1-9][0-9]* hit=1`
 
 ```bash
 python3 -c '
@@ -430,6 +430,35 @@ d = json.load(urllib.request.urlopen(req, timeout=30))
 books = d.get("books", [])
 hit = any("cat in the hat" in (b.get("title") or "").lower() for b in books)
 print("SHELFMARK_SEARCH_OK books=%d hit=%d" % (len(books), int(hit)) if books and hit else "SHELFMARK_SEARCH_BAD books=%d hit=%d" % (len(books), int(hit)))'
+```
+
+## `shelfmark-downloads-healthy`
+
+Shelfmark downloads actually deliver: <=50% of last-7d terminal downloads errored (consumer end)
+
+- **host:** `nas` · **severity:** `warn` · **guards task:** `bmig-06` · **enabled:** True
+- **expects:** `^SHELFMARK_DL_(OK|IDLE) `
+
+```bash
+python3 -c '
+import collections, sqlite3
+c = sqlite3.connect("file:/volume1/docker/shelfmark/config/users.db?mode=ro", uri=True)
+rows = c.execute("select final_status, coalesce(status_message,\"\") from download_history where terminal_at > datetime(\"now\",\"-7 days\") and final_status in (\"complete\",\"error\")").fetchall()
+err = [m for s, m in rows if s == "error"]
+cls = collections.Counter("vip_or_fetch" if "fetch torrent" in m else "path_race" if "not accessible" in m else "archive" if "archive" in m else "other" for m in err)
+tag = "IDLE" if len(rows) < 4 else ("OK" if len(err) * 2 <= len(rows) else "BAD")
+print("SHELFMARK_DL_%s terminal=%d errors=%d %s" % (tag, len(rows), len(err), dict(cls)))'
+```
+
+## `prowlarr-mam-search-novip`
+
+Prowlarr->MyAnonamouse: session alive (search returns items) + VIP releases filtered out
+
+- **host:** `nas` · **severity:** `warn` · **guards task:** `bmig-06` · **enabled:** True
+- **expects:** `^MAM_OK items=[1-9][0-9]* vip=0$`
+
+```bash
+k=$(sed -n 's:.*<ApiKey>\(.*\)</ApiKey>.*:\1:p' /volume1/docker/prowlarr/config/config.xml | tr -d '[:space:]'); x=$(curl -sm 60 "http://localhost:9696/2/api?t=search&cat=7000&q=terry%20pratchett&apikey=$k"); n=$(printf '%s' "$x" | grep -o '<item>' | wc -l | tr -d '[:space:]'); v=$(printf '%s' "$x" | grep -o '\[VIP\]' | wc -l | tr -d '[:space:]'); if [ "${n:-0}" -gt 0 ] && [ "${v:-0}" -eq 0 ]; then echo "MAM_OK items=$n vip=$v"; else echo "MAM_BAD items=${n:-0} vip=${v:-0} err=$(printf '%s' "$x" | grep -o 'description="[^"]*"' | head -1)"; fi
 ```
 
 ## `audiobookshelf-libraries-consumer`

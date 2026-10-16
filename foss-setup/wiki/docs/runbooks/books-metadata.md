@@ -8,9 +8,9 @@ provider and its database are gone (dropped in bmig-06; pgdump archived at
 `nas:/volume1/archive/books-cutover-bmig05/rreading-glasses-goodreads-db.pgdump`).
 **Checks:** `hardcover-token-valid`, `metadata-search-canary` (in `checks.d/reading.yaml`,
 host mini), `nas-rreading-glasses-hc` + `nas-bookshelf` liveness (in
-`checks.d/nas-services.yaml`), and the Shelfmark pair
-`shelfmark-mam-path-ready` + `shelfmark-search-consumer` (host nas, in
-`checks.d/reading.yaml`).
+`checks.d/nas-services.yaml`), and the Shelfmark set
+`shelfmark-mam-path-ready` + `shelfmark-search-consumer` + `shelfmark-downloads-healthy`
++ `prowlarr-mam-search-novip` (host nas, in `checks.d/reading.yaml`).
 
 ## Shelfmark (search frontend, nas :8084 / shelfmark.tabaska.us)
 
@@ -43,7 +43,50 @@ host mini), `nas-rreading-glasses-hc` + `nas-bookshelf` liveness (in
   dead or provider unselected (check `shelfmark.env` `METADATA_PROVIDER` +
   `<PROVIDER>_ENABLED`, then `docker logs shelfmark | grep -iE "hardcover|401|timeout"`);
   `books>0 hit=0` = provider reachable but returning wrong results (language
-  filter / provider regression).
+  filter / provider regression). (The expect admits multi-digit counts since
+  2026-10-16 — `books=[1-9] ` false-FAILed every day from 2026-09-07 because
+  Hardcover returns 25.)
+
+## Shelfmark downloads (2026-10-16 incident)
+
+Search was green while only **6 of ~38** books in the 2026-10-15 batch reached
+CWA. Each failure class, its fix, and where to look
+(`users.db` → `download_history.status_message` is the per-book truth):
+
+| status_message | cause | fix |
+|---|---|---|
+| `Failed to add to deluge: Failed to fetch torrent file` (MAM) | MAM refuses **VIP** torrents for a non-VIP account: `406 Download blocked: VIP torrent and you are not VIP or higher` (Prowlarr logs it as 401). Each refusal also backs MAM off in Prowlarr (`429 Indexer is disabled till …`), starving the next searches | Prowlarr → MyAnonamouse → **Search Type = "Not VIP"** (`searchType=5`), so VIP releases never reach Shelfmark/Bookshelf. Alternative: buy VIP with MAM bonus points |
+| `Path '…' is not accessible from Shelfmark's container` | the NAS rclone seedbox mount caches dir listings `--dir-cache-time 3m`; Shelfmark gave up after the default 60s `DOWNLOAD_CLIENT_COMPLETED_PATH_TIMEOUT` | Shelfmark → Advanced → **completed-path timeout = 300s** (> the 3m dir cache) |
+| `<x>.zip: No book files found in archive` (IPT scene) | IPT BitBook/NODE releases are zip → **RAR5, often multi-volume** → epub. Shelfmark unpacks one level only, and the container's `unrar-free` can't read RAR5 or join volumes anyway | Shelfmark searches **MAM first** (MAM is the main source). To recover a stuck release by hand, extract on the NAS **host** with RARLAB `/usr/bin/unrar` (never the container's — it emits truncated ~5 MB epubs) and copy the epub into `/volume1/docker/calibre-web-automated/ingest` |
+| Anna's Archive `No results table found` | `annas-archive.li` is parked, `annas-archive.gs` now 302s to an ad/scam domain; the live official mirrors (`.gl` `.pk` `.gd`) sit behind a DDoS-Guard **manual** check that flaresolverr cannot pass | mirrors set to `.gl/.pk/.gd`; default release source is now **Prowlarr** (AA is a best-effort secondary tab) |
+
+Settings live in `/volume1/docker/shelfmark/config/plugins/*.json`, written via
+the settings API (auth is `none`, so no login): e.g.
+`curl -X PUT -H 'Content-Type: application/json' -d '{"DOWNLOAD_CLIENT_COMPLETED_PATH_TIMEOUT":300}' http://127.0.0.1:8084/api/settings/advanced`
+(tabs: `search_mode`, `advanced`, `prowlarr_config`, `mirrors`). Pre-change
+backup: `/volume1/docker/shelfmark/config-plugins.bak.20261016.tgz`.
+
+Checks: **`shelfmark-downloads-healthy`** (≤50% of last-7d terminal downloads
+errored; prints the per-class breakdown) and **`prowlarr-mam-search-novip`**
+(daily: a MAM-scoped Torznab search returns >0 items and zero `[VIP]`).
+
+### MAM session (`mam_id`) — never use it outside Prowlarr
+
+MAM **rotates the `mam_id` cookie on every response**; Prowlarr persists the
+rotated value in `prowlarr.db` → `IndexerStatus.Cookies`. Any out-of-band request
+with that cookie (curl, a script) consumes the rotation and Prowlarr's copy goes
+stale → every MAM call `403 mam_id expired or invalid` (this happened during the
+2026-10-16 investigation). Prowlarr also **re-validates on save**, so a stale
+session blocks every indexer edit too. Recover:
+
+1. myanonamouse.net → Preferences → **Security** → create a new session for the
+   NAS's public IP (or ASN-locked), copy the `mam_id`.
+2. Prowlarr → Indexers → MyAnonamouse → paste into **Mam Id**, and set **Search
+   Type = Not VIP** in the same save → Test → Save.
+3. Re-run `prowlarr-mam-search-novip`; expect `MAM_OK items=N vip=0`.
+
+Read-only probing goes through Prowlarr's own API (`/api/v1/search?indexerIds=2`,
+`/2/api?t=search`), never directly at MAM.
 
 ## If `hardcover-token-valid` fails
 

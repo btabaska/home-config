@@ -29,9 +29,22 @@ rreading-glasses/Bookshelf/libreseerr.
   hits OpenLibrary live and a bad result self-clears on the next request.
   (Trade-off: slightly more OpenLibrary egress — acceptable at this query rate.)
 - **Secrets** in `shelfmark.env` (chmod 600, gitignored; see `shelfmark.env.example`).
-- **Settings persisted in `/config`** (not env), set once via the settings API:
-  `USE_DOH=false`, `AA_MIRROR_URLS=[annas-archive.gs, .li]`,
-  `USING_EXTERNAL_BYPASSER=true` + `EXT_BYPASSER_URL=http://192.168.10.4:8191` (flaresolverr).
+- **Settings persisted in `/config/plugins/*.json`** (not env), set via the settings
+  API (`PUT /api/settings/<tab>`, auth `none`): `USE_DOH=false`,
+  `USING_EXTERNAL_BYPASSER=true` + `EXT_BYPASSER_URL=http://192.168.10.4:8191` (flaresolverr),
+  and since 2026-10-16:
+  - `DEFAULT_RELEASE_SOURCE=prowlarr` — **MyAnonamouse is the main source**;
+    `PROWLARR_INDEXERS=["2","1"]` (MAM + IPTorrents fallback; drop `"1"` once MAM
+    is healthy if IPT's nested-RAR scene zips keep failing post-processing).
+  - `DOWNLOAD_CLIENT_COMPLETED_PATH_TIMEOUT=300` — must exceed the rclone mount's
+    `--dir-cache-time 3m`, or freshly completed torrents read as "not accessible".
+  - `AA_MIRROR_URLS=[annas-archive.gl, .pk, .gd]` — `.gs`/`.li` are dead/hijacked
+    (`.gs` 302s to an ad domain). The live mirrors are behind a DDoS-Guard manual
+    check flaresolverr can't pass, so Anna's Archive is best-effort only.
+- **MAM in Prowlarr:** Search Type **"Not VIP"** (this account is Power User; VIP
+  torrents are refused). Never use Prowlarr's `mam_id` cookie outside Prowlarr —
+  MAM rotates it per response. Full incident + recovery: runbook
+  `wiki/docs/runbooks/books-metadata.md` → "Shelfmark downloads".
 - **Seedbox mount propagation (critical):** the container bind-mounts the seedbox rclone
   mount `:rslave` at the *same path Deluge reports* (`/home/hd34/btabaska/files`) so it can
   read completed torrents. The rclone mount comes up **private** at boot, so it must be made
