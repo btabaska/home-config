@@ -1,6 +1,6 @@
 # Roadmap — local-ai-buildout
 
-30 task(s). Status mirrors `docs/progress.json` (the source of truth).
+31 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -34,5 +34,6 @@
 | `lai-28` | Unsloth Studio on the rig (web UI, llama-swap lanes, MCP tools) | ✅ done | 2-4 hrs |
 | `lai-29` | Qwen3.8-27B vLLM option lane on the rig (qwen38-27b-rtx3090, stopped-by-default) | ✅ done | 2-4 hrs |
 | `lai-30` | Collapse the local model roster: one Qwen3.8-27B + heretic-31B chat / HauhauCS-12B chat-fast, delete the rest | ✅ done | 4-6 hrs |
+| `lai-31` | Strata lane: Qwen3.8-Flash-Next 125B-A6B (ISTA IQ3_S) on GPU+RAM via the Strata engine, behind llama-swap/LiteLLM | ✅ done | 3-4 hrs |
 
 [← Roadmap overview](index.md)

@@ -1,6 +1,6 @@
 # Checks — local-ai
 
-`foss-setup/verification/checks.d/local-ai.yaml` — 27 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/local-ai.yaml` — 29 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `searxng-json-probe`
 
@@ -297,6 +297,28 @@ qwen38 vLLM option lane ready (stopped+prepared or running+healthy) (lai-29)
 
 ```bash
 cd /opt/stacks/qwen38-27b-rtx3090 || { echo "VLLM_OPT_BAD no-dir"; exit 1; }; M=models/Qwen3.8-27B-W4A16-AutoRound; for f in $M/config.json $M/model.safetensors.index.json $M/tokenizer.json $M/mtp_draft_vocab_ids.pt models/Qwen3.8-27B-W4A16-AutoRound-fast/model.safetensors.index.json models/Qwen3.8-27B-DFlash2-W4A16/model.safetensors; do [ -f "$f" ] || { echo "VLLM_OPT_BAD missing=$f"; exit 1; }; done; docker image inspect ghcr.io/syv-ai/qwen38-27b-rtx3090:latest >/dev/null 2>&1 || { echo "VLLM_OPT_BAD image-missing"; exit 1; }; if docker ps --format '{{.Names}}' | grep -q 'qwen38-27b-rtx3090-single'; then curl -sf -m 10 http://127.0.0.1:18020/health >/dev/null && echo "VLLM_OPT_OK state=running" || echo "VLLM_OPT_BAD running-unhealthy"; else echo "VLLM_OPT_OK state=stopped"; fi
+```
+
+## `strata-lane-posture`
+
+Strata lane posture: container up, /health, llama-swap entry, digest pin (lai-31)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `lai-31` · **enabled:** True
+- **expects:** `^STRATA_POSTURE_OK`
+
+```bash
+cd ~/Documents/GitHub/local-ai-tooling && docker ps --format '{{.Names}}' | grep -qx strata || { echo "STRATA_POSTURE_BAD container-down"; exit 1; }; curl -sf -m 10 http://127.0.0.1:8090/health >/dev/null || { echo "STRATA_POSTURE_BAD health"; exit 1; }; curl -sf -m 10 http://127.0.0.1:9292/v1/models | grep -q '"strata"' || { echo "STRATA_POSTURE_BAD llama-swap-entry-missing"; exit 1; }; grep -A1 '^  strata:' docker/docker-compose.yml | grep -q '@sha256:' || { echo "STRATA_POSTURE_BAD unpinned"; exit 1; }; echo STRATA_POSTURE_OK
+```
+
+## `strata-e2e`
+
+Strata lane answers a real completion via LiteLLM -> llama-swap -> Strata (lai-31)
+
+- **host:** `rig` · **severity:** `warn` · **guards task:** `lai-31` · **enabled:** True
+- **expects:** `^STRATA_E2E_OK `
+
+```bash
+bash ~/Documents/GitHub/local-ai-tooling/scripts/strata-e2e.sh
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

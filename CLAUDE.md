@@ -103,7 +103,10 @@ exactly: **`q38`** (the sole Qwen chat/code model — ISTA-DASLab GSQ-RCO **IQ3_
 Gemma4-12B-QAT + MTP drafter @**262144** (native max, 11.7 GiB card free), carrying the same pinned tool belt
 as `chat`. **DELETED: `coder`/`code`/`coder-strong`/`coder-swarm`/`fast`** — everything agentic now points at
 `q38` (opencode, ops-agent, LDR, llm_triage, Plant Scout e2e). 153.76 GiB of GGUFs removed (btrfs has not
-reclaimed it — 51 snapper snapshots pin the extents). **Trap worth remembering: `/health` LIES for vision
+reclaimed it — 51 snapper snapshots pin the extents). **+ `strata` (2026-10-22, `lai-31`)**: Qwen3.8-Flash-Next 125B-A6B ISTA IQ3_S on the **Strata** engine
+(GPU+RAM expert tiering, ~120 tok/s) — compose service `strata`, data in subvolume `/opt/llm/strata`, idles LAZY; llama-swap
+owns the card via a `strata` load/unload shim in the big group (strata ⇄ q38/chat evict each other). Upstream REQUIRES
+`STRATA_API_KEY` (LiteLLM alias + Hermes `key_env` send it). Runbook `wiki/docs/runbooks/strata.md`. **Trap worth remembering: `/health` LIES for vision
 lanes** — llama-server logs a failed CLIP-buffer cudaMalloc, reports "model loaded" + 200, then SEGFAULTS on
 the first image; size vision ctx with `bakeoff/vision-probe.sh` (scores a real image), never a load probe.
 

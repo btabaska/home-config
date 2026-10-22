@@ -790,3 +790,42 @@ checks:
     task_id: lai-29
     runbook: wiki/docs/runbooks/qwen38-vllm.md
     enabled: true
+
+  # lai-31 (2026-10-22): Strata lane — Qwen3.8-Flash-Next 125B-A6B (ISTA GSQ-RCO
+  # IQ3_S) on the Strata engine (github.com/Niko1221/Strata), GPU+RAM expert
+  # tiering. The strata container idles LAZY (no VRAM); llama-swap owns the
+  # card via a load/unload shim entry in the exclusive "big" group.
+  # strata-lane-posture = cheap, no model load: container up, /health answers,
+  # llama-swap lists the lane, image still digest-pinned. strata-e2e = the
+  # CONSUMER chain (OWUI-scoped LiteLLM key -> LiteLLM `strata` alias ->
+  # llama-swap shim -> Strata) returns a real completion; it puts the card back
+  # (unloads strata) when the lane was not loaded before the probe. Cold load is
+  # 1-3 min (84 GB model, page cache warm = faster) -> daily tier, long timeout.
+  - id: strata-lane-posture
+    name: "Strata lane posture: container up, /health, llama-swap entry, digest pin (lai-31)"
+    host: rig
+    timeout: 60
+    cmd: >-
+      cd ~/Documents/GitHub/local-ai-tooling &&
+      docker ps --format '{{.Names}}' | grep -qx strata || { echo "STRATA_POSTURE_BAD container-down"; exit 1; };
+      curl -sf -m 10 http://127.0.0.1:8090/health >/dev/null || { echo "STRATA_POSTURE_BAD health"; exit 1; };
+      curl -sf -m 10 http://127.0.0.1:9292/v1/models | grep -q '"strata"' || { echo "STRATA_POSTURE_BAD llama-swap-entry-missing"; exit 1; };
+      grep -A1 '^  strata:' docker/docker-compose.yml | grep -q '@sha256:' || { echo "STRATA_POSTURE_BAD unpinned"; exit 1; };
+      echo STRATA_POSTURE_OK
+    expect: '^STRATA_POSTURE_OK'
+    severity: warn
+    task_id: lai-31
+    runbook: wiki/docs/runbooks/strata.md
+    enabled: true
+
+  - id: strata-e2e
+    tier: daily
+    name: "Strata lane answers a real completion via LiteLLM -> llama-swap -> Strata (lai-31)"
+    host: rig
+    timeout: 900
+    cmd: bash ~/Documents/GitHub/local-ai-tooling/scripts/strata-e2e.sh
+    expect: '^STRATA_E2E_OK '
+    severity: warn
+    task_id: lai-31
+    runbook: wiki/docs/runbooks/strata.md
+    enabled: true

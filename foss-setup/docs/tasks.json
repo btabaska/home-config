@@ -14542,6 +14542,28 @@
   "summary": "Operator decision 2026-09-01: keep exactly ONE Qwen (the best 3.8-27B variant) plus the retrieval pair (qwen3-embed + qwen3-reranker), and exactly TWO Gemmas - llmfan46/gemma-4-31B-it-uncensored-heretic (chat, + its own mmproj for chat-vision) and HauhauCS/Gemma4-12B-QAT-Uncensored-Balanced (new chat-fast lane) - both baked to their measured max in-VRAM context. Everything else goes. Qwen3.8 quant bake-off ran the round3 65-card eval harness on two candidates at equal ctx: the Unsloth UD-Q4_K_XL Dynamic-v3.0 rebuild (the live Aug-15 file was a SUPERSEDED build - same filename, different content, HF rebuilt 2026-08-20) vs ISTA-DASLab GSQ-RCO IQ3_S+MTP. Measured MTP ctx ceilings (q8_0 KV unless noted): v3 131072 (212992 with q4_0 KV), ista-iq3s 245760, heretic-31B Q4_K_S text/vision, hauhau-12B 262144 = native max with its MTP drafter at only 12.5 GiB peak. Lane collapse: coder/code/coder-strong/coder-swarm/fast aliases DELETED, everything repointed to the single q38 alias (opencode x5 configs + 4 agent files, llm_triage, LDR, Plant Scout e2e, rig llama-swap check); LiteLLM model-scoped keys re-scoped and negative-tested. Frees ~165 GB on the rig root NVMe."
  },
  {
+  "id": "lai-31",
+  "title": "Strata lane: Qwen3.8-Flash-Next 125B-A6B (ISTA IQ3_S) on GPU+RAM via the Strata engine, behind llama-swap/LiteLLM",
+  "host": "rig",
+  "type": "deploy",
+  "depends_on": [
+   "lai-30"
+  ],
+  "estimate": "3-4 hrs",
+  "required": false,
+  "track": "local-ai-buildout",
+  "run": 15,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Operator request 2026-10-22: run Qwen3.8-Flash-Next (125B MoE, ~6B active, 24,576 experts) on the rig's 3090 Ti + 64 GB RAM with the Strata engine (github.com/Niko1221/Strata v0.2.2, MIT; prebuilt ghcr.io/niko1221/strata:0.2.2-cuda13 pinned by digest) and ISTA-DASLab's GSQ-RCO IQ3_S quant (84 GB; Strata's best size). Strata container in the local-ai-tooling compose, data in its own btrfs subvolume /opt/llm/strata (outside snapper root snapshots), lazy-start so it idles with no VRAM. llama-swap owns the card: a `strata` shim entry in the exclusive big group POSTs Strata /load + /unload, so strata and q38/chat evict each other and the CPU embed/rerank lanes, gpu-arbiter and the Apollo gpu-yield keep working. LiteLLM alias `strata` (forwards STRATA_API_KEY, vault ai_stack.strata_api_key); OWUI key scope + strata; clients: Mac opencode (litellm/strata), Hermes (llama-swap custom provider key_env STRATA_API_KEY), ZCode (dedicated LiteLLM key `zcode` scoped strata+q38, vault ai_stack.litellm_zcode_key), repo opencode copies. Checks strata-lane-posture + strata-e2e (local-ai.yaml); runbook wiki/docs/runbooks/strata.md.",
+  "steps": [
+   "Clone upstream (not the stale mach10x fork), read DOCKER/LLAMA_SWAP/low-RAM docs",
+   "Compose service + subvolume + vault key, download IQ3_S",
+   "Set lazy_load in the run config; llama-swap shim entry; LiteLLM alias + key scopes",
+   "Wire OWUI/opencode/Hermes/ZCode; measure VRAM/RAM/tok-s; consumer checks + coverage + runbook"
+  ]
+ },
+ {
   "id": "fix-82",
   "title": "B2 restic object-lock immutability decayed — restore true immutability (fix-22 regression)",
   "host": "mini",
@@ -14585,7 +14607,7 @@
   "run": 15,
   "mode": "ai",
   "gate": "disruptive — 4-7AM window + operator approval",
-  "summary": "corruption_errs on nvme2n1p2 (root+/home, WDS200T) is climbing (now 5, 3+ files, latest minutes before audit) on a single-device btrfs with no ECC RAM — the exact signature that preceded the read-only cascade that took the fleet down in fix-20. Schedule a scrub + memtest86 in the maintenance window, identify/restore the corrupt files from backup, and decide on a durable device/RAID/ECC remedy before it flips RO again.",
+  "summary": "corruption_errs on nvme2n1p2 (root+/home, WDS200T) is climbing (now 5, 3+ files, latest minutes before audit) on a single-device btrfs with no ECC RAM — the exact signature that preceded the read-only cascade that took the fleet down in fix-20. Schedule a scrub + memtest86 in the maintenance window, identify/restore the corrupt files from backup, and decide on a durable device/RAID/ECC remedy before it flips RO again. NEW EVIDENCE 2026-10-22 (lai-31): corruption_errs 5->10 — ONE 4 KiB block failed its checksum in a FRESHLY WRITTEN 28.8 GB file (strata shard 2, subvol /opt/llm/strata, root 350 ino 334 off 4378341376, written ~17:00 EDT; reads returned EIO, all 5 new hits are re-reads of that block). Fresh-write corruption with zero wr/rd/flush errs points at RAM or the controller path rather than at-rest media decay — weight memtest86 accordingly. File re-downloaded + sha256-verified from disk; the bad extent was freed.",
   "steps": [
    "Follow the /resolve-finding definition of done: (1) reproduce & root-cause live, (2) plan+approval gate for anything disruptive/destructive, (3) resolve, (4) codify the fix in the repo (anti-drift), (5) harden against recurrence, (6) add an END-TO-END regression check + a class-level check wired into verification/checks.d + coverage manifest + a monitor, (7) document in the wiki via the generation path, (8) mark the finding(s) resolved in progress.json, regenerate, one commit/PR. Findings with evidence live in docs/fleet-sweep-2026-08-23.md."
   ],
