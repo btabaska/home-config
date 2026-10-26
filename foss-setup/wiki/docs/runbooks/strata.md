@@ -105,6 +105,16 @@ Hermes (Mac) ─────────────► llama-swap :9292 `strata
   (`MODEL=IQ3_XXS`, 47 GB shard 1).
 - The download-time `Starting Strata ... code 6` with no reason printed was the
   checksum EIO above — read the engine/kernel log, don't just retry.
+- **A Hermes Desktop update can strand a stale provider ref — the picker then
+  "can't find strata" while the lane itself is fine** (2026-10-26, Hermes
+  0.22.5). The old picker had written `model.provider: custom:192.168.10.12-9292`
+  (dash) into `~/.hermes/config.yaml`; the new resolver only accepts identities
+  built from the provider name (`custom:192.168.10.12:9292` — only spaces become
+  dashes), so the provider goes unresolvable even though cron and
+  `model.base_url` still work (warm-start logs look healthy — misleading).
+  Fix is one line: restore the colon, then
+  `launchctl kickstart -k gui/$UID/ai.hermes.gateway`. If the dash reappears
+  after a UI model switch, the picker's *write* path has the same bug upstream.
 
 ## Verification
 
