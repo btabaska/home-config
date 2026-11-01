@@ -14,7 +14,7 @@
 | `fix-50` | Bitmagnet DHT junk-grab storm: arrs re-grabbing owned titles hourly, foreign-audio junk imported into the library today; indexer also timing out via Prowlarr | ✅ done | 1-3 hrs |
 | `fix-54` | Movies/TV import stall: torrent payloads deleted under live torrents, move_completed wedge, 3-4 day arr retry loops, sample files back in the library | ✅ done | 1-3 hrs |
 | `fix-56` | Music acquisition hygiene: soularr failed-import backlog cycling, junk MusicBrainz albums grinding every 5 minutes, 3 albums stuck partial | ✅ done | 1-3 hrs |
-| `fix-70` | NAS Plex is one build behind — apply the pending Plex package update | ⬜ open | <1 hr |
+| `fix-70` | NAS Plex is one build behind — apply the pending Plex package update | ✅ done | <1 hr |
 | `fix-73` | Clear the residual deluge pre-import-stuck grab (Only Murders S02E05) | ⬜ open | <1 hr |
 | `fix-86` | Immich phone-photo ingestion stalled — 0 new assets in 7-9 days (fix-35 regression) | ⬜ open | 1-3 hrs |
 | `fix-87` | Immich ffmpeg SIGSEGV nightly crash-loop on IMG_3674.mov (fix-60 regression) | ✅ done | 1-3 hrs |
