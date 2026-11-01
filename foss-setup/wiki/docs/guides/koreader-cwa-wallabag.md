@@ -1,5 +1,8 @@
 # KOReader + CWA + Wallabag wiring
 
+!!! warning "Wallabag retired 2026-10-22"
+    The Wallabag stack was retired on the mini (data kept at `/opt/retired/wallabag-20261022`, final DB dump `wallabag.sql.gz` 2026-10-22 in restic). The Wallabag sections below are historical; the CWA/KOReader/KOSync parts still apply.
+
 > End-to-end wiring guide for the analogue reading stack: Calibre → CWA → KOReader (Kobo) → Wallabag, with Syncthing as a file-level backstop.
 _Source: `foss-setup/scripts/reading/koreader-cwa-wallabag-wiring.md` · migrated + validated 2026-07-14._
 

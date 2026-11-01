@@ -15485,5 +15485,45 @@
    "Run the check twice (first run saturates monitor user); confirm green + update verification/coverage manifest."
   ],
   "verify": "bin/run-checks.sh --host local-ai... n/a; run the reading-domain checks on mini: cwa-kobo-sync-consumer green twice in a row; deliberately point it at a 31s sleep stub (or assert threshold 0.001) to confirm it CAN fail; kobo_synced_books rows for real device users (1,3) unchanged before/after the check runs."
+ },
+ {
+  "id": "retire-reading-01",
+  "title": "Retire Wallabag (read-it-later) on the mini — finish the 2026-10-22 live retirement",
+  "host": "Ubuntu",
+  "type": "sync",
+  "depends_on": [],
+  "estimate": "1 hr",
+  "required": false,
+  "track": "reading",
+  "run": 15,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Wallabag was stopped and moved to /opt/retired/wallabag-20261022 on 2026-10-22 with no commit/tracker record; the half-done retirement aborted every nightly mini restic backup (pre-backup-db-dumps.sh hit the missing wallabag_db under set -e) and left mini-wallabag failing daily. Operator decision 2026-11-01: finish the retirement.",
+  "steps": [
+   "Drop wallabag vhost + Homepage tile + stack files on /opt/stacks and the Home mirror.",
+   "Remove the wallabag dump target + excludes from scripts/backup and install them on the mini; run a catch-up restic backup.",
+   "Drop mini-wallabag check, coverage manifest rows, :8085 listener baseline, catalog/enrichment/wiki page/Kuma seed line."
+  ],
+  "verify": "restic-backup.service succeeds; no wallabag container/vhost/check/coverage row remains; data kept at /opt/retired/wallabag-20261022 + final dump wallabag.sql.gz (2026-10-22)."
+ },
+ {
+  "id": "retro-cable-01",
+  "title": "Retro Cable on the mini behind Caddy at tv.home.tabaska.us (LAN only) + monitoring",
+  "host": "Ubuntu",
+  "type": "deploy",
+  "depends_on": [],
+  "estimate": "1-2 hrs",
+  "required": false,
+  "track": "media-pipeline",
+  "run": 15,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Retro Cable (private repo btabaska/retro-cable, checkout /opt/retro-cable, deployed from PR #3 branch ops/mini-deploy) routed via the homelab Caddy: tv.home.tabaska.us -> retro-cable-web:80 on the edge network, LAN-only abort matcher, block identical to retro-cable ops/caddy/retro-cable.caddy. Homepage Media tile, catalog row, runbook, coverage rows for retro-cable-api-1/web-1, two consumer-path checks. Follow-up (operator): read:packages GHCR PAT so the mini pulls instead of building (RC_IMAGE_SOURCE=build).",
+  "steps": [
+   "Append the vhost to the live Caddyfile, validate, graceful reload (no container recreate); mirror to the Home repo.",
+   "Homepage tile + catalog + runbooks/retro-cable.md.",
+   "checks retro-cable-health (fast) + retro-cable-version; coverage manifest rows."
+  ],
+  "verify": "curl https://tv.home.tabaska.us/api/version returns JSON with a valid LE cert; / contains id=\"root\"; retro-cable-health + retro-cable-version pass."
  }
 ]

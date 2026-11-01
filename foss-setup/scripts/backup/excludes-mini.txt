@@ -11,14 +11,12 @@
 # RAW live database dirs — unsafe to file-copy; consistent dumps are taken
 # instead by pre-backup-db-dumps.sh into /opt/stacks/backups/db/
 /opt/stacks/paperless-ngx/pgdata
-/opt/stacks/wallabag/db
 /opt/stacks/miniflux/db
 /opt/stacks/healthchecks/db
 /opt/stacks/forgejo/data/db
 
 # Redis dirs: task-queue/cache state, regenerable
 /opt/stacks/paperless-ngx/redis
-/opt/stacks/wallabag/redis
 
 # Cache dirs anywhere in the set
 **/cache

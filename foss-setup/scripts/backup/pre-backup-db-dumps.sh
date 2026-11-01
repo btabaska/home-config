@@ -4,17 +4,18 @@
 # restic-backup.sh (PRE_BACKUP_SCRIPT) immediately before the restic snapshot.
 #
 # WHY: file-copying a live Postgres/MariaDB data dir is not a safe backup — the
-# raw DB dirs (paperless-ngx/pgdata, wallabag/db, miniflux/db, healthchecks/db,
+# raw DB dirs (paperless-ngx/pgdata, miniflux/db, healthchecks/db,
 # forgejo/data/db) are EXCLUDED from restic (see excludes-mini.txt) and these
 # dumps are backed up instead. Restore = create DB, `gunzip -c x.sql.gz | psql`
-# (or mysql for wallabag).
+# (dump_mariadb is kept for future MariaDB stacks; wallabag, its only user, was
+# retired 2026-10-22 — its live dump target vanishing aborted every nightly
+# restic run 2026-10-23..11-01 until it was dropped here).
 #
 # Dumps land in /opt/stacks/backups/db/ with FIXED filenames — restic snapshots
 # provide the history, so no timestamped clutter and no local rotation needed.
 #
 # Container names/creds come from each stack's compose.yaml (all on this host):
 #   paperless_db    postgres  -U paperless    db paperless
-#   wallabag_db     mariadb   creds from the container's own MYSQL_* env
 #   miniflux_db     postgres  -U miniflux     db miniflux
 #   healthchecks_db postgres  -U healthchecks db healthchecks
 #   forgejo_db      postgres  -U forgejo      db forgejo   (repos are on-disk
@@ -75,7 +76,6 @@ SQPY
 }
 
 dump_pg      paperless_db    paperless    paperless    paperless.sql.gz
-dump_mariadb wallabag_db     wallabag     wallabag.sql.gz
 dump_pg      miniflux_db     miniflux     miniflux     miniflux.sql.gz
 dump_pg      healthchecks_db healthchecks healthchecks healthchecks.sql.gz
 dump_pg      forgejo_db      forgejo      forgejo      forgejo.sql.gz

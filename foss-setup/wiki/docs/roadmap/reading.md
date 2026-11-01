@@ -1,6 +1,6 @@
 # Roadmap — reading
 
-34 task(s). Status mirrors `docs/progress.json` (the source of truth).
+35 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -38,5 +38,6 @@
 | `read-25` | Document Mylar3: service catalog + wiki page + Homepage tile | ✅ done | 45 min |
 | `read-26` | Deploy BookLogr (personal reading tracker / library) on the mini + Homepage tile | ✅ done | 1 hr |
 | `read-27` | Trial-deploy TriliumNext (self-hosted notes / knowledge base) on the mini as an Obsidian-replacement candidate + Homepage tile | ✅ done | 1 hr |
+| `retire-reading-01` | Retire Wallabag (read-it-later) on the mini — finish the 2026-10-22 live retirement | ✅ done | 1 hr |
 
 [← Roadmap overview](index.md)

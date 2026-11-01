@@ -117,20 +117,6 @@ checks:
     runbook: wiki/docs/runbooks/host-hygiene.md
     enabled: true
 
-  # fix-62/SL35: deepened from `/`->302 to the app's own /api/info, which returns
-  # a real JSON body from the application layer (appname + version + registration
-  # flag) — proves wallabag itself answers, not just the front controller.
-  - id: mini-wallabag
-    name: "wallabag serves its /api/info application payload (:8085, not just a redirect)"
-    host: mini
-    cmd: >-
-      curl -sf -m 8 http://localhost:8085/api/info | grep -o '"appname":"wallabag"'
-    expect: '^"appname":"wallabag"$'
-    severity: warn
-    task_id: read-07
-    runbook: wiki/docs/runbooks/host-hygiene.md
-    enabled: true
-
   - id: mini-miniflux
     name: "miniflux answers on :8082"
     host: mini
@@ -420,4 +406,36 @@ checks:
     severity: crit
     task_id: fix-20
     runbook: wiki/docs/runbooks/rig-btrfs-readonly-recovery.md
+    enabled: true
+
+  # Retro Cable (btabaska/retro-cable; checkout /opt/retro-cable, NOT an /opt/stacks
+  # stack). Consumer path: the LAN https vhost through Caddy (local_tls cert + the
+  # LAN-only abort matcher) to retro-cable-web, which proxies the API. /api/health
+  # must report ok AND /api/version must parse with a commit — a web container
+  # serving the SPA while the API is down fails the first, a stale/broken API
+  # build fails the second.
+  - id: retro-cable-health
+    tier: fast
+    name: "retro-cable: https://tv.home /api/health via Caddy reports status ok"
+    host: mini
+    cmd: >-
+      curl -sf -m 10 https://tv.home.tabaska.us/api/health
+      | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status"))'
+    expect: '^ok$'
+    severity: warn
+    task_id: retro-cable-01
+    runbook: wiki/docs/runbooks/retro-cable.md
+    enabled: true
+
+  - id: retro-cable-version
+    name: "retro-cable: https://tv.home /api/version parses (version + commit) and SPA root serves"
+    host: mini
+    cmd: >-
+      curl -sf -m 10 https://tv.home.tabaska.us/api/version
+      | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["version"] and len(d["commit"])>=7'
+      && curl -sf -m 10 https://tv.home.tabaska.us/ | grep -q 'id="root"' && echo ok
+    expect: '^ok$'
+    severity: warn
+    task_id: retro-cable-01
+    runbook: wiki/docs/runbooks/retro-cable.md
     enabled: true

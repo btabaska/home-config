@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Principal Track — Field Guide (Aug 2026)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=Spline+Sans:wght@300..700&family=Spline+Sans+Mono:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#ECEEE9;
+    --panel:#F4F5F1;
+    --ink:#161D1A;
+    --muted:#5C645C;
+    --line:#C6CCC0;
+    --work:#3F47B8;
+    --work-tint:#E4E6F7;
+    --local:#3E6B34;
+    --local-tint:#E1E9DA;
+    --mark:#EDDF6A;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Spline Sans',system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:940px;margin:0 auto;padding:0 24px}
+  a{color:var(--ink);text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;text-decoration-color:#9AA294}
+  a:hover{text-decoration-color:var(--ink)}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--work);outline-offset:3px;border-radius:2px}
+  .mono{font-family:'Spline Sans Mono',monospace}
+
+  /* ---------- header / operator model card ---------- */
+  header{padding:56px 0 40px;border-bottom:2px solid var(--ink)}
+  .rev{font-family:'Spline Sans Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  h1{
+    font-family:'Archivo',sans-serif;
+    font-stretch:120%;
+    font-weight:880;
+    font-size:clamp(40px,7vw,72px);
+    line-height:.95;
+    letter-spacing:-.015em;
+    text-transform:uppercase;
+  }
+  h1 .thin{font-weight:350;font-stretch:80%;letter-spacing:.01em}
+  .lede{max-width:62ch;margin-top:18px;font-size:17px;color:#2A322C}
+  .card{
+    margin-top:30px;border:1.5px solid var(--ink);background:var(--panel);border-radius:3px;overflow:hidden
+  }
+  .card-title{
+    font-family:'Spline Sans Mono',monospace;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;
+    padding:9px 14px;border-bottom:1.5px solid var(--ink);display:flex;justify-content:space-between;background:var(--ink);color:var(--paper)
+  }
+  .card dl{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .card .cell{padding:12px 14px;border-bottom:1px solid var(--line)}
+  .card .cell:nth-child(odd){border-right:1px solid var(--line)}
+  .card .cell:nth-last-child(-n+2){border-bottom:none}
+  .card dt{font-family:'Spline Sans Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+  .card dd{font-size:15px;font-weight:500}
+  .card dd .w{color:var(--work);font-weight:600}
+  .card dd .l{color:var(--local);font-weight:600}
+  @media(max-width:620px){.card dl{grid-template-columns:1fr}.card .cell:nth-child(odd){border-right:none}.card .cell:nth-last-child(-n+2){border-bottom:1px solid var(--line)}.card .cell:last-child{border-bottom:none}}
+
+  /* ---------- lane legend ---------- */
+  .lanes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:34px 0 0}
+  .lane-card{border:1px solid var(--line);border-left:4px solid;border-radius:3px;padding:14px 16px;background:var(--panel)}
+  .lane-card.work{border-left-color:var(--work)}
+  .lane-card.local{border-left-color:var(--local)}
+  .lane-card h3{font-family:'Archivo',sans-serif;font-stretch:115%;font-weight:800;font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px}
+  .lane-card.work h3{color:var(--work)}
+  .lane-card.local h3{color:var(--local)}
+  .lane-card p{font-size:14.5px;color:#2A322C}
+  @media(max-width:620px){.lanes{grid-template-columns:1fr}}
+
+  /* ---------- section shell ---------- */
+  section{padding:44px 0 8px}
+  .mod-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:10px}
+  .mod-no{font-family:'Spline Sans Mono',monospace;font-size:12px;letter-spacing:.16em;color:var(--muted)}
+  h2{font-family:'Archivo',sans-serif;font-stretch:118%;font-weight:850;font-size:clamp(24px,3.6vw,34px);text-transform:uppercase;letter-spacing:-.005em}
+  .mod-intent{width:100%;margin:10px 0 4px;max-width:70ch;color:#2A322C;font-size:15.5px}
+
+  /* ---------- resource rows ---------- */
+  .res{display:grid;grid-template-columns:1fr 230px;gap:10px 24px;padding:14px 10px;border-bottom:1px solid var(--line);border-radius:2px}
+  .res:hover{background:var(--panel)}
+  .res[data-lane="work"]:hover{background:var(--work-tint)}
+  .res[data-lane="local"]:hover{background:var(--local-tint)}
+  .res-main a{font-weight:600;font-size:16px}
+  .res-main p{font-size:14.5px;color:#39413A;margin-top:3px;max-width:64ch}
+  .res-side{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+  .lane{font-family:'Spline Sans Mono',monospace;font-size:10.5px;letter-spacing:.14em;font-weight:600;display:inline-flex;align-items:center;gap:6px;text-transform:uppercase}
+  .lane::before{content:"";width:9px;height:9px;border-radius:1px;display:inline-block}
+  .lane.work{color:var(--work)} .lane.work::before{background:var(--work)}
+  .lane.local{color:var(--local)} .lane.local::before{background:var(--local)}
+  .lane.both{color:#4A4A3A} .lane.both::before{background:linear-gradient(135deg,var(--work) 50%,var(--local) 50%)}
+  .meta{font-family:'Spline Sans Mono',monospace;font-size:12px;color:var(--muted)}
+  .prio .res-main a{font-size:17px}
+  .prio{border-left:3px solid var(--ink);padding-left:12px}
+  @media(max-width:680px){.res{grid-template-columns:1fr}.res-side{flex-direction:row;flex-wrap:wrap;align-items:center;gap:12px}}
+
+  /* ---------- cadence table ---------- */
+  .cadence{border:1.5px solid var(--ink);border-radius:3px;overflow:hidden;margin-top:18px;background:var(--panel)}
+  .cad-row{display:grid;grid-template-columns:150px 1fr;border-bottom:1px solid var(--line)}
+  .cad-row:last-child{border-bottom:none}
+  .cad-when{font-family:'Spline Sans Mono',monospace;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;padding:13px 14px;border-right:1px solid var(--line);color:var(--muted)}
+  .cad-what{padding:12px 16px;font-size:14.5px}
+  .cad-what strong{font-weight:600}
+  @media(max-width:620px){.cad-row{grid-template-columns:1fr}.cad-when{border-right:none;border-bottom:1px dashed var(--line);padding-bottom:6px}}
+
+  .rule-note{font-family:'Spline Sans Mono',monospace;font-size:12.5px;color:var(--muted);margin-top:10px}
+
+  /* ---------- 4-month plan ---------- */
+  .month{border:1.5px solid var(--ink);border-radius:3px;margin-top:20px;overflow:hidden;background:var(--panel)}
+  .month-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:10px 14px;background:var(--ink);color:var(--paper)}
+  .month-head h3{font-family:'Archivo',sans-serif;font-stretch:115%;font-weight:800;font-size:15px;letter-spacing:.05em;text-transform:uppercase}
+  .month-head .mono{font-size:11px;letter-spacing:.14em;color:#B9C0B4}
+  .tracks{display:grid;grid-template-columns:1fr 1fr}
+  .track{padding:14px 16px}
+  .track+.track{border-left:1px solid var(--line)}
+  .track h4{font-family:'Spline Sans Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+  .track h4::before{content:"";width:9px;height:9px;border-radius:1px}
+  .track.work h4{color:var(--work)} .track.work h4::before{background:var(--work)}
+  .track.local h4{color:var(--local)} .track.local h4::before{background:var(--local)}
+  .track p{font-size:14.5px;color:#2A322C}
+  .ship{border-top:1px solid var(--line);padding:11px 16px;font-size:14px}
+  .ship b{font-family:'Spline Sans Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;background:var(--mark);padding:2px 7px;border-radius:2px;margin-right:8px}
+  @media(max-width:680px){.tracks{grid-template-columns:1fr}.track+.track{border-left:none;border-top:1px solid var(--line)}}
+
+  /* ---------- proof-of-work checklist ---------- */
+  .progress{font-family:'Spline Sans Mono',monospace;font-size:13px;margin:14px 0 6px;color:var(--muted)}
+  .progress b{color:var(--ink);background:var(--mark);padding:1px 7px;border-radius:2px}
+  .tasks{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin-top:10px}
+  .task{
+    display:flex;gap:11px;align-items:flex-start;text-align:left;background:none;border:none;cursor:pointer;
+    font:inherit;font-size:14.5px;color:var(--ink);padding:8px 6px;border-bottom:1px solid var(--line);width:100%
+  }
+  .task:hover{background:var(--panel)}
+  .task .box{flex:0 0 16px;height:16px;margin-top:2px;border:1.5px solid var(--ink);border-radius:2px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:var(--paper)}
+  .task.done .box{background:var(--local);border-color:var(--local)}
+  .task.done .box::after{content:"✓"}
+  .task.done span:last-child{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px}
+  @media(max-width:680px){.tasks{grid-template-columns:1fr}}
+
+  footer{margin:56px 0 48px;border-top:2px solid var(--ink);padding-top:16px}
+  footer p{font-family:'Spline Sans Mono',monospace;font-size:12.5px;color:var(--muted);max-width:78ch}
+  footer p+p{margin-top:8px}
+
+  @media print{
+    body{background:#fff}
+    .res:hover,.task:hover{background:none}
+    a{text-decoration:none}
+    .res-main a::after{content:""}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="rev"><span>OPERATOR MODEL CARD · REV 2026.08.17</span><span>DUAL-LANE BUILD · CHECK LINKS AGAINST LATEST</span></div>
+  <h1>The Principal<br>Track <span class="thin">— a field guide</span></h1>
+  <p class="lede">One document, two lanes. The <strong>work lane</strong> runs on Claude Fable 5 and ships the software factory; the <strong>local lane</strong> runs on the 3090&nbsp;Ti and builds end-to-end depth — training, serving, kernels. Every resource below is tagged with the lane it serves.</p>
+
+  <div class="card">
+    <div class="card-title"><span>operator: brandon</span><span>target: principal ai engineer</span></div>
+    <dl>
+      <div class="cell"><dt>Base checkpoint</dt><dd>Senior full-stack engineer · leads AI workforce development</dd></div>
+      <div class="cell"><dt>Training budget</dt><dd>15–20 hrs/week · ~4 months · work-time counts</dd></div>
+      <div class="cell"><dt>Frontier lane</dt><dd><span class="w">Claude Fable 5</span> · Claude Code · Agent SDK · MCP · Skills</dd></div>
+      <div class="cell"><dt>Local lane</dt><dd><span class="l">RTX 3090 Ti · 24 GB</span> · llama.cpp · Qwen · OpenWebUI · OpenCode</dd></div>
+      <div class="cell"><dt>Objective</dt><dd>Software factories · model training · tooling · full-stack AI literacy</dd></div>
+      <div class="cell"><dt>Evaluation</dt><dd>Ten proof-of-work artifacts (checklist at the end of this guide)</dd></div>
+    </dl>
+  </div>
+
+  <div class="lanes">
+    <div class="lane-card work">
+      <h3>Work lane — the factory</h3>
+      <p>Frontier models, agent platforms, evals, enablement. Deliverables here double as learning: build it for the org, keep the judgment.</p>
+    </div>
+    <div class="lane-card local">
+      <h3>Local lane — the depth</h3>
+      <p>Training runs, serving benchmarks, kernels on your own silicon. This lane is where the <em>why</em> lives; it makes the work-lane decisions principled.</p>
+    </div>
+  </div>
+</header>
+
+<section id="cadence">
+  <div class="mod-head"><span class="mod-no">OPERATING CADENCE</span><h2>Staying Current</h2>
+  <p class="mod-intent">The absorption pipeline. Keep it lean: one daily triage, two weekly deep reads, one paper per week with an AI tutor. If you're reading more than 45 minutes a day and not building, cut a newsletter.</p></div>
+
+  <div class="cadence">
+    <div class="cad-row">
+      <div class="cad-when">Daily · ~20 min</div>
+      <div class="cad-what">Triage <a href="https://tldr.tech/ai">TLDR AI</a> (or <a href="https://alphasignal.ai">AlphaSignal</a> if you prefer a research/repo slant) · open <a href="https://huggingface.co/papers">HF Daily Papers</a> and star 1–2 · skim <a href="https://www.reddit.com/r/LocalLLaMA/">r/LocalLLaMA</a> for anything touching llama.cpp / Qwen / quantization.</div>
+    </div>
+    <div class="cad-row">
+      <div class="cad-when">Weekly · ~2 hrs</div>
+      <div class="cad-what"><a href="https://www.interconnects.ai">Interconnects</a> (post-training, open models) · <a href="https://magazine.sebastianraschka.com">Ahead of AI</a> (architecture deep dives) · <a href="https://simonwillison.net">Simon Willison</a> (agents, security, local models) · one starred paper read with <a href="https://www.alphaxiv.org">alphaXiv</a> as tutor · one episode of <a href="https://www.latent.space">Latent Space</a> or <a href="https://www.dwarkesh.com">Dwarkesh</a> at 1.5×.</div>
+    </div>
+    <div class="cad-row">
+      <div class="cad-when">First reports</div>
+      <div class="cad-what">Practice the tutor loop on primary sources: the <a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro">DeepSeek-V4 tech report</a> and the <a href="https://huggingface.co/Qwen/Qwen3.8-27B">Qwen3.8-27B model card</a> — interrogate every unfamiliar term until it's boring.</div>
+    </div>
+    <div class="cad-row">
+      <div class="cad-when">Ambient</div>
+      <div class="cad-what">Keep the <a href="https://discord.gg/gpumode">GPU MODE</a>, <a href="https://unsloth.ai">Unsloth</a>, and <a href="https://opencode.ai">OpenCode</a> communities within reach — they're just-in-time help channels, not feeds to follow.</div>
+    </div>
+  </div>
+  <p class="rule-note">RULE: reading &gt; 45 min/day with nothing shipped that week → unsubscribe from one thing.</p>
+</section>
+
+<section id="m01">
+  <div class="mod-head"><span class="mod-no">MODULE 01</span><h2>Evals</h2>
+  <p class="mod-intent">The control system for everything the factory ships — and the single highest-leverage skill at principal tier. Discipline: error analysis on real traces first, then judges, then gates in CI. Start the free email course this week; decide on the cohort after.</p></div>
+  <div class="res-list">
+    <div class="res prio" data-lane="both">
+      <div class="res-main"><a href="https://ai.hamel.dev/eval-course">AI Evals — free email course (Hamel Husain &amp; Shreya Shankar)</a>
+        <p>17 lessons on the Analyze–Measure–Improve lifecycle, plus two free e-books. The fastest on-ramp to evaluation-driven development.</p></div>
+      <div class="res-side"><span class="lane both">Both lanes</span><span class="meta">free · email course · 17 lessons</span></div>
+    </div>
+    <div class="res" data-lane="work">
+      <div class="res-main"><a href="https://maven.com/parlance-labs/evals">AI Evals for Engineers &amp; PMs — Maven cohort</a>
+        <p>The full course: build an agent, find where it breaks, fix it with evals you trust. Lifetime access to recordings and future cohorts; they're co-authoring the O'Reilly book <em>Evals for AI Engineers</em>. Worth expensing.</p></div>
+      <div class="res-side"><span class="lane work">Work</span><span class="meta">paid · live cohort · lifetime access</span></div>
+    </div>
+    <div class="res" data-lane="both">
+      <div class="res-main"><a href="https://evals.info">evals.info + hamel.dev essays</a>
+        <p>The free reference hub, plus <a href="https://hamel.dev">Hamel's essays</a> on judges, error analysis, and looking at your data.</p></div>
+      <div class="res-side"><span class="lane both">Both lanes</span><span class="meta">free · reference · ongoing</span></div>
+    </div>
+    <div class="res" data-lane="work">
+      <div class="res-main"><a href="https://inspect.aisi.org.uk">Inspect (UK AI Safety Institute)</a>
+        <p>Serious open-source eval framework — the right backbone for your internal harness. Pair with <a href="https://www.promptfoo.dev">promptfoo</a> for quick CI checks and <a href="https://phoenix.arize.com">Arize Phoenix</a> (or Braintrust/LangSmith) for tracing.</p></div>
+      <div class="res-side"><span class="lane work">Work</span><span class="meta">free · framework · docs</span></div>
+    </div>
+    <div class="res" data-lane="both">
+      <div class="res-main"><a href="https://www.youtube.com/watch?v=BsWxPI9UM4c">"Why AI evals are the hottest new skill" — Lenny's Podcast</a>
+        <p>The 90-minute video version of the whole philosophy: error analysis, open/axial coding, code-based vs judge evals. Watch before you build anything.</p></div>
+      <div class="res-side"><span class="lane both">Both lanes</span><span class="meta">free · video · 1.5 h</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="m02">
+  <div class="mod-head"><span class="mod-no">MODULE 02</span><h2>Judgment Layer</h2>
+  <p class="mod-intent">The vocabulary of principal-level tradeoffs: model selection, fine-tune vs prompt, RAG vs long context, inference economics, build vs buy. Read early — it frames every other module.</p></div>
+  <div class="res-list">
+    <div class="res prio" data-lane="work">
+      <div class="res-main"><a href="https://huyenchip.com/books/">Chip Huyen — <em>AI Engineering</em> (O'Reilly)</a>
+        <p>The book written for exactly this role. Evaluation-driven development, dataset engineering, inference optimization, architecture decisions.</p></div>
+      <div class="res-side"><span class="lane work">Work</span><span class="meta">paid · book · ~15 h</span></div>
+    </div>
+    <div class="res" data-lane="work">
+      <div class="res-main"><a href="https://www.latent.space/p/ai-engineer">swyx — "The Rise of the AI Engineer" + Latent Space</a>
+        <p>The essay that named the discipline, and the podcast/newsletter that tracks its production edge (evals, inference, agent architectures).</p></div>
+      <div class="res-side"><span class="lane work">Work</span><span class="meta">free · essay + podcast · weekly</span></div>
+    </div>
+    <div class="res" data-lane="work">
+      <div class="res-main"><a href="https://www.youtube.com/@aiDotEngineer">AI Engineer conference archives</a>
+        <p>Hundreds of practitioner talks from the World's Fair — the closest thing to sitting in other companies' postmortems. Mine the agents, evals, and infra tracks.</p></div>
+      <div class="res-side"><span class="lane work">Work</span><span class="meta">free · talks · pick à la carte</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="m03">
+  <div class="mod-head"><span class="mod-no">MODULE 03</span><h2>Fundamentals &amp; Architecture Literacy</h2>
+  <p class="mod-intent">Read-level fluency across the stack, deep enough that a new tech report is a comfortable evening read and "Qwen vs Gemma" is a memo you can write. Run this module in parallel with everything else — you can already code.</p></div>
+  <div class="res-list">
+    <div class="res prio" data-lane="local">
+      <div class="res-main"><a href="https://cs336.stanford.edu">Stanford CS336 — Language Modeling from Scratch</a>
+        <p>The deepest free systems course: tokenization → architectures → MoE → GPUs → kernels/Triton → parallelism → scaling laws → inference → data → alignment. Spring 2026 run; lectures free on <a href="https://www.youtube.com/playlist?list=PLoROMvodv4rOY23Y0BoGoBGgQ1zmU_MT_">YouTube</a>, assignments on GitHub. Audit the lectures; cherry-pick assignments.</p></div>
+      <div class="res-side"><span class="lane local">Local</span><span class="meta">free · lectures · ~30 h</span></div>
+    </div>
+    <div class="res prio" data-lane="local">
+      <div class="res-main"><a href="https://www.manning.com/books/build-a-large-language-model-from-scratch">Sebastian Raschka — <em>Build a Large Language Model (From Scratch)</em></a>
+        <p>The best hands-on transformer education in print; <a href="https://github.com/rasbt/LLMs-from-scratch">code on GitHub</a>. Fast-pass it — you'll move quickly.</p></div>
+      <div class="res-side"><span class="lane local">Local</span><span class="meta">paid · book + code · ~20 h</span></div>
+    </div>
+    <div class="res" data-lane="both">
+      <div class="res-main"><a href="https://magazine.sebastianraschka.com/p/the-big-llm-architecture-comparison">Raschka — "The Big LLM Architecture Comparison"</a>
+        <p>MLA vs GQA, MoE designs, norm placement, sliding-window attention — across Qwen, Gemma, DeepSeek, Llama and more. Updated through 2026. This article <em>is</em> the model-comparison skill.</p></div>
+      <div class="res-side"><span class="lane both">Both lanes</span><span class="meta">free · article · 2 h</span></div>
+    </div>
+    <div class="res" data-lane="local">
+      <div class="res-main"><a href="https://karpathy.ai/zero-to-hero.html">Karpathy — Neural Networks: Zero to Hero</a> → <a href="https://github.com/karpathy/nanochat">nanochat</a>
+        <p>Backprop to GPT by hand, then nanochat: the full ChatGPT-style pipeline (tokenizer → pretrain → SFT/RL → serving) in ~8K readable lines. Skip what you know; build what you don't.</p></div>
+      <div class="res-side"><span class="lane local">Local</span><span class="meta">free · video + code · à la carte</span></div>
+    </div>
+    <div class="res" data-lane="both">
+      <div class="res-main"><a href="https://huggingface.co/learn">Hugging Face Learn (LLM course · smol-course)</a>
+        <p>Free certified courses across the HF stack; the smol-course is the quickest structured post-training primer. Also: <a href="https://github.com/mlabonne/llm-course">Maxime Labonne's LLM course</a> as a roadmap and <a href="https://www.youtube.com/@umarjamilai">Umar Jamil</a> for paper-by-paper implementations.</p></div>
+      <div class="res-side"><span class="lane both">Both lanes</span><span class="meta">free · courses · à la carte</span></div>
+    </div>
+    <div class="res" data-lane="both">
+      <div class="res-main"><a href="https://www.3blue1brown.com/topics/neural-networks">3Blue1Brown — Neural Networks / Transformers</a>
+        <p>The visual intuition layer for attention and transformers. Worth a rewatch even at your level — and the series you'll recommend to your workforce constantly.</p></div>
+      <div class="res-side"><span class="lane both">Both lanes</span><span class="meta">free · video · 4 h</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="m04">
+  <div class="mod-head"><span class="mod-no">MODULE 04</span><h2>Agents &amp; The Software Factory</h2>
+  <p class="mod-intent">The work lane's core: harness design, tool design, context engineering, Skills, MCP — then the platform that runs them. Read the Anthropic engineering series in order; take the Academy courses; keep OpenCode as the local mirror of the same ideas.</p></div>
+  <div class="res-list">
+    <div class="res prio" data-lane="work">
+      <div class="res-main"><a href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic — "Building Effective Agents" (+ the engineering series)</a>
+        <p>The canonical curriculum. Read in order: Building Effective Agents → <a href="https://www.anthropic.com/engineering/writing-tools-for-agents">Writing effective tools</a> → <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents">Effective context engineering</a> → then the harness, Agent Skills, and sandboxing posts on the <a href="https://www.anthropic.com/engineering">engineering index</a>.</p></div>
+      <div class="res-side"><span class="lane work">Work</span><span class="meta">free · essays · ~6 h</span></div>
+    </div>
+    <div class="res prio" data-lane="work">
+      <div class="res-main"><a href="https://www.anthropic.com/learn">Anthropic Academy</a>
+        <p>Free certified courses on Claude Code, subagents, MCP, and Agent Skills — take them yourself, then make them the assignable backbone of your org's enablement tracks.</p></div>
+      <div class="res-side"><span class="lane work">Work</span><span class="meta">free · certified courses · ~10 h</span></div>
+    </div>
+    <div class="res" data-lane="work">
+      <div class="res-main"><a href="https://docs.claude.com/en/docs/claude-code/overview">Claude Code docs</a> + <a href="https://docs.claude.com/en/api/agent-sdk/overview">Claude Agent SDK</a>
+        <p>The factory's chassis: headless mode, CI-triggered agents, subagents, hooks, MCP config. The Agent SDK is how the factory becomes a product instead of a habit.</p></div>
+      <div class="res-side"><span class="lane work">Work</span><span class="meta">free · docs · ongoing</span></div>
+    </div>
+    <div class="res" data-lane="work">
+      <div class="res-main"><a href="https://modelcontextprotocol.io">Model Context Protocol (MCP)</a>
+        <p>The tool-connection standard underneath everything. Build one server end-to-end; the <a href="https://www.deeplearning.ai/short-courses/mcp-build-rich-context-ai-apps-with-anthropic/">DeepLearning.AI × Anthropic short course</a> is the fastest guided path.</p></div>
+      <div class="res-side"><span class="lane work">Work</span><span class="meta">free · spec + course · ~4 h</span></div>
+    </div>
+    <div class="res" data-lane="local">
+      <div class="res-main"><a href="https://opencode.ai/docs">OpenCode docs</a> + <a href="https://github.com/sst/opencode">repo</a>
+        <p>Your local orchestrator: custom subagents, AGENTS.md rules, MCP routing, any OpenAI-compatible endpoint — i.e., your llama.cpp server. The hobby-lane mirror of the factory.</p></div>
+      <div class="res-side"><span class="lane local">Local</span><span class="meta">free · docs · ongoing</span></div>
+    </div>
+    <div class="res" data-lane="work">
+      <div class="res-main"><a href="https://huggingface.co/learn/agents-course">HF Agents Course</a> · <a href="https://academy.langchain.com">LangGraph Academy</a> · <a href="https://github.com/ruvnet/claude-flow">claude-flow</a>
+        <p>Framework breadth: smolagents/LangGraph patterns, stateful orchestration, and one open "agent swarm" codebase worth reading for its coordination ideas.</p></div>
+      <div class="res-side"><span class="lane work">Work</span><span class="meta">free · courses + code · à la carte</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="m05">
+  <div class="mod-head"><span class="mod-no">MODULE 05</span><h2>Post-Training: SFT → RL → Distillation</h2>
+  <p class="mod-intent">From "I ran a LoRA once" to "I own a post-training pipeline with evals." All of it fits your 24 GB card. Licensing note: distill from open-weight teachers (DeepSeek, Qwen) whose licenses permit it — frontier API terms, Anthropic's included, prohibit training competing models on outputs.</p></div>
+  <div class="res-list">
+    <div class="res prio" data-lane="local">
+      <div class="res-main"><a href="https://unsloth.ai/docs">Unsloth docs + notebooks</a>
+        <p>The standard for single-GPU fine-tuning: ~2× faster, far less VRAM, free Colab/Kaggle notebooks, GGUF export straight into your llama.cpp stack. Start with the <a href="https://unsloth.ai/docs/get-started/fine-tuning-llms-guide/lora-hyperparameters-guide">LoRA hyperparameters guide</a> — it distills hundreds of papers into defaults.</p></div>
+      <div class="res-side"><span class="lane local">Local</span><span class="meta">free · docs + notebooks · weekend</span></div>
+    </div>
+    <div class="res prio" data-lane="both">
+      <div class="res-main"><a href="https://rlhfbook.com">Nathan Lambert — <em>The RLHF Book</em></a>
+        <p>The free conceptual spine for modern post-training: reward models, DPO, GRPO/RLVR, and why labs do what they do. Read alongside the hands-on work.</p></div>
+      <div class="res-side"><span class="lane both">Both lanes</span><span class="meta">free · book · ~10 h</span></div>
+    </div>
+    <div class="res" data-lane="local">
+      <div class="res-main"><a href="https://www.manning.com/books/build-a-reasoning-model-from-scratch">Raschka — <em>Build a Reasoning Model (From Scratch)</em></a>
+        <p>New in 2026: inference-time scaling, RL with verifiers, and distillation built on a small Qwen base that runs on consumer hardware. The most on-target book for this module.</p></div>
+      <div class="res-side"><span class="lane local">Local</span><span class="meta">paid · book + code · ~15 h</span></div>
+    </div>
+    <div class="res" data-lane="local">
+      <div class="res-main"><a href="https://huggingface.co/docs/trl">Hugging Face TRL (+ PEFT)</a>
+        <p>The production toolkit: SFT, DPO, GRPO, and distillation trainers. Where your Unsloth experiments graduate to when you need more control. <a href="https://github.com/axolotl-ai-cloud/axolotl">Axolotl</a> and <a href="https://github.com/pytorch/torchtune">torchtune</a> are the config-driven and PyTorch-native alternatives.</p></div>
+      <div class="res-side"><span class="lane local">Local</span><span class="meta">free · library docs · ongoing</span></div>
+    </div>
+    <div class="res" data-lane="both">
+      <div class="res-main"><a href="https://thinkingmachines.ai/blog/on-policy-distillation">Thinking Machines — "On-Policy Distillation"</a>
+        <p>The best conceptual writeup of modern distillation — the same family of techniques DeepSeek's V4 report describes for consolidating expert models.</p></div>
+      <div class="res-side"><span class="lane both">Both lanes</span><span class="meta">free · article · 1 h</span></div>
+    </div>
+    <div class="res" data-lane="both">
+      <div class="res-main"><a href="https://huggingface.co/spaces/nanotron/ultrascale-playbook">HF Ultra-Scale Playbook</a> + <a href="https://allenai.org/olmo">OLMo open recipes</a>
+        <p>Distributed-training literacy (DP/TP/PP/FSDP) at read-level, and the most transparent end-to-end open training pipeline to study. You don't need 512 GPUs; you need to reason about people who have them.</p></div>
+      <div class="res-side"><span class="lane both">Both lanes</span><span class="meta">free · playbook · 2 weekends</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="m06">
+  <div class="mod-head"><span class="mod-no">MODULE 06</span><h2>Inference &amp; Serving</h2>
+  <p class="mod-intent">Where cost-per-token is decided. Your llama.cpp intuition transfers; the professional layer is vLLM and SGLang. Rule of thumb from 2026 benchmarks: SGLang's RadixAttention wins on prefix-heavy agent traffic (repeated system prompts and tool defs), vLLM remains the flexible high-throughput default, and the gap narrows as models get bigger.</p></div>
+  <div class="res-list">
+    <div class="res prio" data-lane="local">
+      <div class="res-main"><a href="https://docs.vllm.ai">vLLM docs</a>
+        <p>PagedAttention, continuous batching, the OpenAI-compatible server. Deploy it once on a rented GPU and half the serving vocabulary becomes concrete.</p></div>
+      <div class="res-side"><span class="lane local">Local</span><span class="meta">free · docs · weekend</span></div>
+    </div>
+    <div class="res" data-lane="local">
+      <div class="res-main"><a href="https://github.com/sgl-project/sglang">SGLang</a>
+        <p>RadixAttention prefix caching, structured output, speculative decoding — built for exactly the agent workloads your factory generates. Benchmark it against vLLM yourself; that memo is a Month 3 artifact.</p></div>
+      <div class="res-side"><span class="lane local">Local</span><span class="meta">free · repo + docs · weekend</span></div>
+    </div>
+    <div class="res" data-lane="work">
+      <div class="res-main"><a href="https://github.com/NVIDIA/TensorRT-LLM">TensorRT-LLM</a>
+        <p>The maximum-performance NVIDIA path. Know what it buys and what it costs in flexibility — a build-vs-buy conversation you'll have eventually.</p></div>
+      <div class="res-side"><span class="lane work">Work</span><span class="meta">free · repo · awareness</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="m07">
+  <div class="mod-head"><span class="mod-no">MODULE 07</span><h2>GPU Kernels</h2>
+  <p class="mod-intent">The bottom of the stack — the "shader" skill from that post, translated to your hardware: Triton first (Python-like, fast wins), CUDA when the profiler says so. This module is the most specialized; it's Month 4 for a reason.</p></div>
+  <div class="res-list">
+    <div class="res prio" data-lane="local">
+      <div class="res-main"><a href="https://github.com/gpu-mode/lectures">GPU MODE — lectures</a>, <a href="https://www.youtube.com/@GPUMODE">YouTube</a>, <a href="https://discord.gg/gpumode">Discord</a>
+        <p>The community and the curriculum: 40+ lectures from CUDA basics through Triton, Flash Attention, quantization, fused kernels — even a beginner's guide to Metal so those MSL posts read clearly. The lectures README links the PMPP textbook (<em>Programming Massively Parallel Processors</em>), the course's spine.</p></div>
+      <div class="res-side"><span class="lane local">Local</span><span class="meta">free · lectures + community · ~2 h/wk</span></div>
+    </div>
+    <div class="res" data-lane="local">
+      <div class="res-main"><a href="https://triton-lang.org">Triton tutorials</a> + <a href="https://modal.com/gpu-glossary">Modal's GPU Glossary</a>
+        <p>The official tutorials for your first fused kernels, and the best hyperlinked reference when a term (occupancy, coalescing, PTX) blocks you.</p></div>
+      <div class="res-side"><span class="lane local">Local</span><span class="meta">free · tutorials + reference · ongoing</span></div>
+    </div>
+    <div class="res" data-lane="local">
+      <div class="res-main"><a href="https://leetgpu.com">LeetGPU</a> + <a href="https://tensara.org">Tensara</a>
+        <p>Kernel practice with leaderboards — deliberate practice the way you'd grind algorithms, except the algorithms are matmuls.</p></div>
+      <div class="res-side"><span class="lane local">Local</span><span class="meta">free · practice · à la carte</span></div>
+    </div>
+    <div class="res" data-lane="local">
+      <div class="res-main"><a href="https://github.com/ggml-org/llama.cpp">llama.cpp CUDA backend (read the source)</a>
+        <p>Already on your machine: real production kernels for dequant, attention, and matmul. After your first Triton kernel, read the equivalent here and compare choices.</p></div>
+      <div class="res-side"><span class="lane local">Local</span><span class="meta">free · codebase · ongoing</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="m08">
+  <div class="mod-head"><span class="mod-no">MODULE 08</span><h2>Security &amp; Governance</h2>
+  <p class="mod-intent">You're accountable for an agent workforce; injection resistance, containment, and secrets hygiene are table stakes, not electives. Red-team your own factory before anyone else does.</p></div>
+  <div class="res-list">
+    <div class="res prio" data-lane="work">
+      <div class="res-main"><a href="https://simonwillison.net/tags/prompt-injection/">Simon Willison — prompt injection archive</a> + <a href="https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/">"The Lethal Trifecta"</a>
+        <p>The clearest thinking on why agents with private data + untrusted content + exfiltration paths are dangerous — the threat model your platform must answer.</p></div>
+      <div class="res-side"><span class="lane work">Work</span><span class="meta">free · essays · 3 h</span></div>
+    </div>
+    <div class="res" data-lane="work">
+      <div class="res-main"><a href="https://genai.owasp.org">OWASP GenAI Security Project (LLM Top 10)</a>
+        <p>The checklist language auditors and security teams speak. Map your factory against it once a quarter.</p></div>
+      <div class="res-side"><span class="lane work">Work</span><span class="meta">free · framework · 2 h</span></div>
+    </div>
+    <div class="res" data-lane="work">
+      <div class="res-main"><a href="https://www.anthropic.com/engineering">Anthropic engineering — sandboxing &amp; agent containment posts</a>
+        <p>Practical isolation patterns for long-running and CI-triggered agents; pairs with proper secrets management (keys resolve at the router, never in prompts).</p></div>
+      <div class="res-side"><span class="lane work">Work</span><span class="meta">free · essays · 2 h</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="plan">
+  <div class="mod-head"><span class="mod-no">EXECUTION</span><h2>The Four-Month Plan</h2>
+  <p class="mod-intent">Aggressive but honest: 15–20 hrs/week, work-time counts because deliverables overlap. Fundamentals run in parallel — they never gate the building. Every month ends with something shipped, in writing.</p></div>
+
+  <div class="month">
+    <div class="month-head"><h3>Month 1 — Foundation Under Load</h3><span class="mono">Modules 01 · 02 · 03 · 04</span></div>
+    <div class="tracks">
+      <div class="track work"><h4>Work lane</h4><p>Factory v0 on Claude Code / Agent SDK: one real multi-agent workflow with an MCP tool layer, proper secrets handling, and an eval gate wired into CI. Start the evals email course on day one.</p></div>
+      <div class="track local"><h4>Local lane</h4><p>CS336 lectures 1–6 in the evenings; fast pass through Raschka's LLM book; Huyen's <em>AI Engineering</em> alongside.</p></div>
+    </div>
+    <div class="ship"><b>Ship</b>A pipeline where a failing eval blocks a merge.</div>
+  </div>
+
+  <div class="month">
+    <div class="month-head"><h3>Month 2 — Post-Training + Enablement</h3><span class="mono">Modules 03 · 05</span></div>
+    <div class="tracks">
+      <div class="track work"><h4>Work lane</h4><p>Enablement v1 for the org: Academy-based tracks, an internal Skills library, office hours. Teaching three weeks after learning is the fastest consolidation loop there is.</p></div>
+      <div class="track local"><h4>Local lane</h4><p>QLoRA a Qwen-class model with Unsloth; run a small GRPO/verifier experiment from the reasoning book; read the RLHF book alongside.</p></div>
+    </div>
+    <div class="ship"><b>Ship</b>Before/after eval on the fine-tune · the internal "how to read a tech report" memo, written as Qwen 3.8 vs Gemma 4.</div>
+  </div>
+
+  <div class="month">
+    <div class="month-head"><h3>Month 3 — Serving + Security</h3><span class="mono">Modules 06 · 08</span></div>
+    <div class="tracks">
+      <div class="track work"><h4>Work lane</h4><p>Hardening sprint: prompt-injection red-team of your own agents, OWASP pass, sandbox policy. Wire the cheap local tier into the factory's router.</p></div>
+      <div class="track local"><h4>Local lane</h4><p>Weekend H100 rental: serve Qwen 3.8 27B on vLLM and SGLang; benchmark both against your llama.cpp baseline.</p></div>
+    </div>
+    <div class="ship"><b>Ship</b>The cost-per-token memo · the security review doc.</div>
+  </div>
+
+  <div class="month">
+    <div class="month-head"><h3>Month 4 — Depth + Capstone</h3><span class="mono">Modules 05 · 07</span></div>
+    <div class="tracks">
+      <div class="track work"><h4>Work lane</h4><p>Capstone: the "State of our AI stack" talk/doc — architecture, evals, costs, security posture, and the 12-month roadmap. Principal engineers teach.</p></div>
+      <div class="track local"><h4>Local lane</h4><p>First Triton kernel (fused RMSNorm or softmax) benchmarked against PyTorch; Ultra-Scale Playbook read-through; compare your kernel to llama.cpp's.</p></div>
+    </div>
+    <div class="ship"><b>Ship</b>The kernel benchmark · the capstone doc.</div>
+  </div>
+</section>
+
+<section id="artifacts">
+  <div class="mod-head"><span class="mod-no">EVALUATION</span><h2>Proof of Work</h2>
+  <p class="mod-intent">At senior, the output was systems; at principal, the output is decisions other people build on. These ten artifacts are the eval suite for this whole track — each one is judgment, in writing.</p></div>
+  <p class="progress"><b id="count">0 / 10</b> shipped <span>· checks are session-only — print this page or track them for real</span></p>
+  <div class="tasks">
+    <button class="task"><span class="box"></span><span>CI eval gate live on one real agent workflow</span></button>
+    <button class="task"><span class="box"></span><span>Factory v0: multi-agent pipeline with MCP tools + managed secrets</span></button>
+    <button class="task"><span class="box"></span><span>Enablement v1 shipped to the org (tracks + Skills library)</span></button>
+    <button class="task"><span class="box"></span><span>Tech-report memo: Qwen 3.8 vs Gemma 4, in your own words</span></button>
+    <button class="task"><span class="box"></span><span>QLoRA fine-tune with a before/after eval</span></button>
+    <button class="task"><span class="box"></span><span>GRPO / verifier experiment, results written up</span></button>
+    <button class="task"><span class="box"></span><span>Serving benchmark memo: vLLM vs SGLang vs llama.cpp, cost per token</span></button>
+    <button class="task"><span class="box"></span><span>Security review: injection red-team + OWASP pass on the factory</span></button>
+    <button class="task"><span class="box"></span><span>First Triton kernel, benchmarked against PyTorch</span></button>
+    <button class="task"><span class="box"></span><span>Capstone: "State of our AI stack" talk or doc, delivered</span></button>
+  </div>
+</section>
+
+<footer>
+  <p>COMPILED 2026.08.17 · Links verified this week where possible; this field moves in 96-hour cycles, so when a link drifts, search the resource name — the good ones leave forwarding addresses.</p>
+  <p>OPERATING PRINCIPLE · Fifteen minutes of scanning a day, one deep read a week, one project always in flight. The lanes compound: the local lane supplies the <em>why</em>, the work lane supplies the <em>scale</em>, and the artifacts prove the judgment.</p>
+</footer>
+
+</div>
+<script>
+  const tasks=document.querySelectorAll('.task');
+  const count=document.getElementById('count');
+  function update(){
+    const done=document.querySelectorAll('.task.done').length;
+    count.textContent=done+' / '+tasks.length;
+  }
+  tasks.forEach(t=>t.addEventListener('click',()=>{t.classList.toggle('done');update();}));
+</script>
+</body>
+</html>

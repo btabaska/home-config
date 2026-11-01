@@ -149,12 +149,6 @@ paperless.{$DOMAIN} {
 	reverse_proxy paperless:8000
 }
 
-# Read-it-later (Pocket replacement)
-wallabag.{$DOMAIN} {
-	import local_tls
-	reverse_proxy wallabag:80
-}
-
 # BookLogr — personal reading tracker / library. Two vhosts: the React SPA and
 # its Flask API. The SPA (served here) calls the API cross-origin from the
 # browser, so the API MUST have its own external URL (BL_API_ENDPOINT in the
@@ -559,6 +553,15 @@ retro-guide.{$DOMAIN} {
 	file_server
 }
 
+# Static: Principal AI Engineer Track — self-contained HTML field guide served from
+# /opt/stacks/caddy/site/principal-ai-engineer-track (the ./site bind mount -> /srv/static).
+# Linked from the Homepage "AI" group. No upstream; file_server only.
+principal-ai.{$DOMAIN} {
+	import local_tls
+	root * /srv/static/principal-ai-engineer-track
+	file_server
+}
+
 # RomM — retro ROM library (retro-02); app on the mini, ROMs on the NAS games share
 romm.{$DOMAIN} {
 	import local_tls
@@ -574,3 +577,13 @@ romm.{$DOMAIN} {
 #     reverse_proxy {$NAS_IP}:8000      # paperless on the NAS
 # and set NAS_IP in .env. Everything else stays container-name routed.
 # ---------------------------------------------------------------------------
+
+# Retro Cable — source of truth: btabaska/retro-cable ops/caddy/retro-cable.caddy (keep identical)
+tv.home.tabaska.us {
+	import local_tls
+
+	@not_lan not remote_ip private_ranges
+	abort @not_lan
+
+	reverse_proxy retro-cable-web:80
+}

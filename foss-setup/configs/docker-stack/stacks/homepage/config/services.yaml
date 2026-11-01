@@ -91,6 +91,11 @@
           type: stash
           url: http://192.168.10.4:9999
           key: "{{HOMEPAGE_VAR_STASH_KEY}}"
+    - Retro Cable:
+        icon: mdi-television-classic
+        href: https://tv.home.tabaska.us
+        description: Bay Area cable TV, 1990-2010 (LAN only)
+        siteMonitor: http://retro-cable-web:80
 
 - Requests:
     - Seerr:
@@ -210,11 +215,6 @@
         widget:
           type: suwayomi
           url: http://192.168.10.12:4567
-    - Wallabag:
-        icon: wallabag.png
-        href: https://wallabag.tabaska.us
-        description: Read-it-later
-        siteMonitor: http://wallabag:80
     - Miniflux:
         icon: miniflux.png
         href: https://rss.tabaska.us
@@ -282,6 +282,11 @@
           url: http://romm:8080
           fields: [platforms, totalRoms, saves, states]
 - AI:
+    - Principal AI Engineer Track:
+        icon: mdi-robot-account
+        href: https://principal-ai.tabaska.us
+        description: Field guide (Aug 2026)
+        target: _blank
     - Open WebUI:
         icon: open-webui.png
         href: https://ai.tabaska.us

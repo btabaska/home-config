@@ -92,7 +92,7 @@ CATEGORIES = {
         "kometa", "recyclarr", "pinchflat", "stash",
     ],
     "Photos & Reading": [
-        "immich", "calibre-web-automated", "miniflux", "wallabag", "navidrome",
+        "immich", "calibre-web-automated", "miniflux", "navidrome",
     ],
     "Documents & Life": ["paperless-ngx", "mealie"],
     "Files & Sync": ["syncthing", "syncthing-node"],

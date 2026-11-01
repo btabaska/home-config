@@ -285,13 +285,6 @@ services:
     url: https://paperless.tabaska.us
     on_demand: false
     notes: Document archive + OCR (redis/db/gotenberg/tika sidecars, no UI of their own).
-  - name: wallabag
-    category: Reading & Docs
-    host: mini
-    port: 8085
-    url: https://wallabag.tabaska.us
-    on_demand: false
-    notes: Read-it-later. Container port 80.
   - name: miniflux
     category: Reading & Docs
     host: mini
@@ -534,6 +527,13 @@ services:
     url: https://romm.tabaska.us
     on_demand: false
     notes: RomM retro-game library (container port 8080; mariadb sidecar).
+  - name: retro-cable
+    category: Media
+    host: mini
+    port: null
+    url: https://tv.home.tabaska.us
+    on_demand: false
+    notes: Retro Cable — 1990-2010 Bay Area cable TV re-creation (web SPA + scheduling API). Own repo btabaska/retro-cable, checkout /opt/retro-cable (not an /opt/stacks stack); LAN-only vhost, 8095 published on loopback only. Runbook runbooks/retro-cable.md.
 
   # --- Infrastructure & Ops --------------------------------------------------------
   - name: syncthing

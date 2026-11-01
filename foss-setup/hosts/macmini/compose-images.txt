@@ -44,5 +44,3 @@ ryshe/terraria:tshock-1.4.5.6-6.1.0
 searxng/searxng:2026.8.4-c63835bd2
 strausmann/minecraft-bedrock-connect:latest
 syncthing/syncthing:2.1.2@sha256:4464f4161dd0251e20d46bb3aec83363db75d80cef1abdd5d5fd4054b04a004d
-triliumnext/trilium:v0.104.1
-wallabag/wallabag:2.6.14

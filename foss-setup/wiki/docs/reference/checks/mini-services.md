@@ -1,6 +1,6 @@
 # Checks — mini-services
 
-`foss-setup/verification/checks.d/mini-services.yaml` — 28 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/mini-services.yaml` — 29 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `mini-caddy-running`
 
@@ -99,17 +99,6 @@ uptime-kuma answers on :3001
 
 ```bash
 curl -s -o /dev/null -m 8 -w '%{http_code}' http://localhost:3001/
-```
-
-## `mini-wallabag`
-
-wallabag serves its /api/info application payload (:8085, not just a redirect)
-
-- **host:** `mini` · **severity:** `warn` · **guards task:** `read-07` · **enabled:** True
-- **expects:** `^"appname":"wallabag"$`
-
-```bash
-curl -sf -m 8 http://localhost:8085/api/info | grep -o '"appname":"wallabag"'
 ```
 
 ## `mini-miniflux`
@@ -337,6 +326,28 @@ mini root filesystem is READ-WRITE (real write probe — silent RO/ENOSPC tripwi
 
 ```bash
 p="/home/btabaska/.verify-rw-probe"; if ( : > "$p" ) 2>/dev/null; then rm -f "$p"; w=OK; else w=FAIL; fi; echo "write=$w root=$(findmnt -no OPTIONS / | cut -d, -f1)"
+```
+
+## `retro-cable-health`
+
+retro-cable: https://tv.home /api/health via Caddy reports status ok
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `retro-cable-01` · **enabled:** True
+- **expects:** `^ok$`
+
+```bash
+curl -sf -m 10 https://tv.home.tabaska.us/api/health | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status"))'
+```
+
+## `retro-cable-version`
+
+retro-cable: https://tv.home /api/version parses (version + commit) and SPA root serves
+
+- **host:** `mini` · **severity:** `warn` · **guards task:** `retro-cable-01` · **enabled:** True
+- **expects:** `^ok$`
+
+```bash
+curl -sf -m 10 https://tv.home.tabaska.us/api/version | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["version"] and len(d["commit"])>=7' && curl -sf -m 10 https://tv.home.tabaska.us/ | grep -q 'id="root"' && echo ok
 ```
 
 [← All checks](index.md) · [Verification runbook](../../runbooks/verification.md)

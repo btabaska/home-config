@@ -1,6 +1,6 @@
 # Roadmap — media-pipeline
 
-51 task(s). Status mirrors `docs/progress.json` (the source of truth).
+52 task(s). Status mirrors `docs/progress.json` (the source of truth).
 
 | Task | Title | Status | Effort |
 |---|---|---|---|
@@ -44,6 +44,7 @@
 | `nas-28` | Apply TRaSH quality profiles + naming via Recyclarr (Ubuntu → NAS *arrs) | ✅ done | 30-45 min |
 | `nas-29` | Deploy Soularr on NAS (Lidarr ↔ remote slskd bridge) | ✅ done | 30-45 min |
 | `nas-30` | beets YouTube-audio tagging layer on NAS (tags non-Lidarr music) | ✅ done | 20-30 min |
+| `retro-cable-01` | Retro Cable on the mini behind Caddy at tv.home.tabaska.us (LAN only) + monitoring | ✅ done | 1-2 hrs |
 | `seed-01` | Provision seedbox "Betty" — Bytesized Stream +3 (Deluge + slskd later) | ✅ done | 1 hr + provisioning |
 | `seed-03` | Put the seedbox on Tailscale (userspace networking) | ✅ done | 20-30 min |
 | `seed-05` | Connect Seerr to NAS Sonarr/Radarr (movies/TV — not music) | ✅ done | 20-30 min |

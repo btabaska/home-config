@@ -98,7 +98,6 @@ main() {
   add_http "Mini Tautulli"     "http://${MINI}:8181"  "$A_3XX"
   add_http "Mini Navidrome"    "http://${MINI}:4533"  "$A_3XX"
   add_http "Mini Paperless"    "http://${MINI}:8000"  "$A_3XX"
-  add_http "Mini Wallabag"     "http://${MINI}:8085"  "$A_3XX"
   add_http "Mini Miniflux"     "http://${MINI}:8082"  "$A_OK"
   add_http "Mini Mealie"       "http://${MINI}:9000"  "$A_OK"
   add_http "Mini Homepage"     "http://${MINI}:3010"  "$A_OK"

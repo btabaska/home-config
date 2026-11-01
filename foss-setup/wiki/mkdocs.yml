@@ -124,7 +124,6 @@ nav:
           - komga: services/komga.md
           - miniflux: services/miniflux.md
           - mylar3: services/mylar3.md
-          - wallabag: services/wallabag.md
       - Requests:
           - libreseerr: services/libreseerr.md
           - musicseerr: services/musicseerr.md
@@ -173,6 +172,7 @@ nav:
       - Unsloth Studio (web UI / llama-swap provider / MCP tools): runbooks/unsloth-studio.md
       - Qwen3.8-27B vLLM option lane (qwen38-27b-rtx3090 / stopped-by-default / switch procedure): runbooks/qwen38-vllm.md
       - Strata lane (Qwen3.8-Flash-Next IQ3_S on GPU+RAM / llama-swap shim / lazy load): runbooks/strata.md
+      - Retro Cable (tv.home LAN vhost / own-repo deploy / checks): runbooks/retro-cable.md
       - Kiwix (offline ZIM library / no hot-add / sequential queue): runbooks/kiwix.md
       - openzim-mcp (ZIM tools for AI / mcpo bridge / RO zim mount): runbooks/openzim-mcp.md
       - GameFAQs corpus (PRIVATE ZIM / IA source / LAN-only / no-redistribute): runbooks/gamefaqs-zim.md

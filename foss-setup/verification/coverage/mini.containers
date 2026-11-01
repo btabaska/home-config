@@ -34,6 +34,8 @@ paperless_tika
 photon
 pinchflat
 pmtiles
+retro-cable-api-1
+retro-cable-web-1
 romm
 romm-db
 scrutiny-collector
@@ -43,6 +45,3 @@ syncthing
 tautulli
 unbound
 uptime-kuma
-wallabag
-wallabag_db
-wallabag_redis

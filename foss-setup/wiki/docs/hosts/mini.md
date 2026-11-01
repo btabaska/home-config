@@ -18,7 +18,7 @@ The **light always-on web/management stack** (38 containers as of
 Dockge:
 
 - **Edge**: Caddy (owns 80/443, `edge` network, `*.tabaska.us` TLS), AdGuard + Unbound (primary DNS)
-- **Life apps**: Miniflux, Wallabag, Navidrome, Mealie, Paperless-ngx, MeTube, Pinchflat, Seerr, MusicSeerr, Libreseerr, RomM (retro-game library)
+- **Life apps**: Miniflux, Navidrome, Mealie, Paperless-ngx, MeTube, Pinchflat, Seerr, MusicSeerr, Libreseerr, RomM (retro-game library), Retro Cable (tv.home.tabaska.us — own repo, /opt/retro-cable)
 - **Media polish**: Tautulli, Kometa, Recyclarr (weekly cron, not a resident container). *Maintainerr was removed from the plan 2026-07-08 and never runs here.*
 - **Ops**: Homepage, Uptime Kuma, Beszel (+agent), ntfy, Diun, Healthchecks, Dockge
 - **Infra**: Forgejo (git — HTTP :3030, `http://macmini.tailb31641.ts.net:3030`), BedrockConnect (console gateway for the Switch, UDP 19132). The mini is also the WoL relay for rig recovery. *No LLM runs here — LiteLLM lives on the [rig](rig.md); the planned mini fallback was never deployed (decision pending).*

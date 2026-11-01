@@ -1,6 +1,6 @@
 # Verification checks
 
-Every acceptance/regression check the fleet runs — **408 checks across 41 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
+Every acceptance/regression check the fleet runs — **409 checks across 41 domains**, generated from `verification/checks.d/` by `scripts/docs/gen-checks-pages.py`. These probe OUTCOMES (does the user-visible result work), not just liveness. See the [Verification runbook](../../runbooks/verification.md) and [Acceptance-testing framework](../../runbooks/acceptance-testing.md).
 
 | Domain | Checks | crit | warn |
 |---|---|---|---|
@@ -26,7 +26,7 @@ Every acceptance/regression check the fleet runs — **408 checks across 41 doma
 | [media-subtitles](media-subtitles.md) | 2 | 0 | 2 |
 | [media-watchable](media-watchable.md) | 4 | 0 | 4 |
 | [meme-review](meme-review.md) | 3 | 2 | 1 |
-| [mini-services](mini-services.md) | 28 | 9 | 19 |
+| [mini-services](mini-services.md) | 29 | 9 | 20 |
 | [monitoring-coverage](monitoring-coverage.md) | 9 | 1 | 8 |
 | [nas-host](nas-host.md) | 8 | 1 | 7 |
 | [nas-io-storm](nas-io-storm.md) | 2 | 0 | 2 |
@@ -46,4 +46,4 @@ Every acceptance/regression check the fleet runs — **408 checks across 41 doma
 | [verification-env-integrity](verification-env-integrity.md) | 2 | 2 | 0 |
 | [verification-self](verification-self.md) | 7 | 0 | 7 |
 
-_Total: 408 checks._
+_Total: 409 checks._

@@ -50,9 +50,10 @@ def main():
         sys.exit(2)
 
     # Every '<sub>.{$DOMAIN}' or '<sub>.tabaska.us' that opens a site block,
-    # including comma-separated multi-host blocks (apollo.{$DOMAIN}, sunshine...).
+    # including comma-separated multi-host blocks (apollo.{$DOMAIN}, sunshine...)
+    # and multi-label hosts (tv.home.tabaska.us -> 'tv.home', retro-cable-01).
     vhosts = set(re.findall(
-        r'(?m)(?:^|,\s*)([a-z0-9][a-z0-9-]*)\.(?:\{\$DOMAIN\}|tabaska\.us)', text))
+        r'(?m)(?:^|,\s*)([a-z0-9][a-z0-9.-]*?)\.(?:\{\$DOMAIN\}|tabaska\.us)', text))
     if not vhosts:
         print("catalog-vhost-parity: no vhosts parsed from Caddyfile (bad path?)",
               file=sys.stderr)
@@ -63,7 +64,8 @@ def main():
     for s in svcs:
         u = s.get("url")
         if u:
-            m = re.match(r'https?://([a-z0-9-]+)\.', u)
+            m = (re.match(r'https?://([a-z0-9.-]+?)\.tabaska\.us\b', u)
+                 or re.match(r'https?://([a-z0-9-]+)\.', u))
             if m:
                 urlsub[m.group(1)] = s["name"]
         if "DECOMMISSION" in (s.get("notes") or "").upper():
