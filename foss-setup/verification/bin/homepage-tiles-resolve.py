@@ -60,6 +60,17 @@ def main():
             capture_output=True, text=True,
         ).stdout.split()
     )
+    # Network aliases resolve too (e.g. retro-cable-web is an `edge` alias of
+    # retro-cable-web-1, deployed from its own repo with a compose-prefixed name).
+    if running:
+        running |= set(
+            subprocess.run(
+                ["docker", "inspect", "--format",
+                 "{{range .NetworkSettings.Networks}}{{range .Aliases}}{{.}} {{end}}{{end}}",
+                 *sorted(running)],
+                capture_output=True, text=True,
+            ).stdout.split()
+        )
     tiles = []
     collect(cfg, tiles)
     dead = []
