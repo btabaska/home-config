@@ -20,6 +20,8 @@ The full home `*arr` acquisition stack, running as the `media-automation` Compos
 | `flaresolverr` | `ghcr.io/flaresolverr/flaresolverr:v3.5.0` | `8191:8191` |
 | `sonarr` | `lscr.io/linuxserver/sonarr:4.0.19` | `8989:8989` |
 | `radarr` | `lscr.io/linuxserver/radarr:6.3.0` | `7878:7878` |
+| `sonarr-livetv` | `lscr.io/linuxserver/sonarr:4.0.19` | `8990:8989` |
+| `radarr-livetv` | `lscr.io/linuxserver/radarr:6.3.0` | `7879:7878` |
 | `lidarr` | `lscr.io/linuxserver/lidarr:3.1.0` | `8686:8686` |
 | `soularr` | `ghcr.io/mrusse/soularr:1.2.2` | — |
 | `beets` | `lscr.io/linuxserver/beets:2.1.0` | `8337:8337` |
@@ -40,6 +42,12 @@ The full home `*arr` acquisition stack, running as the `media-automation` Compos
 | `radarr` | `${DOCKER_ROOT:-/volume1/docker}/radarr/config:/config` |
 | `radarr` | `${MOVIES_LIBRARY:-/volume2/movies}:/movies` |
 | `radarr` | `{'type': 'bind', 'source': '${SEEDBOX_MOUNT:-/volume1/mounts/seedbox-files}', 'target': '/seedbox'}` |
+| `sonarr-livetv` | `${DOCKER_ROOT:-/volume1/docker}/sonarr-livetv/config:/config` |
+| `sonarr-livetv` | `${LIVETV_SOURCES:-/volume1/LiveTV/sources}/tv:/tv` |
+| `sonarr-livetv` | `{'type': 'bind', 'source': '${SEEDBOX_MOUNT:-/volume1/mounts/seedbox-files}', 'target': '/seedbox'}` |
+| `radarr-livetv` | `${DOCKER_ROOT:-/volume1/docker}/radarr-livetv/config:/config` |
+| `radarr-livetv` | `${LIVETV_SOURCES:-/volume1/LiveTV/sources}/movies:/movies` |
+| `radarr-livetv` | `{'type': 'bind', 'source': '${SEEDBOX_MOUNT:-/volume1/mounts/seedbox-files}', 'target': '/seedbox'}` |
 | `lidarr` | `${DOCKER_ROOT:-/volume1/docker}/lidarr/config:/config` |
 | `lidarr` | `${MUSIC_LIBRARY:-/volume1/music}:/music` |
 | `lidarr` | `{'type': 'bind', 'source': '${SEEDBOX_MOUNT:-/volume1/mounts/seedbox-files}', 'target': '/seedbox'}` |
@@ -74,6 +82,9 @@ Variable names from `.env.example` — real values live in `.env` on the host, s
 - `READARR_LIBRARY`
 - `WHISPARR_LIBRARY`
 - `BOOKSHELF_API_KEY`
+- `SONARR_LIVETV_API_KEY`
+- `RADARR_LIVETV_API_KEY`
+- `LIVETV_SOURCES`
 - `SEEDBOX_MOUNT`
 - `MANUAL_DST`
 - `HARDCOVER_API_TOKEN`

@@ -38,6 +38,7 @@
 6767    # bazarr
 6969    # docker-proxy container
 7878    # radarr
+7879    # radarr-livetv (Retro Cable's own movie downloads, retro-cable-02)
 8080    # docker-proxy container
 8083    # docker-proxy container
 8084    # docker-proxy container
@@ -51,6 +52,7 @@
 8789    # docker-proxy container
 8790    # docker-proxy container
 8989    # sonarr
+8990    # sonarr-livetv (Retro Cable's own TV downloads, retro-cable-02)
 9696    # prowlarr
 9999    # docker-proxy container (legit — NOT the mini nc)
 13378   # audiobookshelf

@@ -1,6 +1,6 @@
 # Checks — media
 
-`foss-setup/verification/checks.d/media.yaml` — 21 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
+`foss-setup/verification/checks.d/media.yaml` — 23 check(s). Run hourly/daily by the verification harness; page via ntfy. See [Verification runbook](../../runbooks/verification.md).
 
 ## `music-library-dupes`
 
@@ -66,6 +66,28 @@ radarr: no download-client/root-folder/remote-path/import health issues
 
 ```bash
 curl -sm 20 -H "X-Api-Key: $RADARR_API_KEY" "http://192.168.10.4:7878/api/v3/health" | python3 -c "import json,sys,re; h=json.load(sys.stdin); bad=sorted({i['source'] for i in h if re.match(r'(DownloadClient|RootFolder|RemotePathMapping|ImportMechanism)', i.get('source',''))}); print('pipeline=' + (','.join(bad) if bad else 'ok'))"
+```
+
+## `sonarr-livetv-pipeline-health`
+
+sonarr-livetv: plumbing healthy and its only root folder is the LiveTV one
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `retro-cable-02` · **enabled:** True
+- **expects:** `^pipeline=ok roots=/tv$`
+
+```bash
+curl -sm 20 -H "X-Api-Key: $SONARR_LIVETV_API_KEY" "http://192.168.10.4:8990/api/v3/health" | python3 -c "import json,sys,re; h=json.load(sys.stdin); bad=sorted({i['source'] for i in h if re.match(r'(DownloadClient|RootFolder|RemotePathMapping|ImportMechanism)', i.get('source',''))}); print('pipeline=' + (','.join(bad) if bad else 'ok'), end=' ')" && curl -sm 20 -H "X-Api-Key: $SONARR_LIVETV_API_KEY" "http://192.168.10.4:8990/api/v3/rootfolder" | python3 -c "import json,sys; print('roots=' + ','.join(sorted(r['path'].rstrip('/') for r in json.load(sys.stdin))))"
+```
+
+## `radarr-livetv-pipeline-health`
+
+radarr-livetv: plumbing healthy and its only root folder is the LiveTV one
+
+- **host:** `url` · **severity:** `warn` · **guards task:** `retro-cable-02` · **enabled:** True
+- **expects:** `^pipeline=ok roots=/movies$`
+
+```bash
+curl -sm 20 -H "X-Api-Key: $RADARR_LIVETV_API_KEY" "http://192.168.10.4:7879/api/v3/health" | python3 -c "import json,sys,re; h=json.load(sys.stdin); bad=sorted({i['source'] for i in h if re.match(r'(DownloadClient|RootFolder|RemotePathMapping|ImportMechanism)', i.get('source',''))}); print('pipeline=' + (','.join(bad) if bad else 'ok'), end=' ')" && curl -sm 20 -H "X-Api-Key: $RADARR_LIVETV_API_KEY" "http://192.168.10.4:7879/api/v3/rootfolder" | python3 -c "import json,sys; print('roots=' + ','.join(sorted(r['path'].rstrip('/') for r in json.load(sys.stdin))))"
 ```
 
 ## `seedbox-mount-listable`

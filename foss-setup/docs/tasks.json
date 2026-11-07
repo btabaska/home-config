@@ -15525,5 +15525,27 @@
    "checks retro-cable-health (fast) + retro-cable-version; coverage manifest rows."
   ],
   "verify": "curl https://tv.home.tabaska.us/api/version returns JSON with a valid LE cert; / contains id=\"root\"; retro-cable-health + retro-cable-version pass."
+ },
+ {
+  "id": "retro-cable-02",
+  "title": "Retro Cable Live TV downloads: sonarr-livetv + radarr-livetv on the NAS, kept out of Plex",
+  "host": "NAS",
+  "type": "deploy",
+  "depends_on": [
+   "retro-cable-01"
+  ],
+  "estimate": "1-2 hrs",
+  "required": false,
+  "track": "media-pipeline",
+  "run": 15,
+  "mode": "ai",
+  "gate": "",
+  "summary": "Operator decision 2026-11-07: Live TV downloads never land in Plex. Two *arr twins in the NAS media stack (sonarr-livetv :8990, radarr-livetv :7879) save into /volume1/LiveTV/sources/{tv,movies} (LiveTV share, .plexignore *, no Plex library). Deluge labels sonarr-livetv/radarr-livetv move to files/{tv,movies}-livetv; unpackerr instances 1; Prowlarr fullSync apps; profile 'LiveTV SD' (SD first, 720p fallback, no upgrades); unmonitor-deleted ON because the rig deletes originals after a checked HEVC encode. Not Seerr servers (Seerr's one status per title would block later Plex requests); Retro Cable calls them by API.",
+  "steps": [
+   "Compose services + unpackerr env + .env keys (NAS live and repo mirror).",
+   "Configure via API: forms auth, root folder, Deluge, remote path mapping, profile, naming copied from the Plex twins, unmonitor-deleted, Prowlarr apps.",
+   "Checks sonarr-livetv-pipeline-health + radarr-livetv-pipeline-health; coverage + listener rows; runbook section."
+  ],
+  "verify": "Both twins answer /ping, Deluge test ok, same indexers as the Plex twins, root folders only /tv and /movies; unpackerr logs 2 Sonarr + 2 Radarr servers; both checks pass."
  }
 ]

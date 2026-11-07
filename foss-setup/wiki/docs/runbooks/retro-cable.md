@@ -51,6 +51,41 @@ docker exec caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfi
 docker exec caddy caddy reload   --config /etc/caddy/Caddyfile --adapter caddyfile
 ```
 
+## Live TV downloads (sonarr-livetv / radarr-livetv)
+
+Shows that Retro Cable needs but Plex doesn't have are downloaded by two
+*arr twins in the NAS media stack, never by the Plex Sonarr/Radarr
+(operator decision 2026-11-07, `retro-cable-02`).
+
+| | sonarr-livetv | radarr-livetv |
+|---|---|---|
+| UI | `http://192.168.10.4:8990` | `http://192.168.10.4:7879` |
+| Root folder | `/tv` = `/volume1/LiveTV/sources/tv` | `/movies` = `/volume1/LiveTV/sources/movies` |
+| Deluge label | `sonarr-livetv` → `files/tv-livetv` | `radarr-livetv` → `files/movies-livetv` |
+| Keys / login | vault `arr_api_keys.sonarr_livetv`, `arr_ui.sonarr_livetv` | vault `arr_api_keys.radarr_livetv`, `arr_ui.radarr_livetv` |
+
+- **Out of Plex by construction:** the LiveTV share has a `.plexignore` of
+  `*` and no Plex library points at it. The twins can't see `/volume3/tv` or
+  `/volume2/movies`.
+- **Not Seerr servers.** Seerr keeps one status per title, so a Live TV
+  request there would block or mislabel a later Plex request. Retro Cable
+  adds series and movies to the twins directly by API. Seerr stays Plex's
+  request front end, and Retro Cable's TMDB proxy for air dates.
+- **Profile `LiveTV SD`:** SD qualities rank above a 720p fallback, with no
+  upgrades. Everything is re-encoded to 480p HEVC anyway.
+- **Originals are deleted** by the rig worker once the HEVC copy passes its
+  whole-encode check. *Unmonitor deleted* is on in both twins, so Sonarr and
+  Radarr don't fetch the file again. Plex's folders are never touched.
+- Indexers come from Prowlarr (fullSync apps *Sonarr LiveTV* / *Radarr
+  LiveTV*). Unpackerr runs them as instances 1 (env in compose, keys in
+  `.env`).
+- **Checks:** `sonarr-livetv-pipeline-health` and
+  `radarr-livetv-pipeline-health` cover plumbing health, and the root folder
+  must be the LiveTV one.
+- **Trap:** a fresh Radarr health list can stay stale from startup while
+  `radarr.servarr.com` returns 521, because the update check throws and aborts
+  `CheckHealth`. Restarting the container recomputes it.
+
 ## Checks
 
 Both run from the mini through the real consumer path (AdGuard → Caddy TLS →

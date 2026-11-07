@@ -24,7 +24,7 @@
 # ------------------------------------------------------------------------------
 # SHARED INVARIANTS (change-one-change-all — a self-check must verify these)
 # ------------------------------------------------------------------------------
-#   1. Every DOWNLOAD-TOUCHING service (sonarr, radarr, lidarr, readarr,
+#   1. Every DOWNLOAD-TOUCHING service (sonarr, radarr, their -livetv twins, lidarr, readarr,
 #      whisparr, unpackerr) mounts the seedbox files at the IDENTICAL in-container
 #      path `/seedbox`. If you change the host mount path or container path, change
 #      it in ALL of them at once.
@@ -144,6 +144,45 @@ services:
       - *seedbox-mount
     ports:
       - "7878:7878"
+    restart: always
+
+  # ----------------------------------------------------------------------------
+  # Sonarr / Radarr (Live TV) — Retro Cable's own downloads (2026-11-07).
+  # DOWNLOAD-TOUCHING -> /seedbox. Kept apart from the Plex pair so a show can be
+  # in Plex, in Live TV, or both, and Live TV downloads never land in a Plex root.
+  #   Root folders: /tv and /movies = /volume1/LiveTV/sources/{tv,movies}. The
+  #     LiveTV share has a `.plexignore` of `*` and no Plex library points at it.
+  #   Clients: remote Deluge, labels `sonarr-livetv` / `radarr-livetv`, which move
+  #     completed downloads to files/tv-livetv and files/movies-livetv.
+  #   Only Retro Cable adds series and movies here, by API. They are NOT Seerr
+  #     servers: Seerr tracks one status per title, so a Live TV request there
+  #     would block or mislabel a later Plex request.
+  #   Quality: profile "LiveTV SD" (smallest SD first, 720p only as a fallback,
+  #     no upgrades). The rig converts each file to 480p HEVC in /volume1/LiveTV,
+  #     then deletes the original; "unmonitor deleted" keeps it from coming back.
+  # ----------------------------------------------------------------------------
+  sonarr-livetv:
+    image: lscr.io/linuxserver/sonarr:4.0.19   # same pin as sonarr
+    container_name: sonarr-livetv
+    environment: *common-env
+    volumes:
+      - ${DOCKER_ROOT:-/volume1/docker}/sonarr-livetv/config:/config
+      - ${LIVETV_SOURCES:-/volume1/LiveTV/sources}/tv:/tv
+      - *seedbox-mount
+    ports:
+      - "8990:8989"
+    restart: always
+
+  radarr-livetv:
+    image: lscr.io/linuxserver/radarr:6.3.0   # same pin as radarr
+    container_name: radarr-livetv
+    environment: *common-env
+    volumes:
+      - ${DOCKER_ROOT:-/volume1/docker}/radarr-livetv/config:/config
+      - ${LIVETV_SOURCES:-/volume1/LiveTV/sources}/movies:/movies
+      - *seedbox-mount
+    ports:
+      - "7879:7878"
     restart: always
 
   # ----------------------------------------------------------------------------
@@ -362,6 +401,20 @@ services:
       UN_READARR_0_PROTOCOLS: torrent
       UN_READARR_0_DELETE_ORIG: "false"
       UN_READARR_0_DELETE_DELAY: 10m
+      # Live TV twins (2026-11-07): appended after the TOML's [[sonarr]]/[[radarr]]
+      # (index 0), keys from .env. They watch only their own Deluge label folders.
+      UN_SONARR_1_URL: http://sonarr-livetv:8989
+      UN_SONARR_1_API_KEY: ${SONARR_LIVETV_API_KEY:?set SONARR_LIVETV_API_KEY in .env (vault arr_api_keys.sonarr_livetv)}
+      UN_SONARR_1_PATHS_0: /seedbox/tv-livetv
+      UN_SONARR_1_PROTOCOLS: torrent
+      UN_SONARR_1_DELETE_ORIG: "false"
+      UN_SONARR_1_DELETE_DELAY: 10m
+      UN_RADARR_1_URL: http://radarr-livetv:7878
+      UN_RADARR_1_API_KEY: ${RADARR_LIVETV_API_KEY:?set RADARR_LIVETV_API_KEY in .env (vault arr_api_keys.radarr_livetv)}
+      UN_RADARR_1_PATHS_0: /seedbox/movies-livetv
+      UN_RADARR_1_PROTOCOLS: torrent
+      UN_RADARR_1_DELETE_ORIG: "false"
+      UN_RADARR_1_DELETE_DELAY: 10m
     volumes:
       - ./unpackerr/unpackerr.conf:/etc/unpackerr/unpackerr.conf:ro
       - *seedbox-mount                 # /seedbox (rslave) — MUST match the *arrs exactly
@@ -391,6 +444,8 @@ services:
       - radarr
       - lidarr
       - bookshelf
+      - sonarr-livetv
+      - radarr-livetv
 
   # ----------------------------------------------------------------------------
   # Whisparr v2 — adult scene automation (seed-13). DOWNLOAD-TOUCHING -> /seedbox.

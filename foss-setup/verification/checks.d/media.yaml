@@ -127,6 +127,45 @@ checks:
     runbook: wiki/docs/runbooks/verification.md
     enabled: true
 
+  # Retro Cable's Live TV twins (retro-cable-02): same plumbing-only health
+  # filter as above, PLUS the isolation invariant — each twin has exactly one
+  # root folder, its LiveTV one (/tv or /movies inside the container =
+  # /volume1/LiveTV/sources/*, never a Plex root). Keys SONARR_LIVETV_API_KEY /
+  # RADARR_LIVETV_API_KEY in mini /etc/verification/env (vault arr_api_keys.*_livetv).
+  - id: sonarr-livetv-pipeline-health
+    name: "sonarr-livetv: plumbing healthy and its only root folder is the LiveTV one"
+    host: url
+    cmd: >-
+      curl -sm 20 -H "X-Api-Key: $SONARR_LIVETV_API_KEY" "http://192.168.10.4:8990/api/v3/health"
+      | python3 -c "import json,sys,re; h=json.load(sys.stdin);
+      bad=sorted({i['source'] for i in h
+      if re.match(r'(DownloadClient|RootFolder|RemotePathMapping|ImportMechanism)', i.get('source',''))});
+      print('pipeline=' + (','.join(bad) if bad else 'ok'), end=' ')"
+      && curl -sm 20 -H "X-Api-Key: $SONARR_LIVETV_API_KEY" "http://192.168.10.4:8990/api/v3/rootfolder"
+      | python3 -c "import json,sys; print('roots=' + ','.join(sorted(r['path'].rstrip('/') for r in json.load(sys.stdin))))"
+    expect: '^pipeline=ok roots=/tv$'
+    severity: warn
+    task_id: retro-cable-02
+    runbook: wiki/docs/runbooks/retro-cable.md
+    enabled: true
+
+  - id: radarr-livetv-pipeline-health
+    name: "radarr-livetv: plumbing healthy and its only root folder is the LiveTV one"
+    host: url
+    cmd: >-
+      curl -sm 20 -H "X-Api-Key: $RADARR_LIVETV_API_KEY" "http://192.168.10.4:7879/api/v3/health"
+      | python3 -c "import json,sys,re; h=json.load(sys.stdin);
+      bad=sorted({i['source'] for i in h
+      if re.match(r'(DownloadClient|RootFolder|RemotePathMapping|ImportMechanism)', i.get('source',''))});
+      print('pipeline=' + (','.join(bad) if bad else 'ok'), end=' ')"
+      && curl -sm 20 -H "X-Api-Key: $RADARR_LIVETV_API_KEY" "http://192.168.10.4:7879/api/v3/rootfolder"
+      | python3 -c "import json,sys; print('roots=' + ','.join(sorted(r['path'].rstrip('/') for r in json.load(sys.stdin))))"
+    expect: '^pipeline=ok roots=/movies$'
+    severity: warn
+    task_id: retro-cable-02
+    runbook: wiki/docs/runbooks/retro-cable.md
+    enabled: true
+
   # The shared SPOF. The rclone SFTP mount is the single path every *arr import
   # reads through; when it drops, the bind target becomes an empty dir and
   # EVERY import silently does nothing (the mount script's own top-line
