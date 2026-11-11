@@ -1,4 +1,4 @@
-# Going Analogue — homelab config & docs
+Homelab config & docs
 
 Local-first homelab: moving off the Apple/iCloud ecosystem onto owned hardware (DS920+ NAS, Mac mini/Ubuntu, CachyOS rig, HA Green, UniFi Dream Wall, plus an off-site seedbox).
 
