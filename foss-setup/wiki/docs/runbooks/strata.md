@@ -70,6 +70,7 @@ Hermes (Mac) ─────────────► llama-swap :9292 `strata
 | opencode (Mac + rig) | `litellm/strata` (coding-agents key scoped q38/utility/strata) |
 | Hermes (Mac) | `-m strata` on provider `custom:192.168.10.12:9292`; `STRATA_API_KEY` in `~/.hermes/.env` |
 | ZCode (Mac) | OpenAI-compatible provider, base URL `https://llm.tabaska.us/v1`, key = LiteLLM virtual key `zcode` (vault `ai_stack.litellm_zcode_key`, scoped strata + q38), model `strata` |
+| Pithagoras (Mac, :4100) | Native pi-1.1 web portal, default model `litellm/strata` (coding-agents key), with the **REA** reverse-engineering MCP (Ghidra 12.1.4) for local decompilation. Setup: `local-ai-tooling/clients/README.md` → *Pithagoras portal + REA* |
 
 ## Operate
 
